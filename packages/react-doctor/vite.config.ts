@@ -91,6 +91,16 @@ export default defineConfig({
       platform: "node",
       fixedExtension: false,
     },
+    {
+      entry: { "eslint-plugin": "./src/eslint-plugin.ts" },
+      dts: true,
+      target: "node22",
+      platform: "node",
+      fixedExtension: false,
+      env: {
+        VERSION: process.env.VERSION ?? packageJson.version,
+      },
+    },
   ],
   test: {
     testTimeout: 30_000,

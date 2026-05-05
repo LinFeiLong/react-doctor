@@ -56,6 +56,10 @@
       "types": "./dist/react-doctor-plugin.d.ts",
       "default": "./dist/react-doctor-plugin.js"
     },
+    "./eslint-plugin": {
+      "types": "./dist/eslint-plugin.d.ts",
+      "default": "./dist/eslint-plugin.js"
+    },
     "./worker": {
       "types": "./dist/worker.d.ts",
       "default": "./dist/worker.js"

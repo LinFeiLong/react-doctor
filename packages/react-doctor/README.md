@@ -343,9 +343,13 @@ console.log(`${counts.errorCount} errors, ${counts.warningCount} warnings`);
 
 `react-doctor/api` also re-exports the `JsonReport`, `JsonReportSummary`, `JsonReportProjectEntry`, and `JsonReportMode` types, plus the lower-level `buildJsonReport` and `buildJsonReportError` builders if you need to assemble reports from multiple `diagnose()` calls.
 
-## Use the oxlint plugin standalone
+## Use the lint plugin standalone
 
-If you already use oxlint and just want React Doctor's rule set, register the plugin directly in your `.oxlintrc.json`:
+The same React Doctor rule set is shipped as both an oxlint plugin and an ESLint plugin so you can wire it into whichever lint engine your project already runs — no extra dependency on the `react-doctor` CLI.
+
+### oxlint
+
+Register the plugin directly in your `.oxlintrc.json`:
 
 ```jsonc
 {
@@ -363,7 +367,43 @@ If you already use oxlint and just want React Doctor's rule set, register the pl
 }
 ```
 
-The full rule list is in [`oxlint-config.ts`](https://github.com/millionco/react-doctor/blob/main/packages/react-doctor/src/oxlint-config.ts).
+### ESLint (flat config)
+
+```js
+// eslint.config.js
+import reactDoctor from "react-doctor/eslint-plugin";
+
+export default [
+  reactDoctor.configs.recommended,
+  // Framework presets are composable — pick the ones that match your stack:
+  reactDoctor.configs.next,
+  reactDoctor.configs["react-native"],
+  reactDoctor.configs["tanstack-start"],
+  reactDoctor.configs["tanstack-query"],
+  // Or turn everything on at the same severities react-doctor uses:
+  // reactDoctor.configs.all,
+];
+```
+
+Cherry-pick instead of using a preset:
+
+```js
+import reactDoctor from "react-doctor/eslint-plugin";
+
+export default [
+  {
+    plugins: { "react-doctor": reactDoctor },
+    rules: {
+      "react-doctor/no-fetch-in-effect": "warn",
+      "react-doctor/no-derived-state-effect": "warn",
+    },
+  },
+];
+```
+
+Diagnostics from these rules surface inline through your editor's existing ESLint / oxlint integration — no separate `react-doctor` invocation needed.
+
+The full rule list and default severities live in [`oxlint-config.ts`](https://github.com/millionco/react-doctor/blob/main/packages/react-doctor/src/oxlint-config.ts).
 
 ## Scores for popular open-source projects
 
