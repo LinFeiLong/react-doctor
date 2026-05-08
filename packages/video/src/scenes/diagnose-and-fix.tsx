@@ -1,4 +1,4 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import {
   BACKGROUND_COLOR,
   BOX_BOTTOM,
@@ -14,6 +14,7 @@ import {
   TEXT_COLOR,
 } from "../constants";
 import { fontFamily } from "../utils/font";
+import { CONTENT_ENTER_EASING, VERTICAL_MOTION_EASING } from "../utils/motion";
 import { getDoctorFace, getScoreColor, getScoreLabel } from "../utils/score-display";
 
 const HERO_FACE_FONT_SIZE_PX = 80;
@@ -82,7 +83,7 @@ export const DiagnoseAndFix = () => {
   const scoreBlockOpacity = interpolate(frame, [0, SCORE_FADE_IN_FRAMES], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
+    easing: CONTENT_ENTER_EASING,
   });
 
   const transitionProgress = interpolate(
@@ -92,7 +93,7 @@ export const DiagnoseAndFix = () => {
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: Easing.inOut(Easing.cubic),
+      easing: VERTICAL_MOTION_EASING,
     },
   );
 
@@ -123,7 +124,7 @@ export const DiagnoseAndFix = () => {
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: Easing.out(Easing.cubic),
+      easing: CONTENT_ENTER_EASING,
     },
   );
   const headerTranslateY = interpolate(
@@ -133,7 +134,7 @@ export const DiagnoseAndFix = () => {
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: Easing.out(Easing.cubic),
+      easing: CONTENT_ENTER_EASING,
     },
   );
 
@@ -144,7 +145,7 @@ export const DiagnoseAndFix = () => {
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: Easing.out(Easing.cubic),
+      easing: CONTENT_ENTER_EASING,
     },
   );
 
@@ -167,7 +168,7 @@ export const DiagnoseAndFix = () => {
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: Easing.out(Easing.cubic),
+      easing: CONTENT_ENTER_EASING,
     },
   );
 
@@ -177,7 +178,7 @@ export const DiagnoseAndFix = () => {
       interpolate(frame, [0, SCORE_ANIMATION_FRAMES], [0, TARGET_SCORE], {
         extrapolateLeft: "clamp",
         extrapolateRight: "clamp",
-        easing: Easing.out(Easing.cubic),
+        easing: CONTENT_ENTER_EASING,
       }),
     );
   } else {
@@ -274,7 +275,7 @@ export const DiagnoseAndFix = () => {
             {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
-              easing: Easing.out(Easing.cubic),
+              easing: CONTENT_ENTER_EASING,
             },
           );
           const itemFixFrame = FIX_START_FRAME + diagnosticIndex * FIX_INTERVAL_FRAMES;
@@ -285,7 +286,7 @@ export const DiagnoseAndFix = () => {
             {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
-              easing: Easing.out(Easing.cubic),
+              easing: CONTENT_ENTER_EASING,
             },
           );
           const isItemFixed = isFixing && diagnosticIndex < fixedDiagnosticCount;

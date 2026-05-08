@@ -1,11 +1,9 @@
-import { springTiming, TransitionSeries } from "@remotion/transitions";
-import { slide } from "@remotion/transitions/slide";
+import { TransitionSeries } from "@remotion/transitions";
 import {
   SCENE_DIAGNOSE_AND_FIX_DURATION_FRAMES,
   SCENE_FILE_SCAN_DURATION_FRAMES,
   SCENE_SCORE_REVEAL_DURATION_FRAMES,
   SCENE_TYPING_DURATION_FRAMES,
-  TRANSITION_DURATION_FRAMES,
 } from "../constants";
 import { DiagnoseAndFix } from "../scenes/diagnose-and-fix";
 import { FileScan } from "../scenes/file-scan";
@@ -18,14 +16,6 @@ export const Main = () => {
       <TransitionSeries.Sequence durationInFrames={SCENE_TYPING_DURATION_FRAMES}>
         <TerminalTyping />
       </TransitionSeries.Sequence>
-
-      <TransitionSeries.Transition
-        presentation={slide({ direction: "from-bottom" })}
-        timing={springTiming({
-          config: { damping: 200 },
-          durationInFrames: TRANSITION_DURATION_FRAMES,
-        })}
-      />
 
       <TransitionSeries.Sequence durationInFrames={SCENE_FILE_SCAN_DURATION_FRAMES}>
         <FileScan />
