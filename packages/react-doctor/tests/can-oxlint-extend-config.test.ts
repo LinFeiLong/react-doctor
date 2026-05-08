@@ -70,6 +70,17 @@ describe("canOxlintExtendConfig", () => {
     expect(canOxlintExtendConfig(eslintrcPath)).toBe(true);
   });
 
+  // HACK: regression for the null-safety bug — `JSON.parse("null")` returns
+  // a literal null and `parsed.extends` would have thrown a TypeError that
+  // propagates out of the pre-screen entirely.
+  it("returns true on non-object JSON (null, array, primitive)", () => {
+    for (const payload of ["null", "[]", "42", '"a string"']) {
+      const eslintrcPath = path.join(temporaryDirectory, ".eslintrc.json");
+      fs.writeFileSync(eslintrcPath, payload);
+      expect(canOxlintExtendConfig(eslintrcPath)).toBe(true);
+    }
+  });
+
   // HACK: real-world ESLint configs are routinely JSONC. Strict
   // `JSON.parse` would throw on `// commented out option` and the
   // pre-screen would fall through to "let oxlint try" — the exact
