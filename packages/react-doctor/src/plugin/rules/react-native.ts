@@ -59,16 +59,21 @@ const isTextHandlingComponent = (elementName: string): boolean => {
   return [...REACT_NATIVE_TEXT_COMPONENT_KEYWORDS].some((keyword) => elementName.includes(keyword));
 };
 
+const WEB_FILE_EXTENSION_PATTERN = /\.web\.[jt]sx?$/;
+
 export const rnNoRawText: Rule = {
   create: (context: RuleContext) => {
+    let isWebOnlyFile = false;
     let isDomComponentFile = false;
 
     return {
       Program(programNode: EsTreeNode) {
         isDomComponentFile = hasDirective(programNode, "use dom");
+        const filename = context.getFilename?.() ?? "";
+        isWebOnlyFile = WEB_FILE_EXTENSION_PATTERN.test(filename);
       },
       JSXElement(node: EsTreeNode) {
-        if (isDomComponentFile) return;
+        if (isDomComponentFile || isWebOnlyFile) return;
 
         const elementName = resolveJsxElementName(node.openingElement);
         if (elementName && isTextHandlingComponent(elementName)) return;

@@ -113,6 +113,7 @@ const tryDisableFailedPlugin = (
 const runKnipWithOptions = async (
   knipCwd: string,
   workspaceName?: string,
+  entryFiles?: string[],
 ): Promise<KnipResults> => {
   const tsConfigFile = resolveTsConfigFile(knipCwd);
   const options = await silenced(() =>
@@ -123,6 +124,14 @@ const runKnipWithOptions = async (
       ...(tsConfigFile ? { tsConfigFile } : {}),
     }),
   );
+
+  if (entryFiles && entryFiles.length > 0) {
+    const parsedConfigForEntries = options.parsedConfig as Record<string, unknown>;
+    const existingEntry = Array.isArray(parsedConfigForEntries.entry)
+      ? (parsedConfigForEntries.entry as string[])
+      : [];
+    parsedConfigForEntries.entry = [...existingEntry, ...entryFiles];
+  }
 
   const parsedConfig = options.parsedConfig as Record<string, unknown>;
   sanitizeKnipConfigPatterns(parsedConfig);
@@ -159,18 +168,22 @@ const resolveWorkspaceName = (rootDirectory: string): string => {
 const runKnipForProject = async (
   rootDirectory: string,
   monorepoRoot: string | null,
+  entryFiles?: string[],
 ): Promise<KnipResults> => {
   if (!monorepoRoot || hasKnipConfig(rootDirectory)) {
-    return runKnipWithOptions(rootDirectory);
+    return runKnipWithOptions(rootDirectory, undefined, entryFiles);
   }
   try {
-    return await runKnipWithOptions(monorepoRoot, resolveWorkspaceName(rootDirectory));
+    return await runKnipWithOptions(monorepoRoot, resolveWorkspaceName(rootDirectory), entryFiles);
   } catch {
-    return runKnipWithOptions(rootDirectory);
+    return runKnipWithOptions(rootDirectory, undefined, entryFiles);
   }
 };
 
-export const runKnip = async (rootDirectory: string): Promise<Diagnostic[]> => {
+export const runKnip = async (
+  rootDirectory: string,
+  entryFiles?: string[],
+): Promise<Diagnostic[]> => {
   const monorepoRoot = findMonorepoRoot(rootDirectory);
   const hasInstalledDependencies =
     hasNodeModules(rootDirectory) || (monorepoRoot !== null && hasNodeModules(monorepoRoot));
@@ -179,7 +192,7 @@ export const runKnip = async (rootDirectory: string): Promise<Diagnostic[]> => {
     return [];
   }
 
-  const knipResult = await runKnipForProject(rootDirectory, monorepoRoot);
+  const knipResult = await runKnipForProject(rootDirectory, monorepoRoot, entryFiles);
 
   const { issues } = knipResult;
   const diagnostics: Diagnostic[] = [];

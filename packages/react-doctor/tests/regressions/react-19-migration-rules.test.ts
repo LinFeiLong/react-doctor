@@ -347,13 +347,7 @@ export { config };
 });
 
 describe("version gating", () => {
-  // HACK: deprecation-warning rules fire on every detected React major.
-  // The audience that benefits MOST is the version that still allows
-  // the pattern (R18 users planning the React 19 upgrade) — silencing
-  // the rule on R17/18 lost ~1.1k diagnostics on real projects between
-  // 0.0.47 and HEAD. The rule's message names the breaking version so
-  // users on older Reacts can prioritize the warning appropriately.
-  it("DOES flag forwardRef on React 18 projects (deprecation-warning, fail open)", async () => {
+  it("does NOT flag forwardRef on React 18 projects (migration-hint, suppressed below minMajor)", async () => {
     const projectDir = setupReactProject(tempRoot, "gating-r18-forwardRef", {
       reactVersion: "^18.3.1",
       files: {
@@ -369,7 +363,7 @@ export const Button = forwardRef<HTMLButtonElement>((_props, ref) => (
     const hits = await collectRuleHits(projectDir, "no-react19-deprecated-apis", {
       reactMajorVersion: 18,
     });
-    expect(hits.length).toBeGreaterThanOrEqual(1);
+    expect(hits).toHaveLength(0);
   });
 
   it("DOES flag forwardRef on React 19 projects", async () => {
@@ -411,7 +405,7 @@ export const has = (key: string): boolean => React.hasOwnProperty(key);
     expect(hits).toHaveLength(0);
   });
 
-  it("DOES flag Foo.defaultProps on React 18 projects (deprecation-warning, fail open)", async () => {
+  it("does NOT flag Foo.defaultProps on React 18 projects (migration-hint, suppressed below minMajor)", async () => {
     const projectDir = setupReactProject(tempRoot, "gating-r18-defaultProps", {
       reactVersion: "^18.3.1",
       files: {
@@ -422,7 +416,7 @@ Button.defaultProps = { size: "md" };
     });
 
     const hits = await collectRuleHits(projectDir, "no-default-props", { reactMajorVersion: 18 });
-    expect(hits.length).toBeGreaterThanOrEqual(1);
+    expect(hits).toHaveLength(0);
   });
 
   it("DOES flag react-dom render on React 17 projects (deprecation-warning, fail open)", async () => {

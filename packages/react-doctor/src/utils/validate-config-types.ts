@@ -11,6 +11,8 @@ const BOOLEAN_FIELD_NAMES = [
   "share",
   "respectInlineDisables",
   "adoptExistingLintConfig",
+  "offline",
+  "designRules",
 ] as const satisfies ReadonlyArray<keyof ReactDoctorConfig>;
 
 const STRING_FIELD_NAMES = ["rootDir"] as const satisfies ReadonlyArray<keyof ReactDoctorConfig>;

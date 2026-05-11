@@ -178,7 +178,6 @@ const RULE_CATEGORY_MAP: Record<string, string> = {
   "react-doctor/design-no-redundant-padding-axes": "Architecture",
   "react-doctor/design-no-redundant-size-axes": "Architecture",
   "react-doctor/design-no-space-on-flex-children": "Architecture",
-  "react-doctor/design-no-em-dash-in-jsx-text": "Architecture",
   "react-doctor/design-no-three-period-ellipsis": "Architecture",
   "react-doctor/design-no-default-tailwind-palette": "Architecture",
   "react-doctor/design-no-vague-button-label": "Accessibility",
@@ -434,8 +433,6 @@ const RULE_HELP_MAP: Record<string, string> = {
     "Collapse `w-N h-N` to `size-N` (Tailwind v3.4+) when both axes match",
   "design-no-space-on-flex-children":
     "Use `gap-*` on the flex/grid parent. `space-x-*` / `space-y-*` produce phantom gaps when a sibling is conditionally rendered, lose vertical spacing on wrapped lines, and don't mirror in RTL",
-  "design-no-em-dash-in-jsx-text":
-    "Replace em dashes in JSX text with commas, colons, semicolons, periods, or parentheses — em dashes read as model-output filler",
   "design-no-three-period-ellipsis":
     'Use the typographic ellipsis "…" (or `&hellip;`) instead of three periods — pairs with action-with-followup labels ("Rename…", "Loading…")',
   "design-no-default-tailwind-palette":
@@ -894,6 +891,7 @@ interface RunOxlintOptions {
    * Set `false` to scan only react-doctor's curated rule set.
    */
   adoptExistingLintConfig?: boolean;
+  designRules?: boolean;
 }
 
 let didValidateRuleRegistration = false;
@@ -939,6 +937,7 @@ export const runOxlint = async (options: RunOxlintOptions): Promise<Diagnostic[]
     customRulesOnly = false,
     respectInlineDisables = true,
     adoptExistingLintConfig = true,
+    designRules = true,
   } = options;
 
   validateRuleRegistration();
@@ -978,6 +977,7 @@ export const runOxlint = async (options: RunOxlintOptions): Promise<Diagnostic[]
     customRulesOnly,
     reactMajorVersion,
     extendsPaths,
+    designRules,
   });
   // HACK: only neutralize disable comments in audit mode. Default
   // behavior respects the user's existing `// eslint-disable*` /
@@ -1060,6 +1060,7 @@ export const runOxlint = async (options: RunOxlintOptions): Promise<Diagnostic[]
         customRulesOnly,
         reactMajorVersion,
         extendsPaths: [],
+        designRules,
       });
       writeOxlintConfig(fallbackConfig);
       return await spawnLintBatches();

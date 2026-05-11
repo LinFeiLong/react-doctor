@@ -106,7 +106,6 @@ import {
 import {
   noBoldHeading,
   noDefaultTailwindPalette,
-  noEmDashInJsxText,
   noRedundantPaddingAxes,
   noRedundantSizeAxes,
   noSpaceOnFlexChildren,
@@ -395,7 +394,6 @@ const plugin: RulePlugin = {
     "design-no-redundant-padding-axes": noRedundantPaddingAxes,
     "design-no-redundant-size-axes": noRedundantSizeAxes,
     "design-no-space-on-flex-children": noSpaceOnFlexChildren,
-    "design-no-em-dash-in-jsx-text": noEmDashInJsxText,
     "design-no-three-period-ellipsis": noThreePeriodEllipsis,
     "design-no-default-tailwind-palette": noDefaultTailwindPalette,
     "design-no-vague-button-label": noVagueButtonLabel,

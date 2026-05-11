@@ -210,6 +210,7 @@ export interface ReactDoctorConfig {
   failOn?: FailOnLevel;
   customRulesOnly?: boolean;
   share?: boolean;
+  offline?: boolean;
   /**
    * Redirect react-doctor at a different project directory than the one
    * it was invoked against. Resolved relative to the location of the
@@ -286,6 +287,8 @@ export interface ReactDoctorConfig {
    * Set to `false` to scan only react-doctor's curated rule set.
    */
   adoptExistingLintConfig?: boolean;
+  designRules?: boolean;
+  entryFiles?: string[];
 }
 
 export type JsonReportMode = "full" | "diff" | "staged";

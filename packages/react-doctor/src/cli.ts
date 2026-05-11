@@ -174,7 +174,7 @@ const resolveCliScanOptions = (
     deadCode: isCliOverride("deadCode") ? flags.deadCode : (userConfig?.deadCode ?? true),
     verbose: isCliOverride("verbose") ? flags.verbose : (userConfig?.verbose ?? false),
     scoreOnly: flags.score,
-    offline: flags.offline || isCiEnvironment(),
+    offline: flags.offline || (userConfig?.offline ?? false) || isCiEnvironment(),
     silent: flags.json,
     respectInlineDisables: isCliOverride("respectInlineDisables")
       ? flags.respectInlineDisables

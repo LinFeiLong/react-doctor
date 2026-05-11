@@ -234,14 +234,63 @@ When a suppression isn't working, `--explain <file:line>` (or its alias `--why <
 | `failOn`                   | `"error" \| "warning" \| "none"` | `"none"` |
 | `customRulesOnly`          | `boolean`                        | `false`  |
 | `share`                    | `boolean`                        | `true`   |
+| `offline`                  | `boolean`                        | `false`  |
 | `textComponents`           | `string[]`                       | `[]`     |
 | `rawTextWrapperComponents` | `string[]`                       | `[]`     |
 | `respectInlineDisables`    | `boolean`                        | `true`   |
 | `adoptExistingLintConfig`  | `boolean`                        | `true`   |
+| `designRules`              | `boolean`                        | `true`   |
+| `entryFiles`               | `string[]`                       | `[]`     |
 
 `textComponents` is the broad escape hatch for `rn-no-raw-text` — list components that themselves behave like React Native's `<Text>` (custom `Typography`, `NativeTabs.Trigger.Label`, etc.) and the rule will treat them as text containers regardless of what their children look like.
 
 `rawTextWrapperComponents` is the narrower option for components that are not text elements but safely route string-only children through an internal `<Text>` (e.g. `heroui-native`'s `Button`, which stringifies its children and renders them through a `ButtonLabel`). Listed wrappers suppress `rn-no-raw-text` only when their children are entirely stringifiable. A wrapper with mixed children — e.g. `<Button>Save<Icon /></Button>` — still reports because the wrapper can't safely route raw text alongside a sibling JSX element.
+
+`designRules` controls whether opinionated design rules (gradient text, pure black backgrounds, side tab borders, default Tailwind palettes, and `design-*` prefixed rules) are included in the scan. Set `false` to disable the entire category.
+
+`entryFiles` tells the dead-code detector about files that are executed directly but not imported (test runner configs, eval scripts, CLI entry points). These are forwarded to [knip](https://knip.dev) as additional entry points. Example: `"entryFiles": ["scripts/*.ts", "evalite.config.ts"]`. If your project already has a `knip.json`, those entry points are respected automatically.
+
+`offline` skips the score API call and calculates the score locally. Automatically enabled in CI environments (GitHub Actions, GitLab CI, CircleCI). Set `true` in config to always score locally.
+
+## Scoring
+
+The health score formula: `100 - (unique_error_rules x 1.5) - (unique_warning_rules x 0.75)`.
+
+Key details:
+
+- The score counts **unique rules triggered**, not total instances. Fixing 49 of 50 `no-barrel-import` violations does not change the score; fixing all 50 removes the 0.75 penalty for that rule.
+- Error-severity rules cost 1.5 points each. Warning-severity rules cost 0.75 points each.
+- Category breakdowns shown in the output are for display only and do not weight the score.
+- Run `--verbose` to see which exact rules contributed to the score and how the penalty was computed.
+
+Score labels: 75+ is **Great**, 50 to 74 is **Needs work**, under 50 is **Critical**.
+
+Scores may decrease across releases as new rules are added. Each new rule that fires in your codebase introduces an additional penalty. This is expected — it means the tool is catching more issues, not that your code got worse. Pin to a specific react-doctor version in CI if you need stable scores across upgrades.
+
+## Diff and staged modes
+
+React Doctor can scan only changed files instead of the full project:
+
+- **`--diff [base]`** scans files changed vs a base branch. Auto-detects `main`/`master`, or pass an explicit branch: `--diff develop`. Also available as a config key: `"diff": true` or `"diff": "develop"`.
+- **`--staged`** scans only files in the git staging area (index). Designed for pre-commit hooks — materializes staged file contents into a temp directory so the scan reflects exactly what will be committed.
+- **`--full`** forces a full scan, overriding any `diff` value in config or CLI.
+
+When on a feature branch without explicit flags, you'll be prompted: "Only scan changed files?" This prompt is suppressed in CI, `--json` mode, and non-interactive environments.
+
+`--staged` and `--diff` cannot be combined. Both modes skip dead-code detection (knip needs the full project to detect unused files).
+
+## Agent and CI integration
+
+React Doctor detects 50+ coding agents (Claude Code, Cursor, Codex, OpenCode, Windsurf, and more) and adapts its behavior automatically:
+
+- **Install for agents**: `npx react-doctor@latest install` writes agent-specific rule files (SKILL.md, AGENTS.md, .cursorrules) into your project so agents learn React best practices.
+- **JSON output**: `--json` produces a structured `JsonReport` on stdout. Errors still produce a valid JSON document with `ok: false`. Use `--json-compact` for minimal whitespace.
+- **Score-only output**: `--score` outputs just the numeric score (0-100), useful for threshold checks in agent loops.
+- **GitHub Actions annotations**: `--annotations` emits `::error` / `::warning` format for inline PR annotations.
+- **Exit codes**: `--fail-on error` (default) exits non-zero when error-severity diagnostics are found. Use `--fail-on warning` or `--fail-on none` to tune CI gating.
+- **Programmatic API**: `import { diagnose } from "react-doctor/api"` for direct integration in scripts and automation.
+
+In CI environments, prompts are automatically skipped and scoring runs locally (offline mode).
 
 ## Node.js API
 

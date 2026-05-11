@@ -191,36 +191,6 @@ describe("design-no-space-on-flex-children", () => {
   });
 });
 
-describe("design-no-em-dash-in-jsx-text", () => {
-  it("flags em dashes in JSX text", async () => {
-    const projectDir = setupReactProject(tempRoot, "no-em-dash-pos", {
-      files: {
-        "src/Hero.tsx": `export const Hero = () => (
-  <p>Build, test, deploy \u2014 in minutes.</p>
-);
-`,
-      },
-    });
-
-    const hits = await collectRuleHits(projectDir, "design-no-em-dash-in-jsx-text");
-    expect(hits).toHaveLength(1);
-  });
-
-  it("does not flag em dashes inside <code>", async () => {
-    const projectDir = setupReactProject(tempRoot, "no-em-dash-neg-code", {
-      files: {
-        "src/Snippet.tsx": `export const Snippet = () => (
-  <pre><code>npm install \u2014 verbose</code></pre>
-);
-`,
-      },
-    });
-
-    const hits = await collectRuleHits(projectDir, "design-no-em-dash-in-jsx-text");
-    expect(hits).toHaveLength(0);
-  });
-});
-
 describe("design-no-three-period-ellipsis", () => {
   it("flags three-period ellipses after letters", async () => {
     const projectDir = setupReactProject(tempRoot, "no-three-period-pos", {

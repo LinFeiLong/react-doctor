@@ -139,6 +139,7 @@ interface OxlintConfigOptions {
    * same scan so those diagnostics factor into the react-doctor score.
    */
   extendsPaths?: string[];
+  designRules?: boolean;
 }
 
 interface JsPluginEntry {
@@ -415,12 +416,31 @@ export const GLOBAL_REACT_DOCTOR_RULES: Record<string, RuleSeverity> = {
   "react-doctor/design-no-redundant-padding-axes": "warn",
   "react-doctor/design-no-redundant-size-axes": "warn",
   "react-doctor/design-no-space-on-flex-children": "warn",
-  "react-doctor/design-no-em-dash-in-jsx-text": "warn",
   "react-doctor/design-no-three-period-ellipsis": "warn",
   "react-doctor/design-no-default-tailwind-palette": "warn",
   "react-doctor/design-no-vague-button-label": "warn",
 
   "react-doctor/async-parallel": "warn",
+};
+
+const DESIGN_RULE_PREFIX = "react-doctor/design-";
+const OPINIONATED_DESIGN_RULE_IDS = new Set([
+  "react-doctor/no-side-tab-border",
+  "react-doctor/no-pure-black-background",
+  "react-doctor/no-gradient-text",
+  "react-doctor/no-dark-mode-glow",
+  "react-doctor/no-default-tailwind-palette",
+]);
+
+const isDesignRule = (ruleKey: string): boolean =>
+  ruleKey.startsWith(DESIGN_RULE_PREFIX) || OPINIONATED_DESIGN_RULE_IDS.has(ruleKey);
+
+const filterDesignRules = (
+  rules: Record<string, RuleSeverity>,
+  shouldIncludeDesignRules: boolean,
+): Record<string, RuleSeverity> => {
+  if (shouldIncludeDesignRules) return rules;
+  return Object.fromEntries(Object.entries(rules).filter(([ruleKey]) => !isDesignRule(ruleKey)));
 };
 
 // HACK: includes every rule that COULD be enabled by createOxlintConfig
@@ -457,7 +477,7 @@ export const ALL_REACT_DOCTOR_RULE_KEYS: ReadonlySet<string> = new Set([
 // state); silently dropping rules in that path turned a missing
 // `react` entry into a quietly degraded scan. Better to recommend a
 // modern API and let the user reject it than to hide the suggestion.
-type VersionGateMode = "prefer-newer-api" | "deprecation-warning";
+type VersionGateMode = "prefer-newer-api" | "deprecation-warning" | "migration-hint";
 interface VersionGate {
   minMajor: number;
   mode: VersionGateMode;
@@ -465,11 +485,11 @@ interface VersionGate {
 const VERSION_GATED_RULE_IDS: ReadonlyMap<string, VersionGate> = new Map([
   [
     "react-doctor/no-react19-deprecated-apis",
-    { minMajor: REACT_19_DEPRECATION_MIN_MAJOR, mode: "deprecation-warning" },
+    { minMajor: REACT_19_DEPRECATION_MIN_MAJOR, mode: "migration-hint" },
   ],
   [
     "react-doctor/no-default-props",
-    { minMajor: REACT_19_DEPRECATION_MIN_MAJOR, mode: "deprecation-warning" },
+    { minMajor: REACT_19_DEPRECATION_MIN_MAJOR, mode: "migration-hint" },
   ],
   [
     "react-doctor/no-react-dom-deprecated-apis",
@@ -490,6 +510,10 @@ const filterRulesByReactMajor = (
       const gate = VERSION_GATED_RULE_IDS.get(ruleKey);
       if (gate === undefined) return true;
       if (gate.mode === "deprecation-warning") return true;
+      if (gate.mode === "migration-hint") {
+        if (reactMajorVersion === null) return true;
+        return reactMajorVersion >= gate.minMajor;
+      }
       if (reactMajorVersion === null) return true;
       return reactMajorVersion >= gate.minMajor;
     }),
@@ -504,6 +528,7 @@ export const createOxlintConfig = ({
   customRulesOnly = false,
   reactMajorVersion = null,
   extendsPaths = [],
+  designRules = true,
 }: OxlintConfigOptions) => {
   // HACK: REACT_COMPILER_RULES live under the `react-hooks-js` plugin
   // namespace, provided by our bundled eslint-plugin-react-hooks package.
@@ -564,7 +589,10 @@ export const createOxlintConfig = ({
       ...(customRulesOnly ? {} : BUILTIN_A11Y_RULES),
       ...reactCompilerRules,
       ...youMightNotNeedEffectRules,
-      ...filterRulesByReactMajor(GLOBAL_REACT_DOCTOR_RULES, reactMajorVersion),
+      ...filterDesignRules(
+        filterRulesByReactMajor(GLOBAL_REACT_DOCTOR_RULES, reactMajorVersion),
+        designRules,
+      ),
       ...(framework === "nextjs" ? NEXTJS_RULES : {}),
       ...(framework === "expo" || framework === "react-native" ? REACT_NATIVE_RULES : {}),
       ...(framework === "tanstack-start" ? TANSTACK_START_RULES : {}),

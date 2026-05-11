@@ -542,21 +542,109 @@ const findFirstAwaitOutsideNestedFunctions = (block: EsTreeNode): EsTreeNode | n
   return firstAwait;
 };
 
-// HACK: `for (const x of items) { await fetch(x); }` runs the fetches
-// sequentially — each one waits for the previous to finish before
-// starting. If the calls are independent (which they almost always are
-// in a list-iteration loop), the total latency is N × per-call latency
-// instead of just per-call. `await Promise.all(items.map(fetch))` runs
-// them all concurrently. We flag any `await` inside `for…of`,
-// `for…in`, classic `for`, `while`, or `.forEach`/`.map` callback
-// bodies where `await` appears at the top level of the loop body.
-//
-// Notable exceptions we INTENTIONALLY do not exempt:
-//  - `for await (const x of asyncIterable)` — that's a different
-//    AST node (ForOfStatement with `await: true`); we skip those.
-//  - Loops where the next iteration depends on the previous result
-//    (e.g. paginated fetch). The plugin can't tell — accept some
-//    false positives in exchange for catching the common waterfall.
+// HACK: heuristics to reduce false positives in the asyncAwaitInLoop
+// rule. Polling loops (`while (true) { await sleep(1000); ... }`) and
+// paginated fetches (`while (hasMore) { page = await fetch(cursor); cursor = page.next; }`)
+// are intentionally sequential and should not be flagged.
+
+const SLEEP_LIKE_FUNCTION_NAMES = new Set([
+  "sleep",
+  "delay",
+  "wait",
+  "setTimeout",
+  "pause",
+  "throttle",
+]);
+
+const isAwaitingSleepLikeCall = (awaitNode: EsTreeNode): boolean => {
+  const argument = awaitNode.argument;
+  if (!argument) return false;
+
+  if (argument.type === "CallExpression") {
+    if (
+      argument.callee?.type === "Identifier" &&
+      SLEEP_LIKE_FUNCTION_NAMES.has(argument.callee.name)
+    ) {
+      return true;
+    }
+    if (
+      argument.callee?.type === "MemberExpression" &&
+      argument.callee.property?.type === "Identifier" &&
+      SLEEP_LIKE_FUNCTION_NAMES.has(argument.callee.property.name)
+    ) {
+      return true;
+    }
+  }
+
+  if (
+    argument.type === "NewExpression" &&
+    argument.callee?.type === "Identifier" &&
+    argument.callee.name === "Promise"
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
+const collectAssignedIdentifiers = (block: EsTreeNode): Set<string> => {
+  const assigned = new Set<string>();
+  walkAst(block, (child: EsTreeNode): boolean | void => {
+    if (isFunctionishExpression(child) || child.type === "FunctionDeclaration") return false;
+    if (child.type === "AssignmentExpression" && child.left?.type === "Identifier") {
+      assigned.add(child.left.name);
+    }
+    if (
+      child.type === "VariableDeclarator" &&
+      child.id?.type === "Identifier" &&
+      child.init?.type === "AwaitExpression"
+    ) {
+      assigned.add(child.id.name);
+    }
+  });
+  return assigned;
+};
+
+const collectAwaitedArgIdentifiers = (block: EsTreeNode): Set<string> => {
+  const referenced = new Set<string>();
+  walkAst(block, (child: EsTreeNode): boolean | void => {
+    if (isFunctionishExpression(child) || child.type === "FunctionDeclaration") return false;
+    if (child.type !== "AwaitExpression" || !child.argument) return;
+    walkAst(child.argument, (innerChild: EsTreeNode) => {
+      if (innerChild.type === "Identifier") referenced.add(innerChild.name);
+      if (innerChild.type === "MemberExpression" && innerChild.object?.type === "Identifier") {
+        referenced.add(innerChild.object.name);
+      }
+    });
+  });
+  return referenced;
+};
+
+// HACK: detects patterns like `cursor = (await fetch(cursor)).next` where
+// the loop body assigns a variable that is then read by the next
+// iteration's await argument — paginated fetch, retry loops, etc.
+const hasLoopCarriedDependency = (block: EsTreeNode): boolean => {
+  const assigned = collectAssignedIdentifiers(block);
+  if (assigned.size === 0) return false;
+  const awaitedReferences = collectAwaitedArgIdentifiers(block);
+  for (const name of assigned) {
+    if (awaitedReferences.has(name)) return true;
+  }
+  return false;
+};
+
+const loopBodyHasOnlySleepLikeAwaits = (block: EsTreeNode): boolean => {
+  let allAreSleepLike = true;
+  let foundAny = false;
+  walkAst(block, (child: EsTreeNode): boolean | void => {
+    if (isFunctionishExpression(child) || child.type === "FunctionDeclaration") return false;
+    if (child.type === "AwaitExpression") {
+      foundAny = true;
+      if (!isAwaitingSleepLikeCall(child)) allAreSleepLike = false;
+    }
+  });
+  return foundAny && allAreSleepLike;
+};
 const isFunctionishExpression = (node: EsTreeNode): boolean =>
   node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression";
 
@@ -597,6 +685,8 @@ export const asyncAwaitInLoop: Rule = {
   create: (context: RuleContext) => {
     const inspectLoopBody = (loopBody: EsTreeNode | null | undefined, label: string): void => {
       if (!loopBody) return;
+      if (loopBodyHasOnlySleepLikeAwaits(loopBody)) return;
+      if (hasLoopCarriedDependency(loopBody)) return;
       const firstAwait = findFirstAwaitOutsideNestedFunctions(loopBody);
       if (firstAwait) {
         context.report({

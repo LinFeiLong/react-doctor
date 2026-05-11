@@ -26,6 +26,7 @@
     "leaderboard:update": "node --experimental-strip-types --no-warnings scripts/update-leaderboard.ts"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
     "@types/node": "^25.6.0",
     "@voidzero-dev/vite-plus-core": "^0.1.15",
