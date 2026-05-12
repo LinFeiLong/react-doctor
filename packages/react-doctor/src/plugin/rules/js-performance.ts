@@ -736,14 +736,6 @@ const isAwaitingSleepLikeCall = (awaitNode: EsTreeNode): boolean => {
     }
   }
 
-  if (
-    argument.type === "NewExpression" &&
-    argument.callee?.type === "Identifier" &&
-    argument.callee.name === "Promise"
-  ) {
-    return true;
-  }
-
   return false;
 };
 

@@ -619,7 +619,6 @@ export const buildCapabilities = (project: ProjectInfo): ReadonlySet<string> => 
 };
 
 export const shouldEnableRule = (
-  ruleKey: string,
   requires: ReadonlyArray<string> | undefined,
   tags: ReadonlySet<string>,
   capabilities: ReadonlySet<string>,
@@ -682,7 +681,7 @@ export const createOxlintConfig = ({
         enabledReactDoctorRules[ruleKey] = severity;
         continue;
       }
-      if (shouldEnableRule(ruleKey, metadata.requires, metadata.tags, capabilities, ignoredTags)) {
+      if (shouldEnableRule(metadata.requires, metadata.tags, capabilities, ignoredTags)) {
         enabledReactDoctorRules[ruleKey] = severity;
       }
     }
