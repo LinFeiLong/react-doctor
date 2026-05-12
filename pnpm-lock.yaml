@@ -77,6 +77,25 @@ importers:
         specifier: ^0.10.1
         version: 0.10.1(eslint@9.39.2(jiti@2.6.1))
 
+  packages/react-doctor-v2:
+    dependencies:
+      commander:
+        specifier: ^14.0.3
+        version: 14.0.3
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
+    devDependencies:
+      '@oxc-project/types':
+        specifier: ^0.130.0
+        version: 0.130.0
+      '@types/node':
+        specifier: ^25.6.0
+        version: 25.6.0
+      vite-plus:
+        specifier: ^0.1.15
+        version: 0.1.20(@types/node@25.6.0)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.46.0)(typescript@6.0.3)(vite@7.3.1(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.3))(yaml@2.8.3)
+
   packages/website:
     dependencies:
       '@vercel/analytics':
@@ -890,6 +909,9 @@ packages:
   '@oxc-project/types@0.60.0':
     resolution: {integrity: sha512-prhfNnb3ATFHOCv7mzKFfwLij5RzoUz6Y1n525ZhCEqfq5wreCXL+DyVoq3ShukPo7q45ZjYIdjFUgjj+WKzng==}
 
+  '@oxc-project/types@0.130.0':
+    resolution: {integrity: sha512-ibD2usx9JRu7f5pu2tMKMI4cpA4NgXJQoYRP4pQ7Pxmn1l6k/53qWtQWZayhYy3X4QZkt90Ot+mJEaeXouio6Q==}
+
   '@oxc-resolver/binding-android-arm-eabi@11.19.1':
     resolution: {integrity: sha512-aUs47y+xyXHUKlbhqHUjBABjvycq6YSD7bpxSW7vplUmdzAlJ93yXY6ZR0c1o1x5A/QKbENCvs3+NlY8IpIVzg==}
     cpu: [arm]
@@ -1558,9 +1580,6 @@ packages:
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
-
-  '@types/node@20.19.33':
-    resolution: {integrity: sha512-Rs1bVAIdBs5gbTIKza/tgpMuG1k3U/UMJLWecIMxNdJFDMzcM5LOiLVRYh3PilWEYDIeUDv7bpiHPLPsbydGcw==}
 
   '@types/node@25.6.0':
     resolution: {integrity: sha512-+qIYRKdNYJwY3vRCZMdJbPLJAtGjQBudzZzdzwQYkEPQd+PJGixUL5QfvCLDaULoLv+RhT3LDkwEfKaAkgSmNQ==}
@@ -2762,9 +2781,6 @@ packages:
     resolution: {integrity: sha512-FeFPZ/WFT0mbRCuydiZzpPFlrYN8ZUpphQKoq4EeElVIYjYyGzPMxQR/simUwCOJIyVhpFk4RbtyO7RuMpMnHA==}
     engines: {node: '>=14'}
 
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
-
   undici-types@7.19.2:
     resolution: {integrity: sha512-qYVnV5OEm2AW8cJMCpdV20CDyaN3g0AjDlOGf1OW4iaDEx8MwdtChUp4zu4H0VP3nDRF/8RKWH+IPp9uW0YGZg==}
 
@@ -3588,6 +3604,8 @@ snapshots:
 
   '@oxc-project/types@0.60.0': {}
 
+  '@oxc-project/types@0.130.0': {}
+
   '@oxc-resolver/binding-android-arm-eabi@11.19.1':
     optional: true
 
@@ -3970,17 +3988,13 @@ snapshots:
 
   '@types/node@12.20.55': {}
 
-  '@types/node@20.19.33':
-    dependencies:
-      undici-types: 6.21.0
-
   '@types/node@25.6.0':
     dependencies:
       undici-types: 7.19.2
 
   '@types/prompts@2.4.9':
     dependencies:
-      '@types/node': 20.19.33
+      '@types/node': 25.6.0
       kleur: 3.0.3
 
   '@types/react-dom@19.2.3(@types/react@19.2.14)':
@@ -5120,8 +5134,6 @@ snapshots:
   typescript@6.0.3: {}
 
   unbash@3.0.0: {}
-
-  undici-types@6.21.0: {}
 
   undici-types@7.19.2: {}
 

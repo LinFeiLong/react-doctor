@@ -1,0 +1,60 @@
+{
+  "name": "react-doctor-v2",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Scaffold for the React Doctor v2 rewrite",
+  "keywords": [
+    "diagnostics",
+    "react",
+    "typescript"
+  ],
+  "homepage": "https://github.com/millionco/react-doctor#readme",
+  "bugs": {
+    "url": "https://github.com/millionco/react-doctor/issues"
+  },
+  "license": "MIT",
+  "author": "Aiden Bai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/millionco/react-doctor.git",
+    "directory": "packages/react-doctor-v2"
+  },
+  "bin": {
+    "react-doctor": "./bin/react-doctor.js"
+  },
+  "files": [
+    "bin/**",
+    "dist/**/*.js",
+    "dist/**/*.d.ts"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/sdk.d.ts",
+      "default": "./dist/sdk.js"
+    },
+    "./api": {
+      "types": "./dist/compat.d.ts",
+      "default": "./dist/compat.js"
+    }
+  },
+  "scripts": {
+    "dev": "vp pack --watch",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && NODE_ENV=production vp pack",
+    "typecheck": "tsc --noEmit",
+    "test": "vp test run"
+  },
+  "dependencies": {
+    "commander": "^14.0.3",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@oxc-project/types": "^0.130.0",
+    "@types/node": "^25.6.0",
+    "vite-plus": "^0.1.15"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
