@@ -70,6 +70,7 @@
     "@oxc-project/types": "^0.130.0",
     "@types/node": "^25.6.0",
     "@types/prompts": "^2.4.9",
+    "picomatch": "^4.0.4",
     "vite-plus": "^0.1.15"
   },
   "engines": {
