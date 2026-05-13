@@ -18,7 +18,14 @@ const products = await getProducts();`,
     },
   ],
   create: (context: RuleContext) => {
+    const filename = context.getFilename?.() ?? "";
+    const isTestOrInfraFile =
+      /(?:\.(?:test|spec|stories|e2e|integration)\.[tj]sx?$|\/(?:__tests__|tests?|__mocks__|__fixtures__|fixtures)\/)/.test(
+        filename,
+      );
+
     const inspectStatements = (statements: EsTreeNode[]): void => {
+      if (isTestOrInfraFile) return;
       for (let statementIndex = 0; statementIndex < statements.length - 1; statementIndex++) {
         const currentStatement = statements[statementIndex];
         if (!isNodeOfType(currentStatement, "VariableDeclaration")) continue;

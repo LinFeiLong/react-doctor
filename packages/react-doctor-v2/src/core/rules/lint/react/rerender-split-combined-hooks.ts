@@ -20,11 +20,11 @@ const sorted = useMemo(() => sort(other), [other]);`,
       const callback = node.arguments?.[0];
       const deps = node.arguments?.[1];
       if (!isNodeOfType(callback.body, "BlockStatement")) return;
-      if (!isNodeOfType(deps, "ArrayExpression") || (deps.elements?.length ?? 0) < 2) return;
+      if (!isNodeOfType(deps, "ArrayExpression") || (deps.elements?.length ?? 0) < 3) return;
       const meaningfulStatements = (callback.body.body ?? []).filter(
         (statement: EsTreeNode) => !isNodeOfType(statement, "EmptyStatement"),
       );
-      if (meaningfulStatements.length < 2) return;
+      if (meaningfulStatements.length < 3) return;
       context.report({
         node,
         message:

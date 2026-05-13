@@ -1,6 +1,7 @@
 import { defineRule } from "../../registry.js";
 import {
   ITERATION_METHOD_NAMES_WITH_CALLBACK,
+  TEST_OR_INFRA_FILE_PATTERN,
   findFirstAwaitOutsideNestedFunctions,
   isFunctionishExpression,
   isWrappedInPromiseConcurrency,
@@ -133,7 +134,11 @@ export const asyncAwaitInLoop = defineRule<Rule>({
     },
   ],
   create: (context: RuleContext) => {
+    const filename = context.getFilename?.() ?? "";
+    const isTestOrInfraFile = TEST_OR_INFRA_FILE_PATTERN.test(filename);
+
     const inspectLoopBody = (loopBody: EsTreeNode | null | undefined, label: string): void => {
+      if (isTestOrInfraFile) return;
       if (!loopBody) return;
       if (loopBodyHasOnlySleepLikeAwaits(loopBody)) return;
       if (hasLoopCarriedDependency(loopBody)) return;
@@ -166,6 +171,7 @@ export const asyncAwaitInLoop = defineRule<Rule>({
         inspectLoopBody(node.body, "do-while loop");
       },
       CallExpression(node: EsTreeNode) {
+        if (isTestOrInfraFile) return;
         // arr.forEach(async item => { await fn(item); }) - sequential
         // because forEach doesn't await; even worse, the awaits are
         // dropped on the floor (forEach ignores return values).

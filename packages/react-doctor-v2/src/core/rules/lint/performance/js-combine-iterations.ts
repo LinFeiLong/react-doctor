@@ -1,5 +1,9 @@
 import { defineRule } from "../../registry.js";
-import { CHAINABLE_ITERATION_METHODS, isNodeOfType } from "./utils/index.js";
+import {
+  CHAINABLE_ITERATION_METHODS,
+  TEST_OR_INFRA_FILE_PATTERN,
+  isNodeOfType,
+} from "./utils/index.js";
 import type { EsTreeNode, Rule, RuleContext } from "./utils/index.js";
 
 const ITERATOR_SOURCE_METHOD_NAMES = new Set(["entries", "keys", "values"]);
@@ -40,45 +44,51 @@ const names = active.map(getName);`,
       after: `const names = users.flatMap((user) => isActive(user) ? [getName(user)] : []);`,
     },
   ],
-  create: (context: RuleContext) => ({
-    CallExpression(node: EsTreeNode) {
-      if (
-        !isNodeOfType(node.callee, "MemberExpression") ||
-        !isNodeOfType(node.callee.property, "Identifier")
-      )
-        return;
+  create: (context: RuleContext) => {
+    const filename = context.getFilename?.() ?? "";
+    const isTestOrInfraFile = TEST_OR_INFRA_FILE_PATTERN.test(filename);
 
-      const outerMethod = node.callee.property.name;
-      if (!CHAINABLE_ITERATION_METHODS.has(outerMethod)) return;
+    return {
+      CallExpression(node: EsTreeNode) {
+        if (isTestOrInfraFile) return;
+        if (
+          !isNodeOfType(node.callee, "MemberExpression") ||
+          !isNodeOfType(node.callee.property, "Identifier")
+        )
+          return;
 
-      const innerCall = node.callee.object;
-      if (
-        !isNodeOfType(innerCall, "CallExpression") ||
-        !isNodeOfType(innerCall.callee, "MemberExpression") ||
-        !isNodeOfType(innerCall.callee.property, "Identifier")
-      )
-        return;
+        const outerMethod = node.callee.property.name;
+        if (!CHAINABLE_ITERATION_METHODS.has(outerMethod)) return;
 
-      const innerMethod = innerCall.callee.property.name;
-      if (!CHAINABLE_ITERATION_METHODS.has(innerMethod)) return;
-      if (isIteratorHelperChain(innerCall.callee.object)) return;
+        const innerCall = node.callee.object;
+        if (
+          !isNodeOfType(innerCall, "CallExpression") ||
+          !isNodeOfType(innerCall.callee, "MemberExpression") ||
+          !isNodeOfType(innerCall.callee.property, "Identifier")
+        )
+          return;
 
-      if (innerMethod === "map" && outerMethod === "filter") {
-        const filterArgument = node.arguments?.[0];
-        const isBooleanOrIdentityFilter =
-          (isNodeOfType(filterArgument, "Identifier") && filterArgument.name === "Boolean") ||
-          (isNodeOfType(filterArgument, "ArrowFunctionExpression") &&
-            filterArgument.params?.length === 1 &&
-            isNodeOfType(filterArgument.body, "Identifier") &&
-            isNodeOfType(filterArgument.params[0], "Identifier") &&
-            filterArgument.body.name === filterArgument.params[0].name);
-        if (isBooleanOrIdentityFilter) return;
-      }
+        const innerMethod = innerCall.callee.property.name;
+        if (!CHAINABLE_ITERATION_METHODS.has(innerMethod)) return;
+        if (isIteratorHelperChain(innerCall.callee.object)) return;
 
-      context.report({
-        node,
-        message: `.${innerMethod}().${outerMethod}() iterates the array twice - combine into a single loop with .reduce() or for...of`,
-      });
-    },
-  }),
+        if (innerMethod === "map" && outerMethod === "filter") {
+          const filterArgument = node.arguments?.[0];
+          const isBooleanOrIdentityFilter =
+            (isNodeOfType(filterArgument, "Identifier") && filterArgument.name === "Boolean") ||
+            (isNodeOfType(filterArgument, "ArrowFunctionExpression") &&
+              filterArgument.params?.length === 1 &&
+              isNodeOfType(filterArgument.body, "Identifier") &&
+              isNodeOfType(filterArgument.params[0], "Identifier") &&
+              filterArgument.body.name === filterArgument.params[0].name);
+          if (isBooleanOrIdentityFilter) return;
+        }
+
+        context.report({
+          node,
+          message: `.${innerMethod}().${outerMethod}() iterates the array twice - combine into a single loop with .reduce() or for...of`,
+        });
+      },
+    };
+  },
 });
