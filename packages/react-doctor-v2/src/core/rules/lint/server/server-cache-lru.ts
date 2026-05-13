@@ -1,6 +1,8 @@
 import { defineRule } from "../../registry.js";
-import { MUTABLE_CONTAINER_CONSTRUCTORS, isNodeOfType } from "./utils/index.js";
+import { MUTABLE_CONTAINER_CONSTRUCTORS, hasUseServerDirective, isNodeOfType } from "./utils/index.js";
 import type { EsTreeNode, Rule, RuleContext } from "./utils/index.js";
+
+const SERVER_FILE_PATTERN = /\/(?:app|server|api)\//;
 
 export const serverCacheLru = defineRule<Rule>({
   recommendation:
@@ -11,8 +13,17 @@ export const serverCacheLru = defineRule<Rule>({
       after: `const cache = new LRUCache({ max: 500, ttl: 60_000 });`,
     },
   ],
-  create: (context: RuleContext) => ({
-    VariableDeclarator(node: EsTreeNode) {
+  create: (context: RuleContext) => {
+    const filename = context.getFilename?.() ?? "";
+    const isServerContext = SERVER_FILE_PATTERN.test(filename);
+    let hasServerDirective = false;
+
+    return {
+      Program(node: EsTreeNode) {
+        hasServerDirective = hasUseServerDirective(node);
+      },
+      VariableDeclarator(node: EsTreeNode) {
+        if (!isServerContext && !hasServerDirective) return;
       if (!isNodeOfType(node.parent?.parent, "Program")) return;
       if (!isNodeOfType(node.init, "NewExpression")) return;
       if (!isNodeOfType(node.init.callee, "Identifier")) return;
@@ -25,5 +36,6 @@ export const serverCacheLru = defineRule<Rule>({
           "module-level server cache uses an unbounded mutable container - use an LRU/TTL cache so cross-request caching cannot grow without bounds",
       });
     },
-  }),
+  };
+  },
 });

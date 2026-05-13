@@ -21,8 +21,15 @@ export const radixAschildSingleChild = defineRule<Rule>({
       const openingElement = node.openingElement;
       if (!hasTruthyAsChild(openingElement)) return;
       const meaningfulChildren = getMeaningfulJsxChildren(node);
-      if (meaningfulChildren.length === 1 && isNodeOfType(meaningfulChildren[0], "JSXElement"))
-        return;
+      if (meaningfulChildren.length === 1) {
+        const onlyChild = meaningfulChildren[0];
+        if (
+          isNodeOfType(onlyChild, "JSXElement") ||
+          isNodeOfType(onlyChild, "JSXExpressionContainer")
+        ) {
+          return;
+        }
+      }
       const elementName = getJsxName(openingElement.name) ?? "component";
       context.report({
         node: openingElement,

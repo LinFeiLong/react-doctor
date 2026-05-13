@@ -17,7 +17,7 @@ export const getTailwindTokenGroup = (token: string): TailwindTokenGroup | null 
   if (overflowGroup) return { token, group: `${variant}${overflowGroup}` };
   if (DISPLAY_TOKENS.has(baseToken)) return { token, group: `${variant}display` };
   if (POSITION_TOKENS.has(baseToken)) return { token, group: `${variant}position` };
-  if (TEXT_SIZE_TOKENS.has(baseToken) || /^text-\[[^\]]+\]$/.test(baseToken)) {
+  if (TEXT_SIZE_TOKENS.has(baseToken) || /^text-\[\d+(?:\.\d+)?(?:px|rem|em|%|vw|vh)\]$/.test(baseToken)) {
     return { token, group: `${variant}text-size` };
   }
   if (/^bg-(?!opacity-)/.test(baseToken)) return { token, group: `${variant}background` };
