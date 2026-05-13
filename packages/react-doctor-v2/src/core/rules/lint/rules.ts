@@ -512,11 +512,11 @@ export const reactDoctorOxlintRules: Record<string, Rule> = {
   "no-long-transition-duration": noLongTransitionDuration,
 
   "design-no-bold-heading": noBoldHeading,
-  "design-no-redundant-padding-axes": noRedundantPaddingAxes,
-  "design-no-redundant-size-axes": noRedundantSizeAxes,
-  "design-no-space-on-flex-children": noSpaceOnFlexChildren,
+  "tailwind-no-redundant-padding-axes": noRedundantPaddingAxes,
+  "tailwind-no-redundant-size-axes": noRedundantSizeAxes,
+  "tailwind-no-space-on-flex-children": noSpaceOnFlexChildren,
   "design-no-three-period-ellipsis": noThreePeriodEllipsis,
-  "design-no-default-tailwind-palette": noDefaultTailwindPalette,
+  "tailwind-no-default-palette": noDefaultTailwindPalette,
   "design-no-vague-button-label": noVagueButtonLabel,
 };
 

@@ -323,6 +323,8 @@ export const INTERNAL_PAGE_PATH_PATTERN =
   /\/(?:(?:\((?:dashboard|admin|settings|account|internal|manage|console|portal|auth|onboarding|app|ee|protected)\))|(?:dashboard|admin|settings|account|internal|manage|console|portal))\//i;
 
 export const TEST_FILE_PATTERN = /\.(?:test|spec|stories)\.[tj]sx?$/;
+export const TEST_OR_INFRA_FILE_PATTERN =
+  /(?:\.(?:test|spec|stories|e2e|integration)\.[tj]sx?$|\/(?:__tests__|tests?|__mocks__|__fixtures__|fixtures)\/)/;
 export const OG_ROUTE_PATTERN = /\/og\b/i;
 
 export const PAGES_DIRECTORY_PATTERN = /\/pages\//;
@@ -753,7 +755,7 @@ export const HEAVY_HEADING_TAILWIND_WEIGHTS = new Set([
 export const TAILWIND_DEFAULT_PALETTE_NAMES = ["indigo", "gray", "slate"];
 
 // HACK: the canonical Tailwind v3/v4 numeric color stops. Anchoring the
-// `design-no-default-tailwind-palette` regex to this exact set (rather
+// `tailwind-no-default-palette` regex to this exact set (rather
 // than `\d{2,3}`) avoids false-positiving on Radix Colors integrations
 // that map non-Tailwind stops onto Tailwind utilities (`text-gray-11`,
 // `text-gray-12`, `text-gray-10` are Radix scale numbers, not Tailwind

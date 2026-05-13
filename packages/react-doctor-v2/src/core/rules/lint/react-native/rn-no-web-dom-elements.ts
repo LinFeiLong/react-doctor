@@ -3,6 +3,7 @@ import {
   REACT_NATIVE_WEB_DOM_ELEMENTS,
   hasDirective,
   isInsideWebPlatformBranch,
+  isWebOnlyPath,
   resolveJsxElementName,
 } from "./utils/index.js";
 import type { EsTreeNode, Rule, RuleContext } from "./utils/index.js";
@@ -18,13 +19,15 @@ export const rnNoWebDomElements = defineRule<Rule>({
   ],
   create: (context: RuleContext) => {
     let isDomComponentFile = false;
+    let isWebOnlyFile = false;
 
     return {
       Program(programNode: EsTreeNode) {
         isDomComponentFile = hasDirective(programNode, "use dom");
+        isWebOnlyFile = isWebOnlyPath(context.getFilename?.() ?? "");
       },
       JSXOpeningElement(node: EsTreeNode) {
-        if (isDomComponentFile || isInsideWebPlatformBranch(node)) return;
+        if (isDomComponentFile || isWebOnlyFile || isInsideWebPlatformBranch(node)) return;
         const elementName = resolveJsxElementName(node);
         if (!elementName || !REACT_NATIVE_WEB_DOM_ELEMENTS.has(elementName)) return;
         context.report({

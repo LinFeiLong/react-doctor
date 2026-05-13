@@ -1,7 +1,7 @@
 import { defineRule } from "../../registry.js";
 import {
   SEQUENTIAL_AWAIT_THRESHOLD,
-  TEST_FILE_PATTERN,
+  TEST_OR_INFRA_FILE_PATTERN,
   reportIfIndependent,
   isNodeOfType,
 } from "./utils/index.js";
@@ -19,11 +19,11 @@ const teams = await getTeams();`,
   ],
   create: (context: RuleContext) => {
     const filename = context.getFilename?.() ?? "";
-    const isTestFile = TEST_FILE_PATTERN.test(filename);
+    const isTestOrInfraFile = TEST_OR_INFRA_FILE_PATTERN.test(filename);
 
     return {
       BlockStatement(node: EsTreeNode) {
-        if (isTestFile) return;
+        if (isTestOrInfraFile) return;
         const consecutiveAwaitStatements: EsTreeNode[] = [];
 
         const flushConsecutiveAwaits = (): void => {

@@ -5,11 +5,10 @@ import {
   isInsideWebPlatformBranch,
   isRawTextContent,
   isTextHandlingComponent,
+  isWebOnlyPath,
   resolveJsxElementName,
 } from "./utils/index.js";
 import type { EsTreeNode, Rule, RuleContext } from "./utils/index.js";
-
-const WEB_FILE_EXTENSION_PATTERN = /\.web\.[jt]sx?$/;
 
 export const rnNoRawText = defineRule<Rule>({
   recommendation:
@@ -28,7 +27,7 @@ export const rnNoRawText = defineRule<Rule>({
     return {
       Program(programNode: EsTreeNode) {
         isDomComponentFile = hasDirective(programNode, "use dom");
-        isWebOnlyFile = WEB_FILE_EXTENSION_PATTERN.test(context.getFilename?.() ?? "");
+        isWebOnlyFile = isWebOnlyPath(context.getFilename?.() ?? "");
       },
       JSXElement(node: EsTreeNode) {
         if (isDomComponentFile || isWebOnlyFile || isInsideWebPlatformBranch(node)) return;

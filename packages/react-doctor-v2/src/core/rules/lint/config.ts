@@ -317,20 +317,20 @@ const RULE_METADATA: ReadonlyMap<string, RuleMetadataEntry> = new Map([
     tags: TEST_NOISE_TAGS,
   }),
   withReactDoctorRuleKey("design-no-bold-heading", { tags: DESIGN_AND_TEST_NOISE_TAGS }),
-  withReactDoctorRuleKey("design-no-redundant-padding-axes", {
+  withReactDoctorRuleKey("tailwind-no-redundant-padding-axes", {
     tags: DESIGN_AND_TEST_NOISE_TAGS,
   }),
-  withReactDoctorRuleKey("design-no-redundant-size-axes", {
+  withReactDoctorRuleKey("tailwind-no-redundant-size-axes", {
     requires: ["tailwind:3.4"],
     tags: DESIGN_AND_TEST_NOISE_TAGS,
   }),
-  withReactDoctorRuleKey("design-no-space-on-flex-children", {
+  withReactDoctorRuleKey("tailwind-no-space-on-flex-children", {
     tags: DESIGN_AND_TEST_NOISE_TAGS,
   }),
   withReactDoctorRuleKey("design-no-three-period-ellipsis", { tags: PEDANTIC_TAGS }),
   withReactDoctorRuleKey("i18n-no-literal-jsx-text", { tags: PEDANTIC_TAGS }),
   withReactDoctorRuleKey("rendering-content-visibility", { tags: PEDANTIC_TAGS }),
-  withReactDoctorRuleKey("design-no-default-tailwind-palette", {
+  withReactDoctorRuleKey("tailwind-no-default-palette", {
     tags: DESIGN_AND_TEST_NOISE_TAGS,
   }),
   withReactDoctorRuleKey("design-no-vague-button-label", { tags: DESIGN_AND_TEST_NOISE_TAGS }),
