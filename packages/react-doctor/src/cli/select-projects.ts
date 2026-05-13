@@ -79,5 +79,5 @@ const promptProjectSelection = async (
     min: 1,
   });
 
-  return selectedDirectories;
+  return Array.isArray(selectedDirectories) ? selectedDirectories : [];
 };

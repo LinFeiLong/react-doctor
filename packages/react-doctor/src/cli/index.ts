@@ -288,17 +288,6 @@ const resolveIncludePaths = (rootDirectory: string, flags: CliFlags): string[] |
       ]),
     ]);
   }
-  if (flags.diff) {
-    const baseBranch = typeof flags.diff === "string" ? flags.diff : "main";
-    return getGitFiles(rootDirectory, [
-      "diff",
-      "--name-only",
-      "-z",
-      "--diff-filter=ACMR",
-      "--relative",
-      `${baseBranch}...HEAD`,
-    ]);
-  }
   return undefined;
 };
 
