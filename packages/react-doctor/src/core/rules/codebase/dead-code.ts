@@ -63,17 +63,18 @@ const sortIssues = (issues: ReactDoctorIssue[]): ReactDoctorIssue[] =>
     );
   });
 
+// Framework-conventional exports (`default`, `GET`, `metadata`, ...) on
+// `app/**/route.ts`, `pages/**/*.tsx`, etc. are marked as `isPluginUsed`
+// by the corresponding framework plugin (`plugins/index.ts`) via its
+// `usedExports` rules. No separate name-allowlist is needed here.
 const isExportUsed = (exportSymbol: GraphExportSymbol): boolean =>
   exportSymbol.references.length > 0 ||
-  exportSymbol.hasLocalReferences ||
   exportSymbol.isPluginUsed ||
   isExpectedUnused(exportSymbol) ||
   isVisibilityProtected(exportSymbol);
 
 const hasUsageReference = (exportSymbol: GraphExportSymbol): boolean =>
-  exportSymbol.references.length > 0 ||
-  exportSymbol.hasLocalReferences ||
-  exportSymbol.isPluginUsed;
+  exportSymbol.references.length > 0 || exportSymbol.isPluginUsed;
 
 const isExpectedUnused = (exportSymbol: GraphExportSymbol): boolean =>
   exportSymbol.jsDocTags.has(EXPECTED_UNUSED_VISIBILITY_TAG);
@@ -196,11 +197,13 @@ const toUnusedExportIssue = (
   finding: UnusedExportFinding,
   ruleId: string,
   title: string,
+  severity: ReactDoctorIssue["severity"] = "warning",
 ): ReactDoctorIssue =>
   createCodebaseIssue({
     id: `${DEAD_CODE_CHECK_ID}/${ruleId}/${finding.file.relativePath}/${finding.exportSymbol.exportedName}`,
     title,
     message: `The exported symbol "${finding.exportSymbol.exportedName}" is not referenced by reachable modules.`,
+    severity,
     location: {
       filePath: finding.file.relativePath,
       line: finding.exportSymbol.position.line,
@@ -255,11 +258,19 @@ const inspectDeadCode = (graph: ModuleGraph): ReactDoctorIssue[] => {
     ...unusedExports
       .filter((finding) => !finding.exportSymbol.isTypeOnly)
       .map((finding) => toUnusedExportIssue(finding, "unused-export", "Unused export")),
+    // Type-only exports rarely indicate runtime bugs (types disappear after
+    // compilation) and codebases routinely export types ahead of consumers,
+    // so demote them to `info` severity — visible in --verbose, exempt from
+    // scoring.
     ...unusedExports
       .filter((finding) => finding.exportSymbol.isTypeOnly)
-      .map((finding) => toUnusedExportIssue(finding, "unused-type-export", "Unused type export")),
+      .map((finding) =>
+        toUnusedExportIssue(finding, "unused-type-export", "Unused type export", "info"),
+      ),
+    // `import * as ns` consumption is a stylistic concern, not a correctness
+    // issue, so demote to `info` as well.
     ...collectNamespaceOnlyExports(graph).map((finding) =>
-      toUnusedExportIssue(finding, "namespace-only-export", "Namespace-only export"),
+      toUnusedExportIssue(finding, "namespace-only-export", "Namespace-only export", "info"),
     ),
     ...collectUnusedExportMembers(graph).map(toUnusedExportMemberIssue),
     ...collectStaleExpectedUnusedExports(graph).map(toStaleExpectedUnusedIssue),

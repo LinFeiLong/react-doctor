@@ -111,22 +111,33 @@ const resolveEntrySpecifier = (
 const isConventionalRuntimeEntry = (relativePath: string): boolean => {
   const fileStem = getFileStem(relativePath);
   const pathParts = relativePath.split("/");
+  const isTopLevelSourceEntry =
+    pathParts.length === 1 || (pathParts.length === 2 && pathParts[0] === "src");
   return (
-    (COMMON_ENTRY_STEMS.has(fileStem) &&
-      (relativePath.startsWith("src/") || pathParts.length === 1)) ||
+    (COMMON_ENTRY_STEMS.has(fileStem) && isTopLevelSourceEntry) ||
     (FRAMEWORK_ROUTE_ENTRY_STEMS.has(fileStem) &&
-      (pathParts.includes("app") || pathParts.includes("pages") || pathParts.includes("routes"))) ||
-    isScriptDirectoryEntry(pathParts)
+      (pathParts.includes("app") || pathParts.includes("pages") || pathParts.includes("routes")))
   );
 };
 
 // Top-level files inside conventional CLI script directories
 // (`scripts/foo.ts`, `tools/foo.ts`, `internal-tools/foo.ts`, `bin/foo.ts`)
-// are runtime entrypoints. Helper files in nested folders like
-// `scripts/_lib/` are NOT entries — they become reachable through the
-// script files that import them.
-const isScriptDirectoryEntry = (pathParts: string[]): boolean =>
-  pathParts.length === 2 && SCRIPT_ENTRY_DIRECTORY_NAMES.has(pathParts[0]);
+// and `internal-tools/foo/index.{ts,tsx,...}` are SUPPORT entrypoints
+// (not runtime). They're invoked directly by `tsx` / `bun` / `node`, and
+// their top-level exports aren't a public API — flagging them as
+// `unused-export` is noise. Helper files in deeper folders like
+// `scripts/_lib/` and `scripts/foo/helpers/` are NOT entries — they become
+// reachable through the script files that import them.
+const isScriptDirectoryEntry = (relativePath: string): boolean => {
+  const pathParts = relativePath.split("/");
+  if (pathParts.length < 2) return false;
+  if (!SCRIPT_ENTRY_DIRECTORY_NAMES.has(pathParts[0])) return false;
+  if (pathParts.length === 2) return true;
+  if (pathParts.length !== 3) return false;
+  if (pathParts[1].startsWith("_")) return false;
+  const fileStem = getFileStem(pathParts[pathParts.length - 1]);
+  return fileStem === "index";
+};
 
 const isTestEntry = (relativePath: string): boolean =>
   TEST_ENTRY_MARKERS.some((marker) => relativePath.includes(marker));
@@ -136,6 +147,55 @@ const isSupportEntry = (relativePath: string): boolean =>
 
 const hasGlobSyntax = (value: string): boolean => value.includes("*") || value.includes("{");
 
+const stripRelativePrefix = (value: string): string => value.replace(/^\.\//, "");
+
+const JS_LEAF_EXTENSIONS: ReadonlyArray<string> = [".cjs", ".js", ".jsx", ".mjs"];
+const DECLARATION_SOURCE_EXTENSIONS: ReadonlyArray<string> = [".mts", ".cts", ".ts", ".tsx"];
+
+const expandSourceExtensionGlob = (pattern: string): string[] => {
+  const declarationExtension = TYPESCRIPT_DECLARATION_EXTENSIONS.find((extension) =>
+    pattern.endsWith(extension),
+  );
+  if (declarationExtension) {
+    const basePattern = pattern.slice(0, -declarationExtension.length);
+    return [`${basePattern}{${DECLARATION_SOURCE_EXTENSIONS.join(",")}}`, pattern];
+  }
+  const extension = path.extname(pattern);
+  if (!JS_LEAF_EXTENSIONS.includes(extension)) return [pattern];
+  const basePattern = pattern.slice(0, -extension.length);
+  return [`${basePattern}{${SOURCE_FILE_EXTENSIONS.join(",")}}`, pattern];
+};
+
+const toConventionalSourceMappedGlobPattern = (pattern: string): string | null =>
+  pattern.startsWith("dist/") ? `src/${pattern.slice("dist/".length)}` : null;
+
+const toSourceMappedGlobPatterns = (entry: string, workspace: WorkspaceInfo): string[] => {
+  const normalizedEntry = stripRelativePrefix(entry);
+  const patterns = new Set(expandSourceExtensionGlob(normalizedEntry));
+  const conventionalSourcePattern = toConventionalSourceMappedGlobPattern(normalizedEntry);
+  if (conventionalSourcePattern) {
+    for (const pattern of expandSourceExtensionGlob(conventionalSourcePattern)) {
+      patterns.add(pattern);
+    }
+  }
+  for (const sourceMap of workspace.sourceMaps) {
+    const outputDirectory = toRelativePath(workspace.directory, sourceMap.outputDirectory);
+    const sourceDirectory = toRelativePath(workspace.directory, sourceMap.sourceDirectory);
+    if (!normalizedEntry.startsWith(`${outputDirectory}/`)) continue;
+    const sourcePattern = `${sourceDirectory}/${normalizedEntry.slice(outputDirectory.length + 1)}`;
+    for (const pattern of expandSourceExtensionGlob(sourcePattern)) {
+      patterns.add(pattern);
+    }
+  }
+  return [...patterns];
+};
+
+const matchesManifestEntryGlob = (
+  workspaceRelativePath: string,
+  entry: string,
+  workspace: WorkspaceInfo,
+): boolean => matchesAnyGlob(workspaceRelativePath, toSourceMappedGlobPatterns(entry, workspace));
+
 const pushEntryPoint = (
   entryPoints: EntryPoint[],
   file: ProjectFile | null,
@@ -143,7 +203,12 @@ const pushEntryPoint = (
   source: string,
 ): void => {
   if (!file) return;
-  if (entryPoints.some((entryPoint) => entryPoint.fileId === file.id && entryPoint.role === role))
+  if (
+    entryPoints.some(
+      (entryPoint) =>
+        entryPoint.fileId === file.id && entryPoint.role === role && entryPoint.source === source,
+    )
+  )
     return;
   entryPoints.push({ fileId: file.id, role, source });
 };
@@ -159,7 +224,7 @@ export const discoverEntryPoints = (
 
   for (const workspace of workspaces) {
     const manifestEntries = collectManifestEntrySpecifiers(workspace.manifest);
-    for (const entry of manifestEntries) {
+    for (const entry of manifestEntries.filter((manifestEntry) => !hasGlobSyntax(manifestEntry))) {
       pushEntryPoint(
         entryPoints,
         resolveEntrySpecifier(config, workspace, filesByPath, entry),
@@ -192,8 +257,13 @@ export const discoverEntryPoints = (
     for (const file of workspaceFiles) {
       const workspaceRelativePath = toRelativePath(workspace.directory, file.filePath);
       for (const entry of manifestSupportEntries.filter(hasGlobSyntax)) {
-        if (matchesAnyGlob(workspaceRelativePath, [entry.replace(/^\.\//, "")])) {
+        if (matchesAnyGlob(workspaceRelativePath, [stripRelativePrefix(entry)])) {
           pushEntryPoint(entryPoints, file, "support", "package.json:sideEffects");
+        }
+      }
+      for (const entry of manifestEntries.filter(hasGlobSyntax)) {
+        if (matchesManifestEntryGlob(workspaceRelativePath, entry, workspace)) {
+          pushEntryPoint(entryPoints, file, "runtime", "package.json");
         }
       }
       for (const entryPattern of pluginResult?.entryPatterns ?? []) {
@@ -203,6 +273,9 @@ export const discoverEntryPoints = (
       }
       if (isConventionalRuntimeEntry(workspaceRelativePath)) {
         pushEntryPoint(entryPoints, file, "runtime", "convention");
+      }
+      if (isScriptDirectoryEntry(workspaceRelativePath)) {
+        pushEntryPoint(entryPoints, file, "support", "script-directory");
       }
       if (isTestEntry(workspaceRelativePath)) {
         pushEntryPoint(entryPoints, file, "test", "test-pattern");

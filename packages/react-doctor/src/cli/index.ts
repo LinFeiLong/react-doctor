@@ -10,11 +10,17 @@ import {
   DEFAULT_DIRECTORY,
   EXIT_FAILURE_CODE,
   FILESYSTEM_WALK_IGNORED_DIRECTORIES,
+  FRAMEWORK_DISPLAY_NAMES,
   MAX_CATEGORY_GROUPS_SHOWN_NON_VERBOSE,
+  MAX_INLINE_SUB_RULES_SHOWN,
   MAX_RULE_GROUPS_PER_CATEGORY_NON_VERBOSE,
+  MAX_SCORE_DRAINS_SHOWN,
+  PER_CATEGORY_PENALTY_CAP,
+  PERFECT_SCORE,
   REACT_PROJECT_DEPENDENCIES,
   SEVERITY_ORDER,
   SHARE_BASE_URL,
+  SIGINT_EXIT_CODE,
   SOURCE_FILE_PATTERN,
 } from "../constants.js";
 import { handleCliError } from "./handle-error.js";
@@ -31,9 +37,13 @@ import {
   buildReactDoctorJsonReport,
   createReactDoctor,
   loadReactDoctorConfig,
+  resolveConfigRootDirectory,
 } from "../sdk/index.js";
 import { createCodebaseAnalysisConfig } from "../core/rules/codebase/analyzer/config.js";
 import { discoverWorkspaces } from "../core/rules/codebase/analyzer/workspace.js";
+import { collectScoreDiagnostics } from "../core/issue-to-score-diagnostic.js";
+import { calculateScoreBreakdown, rulePenalty } from "../core/score.js";
+import { getScoringPluginKey, getScoringRuleKey } from "../core/scoring-key.js";
 import type {
   ReactDoctorConfig,
   ReactDoctorFailOnLevel,
@@ -111,11 +121,24 @@ const isReactWorkspace = (workspace: WorkspaceInfo): boolean =>
   );
 
 interface FilesystemPackageManifest {
+  name?: unknown;
   dependencies?: Record<string, unknown>;
   devDependencies?: Record<string, unknown>;
   peerDependencies?: Record<string, unknown>;
   optionalDependencies?: Record<string, unknown>;
 }
+
+const isFilesystemPackageManifest = (value: unknown): value is FilesystemPackageManifest =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const parsePackageManifest = (manifestText: string): FilesystemPackageManifest | null => {
+  try {
+    const parsed: unknown = JSON.parse(manifestText);
+    return isFilesystemPackageManifest(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
 
 const hasReactDependencyInManifest = (manifest: FilesystemPackageManifest): boolean => {
   for (const bucket of [
@@ -142,8 +165,8 @@ const discoverReactProjectsByFilesystem = async (rootDirectory: string): Promise
 
     try {
       const manifestText = await fs.readFile(path.join(current, "package.json"), "utf8");
-      const manifest = JSON.parse(manifestText) as FilesystemPackageManifest;
-      if (hasReactDependencyInManifest(manifest)) {
+      const manifest = parsePackageManifest(manifestText);
+      if (manifest && hasReactDependencyInManifest(manifest)) {
         directories.push(current);
       }
     } catch {
@@ -180,8 +203,9 @@ const toNamedProject = (workspace: WorkspaceInfo): DiscoveredProject => ({
 const toNamedProjectFromDirectory = async (directory: string): Promise<DiscoveredProject> => {
   try {
     const manifestText = await fs.readFile(path.join(directory, "package.json"), "utf8");
-    const manifest = JSON.parse(manifestText) as { name?: string };
-    return { name: manifest.name ?? path.basename(directory), directory };
+    const manifest = parsePackageManifest(manifestText);
+    const manifestName = typeof manifest?.name === "string" ? manifest.name : null;
+    return { name: manifestName ?? path.basename(directory), directory };
   } catch {
     return { name: path.basename(directory), directory };
   }
@@ -229,25 +253,75 @@ const dedupeFilePaths = (filePaths: string[]): string[] => [...new Set(filePaths
 const resolveIncludePaths = (rootDirectory: string, flags: CliFlags): string[] | undefined => {
   if (flags.unstaged) {
     return dedupeFilePaths([
-      ...getGitFiles(rootDirectory, ["diff", "--name-only", "-z"]),
-      ...getGitFiles(rootDirectory, ["ls-files", "--others", "--exclude-standard", "-z"]),
+      ...getGitFiles(rootDirectory, [
+        "diff",
+        "--name-only",
+        "-z",
+        "--diff-filter=ACMR",
+        "--relative",
+      ]),
+      ...getGitFiles(rootDirectory, [
+        "ls-files",
+        "--others",
+        "--exclude-standard",
+        "-z",
+        "--relative",
+      ]),
     ]);
   }
   if (flags.changed) {
     return dedupeFilePaths([
-      ...getGitFiles(rootDirectory, ["diff", "--name-only", "-z", "HEAD"]),
-      ...getGitFiles(rootDirectory, ["ls-files", "--others", "--exclude-standard", "-z"]),
+      ...getGitFiles(rootDirectory, [
+        "diff",
+        "--name-only",
+        "-z",
+        "--diff-filter=ACMR",
+        "--relative",
+        "HEAD",
+      ]),
+      ...getGitFiles(rootDirectory, [
+        "ls-files",
+        "--others",
+        "--exclude-standard",
+        "-z",
+        "--relative",
+      ]),
     ]);
   }
   if (flags.diff) {
     const baseBranch = typeof flags.diff === "string" ? flags.diff : "main";
-    return getGitFiles(rootDirectory, ["diff", "--name-only", "-z", `${baseBranch}...HEAD`]);
+    return getGitFiles(rootDirectory, [
+      "diff",
+      "--name-only",
+      "-z",
+      "--diff-filter=ACMR",
+      "--relative",
+      `${baseBranch}...HEAD`,
+    ]);
   }
   return undefined;
 };
 
-const isChangedFileMode = (flags: CliFlags): boolean =>
-  flags.staged || flags.unstaged || flags.changed || Boolean(flags.diff);
+const isActiveChangedFileMode = (flags: CliFlags, isDiffMode: boolean): boolean =>
+  flags.staged || flags.unstaged || flags.changed || isDiffMode;
+
+const resolveProjectIncludePaths = (
+  rootDirectory: string,
+  projectDirectory: string,
+  includePaths: string[] | undefined,
+): string[] | undefined => {
+  if (includePaths === undefined) return undefined;
+  return includePaths
+    .map((includePath) => path.resolve(rootDirectory, includePath))
+    .filter((absolutePath) => {
+      const relativePath = path.relative(projectDirectory, absolutePath);
+      return (
+        relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+      );
+    })
+    .map((absolutePath) => path.relative(projectDirectory, absolutePath).split(path.sep).join("/"))
+    .filter((includePath) => includePath.length > 0);
+};
 
 const getCliOptionOverride = <Value>(
   command: Command,
@@ -284,21 +358,70 @@ const shouldFailForIssues = (
   return issues.some((issue) => issue.severity === "error");
 };
 
-const groupIssuesByRule = (issues: ReactDoctorIssue[]): Map<string, ReactDoctorIssue[]> => {
+const getWorstScoreValue = (results: ReactDoctorResult[]): number => {
+  const scores = results
+    .map((result) => result.score)
+    .filter((score): score is NonNullable<typeof score> => score !== null);
+  return scores.length > 0 ? Math.min(...scores.map((score) => score.value)) : PERFECT_SCORE;
+};
+
+// Mirror how the score collapses custom checks: dead-code, dependencies,
+// react-architecture, ... all emit many sub-ruleIds under one rule
+// definition for display clarity, so they should render as ONE row.
+const getRuleGroupKey = (issue: ReactDoctorIssue): string => getScoringRuleKey(issue);
+
+interface SubRuleCount {
+  title: string;
+  count: number;
+}
+
+interface RuleGroup {
+  groupKey: string;
+  issues: ReactDoctorIssue[];
+  subRuleCounts: SubRuleCount[];
+}
+
+const groupIssuesByRule = (issues: ReactDoctorIssue[]): RuleGroup[] => {
   const groups = new Map<string, ReactDoctorIssue[]>();
   for (const issue of issues) {
-    const ruleKey = issue.title;
-    const ruleIssues = groups.get(ruleKey) ?? [];
+    const groupKey = getRuleGroupKey(issue);
+    const ruleIssues = groups.get(groupKey) ?? [];
     ruleIssues.push(issue);
-    groups.set(ruleKey, ruleIssues);
+    groups.set(groupKey, ruleIssues);
   }
-  return groups;
+  return [...groups.entries()].map(([groupKey, groupIssues]) => {
+    const subRuleCountMap = new Map<string, number>();
+    for (const issue of groupIssues) {
+      subRuleCountMap.set(issue.title, (subRuleCountMap.get(issue.title) ?? 0) + 1);
+    }
+    const subRuleCounts = [...subRuleCountMap.entries()]
+      .map(([title, count]) => ({ title, count }))
+      .toSorted((first, second) => second.count - first.count);
+    return { groupKey, issues: groupIssues, subRuleCounts };
+  });
+};
+
+const getRuleGroupDisplayTitle = (
+  ruleGroup: RuleGroup,
+  checkNameByCheckId: ReadonlyMap<string, string>,
+): string => {
+  if (ruleGroup.subRuleCounts.length === 1) return ruleGroup.subRuleCounts[0].title;
+  const checkName = checkNameByCheckId.get(ruleGroup.groupKey);
+  return checkName ?? ruleGroup.groupKey;
+};
+
+const formatSubRuleBreakdown = (subRuleCounts: SubRuleCount[]): string => {
+  const visible = subRuleCounts.slice(0, MAX_INLINE_SUB_RULES_SHOWN);
+  const remaining = subRuleCounts.length - visible.length;
+  const inlineParts = visible.map(({ title, count }) => `${title} ×${count}`);
+  if (remaining > 0) inlineParts.push(`+${remaining} more`);
+  return inlineParts.join(", ");
 };
 
 interface CategoryGroup {
   category: string;
   issues: ReactDoctorIssue[];
-  ruleGroups: [string, ReactDoctorIssue[]][];
+  ruleGroups: RuleGroup[];
 }
 
 const buildCategoryGroups = (issues: ReactDoctorIssue[]): CategoryGroup[] => {
@@ -310,14 +433,13 @@ const buildCategoryGroups = (issues: ReactDoctorIssue[]): CategoryGroup[] => {
   }
   return [...categoryMap.entries()]
     .map(([category, categoryIssues]) => {
-      const ruleGroups = [...groupIssuesByRule(categoryIssues).entries()].toSorted(
-        ([, issuesA], [, issuesB]) => {
-          const severityDelta =
-            (SEVERITY_ORDER[issuesA[0].severity] ?? 2) - (SEVERITY_ORDER[issuesB[0].severity] ?? 2);
-          if (severityDelta !== 0) return severityDelta;
-          return issuesB.length - issuesA.length;
-        },
-      );
+      const ruleGroups = groupIssuesByRule(categoryIssues).toSorted((groupA, groupB) => {
+        const severityDelta =
+          (SEVERITY_ORDER[groupA.issues[0].severity] ?? 2) -
+          (SEVERITY_ORDER[groupB.issues[0].severity] ?? 2);
+        if (severityDelta !== 0) return severityDelta;
+        return groupB.issues.length - groupA.issues.length;
+      });
       return { category, issues: categoryIssues, ruleGroups };
     })
     .toSorted((groupA, groupB) => {
@@ -329,6 +451,19 @@ const buildCategoryGroups = (issues: ReactDoctorIssue[]): CategoryGroup[] => {
       }
       return groupA.category.localeCompare(groupB.category);
     });
+};
+
+const buildCheckNameLookup = (
+  result: ReactDoctorResult | ReactDoctorResult[],
+): ReadonlyMap<string, string> => {
+  const lookup = new Map<string, string>();
+  const results = Array.isArray(result) ? result : [result];
+  for (const innerResult of results) {
+    for (const check of innerResult.checks) {
+      lookup.set(check.id, check.name);
+    }
+  }
+  return lookup;
 };
 
 const encodeAnnotationProperty = (value: string): string =>
@@ -358,20 +493,8 @@ const printAnnotations = (issues: ReactDoctorIssue[], routeToStderr: boolean): v
   }
 };
 
-const formatFrameworkName = (framework: string): string => {
-  const FRAMEWORK_DISPLAY_NAMES: Record<string, string> = {
-    nextjs: "Next.js",
-    "react-native": "React Native",
-    "tanstack-start": "TanStack Start",
-    cra: "Create React App",
-    expo: "Expo",
-    gatsby: "Gatsby",
-    remix: "Remix",
-    vite: "Vite",
-    react: "React",
-  };
-  return FRAMEWORK_DISPLAY_NAMES[framework] ?? framework;
-};
+const formatFrameworkName = (framework: string): string =>
+  FRAMEWORK_DISPLAY_NAMES[framework] ?? framework;
 
 const printProjectDetection = (result: ReactDoctorResult): void => {
   const projectInfo = result.project;
@@ -412,17 +535,27 @@ const printProjectDetection = (result: ReactDoctorResult): void => {
   console.log("");
 };
 
-const printDefaultIssueGroup = (ruleTitle: string, ruleIssues: ReactDoctorIssue[]): void => {
-  const firstIssue = ruleIssues[0];
+const printDefaultIssueGroup = (
+  ruleGroup: RuleGroup,
+  checkNameByCheckId: ReadonlyMap<string, string>,
+): void => {
+  const firstIssue = ruleGroup.issues[0];
   const marker = firstIssue.severity === "error" ? highlighter.error("✗") : highlighter.warn("⚠");
   const siteCountBadge =
-    ruleIssues.length > 1 ? ` ${highlighter.gray(`×${ruleIssues.length}`)}` : "";
-  console.log(`  ${marker} ${ruleTitle}${siteCountBadge}`);
-  console.log(`    ${highlighter.gray(firstIssue.message)}`);
-  if (firstIssue.recommendation) {
-    console.log(`    ${highlighter.gray(firstIssue.recommendation)}`);
+    ruleGroup.issues.length > 1 ? ` ${highlighter.gray(`×${ruleGroup.issues.length}`)}` : "";
+  const displayTitle = getRuleGroupDisplayTitle(ruleGroup, checkNameByCheckId);
+  console.log(`  ${marker} ${displayTitle}${siteCountBadge}`);
+
+  if (ruleGroup.subRuleCounts.length > 1) {
+    console.log(`    ${highlighter.gray(formatSubRuleBreakdown(ruleGroup.subRuleCounts))}`);
+  } else {
+    console.log(`    ${highlighter.gray(firstIssue.message)}`);
+    if (firstIssue.recommendation) {
+      console.log(`    ${highlighter.gray(firstIssue.recommendation)}`);
+    }
   }
-  const firstLocation = ruleIssues.find((issue) => issue.location?.line);
+
+  const firstLocation = ruleGroup.issues.find((issue) => issue.location?.line);
   if (firstLocation?.location) {
     const locationPath = firstLocation.location.filePath ?? "";
     const line = firstLocation.location.line ? `:${firstLocation.location.line}` : "";
@@ -430,32 +563,46 @@ const printDefaultIssueGroup = (ruleTitle: string, ruleIssues: ReactDoctorIssue[
   }
 };
 
-const printVerboseIssueGroup = (ruleTitle: string, ruleIssues: ReactDoctorIssue[]): void => {
-  const firstIssue = ruleIssues[0];
+const printVerboseIssueGroup = (
+  ruleGroup: RuleGroup,
+  checkNameByCheckId: ReadonlyMap<string, string>,
+): void => {
+  const firstIssue = ruleGroup.issues[0];
   const marker = firstIssue.severity === "error" ? highlighter.error("✗") : highlighter.warn("⚠");
   const siteCountBadge =
-    ruleIssues.length > 1 ? ` ${highlighter.gray(`×${ruleIssues.length}`)}` : "";
-  console.log(`  ${marker} ${ruleTitle}${siteCountBadge}`);
-  console.log(`      ${highlighter.gray(firstIssue.message)}`);
-  if (firstIssue.recommendation) {
-    console.log(`      ${highlighter.gray(`→ ${firstIssue.recommendation}`)}`);
+    ruleGroup.issues.length > 1 ? ` ${highlighter.gray(`×${ruleGroup.issues.length}`)}` : "";
+  const displayTitle = getRuleGroupDisplayTitle(ruleGroup, checkNameByCheckId);
+  console.log(`  ${marker} ${displayTitle}${siteCountBadge}`);
+
+  if (ruleGroup.subRuleCounts.length > 1) {
+    console.log(`      ${highlighter.gray(formatSubRuleBreakdown(ruleGroup.subRuleCounts))}`);
+  } else {
+    console.log(`      ${highlighter.gray(firstIssue.message)}`);
+    if (firstIssue.recommendation) {
+      console.log(`      ${highlighter.gray(`→ ${firstIssue.recommendation}`)}`);
+    }
   }
-  for (const issue of ruleIssues) {
+
+  for (const issue of ruleGroup.issues) {
     if (issue.location?.filePath && issue.location?.line) {
       console.log(`      ${highlighter.gray(`${issue.location.filePath}:${issue.location.line}`)}`);
     }
   }
 };
 
-const printIssueSections = (issues: ReactDoctorIssue[], isVerbose: boolean): void => {
+const printIssueSections = (
+  issues: ReactDoctorIssue[],
+  isVerbose: boolean,
+  checkNameByCheckId: ReadonlyMap<string, string>,
+): void => {
   const categoryGroups = buildCategoryGroups(issues);
 
   if (isVerbose) {
     for (const categoryGroup of categoryGroups) {
       const issueCount = `${categoryGroup.issues.length} ${categoryGroup.issues.length === 1 ? "issue" : "issues"}`;
       console.log(`${highlighter.bold(categoryGroup.category)} ${highlighter.dim(issueCount)}`);
-      for (const [ruleTitle, ruleIssues] of categoryGroup.ruleGroups) {
-        printVerboseIssueGroup(ruleTitle, ruleIssues);
+      for (const ruleGroup of categoryGroup.ruleGroups) {
+        printVerboseIssueGroup(ruleGroup, checkNameByCheckId);
       }
       console.log("");
     }
@@ -464,7 +611,7 @@ const printIssueSections = (issues: ReactDoctorIssue[], isVerbose: boolean): voi
 
   const visibleCategoryGroups = categoryGroups.slice(0, MAX_CATEGORY_GROUPS_SHOWN_NON_VERBOSE);
   const hiddenCategoryGroups = categoryGroups.slice(MAX_CATEGORY_GROUPS_SHOWN_NON_VERBOSE);
-  const hiddenRuleGroups: [string, ReactDoctorIssue[]][] = [];
+  const hiddenRuleGroups: RuleGroup[] = [];
 
   for (const categoryGroup of visibleCategoryGroups) {
     const visibleRuleGroups = categoryGroup.ruleGroups.slice(
@@ -476,8 +623,8 @@ const printIssueSections = (issues: ReactDoctorIssue[], isVerbose: boolean): voi
     );
     const issueCount = `${categoryGroup.issues.length} ${categoryGroup.issues.length === 1 ? "issue" : "issues"}`;
     console.log(`${highlighter.bold(categoryGroup.category)} ${highlighter.dim(issueCount)}`);
-    for (const [ruleTitle, ruleIssues] of visibleRuleGroups) {
-      printDefaultIssueGroup(ruleTitle, ruleIssues);
+    for (const ruleGroup of visibleRuleGroups) {
+      printDefaultIssueGroup(ruleGroup, checkNameByCheckId);
     }
     console.log("");
     hiddenRuleGroups.push(...remainingRuleGroups);
@@ -489,7 +636,7 @@ const printIssueSections = (issues: ReactDoctorIssue[], isVerbose: boolean): voi
 
   if (hiddenRuleGroups.length > 0) {
     const hiddenIssueCount = hiddenRuleGroups.reduce(
-      (total, [, ruleIssues]) => total + ruleIssues.length,
+      (total, ruleGroup) => total + ruleGroup.issues.length,
       0,
     );
     const hiddenRuleCount = hiddenRuleGroups.length;
@@ -561,37 +708,121 @@ const writeDiagnosticsDirectory = (issues: ReactDoctorIssue[]): string | null =>
   }
 };
 
-const printVerboseScoreBreakdown = (issues: ReactDoctorIssue[], score: number): void => {
-  const ruleMap = new Map<string, { severity: string; count: number }>();
+interface ScoreDrain {
+  ruleKey: string;
+  category: string;
+  severity: "error" | "warning";
+  count: number;
+  penalty: number;
+  displayTitle: string;
+}
+
+const collectScoreDrains = (
+  issues: ReactDoctorIssue[],
+  checkNameByCheckId: ReadonlyMap<string, string>,
+): ScoreDrain[] => {
+  const aggregates = new Map<
+    string,
+    {
+      category: string;
+      severity: "error" | "warning";
+      count: number;
+      displayTitle: string;
+    }
+  >();
   for (const issue of issues) {
-    const ruleKey = issue.title;
-    const existing = ruleMap.get(ruleKey);
+    if (issue.severity === "info") continue;
+    const scoringRuleKey = getScoringRuleKey(issue);
+    const ruleKey = `${getScoringPluginKey(issue)}/${scoringRuleKey}`;
+    const severity: "error" | "warning" = issue.severity === "error" ? "error" : "warning";
+    const existing = aggregates.get(ruleKey);
     if (existing) {
       existing.count += 1;
-      if (issue.severity === "error") existing.severity = "error";
-    } else {
-      ruleMap.set(ruleKey, { severity: issue.severity, count: 1 });
+      if (severity === "error") existing.severity = "error";
+      continue;
+    }
+    // For collapsed custom checks (scoring key = checkId) prefer the
+    // human-readable check name; for per-rule scoring (oxlint) prefer the
+    // issue's own title so each rule is independently identifiable.
+    const isCollapsedCheck = issue.source?.checkId === scoringRuleKey;
+    const displayTitle = isCollapsedCheck
+      ? (checkNameByCheckId.get(scoringRuleKey) ?? issue.title ?? ruleKey)
+      : (issue.title ?? scoringRuleKey);
+    aggregates.set(ruleKey, {
+      category: issue.category,
+      severity,
+      count: 1,
+      displayTitle,
+    });
+  }
+  return [...aggregates.entries()]
+    .map(([ruleKey, aggregate]) => ({
+      ruleKey,
+      category: aggregate.category,
+      severity: aggregate.severity,
+      count: aggregate.count,
+      penalty: rulePenalty(aggregate.severity, aggregate.count),
+      displayTitle: aggregate.displayTitle,
+    }))
+    .toSorted((first, second) => second.penalty - first.penalty);
+};
+
+const printVerboseScoreBreakdown = (
+  issues: ReactDoctorIssue[],
+  score: number,
+  checkNameByCheckId: ReadonlyMap<string, string>,
+): void => {
+  const breakdown = calculateScoreBreakdown(collectScoreDiagnostics(issues));
+  const drains = collectScoreDrains(issues, checkNameByCheckId);
+
+  console.log("");
+  console.log(highlighter.bold("  Score breakdown"));
+  console.log(
+    highlighter.dim(
+      `    Final: ${score} / ${PERFECT_SCORE}  |  raw penalty ${breakdown.totalRawPenalty.toFixed(
+        1,
+      )}, capped to ${breakdown.totalCappedPenalty.toFixed(1)} (per-category cap ${PER_CATEGORY_PENALTY_CAP})`,
+    ),
+  );
+
+  if (breakdown.perCategory.length > 0) {
+    console.log("");
+    console.log(highlighter.bold("  By category"));
+    for (const categoryBreakdown of breakdown.perCategory) {
+      const cappedNote =
+        categoryBreakdown.rawPenalty > categoryBreakdown.cappedPenalty
+          ? highlighter.warn(` (capped from ${categoryBreakdown.rawPenalty.toFixed(1)})`)
+          : "";
+      console.log(
+        `    ${highlighter.gray(
+          `-${categoryBreakdown.cappedPenalty.toFixed(1).padStart(5, " ")}`,
+        )}  ${categoryBreakdown.category}  ${highlighter.dim(
+          `(${categoryBreakdown.ruleKeys} rule${categoryBreakdown.ruleKeys === 1 ? "" : "s"})`,
+        )}${cappedNote}`,
+      );
     }
   }
 
-  const errorRules = [...ruleMap.entries()]
-    .filter(([, info]) => info.severity === "error")
-    .map(([key]) => key);
-  const warningRules = [...ruleMap.entries()]
-    .filter(([, info]) => info.severity !== "error")
-    .map(([key]) => key);
-
-  console.log("");
-  console.log(
-    highlighter.dim(
-      `  Score: ${score} / 100 (${errorRules.length} error rules, ${warningRules.length} warning rules)`,
-    ),
-  );
-  if (errorRules.length > 0) {
-    console.log(highlighter.dim(`  Error rules: ${errorRules.join(", ")}`));
-  }
-  if (warningRules.length > 0) {
-    console.log(highlighter.dim(`  Warning rules: ${warningRules.join(", ")}`));
+  if (drains.length > 0) {
+    console.log("");
+    console.log(highlighter.bold("  Top score drains"));
+    for (const drain of drains.slice(0, MAX_SCORE_DRAINS_SHOWN)) {
+      const marker = drain.severity === "error" ? highlighter.error("✗") : highlighter.warn("⚠");
+      console.log(
+        `    ${highlighter.gray(`-${drain.penalty.toFixed(1).padStart(4, " ")}`)}  ${marker} ${
+          drain.displayTitle
+        }  ${highlighter.dim(`(${drain.count} issue${drain.count === 1 ? "" : "s"})`)}`,
+      );
+    }
+    if (drains.length > MAX_SCORE_DRAINS_SHOWN) {
+      console.log(
+        highlighter.dim(
+          `    … and ${drains.length - MAX_SCORE_DRAINS_SHOWN} more rule${
+            drains.length - MAX_SCORE_DRAINS_SHOWN === 1 ? "" : "s"
+          } contributing penalty`,
+        ),
+      );
+    }
   }
 };
 
@@ -603,7 +834,7 @@ const printProjectHeader = (result: ReactDoctorResult): void => {
 };
 
 const printResultScoreBlock = (result: ReactDoctorResult): void => {
-  const scoreValue = result.score?.value ?? 100;
+  const scoreValue = result.score?.value ?? PERFECT_SCORE;
   const scoreLabel = result.score?.label ?? "Great";
   printScoreHeader(scoreValue, scoreLabel);
 };
@@ -646,7 +877,7 @@ const printInspectionResult = (
     return;
   }
 
-  printIssueSections(result.issues, flags.verbose);
+  printIssueSections(result.issues, flags.verbose, buildCheckNameLookup(result));
 
   printResultScoreBlock(result);
   printCountsSummaryLine(
@@ -671,7 +902,7 @@ const printInspectionResult = (
   }
 
   if (flags.verbose && result.score && result.issues.length > 0) {
-    printVerboseScoreBreakdown(result.issues, result.score.value);
+    printVerboseScoreBreakdown(result.issues, result.score.value, buildCheckNameLookup(result));
   }
 
   printSkippedChecksWarning(result);
@@ -744,7 +975,7 @@ const printInspectionResults = (
       console.log(`${highlighter.success("✔")} No React Doctor issues found.`);
       console.log("");
     } else {
-      printIssueSections(result.issues, flags.verbose);
+      printIssueSections(result.issues, flags.verbose, buildCheckNameLookup(result));
     }
     printResultScoreBlock(result);
     if (result.issues.length > 0) {
@@ -756,7 +987,7 @@ const printInspectionResults = (
       console.log("");
     }
     if (flags.verbose && result.score && result.issues.length > 0) {
-      printVerboseScoreBreakdown(result.issues, result.score.value);
+      printVerboseScoreBreakdown(result.issues, result.score.value, buildCheckNameLookup(result));
     }
     printSkippedChecksWarning(result);
   }
@@ -789,6 +1020,25 @@ let isJsonModeActive = false;
 let isCompactJsonOutput = false;
 let resolvedDirectoryForCancel: string | null = null;
 let cancelStartTime = 0;
+const pendingCleanups = new Set<() => void>();
+
+const registerPendingCleanup = (cleanup: () => void): (() => void) => {
+  pendingCleanups.add(cleanup);
+  return () => {
+    pendingCleanups.delete(cleanup);
+  };
+};
+
+const runPendingCleanups = (): void => {
+  for (const cleanup of pendingCleanups) {
+    try {
+      cleanup();
+    } catch {
+      // Best-effort cleanup during shutdown.
+    }
+  }
+  pendingCleanups.clear();
+};
 
 const writeJsonErrorReport = (error: unknown, directory: string, elapsed: number): void => {
   const errorMessage = error instanceof Error ? error.message || error.name : String(error);
@@ -816,18 +1066,19 @@ const writeJsonErrorReport = (error: unknown, directory: string, elapsed: number
 };
 
 const exitGracefully = () => {
+  runPendingCleanups();
   if (isJsonModeActive) {
     writeJsonErrorReport(
       new Error("Scan cancelled by user (SIGINT/SIGTERM)"),
       resolvedDirectoryForCancel ?? process.cwd(),
       performance.now() - cancelStartTime,
     );
-    process.exit(130);
+    process.exit(SIGINT_EXIT_CODE);
   }
   console.log("");
   console.log("Cancelled.");
   console.log("");
-  process.exit(130);
+  process.exit(SIGINT_EXIT_CODE);
 };
 
 process.on("SIGINT", exitGracefully);
@@ -1015,21 +1266,26 @@ const runExplain = async (
 // --- Install subcommand ---
 
 const runInstall = async (installOptions: { yes?: boolean; dryRun?: boolean }): Promise<void> => {
-  let agentInstall: typeof import("agent-install") | null = null;
+  let agentInstall: typeof import("agent-install");
   try {
     agentInstall = await import("agent-install");
-  } catch {
+  } catch (error) {
+    const causeMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
     console.error(
       highlighter.error(
-        'The "agent-install" package is required for the install command. Run: npm install -g agent-install',
+        `Failed to load the bundled "agent-install" module${causeMessage}. Please open an issue at ${CANONICAL_GITHUB_URL}/issues with this output.`,
       ),
     );
     process.exitCode = EXIT_FAILURE_CODE;
     return;
   }
 
-  const { installSkillsFromSource, SKILL_MANIFEST_FILE, getSkillAgentTypes } = agentInstall;
-  const { detectInstalledSkillAgents } = agentInstall;
+  const {
+    installSkillsFromSource,
+    SKILL_MANIFEST_FILE,
+    getSkillAgentTypes,
+    detectInstalledSkillAgents,
+  } = agentInstall;
   const { existsSync } = await import("node:fs");
   const { fileURLToPath } = await import("node:url");
 
@@ -1094,7 +1350,7 @@ const runInstall = async (installOptions: { yes?: boolean; dryRun?: boolean }): 
     source: sourceDir,
     agents: selectedAgents,
     cwd: process.cwd(),
-    mode: "copy" as const,
+    mode: "copy",
   });
 
   if (installResult.failed?.length > 0) {
@@ -1167,10 +1423,12 @@ const program = new Command()
 
       const loadedConfig = await loadReactDoctorConfig(rootDirectory);
       const config: ReactDoctorConfig = loadedConfig?.config ?? {};
+      const scanRootDirectory = await resolveConfigRootDirectory(loadedConfig, rootDirectory);
+      resolvedDirectoryForCancel = scanRootDirectory;
 
       const explainArgument = flags.explain ?? flags.why;
       if (explainArgument !== undefined) {
-        await runExplain(explainArgument, rootDirectory, config, flags.project);
+        await runExplain(explainArgument, scanRootDirectory, config, flags.project);
         return;
       }
 
@@ -1184,17 +1442,18 @@ const program = new Command()
         console.log("");
       }
 
+      const configuredDiff = flags.full
+        ? false
+        : command.getOptionValueSource("diff") === "cli"
+          ? flags.diff
+          : (config.diff ?? flags.diff);
       const effectiveFlags: CliFlags = {
         ...flags,
         verbose:
           command.getOptionValueSource("verbose") === "cli"
             ? Boolean(flags.verbose)
             : Boolean(config.verbose ?? flags.verbose),
-        diff: flags.full
-          ? false
-          : command.getOptionValueSource("diff") === "cli"
-            ? flags.diff
-            : (config.diff ?? flags.diff),
+        diff: coerceDiffValue(configuredDiff),
       };
 
       const failOn =
@@ -1213,7 +1472,7 @@ const program = new Command()
 
       // --- Staged mode with materialization ---
       if (effectiveFlags.staged) {
-        const stagedFiles = getStagedSourceFiles(rootDirectory);
+        const stagedFiles = getStagedSourceFiles(scanRootDirectory);
         if (stagedFiles.length === 0) {
           if (isJsonMode) {
             const emptyReport = {
@@ -1249,23 +1508,16 @@ const program = new Command()
 
         let tempDirectory: string | null = null;
         let cleanupSnapshot: (() => void) | null = null;
+        let unregisterCleanup: (() => void) | null = null;
         try {
           tempDirectory = mkdtempSync(path.join(tmpdir(), "react-doctor-staged-"));
-          const snapshot = materializeStagedFiles(rootDirectory, stagedFiles, tempDirectory);
+          const snapshot = materializeStagedFiles(scanRootDirectory, stagedFiles, tempDirectory);
           cleanupSnapshot = snapshot.cleanup;
+          unregisterCleanup = registerPendingCleanup(snapshot.cleanup);
 
-          const result = await createReactDoctor({
-            rootDirectory: snapshot.tempDirectory,
-            includePaths: snapshot.stagedFiles,
-          }).inspect({
+          const stagedInspectOptions = {
             lint: resolveBooleanInspectOption(command, "lint", flags.lint, config.lint, true),
-            deadCode: resolveBooleanInspectOption(
-              command,
-              "deadCode",
-              flags.deadCode,
-              config.deadCode,
-              true,
-            ),
+            deadCode: false,
             customRulesOnly: resolveBooleanInspectOption(
               command,
               "customRulesOnly",
@@ -1281,39 +1533,70 @@ const program = new Command()
               config.respectInlineDisables,
               true,
             ),
+            silentLogs: isQuiet,
             config,
-          });
+          };
+
+          const snapshotProjects = await discoverProjects(
+            snapshot.tempDirectory,
+            Boolean(config.rootDir),
+            false,
+          );
+          const stagedProjectDirectories = snapshotProjects
+            .map((project) => project.directory)
+            .filter(
+              (projectDirectory) =>
+                resolveProjectIncludePaths(
+                  snapshot.tempDirectory,
+                  projectDirectory,
+                  snapshot.stagedFiles,
+                )?.length !== 0,
+            );
+          const projectDirectories =
+            stagedProjectDirectories.length > 0
+              ? stagedProjectDirectories
+              : [snapshot.tempDirectory];
+
+          const results = await Promise.all(
+            projectDirectories.map(async (projectDirectory) => {
+              const projectIncludePaths = resolveProjectIncludePaths(
+                snapshot.tempDirectory,
+                projectDirectory,
+                snapshot.stagedFiles,
+              );
+              const result = await createReactDoctor({
+                rootDirectory: projectDirectory,
+                includePaths: projectIncludePaths,
+              }).inspect(stagedInspectOptions);
+              const projectRelativePath = path.relative(snapshot.tempDirectory, projectDirectory);
+              const originalProjectRoot = path.resolve(scanRootDirectory, projectRelativePath);
+              return {
+                ...result,
+                project: { ...result.project, rootDirectory: originalProjectRoot },
+              };
+            }),
+          );
 
           stagedSpinner?.stop();
 
-          const remappedResult: ReactDoctorResult = {
-            ...result,
-            project: { ...result.project, rootDirectory },
-            issues: result.issues.map((issue) => ({
-              ...issue,
-              location: issue.location
-                ? {
-                    ...issue.location,
-                    filePath: issue.location.filePath?.replaceAll(
-                      snapshot.tempDirectory,
-                      rootDirectory,
-                    ),
-                  }
-                : issue.location,
-            })),
-          };
+          const allIssues = results.flatMap((result) => result.issues);
 
-          printInspectionResults([remappedResult], effectiveFlags, isOffline);
-
-          if (flags.annotations) {
-            printAnnotations(remappedResult.issues, isJsonMode);
+          if (flags.score) {
+            console.log(String(getWorstScoreValue(results)));
+          } else {
+            printInspectionResults(results, effectiveFlags, isOffline);
           }
 
-          if (shouldFailForIssues(remappedResult.issues, failOn)) {
+          if (flags.annotations) {
+            printAnnotations(allIssues, isJsonMode);
+          }
+
+          if (shouldFailForIssues(allIssues, failOn)) {
             process.exitCode = EXIT_FAILURE_CODE;
           }
         } finally {
           stagedSpinner?.stop();
+          unregisterCleanup?.();
           cleanupSnapshot?.();
         }
         return;
@@ -1324,7 +1607,7 @@ const program = new Command()
       const explicitBaseBranch = typeof effectiveDiff === "string" ? effectiveDiff : undefined;
       const wantsDiffMode = effectiveDiff !== undefined && effectiveDiff !== false;
       const shouldDetectDiff = wantsDiffMode || (!shouldSkipPrompts && !isQuiet);
-      const diffInfo = shouldDetectDiff ? getDiffInfo(rootDirectory, explicitBaseBranch) : null;
+      const diffInfo = shouldDetectDiff ? getDiffInfo(scanRootDirectory, explicitBaseBranch) : null;
       const isDiffMode = await resolveDiffMode(diffInfo, effectiveDiff, shouldSkipPrompts, isQuiet);
 
       let includePaths: string[] | undefined;
@@ -1341,20 +1624,20 @@ const program = new Command()
           console.log("");
         }
       } else if (!effectiveFlags.staged) {
-        includePaths = resolveIncludePaths(rootDirectory, effectiveFlags);
+        includePaths = resolveIncludePaths(scanRootDirectory, effectiveFlags);
       }
 
       const shouldSkipSourceChecks =
-        isChangedFileMode(effectiveFlags) && includePaths?.length === 0;
+        isActiveChangedFileMode(effectiveFlags, isDiffMode) && includePaths?.length === 0;
 
       const discoveredProjects = await discoverProjects(
-        rootDirectory,
+        scanRootDirectory,
         Boolean(config.rootDir),
         shouldSkipSourceChecks,
       );
       const projectDirectories = await selectProjects(
         discoveredProjects,
-        rootDirectory,
+        scanRootDirectory,
         flags.project,
         shouldSkipPrompts,
         isJsonMode,
@@ -1364,9 +1647,16 @@ const program = new Command()
         lint: shouldSkipSourceChecks
           ? false
           : resolveBooleanInspectOption(command, "lint", flags.lint, config.lint, true),
-        deadCode: shouldSkipSourceChecks
-          ? false
-          : resolveBooleanInspectOption(command, "deadCode", flags.deadCode, config.deadCode, true),
+        deadCode:
+          shouldSkipSourceChecks || isActiveChangedFileMode(effectiveFlags, isDiffMode)
+            ? false
+            : resolveBooleanInspectOption(
+                command,
+                "deadCode",
+                flags.deadCode,
+                config.deadCode,
+                true,
+              ),
         customRulesOnly: resolveBooleanInspectOption(
           command,
           "customRulesOnly",
@@ -1382,7 +1672,9 @@ const program = new Command()
           config.respectInlineDisables,
           true,
         ),
+        silentLogs: isQuiet,
         config,
+        loadedConfig,
       };
 
       const selectedProjectNames = projectDirectories.map((projectDirectory) => {
@@ -1400,12 +1692,22 @@ const program = new Command()
       let results: ReactDoctorResult[];
       try {
         results = await Promise.all(
-          projectDirectories.map((projectDirectory) =>
-            createReactDoctor({
+          projectDirectories.map((projectDirectory) => {
+            const projectIncludePaths = shouldSkipSourceChecks
+              ? undefined
+              : resolveProjectIncludePaths(scanRootDirectory, projectDirectory, includePaths);
+            const shouldSkipProjectSourceChecks =
+              isActiveChangedFileMode(effectiveFlags, isDiffMode) &&
+              projectIncludePaths?.length === 0;
+            return createReactDoctor({
               rootDirectory: projectDirectory,
-              includePaths: shouldSkipSourceChecks ? undefined : includePaths,
-            }).inspect(inspectOptions),
-          ),
+              includePaths: shouldSkipProjectSourceChecks ? undefined : projectIncludePaths,
+            }).inspect({
+              ...inspectOptions,
+              lint: shouldSkipProjectSourceChecks ? false : inspectOptions.lint,
+              deadCode: shouldSkipProjectSourceChecks ? false : inspectOptions.deadCode,
+            });
+          }),
         );
       } finally {
         scanSpinner?.stop();
@@ -1418,13 +1720,7 @@ const program = new Command()
       }
 
       if (flags.score) {
-        const scores = results
-          .map((result) => result.score)
-          .filter((score): score is NonNullable<typeof score> => score !== null);
-        const worstScore =
-          scores.length > 0 ? Math.min(...scores.map((score) => score.value)) : 100;
-        const worstLabel = scores.find((score) => score.value === worstScore)?.label ?? "Great";
-        console.log(`${worstScore} / 100 ${worstLabel}`);
+        console.log(String(getWorstScoreValue(results)));
       } else {
         printInspectionResults(results, effectiveFlags, isOffline);
       }

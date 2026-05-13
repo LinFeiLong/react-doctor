@@ -95,6 +95,7 @@ const collectClientBoundaryViolations = (graph: ModuleGraph): BoundaryViolationF
       if (!item || visited.has(item.currentNode.file.id)) continue;
       visited.add(item.currentNode.file.id);
       for (const resolvedImport of item.currentNode.imports) {
+        if (resolvedImport.importRecord.isTypeOnly) continue;
         const firstImport = item.firstImport ?? resolvedImport;
         if (isServerOnlyTarget(graph, resolvedImport)) {
           findings.push({

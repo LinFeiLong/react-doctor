@@ -14,6 +14,7 @@ import {
 import { getSourcePositionFromLineStarts } from "../path-utils.js";
 import type { EsTreeNode } from "../../../lint/utils/es-tree-node.js";
 import { isAstNode } from "../../../lint/utils/is-ast-node.js";
+import { isNodeOfType } from "../../../lint/utils/is-node-of-type.js";
 import { walkAst } from "../../../lint/utils/walk-ast.js";
 import type {
   CodebaseModule,
@@ -28,6 +29,7 @@ import type {
   NamespaceMemberReference,
   NamespaceObjectAlias,
   ProjectFile,
+  ShadowRange,
 } from "../types.js";
 
 interface CommentRecord {
@@ -38,11 +40,6 @@ interface CommentRecord {
 
 interface CommonJsStarReExportRecord {
   source: string;
-  start: number;
-  end: number;
-}
-
-interface ShadowRange {
   start: number;
   end: number;
 }
@@ -140,6 +137,16 @@ const addShadowRange = (
   runtimeEntryLocals.shadowRangesByName.set(name, ranges);
 };
 
+const addUsedIdentifierRange = (
+  rangesByName: Map<string, number[]>,
+  name: string,
+  position: number,
+): void => {
+  const ranges = rangesByName.get(name) ?? [];
+  ranges.push(position);
+  rangesByName.set(name, ranges);
+};
+
 const isRuntimeLocalShadowed = (
   runtimeEntryLocals: RuntimeEntryLocals,
   name: string,
@@ -222,10 +229,11 @@ const toMemberExpressionPath = (
   if (node.type !== "MemberExpression" || !isAstNode(node.object) || !isAstNode(node.property)) {
     return null;
   }
-  const propertyName = toPropertyName(node.property);
-  if (!propertyName) return null;
   const parentPath = toMemberExpressionPath(node.object);
   if (!parentPath) return null;
+  const propertyName =
+    node.computed === true ? getStringLiteralValue(node.property) : toPropertyName(node.property);
+  if (!propertyName) return null;
   return {
     namespace: parentPath.namespace,
     memberPath: [...parentPath.memberPath, propertyName],
@@ -362,14 +370,16 @@ const getImportUseExpression = (importCall: EsTreeNode): EsTreeNode => {
 const toDynamicImportThenBinding = (
   importedName: string,
   localName: string,
-  node: EsTreeNode,
+  declarationNode: EsTreeNode,
+  referenceNode: EsTreeNode,
 ): ImportedBinding => ({
   importedName,
   localName,
   isTypeOnly: false,
   isNamespace: false,
-  start: getNodeStart(node),
-  end: getNodeEnd(node),
+  start: getNodeStart(declarationNode),
+  end: getNodeEnd(declarationNode),
+  referenceStart: getNodeStart(referenceNode),
 });
 
 const collectDynamicImportThenBindings = (importUseExpression: EsTreeNode): ImportedBinding[] => {
@@ -421,7 +431,7 @@ const collectDynamicImportThenBindings = (importUseExpression: EsTreeNode): Impo
     if (importedName && !importedNamesByName.has(importedName)) {
       importedNamesByName.set(
         importedName,
-        toDynamicImportThenBinding(importedName, moduleParameter.name, node),
+        toDynamicImportThenBinding(importedName, moduleParameter.name, moduleParameter, node),
       );
     }
   });
@@ -502,6 +512,24 @@ const collectDynamicImportBindings = (importCall: EsTreeNode): ImportedBinding[]
   ) {
     const importedName = toPropertyName(parent.property);
     if (!importedName) return [];
+    const declarator = parent.parent;
+    if (
+      isNodeOfType(declarator, "VariableDeclarator") &&
+      declarator.init === parent &&
+      isIdentifierWithName(declarator.id)
+    ) {
+      return [
+        {
+          importedName,
+          localName: declarator.id.name,
+          isTypeOnly: false,
+          isNamespace: false,
+          start: getNodeStart(declarator.id),
+          end: getNodeEnd(declarator.id),
+          referenceStart: getNodeStart(parent.property),
+        },
+      ];
+    }
     return [
       {
         importedName,
@@ -861,30 +889,75 @@ const toReExportImportRecord = (
   );
 };
 
+const isFunctionParameterDeclaration = (node: EsTreeNode): boolean => {
+  let currentNode = node;
+  let parent = node.parent;
+  while (parent) {
+    if (
+      (isNodeOfType(parent, "FunctionDeclaration") ||
+        isNodeOfType(parent, "FunctionExpression") ||
+        isNodeOfType(parent, "ArrowFunctionExpression")) &&
+      Array.isArray(parent.params) &&
+      parent.params.includes(currentNode)
+    ) {
+      return true;
+    }
+    if (
+      !isNodeOfType(parent, "ObjectPattern") &&
+      !isNodeOfType(parent, "ArrayPattern") &&
+      !isNodeOfType(parent, "AssignmentPattern") &&
+      !isNodeOfType(parent, "RestElement") &&
+      !isNodeOfType(parent, "Property")
+    ) {
+      return false;
+    }
+    currentNode = parent;
+    parent = parent.parent;
+  }
+  return false;
+};
+
 const isIdentifierDeclaration = (node: EsTreeNode): boolean => {
   const parent = node.parent;
   if (!parent) return false;
-  if (parent.type === "VariableDeclarator" && parent.id === node) return true;
+  if (isNodeOfType(parent, "VariableDeclarator") && parent.id === node) return true;
   if (
-    (parent.type === "FunctionDeclaration" || parent.type === "ClassDeclaration") &&
+    (isNodeOfType(parent, "FunctionDeclaration") || isNodeOfType(parent, "ClassDeclaration")) &&
+    parent.id === node
+  )
+    return true;
+  if (isFunctionParameterDeclaration(node)) return true;
+  if (
+    (isNodeOfType(parent, "TSTypeAliasDeclaration") ||
+      isNodeOfType(parent, "TSInterfaceDeclaration")) &&
     parent.id === node
   )
     return true;
   if (
-    (parent.type === "TSTypeAliasDeclaration" || parent.type === "TSInterfaceDeclaration") &&
-    parent.id === node
-  )
+    isNodeOfType(parent, "MemberExpression") &&
+    parent.property === node &&
+    parent.computed !== true
+  ) {
     return true;
-  if (parent.type === "MemberExpression" && parent.property === node && parent.computed !== true) {
+  }
+  if (isNodeOfType(parent, "Property") && parent.key === node && parent.computed !== true) {
+    if (isNodeOfType(parent.parent, "ObjectPattern")) return true;
+    return parent.shorthand !== true;
+  }
+  if (
+    isNodeOfType(parent, "TSPropertySignature") &&
+    parent.key === node &&
+    parent.computed !== true
+  ) {
     return true;
   }
   if (
-    parent.type === "ImportSpecifier" ||
-    parent.type === "ImportDefaultSpecifier" ||
-    parent.type === "ImportNamespaceSpecifier"
+    isNodeOfType(parent, "ImportSpecifier") ||
+    isNodeOfType(parent, "ImportDefaultSpecifier") ||
+    isNodeOfType(parent, "ImportNamespaceSpecifier")
   )
     return true;
-  if (parent.type === "ExportSpecifier") return true;
+  if (isNodeOfType(parent, "ExportSpecifier")) return true;
   return false;
 };
 
@@ -927,7 +1000,14 @@ const collectNamespaceLocalAliases = (node: EsTreeNode): NamespaceLocalAlias[] =
     return [];
   }
   if (isIdentifierWithName(node.init)) {
-    return [{ aliasName: node.id.name, namespaceLocalName: node.init.name }];
+    return [
+      {
+        aliasName: node.id.name,
+        namespaceLocalName: node.init.name,
+        start: getNodeStart(node.id),
+        end: getNodeEnd(node.id),
+      },
+    ];
   }
   if (
     node.init.type === "ConditionalExpression" &&
@@ -935,8 +1015,18 @@ const collectNamespaceLocalAliases = (node: EsTreeNode): NamespaceLocalAlias[] =
     isIdentifierWithName(node.init.alternate)
   ) {
     return [
-      { aliasName: node.id.name, namespaceLocalName: node.init.consequent.name },
-      { aliasName: node.id.name, namespaceLocalName: node.init.alternate.name },
+      {
+        aliasName: node.id.name,
+        namespaceLocalName: node.init.consequent.name,
+        start: getNodeStart(node.id),
+        end: getNodeEnd(node.id),
+      },
+      {
+        aliasName: node.id.name,
+        namespaceLocalName: node.init.alternate.name,
+        start: getNodeStart(node.id),
+        end: getNodeEnd(node.id),
+      },
     ];
   }
   if (node.init.type === "ObjectExpression" && Array.isArray(node.init.properties)) {
@@ -948,7 +1038,14 @@ const collectNamespaceLocalAliases = (node: EsTreeNode): NamespaceLocalAlias[] =
       ) {
         return [];
       }
-      return [{ aliasName: node.id.name, namespaceLocalName: property.argument.name }];
+      return [
+        {
+          aliasName: node.id.name,
+          namespaceLocalName: property.argument.name,
+          start: getNodeStart(node.id),
+          end: getNodeEnd(node.id),
+        },
+      ];
     });
   }
   return [];
@@ -1000,6 +1097,8 @@ const collectDestructuredNamespaceReferences = (node: EsTreeNode): NamespaceMemb
         namespace: initPath.namespace,
         memberName: propertyName,
         memberPath: [...initPath.memberPath, propertyName],
+        start: getNodeStart(property),
+        end: getNodeEnd(property),
       },
     ];
   });
@@ -1168,7 +1267,7 @@ const addRuntimeShadowRanges = (node: EsTreeNode, runtimeEntryLocals: RuntimeEnt
       node.type === "ArrowFunctionExpression") &&
     isAstNode(node.body)
   ) {
-    const range = { start: getNodeStart(node.body), end: getNodeEnd(node.body) };
+    const range = { start: getNodeStart(node), end: getNodeEnd(node.body) };
     for (const bindingName of (node.params ?? []).flatMap(collectBindingIdentifierNames)) {
       addShadowRange(runtimeEntryLocals, bindingName, range);
     }
@@ -1191,7 +1290,7 @@ const addRuntimeShadowRanges = (node: EsTreeNode, runtimeEntryLocals: RuntimeEnt
     return;
   }
   if (node.type === "CatchClause" && isAstNode(node.param) && isAstNode(node.body)) {
-    const range = { start: getNodeStart(node.body), end: getNodeEnd(node.body) };
+    const range = { start: getNodeStart(node), end: getNodeEnd(node.body) };
     for (const bindingName of collectBindingIdentifierNames(node.param)) {
       addShadowRange(runtimeEntryLocals, bindingName, range);
     }
@@ -1529,6 +1628,8 @@ const toMemberObjectReference = (node: unknown): MemberObjectReference | null =>
     ? {
         namespace: memberExpressionPath.namespace,
         memberPath: memberExpressionPath.memberPath,
+        start: getNodeStart(node),
+        end: getNodeEnd(node),
       }
     : null;
 };
@@ -1629,6 +1730,8 @@ const collectAstFacts = (
 ): {
   imports: ImportRecord[];
   usedIdentifiers: Set<string>;
+  usedIdentifierRanges: Map<string, number[]>;
+  shadowRangesByName: Map<string, ShadowRange[]>;
   namespaceMemberReferences: NamespaceMemberReference[];
   memberObjectReferences: MemberObjectReference[];
   namespaceObjectAliases: NamespaceObjectAlias[];
@@ -1640,6 +1743,7 @@ const collectAstFacts = (
 } => {
   const imports: ImportRecord[] = [];
   const usedIdentifiers = new Set<string>();
+  const usedIdentifierRanges = new Map<string, number[]>();
   const namespaceMemberReferences: NamespaceMemberReference[] = [];
   const memberObjectReferences: MemberObjectReference[] = [];
   const namespaceObjectAliases: NamespaceObjectAlias[] = [];
@@ -1660,10 +1764,12 @@ const collectAstFacts = (
       !isIdentifierDeclaration(node)
     ) {
       usedIdentifiers.add(node.name);
+      addUsedIdentifierRange(usedIdentifierRanges, node.name, getNodeStart(node));
     }
 
     if (node.type === "JSXIdentifier" && typeof node.name === "string") {
       usedIdentifiers.add(node.name);
+      addUsedIdentifierRange(usedIdentifierRanges, node.name, getNodeStart(node));
     }
 
     memberObjectReferences.push(...collectWholeObjectMemberReferences(node));
@@ -1735,6 +1841,8 @@ const collectAstFacts = (
           namespace: qualifiedNamePath.namespace,
           memberName: qualifiedNamePath.memberPath.at(-1) ?? "",
           memberPath: qualifiedNamePath.memberPath,
+          start: getNodeStart(node),
+          end: getNodeEnd(node),
         });
       }
     }
@@ -1754,6 +1862,8 @@ const collectAstFacts = (
           namespace: memberExpressionPath.namespace,
           memberName: memberExpressionPath.memberPath.at(-1) ?? "",
           memberPath: memberExpressionPath.memberPath,
+          start: getNodeStart(node),
+          end: getNodeEnd(node),
         });
         if (
           memberExpressionPath.namespace === "exports" &&
@@ -1804,6 +1914,8 @@ const collectAstFacts = (
   return {
     imports,
     usedIdentifiers,
+    usedIdentifierRanges,
+    shadowRangesByName: runtimeEntryLocals.shadowRangesByName,
     namespaceMemberReferences,
     memberObjectReferences,
     namespaceObjectAliases,
@@ -1930,6 +2042,8 @@ export const extractModule = (file: ProjectFile): CodebaseModule => {
     ),
     directives: collectDirectives(program),
     usedIdentifiers: astFacts.usedIdentifiers,
+    usedIdentifierRanges: astFacts.usedIdentifierRanges,
+    shadowRangesByName: astFacts.shadowRangesByName,
     namespaceMemberReferences: astFacts.namespaceMemberReferences,
     memberObjectReferences: astFacts.memberObjectReferences,
     namespaceObjectAliases: astFacts.namespaceObjectAliases,

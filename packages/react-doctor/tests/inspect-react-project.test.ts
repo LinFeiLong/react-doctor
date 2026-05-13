@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 import {
   DEAD_CODE_RULE_ID,
   createReactDoctor,
@@ -9,8 +9,11 @@ import {
   loadReactDoctorConfig,
 } from "../src/sdk/index.js";
 
+const createdFixtureDirectories: string[] = [];
+
 const createFixtureProject = async (files: Record<string, string>): Promise<string> => {
   const rootDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "react-doctor-inspect-"));
+  createdFixtureDirectories.push(rootDirectory);
   await Promise.all(
     Object.entries(files).map(async ([relativePath, sourceText]) => {
       const filePath = path.join(rootDirectory, relativePath);
@@ -20,6 +23,14 @@ const createFixtureProject = async (files: Record<string, string>): Promise<stri
   );
   return rootDirectory;
 };
+
+afterEach(async () => {
+  while (createdFixtureDirectories.length > 0) {
+    const fixtureDirectory = createdFixtureDirectories.pop();
+    if (!fixtureDirectory) continue;
+    await fs.rm(fixtureDirectory, { recursive: true, force: true });
+  }
+});
 
 describe("inspectReactProject", () => {
   it("returns a scaffold run result for the target project", async () => {
@@ -85,6 +96,34 @@ describe("inspectReactProject", () => {
     );
   });
 
+  it("resolves rootDir when callers pass a loaded config with option overrides", async () => {
+    const rootDirectory = await createFixtureProject({
+      "react-doctor.config.json": JSON.stringify({
+        rootDir: "apps/web",
+        deadCode: false,
+      }),
+      "apps/web/package.json": JSON.stringify({
+        name: "web",
+        dependencies: { react: "^19.0.0" },
+      }),
+      "apps/web/src/main.tsx": "import { App } from './app';\nconsole.log(App);\n",
+      "apps/web/src/app.tsx": "export const App = () => null;\nexport const Unused = 1;\n",
+    });
+    const loadedConfig = await loadReactDoctorConfig(rootDirectory);
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      loadedConfig,
+      config: loadedConfig?.config,
+      deadCode: true,
+    });
+
+    expect(result.project.rootDirectory).toBe(path.join(rootDirectory, "apps/web"));
+    expect(result.issues.map((issue) => issue.id)).toContain(
+      `${DEAD_CODE_RULE_ID}/unused-export/src/app.tsx/Unused`,
+    );
+  });
+
   it("accepts offline mode in react-doctor config", async () => {
     const rootDirectory = await createFixtureProject({
       "react-doctor.config.json": JSON.stringify({ offline: true }),
@@ -139,6 +178,47 @@ describe("inspectReactProject", () => {
     const result = await inspectReactProject({ rootDirectory });
 
     expect(result.project.hasReactCompiler).toBe(true);
+  });
+
+  it("honors options.config.rootDir even when no react-doctor.config.json exists", async () => {
+    const rootDirectory = await createFixtureProject({
+      "apps/web/package.json": JSON.stringify({
+        name: "web",
+        dependencies: { react: "^19.0.0" },
+      }),
+      "apps/web/src/main.tsx": "import { App } from './app';\nconsole.log(App);\n",
+      "apps/web/src/app.tsx": "export const App = () => null;\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      config: { rootDir: "apps/web" },
+    });
+
+    expect(result.project.rootDirectory).toBe(path.join(rootDirectory, "apps/web"));
+    expect(result.project.projectName).toBe("web");
+  });
+
+  it("prefers options.config.rootDir over a disk config that targets a different directory", async () => {
+    const rootDirectory = await createFixtureProject({
+      "react-doctor.config.json": JSON.stringify({ rootDir: "apps/api" }),
+      "apps/api/package.json": JSON.stringify({ name: "api" }),
+      "apps/api/src/main.ts": "console.log('api');\n",
+      "apps/web/package.json": JSON.stringify({
+        name: "web",
+        dependencies: { react: "^19.0.0" },
+      }),
+      "apps/web/src/main.tsx": "import { App } from './app';\nconsole.log(App);\n",
+      "apps/web/src/app.tsx": "export const App = () => null;\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      config: { rootDir: "apps/web" },
+    });
+
+    expect(result.project.rootDirectory).toBe(path.join(rootDirectory, "apps/web"));
+    expect(result.project.projectName).toBe("web");
   });
 
   it("detects React Compiler from ancestor package manifests", async () => {

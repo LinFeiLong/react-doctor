@@ -3,27 +3,33 @@ import { calculateScore, getScoreLabel, type ScoreDiagnostic } from "react-docto
 const MAX_REQUEST_BODY_BYTES = 1_000_000;
 const MAX_DIAGNOSTICS_PER_REQUEST = 50_000;
 
-interface DiagnosticInput extends ScoreDiagnostic {
-  message: string;
-  help: string;
-  line: number;
-  column: number;
-  category: string;
-}
+const DEFAULT_CATEGORY = "uncategorized";
 
-const isValidDiagnostic = (value: unknown): value is DiagnosticInput => {
+const isValidScoreDiagnostic = (value: unknown): value is ScoreDiagnostic => {
   if (typeof value !== "object" || value === null) return false;
-  const record = value as Record<string, unknown>;
+  const plugin = Reflect.get(value, "plugin");
+  const rule = Reflect.get(value, "rule");
+  const category = Reflect.get(value, "category");
+  const severity = Reflect.get(value, "severity");
   return (
-    typeof record.plugin === "string" &&
-    typeof record.rule === "string" &&
-    (record.severity === "error" || record.severity === "warning") &&
-    typeof record.message === "string" &&
-    typeof record.help === "string" &&
-    typeof record.line === "number" &&
-    typeof record.column === "number" &&
-    typeof record.category === "string"
+    typeof plugin === "string" &&
+    typeof rule === "string" &&
+    (severity === "error" || severity === "warning") &&
+    (category === undefined || typeof category === "string")
   );
+};
+
+const toScoreDiagnostic = (entry: unknown): ScoreDiagnostic | null => {
+  if (!isValidScoreDiagnostic(entry)) return null;
+  // Tolerate older CLI versions that don't send `category` — bucket those
+  // diagnostics into a single fallback category so the per-category cap
+  // still applies sensibly.
+  return {
+    plugin: entry.plugin,
+    rule: entry.rule,
+    category: entry.category ?? DEFAULT_CATEGORY,
+    severity: entry.severity,
+  };
 };
 
 const CORS_HEADERS = {
@@ -38,45 +44,48 @@ const respondError = (status: number, message: string): Response =>
   Response.json({ error: message }, { status, headers: CORS_HEADERS });
 
 export const POST = async (request: Request): Promise<Response> => {
-  // used for rate limiting bad actors
-  const ip = (request as any).ip || request.headers.get("x-forwarded-for") || "unknown";
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (contentLength > MAX_REQUEST_BODY_BYTES) {
+  let bodyText: string;
+  try {
+    bodyText = await request.text();
+  } catch {
+    return respondError(400, "Request body must be readable text");
+  }
+
+  if (new TextEncoder().encode(bodyText).byteLength > MAX_REQUEST_BODY_BYTES) {
     return respondError(413, "Request body exceeds 1MB");
   }
 
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(bodyText);
   } catch {
     body = null;
   }
 
-  if (
-    !body ||
-    typeof body !== "object" ||
-    !Array.isArray((body as { diagnostics: unknown }).diagnostics)
-  ) {
+  if (typeof body !== "object" || body === null) {
+    return respondError(400, "Request body must be a JSON object");
+  }
+  const diagnosticsField = Reflect.get(body, "diagnostics");
+  if (!Array.isArray(diagnosticsField)) {
     return respondError(400, "Request body must contain a 'diagnostics' array");
   }
-
-  const diagnostics = (body as { diagnostics: unknown[] }).diagnostics;
-  if (diagnostics.length > MAX_DIAGNOSTICS_PER_REQUEST) {
+  if (diagnosticsField.length > MAX_DIAGNOSTICS_PER_REQUEST) {
     return respondError(413, "Too many diagnostics in a single request");
   }
 
-  const isValidPayload = diagnostics.every((entry: unknown) => isValidDiagnostic(entry));
-
-  if (!isValidPayload) {
-    return respondError(
-      400,
-      "Each diagnostic must have 'plugin', 'rule', 'severity', 'message', 'help', 'line', 'column', and 'category'",
-    );
+  const diagnostics: ScoreDiagnostic[] = [];
+  for (const entry of diagnosticsField) {
+    const diagnostic = toScoreDiagnostic(entry);
+    if (!diagnostic) {
+      return respondError(
+        400,
+        "Each diagnostic must have a string 'plugin', string 'rule', and 'severity' of 'error' or 'warning'",
+      );
+    }
+    diagnostics.push(diagnostic);
   }
 
-  const score = calculateScore(diagnostics as DiagnosticInput[]);
-
-  console.log({ ip, score }, diagnostics);
+  const score = calculateScore(diagnostics);
 
   return Response.json({ score, label: getScoreLabel(score) }, { headers: CORS_HEADERS });
 };

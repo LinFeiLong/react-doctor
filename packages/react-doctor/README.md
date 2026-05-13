@@ -166,7 +166,7 @@ Block comments work inside JSX:
 
 <!-- prettier-ignore -->
 ```tsx
-{/* react-doctor-disable-next-line react/no-danger */}
+{/* react-doctor-disable-next-line no-danger */}
 <div dangerouslySetInnerHTML={{ __html }} />
 ```
 
@@ -176,17 +176,15 @@ For multi-line JSX, putting the comment immediately above the opening tag covers
 
 The same rule set ships as both an oxlint plugin and an ESLint plugin, so you can wire it into whichever lint engine your project already runs.
 
-Oxlint:
+Oxlint (`.oxlintrc.json`):
 
-```js
-import reactDoctorOxlintPlugin from "react-doctor/oxlint-plugin";
-
-export default {
-  jsPlugins: [reactDoctorOxlintPlugin],
-  rules: {
+```jsonc
+{
+  "jsPlugins": [{ "name": "react-doctor", "specifier": "react-doctor/oxlint-plugin" }],
+  "rules": {
     "react-doctor/no-fetch-in-effect": "warn",
   },
-};
+}
 ```
 
 ESLint:

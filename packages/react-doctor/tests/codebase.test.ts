@@ -84,6 +84,9 @@ describe("codebase rules", () => {
       "internal-tools/diagnose.ts":
         "import { collect } from './_lib/collect';\nconsole.log(collect());\n",
       "internal-tools/_lib/collect.ts": "export const collect = () => 'ok';\n",
+      "internal-tools/aws-export/index.ts":
+        "import { s3Client } from './s3';\nconsole.log(s3Client);\n",
+      "internal-tools/aws-export/s3.ts": "export const s3Client = { upload: () => null };\n",
       "tools/format.ts": "console.log('format');\n",
       "bin/cli.ts": "console.log('cli');\n",
     });
@@ -97,6 +100,108 @@ describe("codebase rules", () => {
     });
 
     expect(result.issues.map((issue) => issue.location?.filePath).sort()).toEqual([]);
+  });
+
+  it("still scans components/ui/** for unused exports when components.json is missing", async () => {
+    const rootDirectory = await createFixtureProject({
+      "package.json": JSON.stringify({ dependencies: { react: "latest" } }),
+      "src/main.tsx": [
+        "import { Sidebar } from './components/ui/sidebar';",
+        "console.log(Sidebar);",
+      ].join("\n"),
+      "src/components/ui/sidebar.tsx": [
+        "export const Sidebar = () => null;",
+        "export const SidebarHeader = () => null;",
+        "export const SidebarFooter = () => null;",
+      ].join("\n"),
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    const unusedExportIds = result.issues
+      .filter((issue) => issue.source?.ruleId === "unused-export")
+      .map((issue) => issue.id)
+      .sort();
+    expect(unusedExportIds).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-export/src/components/ui/sidebar.tsx/SidebarFooter`,
+      `${DEAD_CODE_RULE_ID}/unused-export/src/components/ui/sidebar.tsx/SidebarHeader`,
+    ]);
+  });
+
+  it("exempts shadcn/ui component files when components.json is present", async () => {
+    const rootDirectory = await createFixtureProject({
+      "package.json": JSON.stringify({ dependencies: { react: "latest" } }),
+      "components.json": JSON.stringify({ $schema: "https://ui.shadcn.com/schema.json" }),
+      "src/main.tsx": [
+        "import { Sidebar } from './components/ui/sidebar';",
+        "console.log(Sidebar);",
+      ].join("\n"),
+      "src/components/ui/sidebar.tsx": [
+        "export const Sidebar = () => null;",
+        "export const SidebarHeader = () => null;",
+        "export const SidebarFooter = () => null;",
+        "export const SidebarTrigger = () => null;",
+        "export type SidebarProps = { open?: boolean };",
+      ].join("\n"),
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    const ruleIds = result.issues.map((issue) => issue.source?.ruleId).sort();
+    expect(ruleIds).not.toContain("unused-export");
+    expect(ruleIds).not.toContain("unused-type-export");
+  });
+
+  it("exempts Next.js app-router route handlers from unused-export checks", async () => {
+    const rootDirectory = await createFixtureProject({
+      "package.json": JSON.stringify({ dependencies: { next: "latest", react: "latest" } }),
+      "src/main.ts": "console.log('main');\n",
+      "src/app/api/things/route.ts": [
+        "export async function GET() { return new Response('hi'); }",
+        "export async function POST() { return new Response('hi'); }",
+        "export async function DELETE() { return new Response('hi'); }",
+        "export const dynamic = 'force-dynamic';",
+        "export const revalidate = 60;",
+      ].join("\n"),
+      "src/app/(auth)/layout.tsx": [
+        "import type { ReactNode } from 'react';",
+        "export const viewport = { themeColor: '#fff' };",
+        "export const metadata = { title: 'Auth' };",
+        "export default function Layout({ children }: { children: ReactNode }) {",
+        "  return children;",
+        "}",
+      ].join("\n"),
+      "src/app/(auth)/page.tsx": [
+        "export const dynamic = 'force-dynamic';",
+        "export default function Page() {",
+        "  return null;",
+        "}",
+      ].join("\n"),
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    const ruleIds = result.issues.map((issue) => issue.source?.ruleId).sort();
+    expect(ruleIds).not.toContain("unused-export");
+    expect(ruleIds).not.toContain("unused-type-export");
   });
 
   it("treats common framework config files as support entrypoints", async () => {
@@ -248,6 +353,204 @@ describe("codebase rules", () => {
     expect(result.issues.map((issue) => issue.id).sort()).toEqual([
       `${DEAD_CODE_RULE_ID}/unused-export/src/lib.tsx/unusedValue`,
       `${DEAD_CODE_RULE_ID}/unused-type-export/src/types.ts/UnusedType`,
+    ]);
+  });
+
+  it("reports exported helpers that are only used locally", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": "import { run } from './service';\nconsole.log(run());\n",
+      "src/service.ts": [
+        "export const helper = () => 'helper';",
+        "export const run = () => helper();",
+      ].join("\n"),
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-export/src/service.ts/helper`,
+    ]);
+  });
+
+  it("does not credit imported bindings when a local scope shadows the name", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": [
+        "import { unused } from './lib';",
+        "const read = (unused: number) => unused;",
+        "console.log(read(1));",
+      ].join("\n"),
+      "src/lib.ts": "export const unused = 1;\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-export/src/lib.ts/unused`,
+    ]);
+  });
+
+  it("does not credit imported bindings from destructured parameter shadows", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": [
+        "import { unused } from './lib';",
+        "const read = ({ unused }: { unused: number }) => unused;",
+        "console.log(read({ unused: 1 }));",
+      ].join("\n"),
+      "src/lib.ts": "export const unused = 1;\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-export/src/lib.ts/unused`,
+    ]);
+  });
+
+  it("does not credit namespace members read through a shadowed binding", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": [
+        "import * as service from './service';",
+        "console.log(service.used);",
+        "function read(service: { unused: number }) {",
+        "  return service.unused;",
+        "}",
+        "console.log(read({ unused: 1 }));",
+      ].join("\n"),
+      "src/service.ts": ["export const used = 1;", "export const unused = 2;"].join("\n"),
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-export/src/service.ts/unused`,
+    ]);
+  });
+
+  it("does not credit unused named imports through star re-export barrels", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": "import { unused } from './barrel';\nconsole.log('main');\n",
+      "src/barrel.ts": "export * from './lib';\n",
+      "src/lib.ts": "export const unused = 1;\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toContain(
+      `${DEAD_CODE_RULE_ID}/unused-export/src/lib.ts/unused`,
+    );
+  });
+
+  it("credits imported values used in object shorthand expressions", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": "import { used } from './lib';\nconsole.log({ used });\n",
+      "src/lib.ts": ["export const used = 1;", "export const unused = 2;"].join("\n"),
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-export/src/lib.ts/unused`,
+    ]);
+  });
+
+  it("does not credit namespace aliases through shadowed local scopes", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": [
+        "import * as service from './service';",
+        "const Service = service;",
+        "function read(Service: { unused: number }) {",
+        "  return Service.unused;",
+        "}",
+        "console.log(Service.used);",
+        "console.log(read({ unused: 1 }));",
+      ].join("\n"),
+      "src/service.ts": ["export const used = 1;", "export const unused = 2;"].join("\n"),
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-export/src/service.ts/unused`,
+    ]);
+  });
+
+  it("does not treat nested source index files as automatic runtime entries", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": "console.log('main');\n",
+      "src/features/dead/index.ts": "export const DeadFeature = 1;\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-file/src/features/dead/index.ts`,
+    ]);
+  });
+
+  it("does not treat script helper index files as support entrypoints", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": "console.log('main');\n",
+      "scripts/_lib/index.ts": "export const helper = 1;\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-file/scripts/_lib/index.ts`,
     ]);
   });
 
@@ -1127,6 +1430,60 @@ describe("codebase rules", () => {
     ]);
   });
 
+  it("does not credit dynamic import members read through nested shadows", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": [
+        "void import('./lazy').then((lazyModule) => {",
+        "  console.log(lazyModule.usedMember);",
+        "  function read(lazyModule: { unusedDynamic: number }) {",
+        "    return lazyModule.unusedDynamic;",
+        "  }",
+        "  console.log(read({ unusedDynamic: 1 }));",
+        "});",
+      ].join("\n"),
+      "src/lazy.ts": ["export const usedMember = 1;", "export const unusedDynamic = 2;"].join("\n"),
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-export/src/lazy.ts/unusedDynamic`,
+    ]);
+  });
+
+  it("credits aliased direct dynamic import member reads", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.ts": [
+        "const read = async () => {",
+        "  const alias = (await import('./lazy')).usedDynamic;",
+        "  console.log(alias);",
+        "};",
+        "void read();",
+      ].join("\n"),
+      "src/lazy.ts": ["export const usedDynamic = 1;", "export const unusedDynamic = 2;"].join(
+        "\n",
+      ),
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-export/src/lazy.ts/unusedDynamic`,
+    ]);
+  });
+
   it("credits exports destructured from Promise.all dynamic imports", async () => {
     const rootDirectory = await createFixtureProject({
       "src/main.ts": [
@@ -1346,6 +1703,31 @@ describe("codebase rules", () => {
     ]);
   });
 
+  it("does not report client-server boundaries through type-only imports", async () => {
+    const rootDirectory = await createFixtureProject({
+      "src/main.tsx": "import './client';\n",
+      "src/client.tsx": [
+        "'use client';",
+        "import type { ServerType } from './server';",
+        "const value: ServerType = { id: 'ok' };",
+        "console.log(value);",
+      ].join("\n"),
+      "src/server.ts": "import 'server-only';\nexport interface ServerType { id: string }\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [REACT_ARCHITECTURE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.source?.ruleId)).not.toContain(
+      "client-server-boundary",
+    );
+  });
+
   it("reports runtime circular imports once and ignores type-only cycles", async () => {
     const rootDirectory = await createFixtureProject({
       "src/main.ts": "import './runtime-a';\nimport './type-a';\n",
@@ -1468,6 +1850,56 @@ describe("codebase rules", () => {
 
     expect(result.issues.map((issue) => issue.id)).toEqual([
       `${DEAD_CODE_RULE_ID}/unused-file/src/dead.ts`,
+    ]);
+  });
+
+  it("treats package export wildcard targets as public entrypoints", async () => {
+    const rootDirectory = await createFixtureProject({
+      "package.json": JSON.stringify({
+        exports: {
+          "./components/*": "./src/components/*.ts",
+        },
+      }),
+      "src/components/button.ts": "export const Button = 'button';\n",
+      "src/private.ts": "export const Private = 'private';\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-file/src/private.ts`,
+    ]);
+  });
+
+  it("maps package export wildcard dist targets back to source files", async () => {
+    const rootDirectory = await createFixtureProject({
+      "package.json": JSON.stringify({
+        exports: {
+          "./components/*": "./dist/components/*.js",
+          "./types/*": "./dist/types/*.d.ts",
+        },
+      }),
+      "src/components/button.ts": "export const Button = 'button';\n",
+      "src/types/model.ts": "export interface Model { id: string }\n",
+      "src/private.ts": "export const Private = 'private';\n",
+    });
+
+    const result = await inspectReactProject({
+      rootDirectory,
+      rules: {
+        disabledRuleIds: [PROJECT_STRUCTURE_RULE_ID],
+        enabledRuleIds: [DEAD_CODE_RULE_ID],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.id)).toEqual([
+      `${DEAD_CODE_RULE_ID}/unused-file/src/private.ts`,
     ]);
   });
 

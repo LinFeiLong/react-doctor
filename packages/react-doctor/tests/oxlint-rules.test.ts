@@ -10,6 +10,7 @@ import {
   reactDoctorOxlintPlugin,
   reactDoctorOxlintRuleMetadata,
 } from "../src/sdk/index.js";
+import { isLocalUseRulesOfHooksFalsePositive } from "../src/core/runners/oxlint.js";
 import { findSideEffect } from "../src/core/rules/lint/utils/find-side-effect.js";
 import { isInsideWebPlatformBranch } from "../src/core/rules/lint/react-native/utils/index.js";
 import type { EsTreeNode } from "../src/core/rules/lint/utils/index.js";
@@ -414,5 +415,42 @@ describe("oxlint rules", () => {
       "react-hooks-js/use-memo": "error",
       "react-hooks-js/void-use-memo": "error",
     });
+  });
+
+  it("suppresses fixture callback uses misreported as React use hook calls", () => {
+    const sourceText = [
+      'import { test } from "@playwright/test";',
+      "",
+      "export const fixture = test.extend({",
+      "  page: async ({}, use) => {",
+      '    await use("ready");',
+      "  },",
+      "});",
+    ].join("\n");
+
+    expect(
+      isLocalUseRulesOfHooksFalsePositive(sourceText, "integration/helpers/fixtures.ts", {
+        line: 5,
+        column: 11,
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps real React use hook violations active", () => {
+    const sourceText = [
+      'import { use } from "react";',
+      "",
+      "export const Component = async () => {",
+      "  use(fetch('/api/data'));",
+      "  return null;",
+      "};",
+    ].join("\n");
+
+    expect(
+      isLocalUseRulesOfHooksFalsePositive(sourceText, "src/component.tsx", {
+        line: 4,
+        column: 3,
+      }),
+    ).toBe(false);
   });
 });

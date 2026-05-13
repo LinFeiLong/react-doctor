@@ -1,5 +1,5 @@
 import path from "node:path";
-import { clearReactDoctorConfigCache } from "../core/config.js";
+import { clearReactDoctorConfigCache, loadReactDoctorConfig } from "../core/config.js";
 import { inspectReactProjectCore } from "../core/inspect-react-project.js";
 import type {
   InspectReactProjectOptions,
@@ -91,6 +91,15 @@ const toInspectOptions = (
   signal: options.signal,
 });
 
+// Compat default: when neither the caller nor the on-disk config specifies a
+// value, run lint, dead-code, and inline-disable resolution. Matches the v1
+// diagnose() shape and the CLI defaults, while keeping the on-disk config the
+// source of truth.
+const resolveCompatBoolean = (
+  callerValue: boolean | undefined,
+  diskValue: boolean | undefined,
+): boolean => callerValue ?? diskValue ?? true;
+
 /**
  * @deprecated Use `createReactDoctor({ rootDirectory }).inspect()` from the main SDK instead.
  */
@@ -98,11 +107,18 @@ export const diagnose = async (
   directory: string,
   options: DiagnoseOptions = {},
 ): Promise<DiagnoseResult> => {
+  const requestedRootDirectory = path.resolve(directory);
+  const loadedConfig = await loadReactDoctorConfig(requestedRootDirectory);
+  const diskConfig = loadedConfig?.config;
   const result = await inspectReactProjectCore({
     ...toInspectOptions(directory, options),
-    lint: options.lint,
-    deadCode: options.deadCode,
-    respectInlineDisables: options.respectInlineDisables,
+    lint: resolveCompatBoolean(options.lint, diskConfig?.lint),
+    deadCode: resolveCompatBoolean(options.deadCode, diskConfig?.deadCode),
+    respectInlineDisables: resolveCompatBoolean(
+      options.respectInlineDisables,
+      diskConfig?.respectInlineDisables,
+    ),
+    loadedConfig,
   });
 
   return {

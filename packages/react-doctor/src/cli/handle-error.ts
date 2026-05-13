@@ -8,9 +8,11 @@ const stringifyError = (error: unknown): string => {
 
 const getErrorMessageChain = (error: unknown): string[] => {
   const messages: string[] = [];
+  const visited = new Set<unknown>();
   let currentError = error;
 
-  while (currentError instanceof Error) {
+  while (currentError instanceof Error && !visited.has(currentError)) {
+    visited.add(currentError);
     messages.push(stringifyError(currentError));
     currentError = currentError.cause;
   }

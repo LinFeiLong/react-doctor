@@ -93,10 +93,11 @@ export const FRAMEWORK_ROUTE_ENTRY_STEMS = new Set([
 export const TEST_ENTRY_MARKERS = [".test.", ".spec.", ".testcase.", ".stories.", ".story."];
 
 // Top-level directories whose .ts/.js files are conventionally CLI scripts /
-// build tooling entrypoints — they're invoked via `tsx`, `bun run`,
-// `node`, or directly from package.json scripts. Treat any source file at
-// the root of these directories as a runtime entry so their dependency
-// closures aren't reported as "Unused file" / "Unused export".
+// build tooling entrypoints — they're invoked via `tsx`, `bun run`, `node`,
+// or directly from package.json scripts. Files at the root of these
+// directories register as `support` entrypoints so their dependency
+// closures aren't reported as "Unused file" and their top-level exports
+// (which aren't a public API) aren't reported as "Unused export".
 export const SCRIPT_ENTRY_DIRECTORY_NAMES = new Set(["bin", "internal-tools", "scripts", "tools"]);
 
 export const SUPPORT_ENTRY_PATTERNS = [
@@ -106,15 +107,11 @@ export const SUPPORT_ENTRY_PATTERNS = [
   // root-level (or src/) configs that frameworks / tools load via the CLI;
   // the project module graph can't see those imports, so flag them as
   // support entrypoints.
-  "*.config.{js,jsx,mjs,cjs,ts,tsx,mts,cts}",
-  "src/*.config.{js,jsx,mjs,cjs,ts,tsx,mts,cts}",
+  "{src/,}*.config.{js,jsx,mjs,cjs,ts,tsx,mts,cts}",
   "sentry.*.config.{js,mjs,cjs,ts,mts,cts}",
-  "instrumentation.{js,ts}",
-  "instrumentation-client.{js,ts}",
-  "middleware.{js,ts}",
-  "src/instrumentation.{js,ts}",
-  "src/instrumentation-client.{js,ts}",
-  "src/middleware.{js,ts}",
+  "{src/,}instrumentation.{js,ts}",
+  "{src/,}instrumentation-client.{js,ts}",
+  "{src/,}middleware.{js,ts}",
 ];
 
 export const WHOLE_OBJECT_MEMBER_METHODS = new Set([

@@ -18,6 +18,43 @@ const IMAGE_RESPONSE_IMPORT_PATTERN =
 const SATORI_TW_PROP_PATTERN = /\btw\s*=/;
 const EMOTION_CSS_PROP_PATTERN = /\bcss\s*=/;
 
+const REACT_DOCTOR_DISABLE_LINE_DIRECTIVE = "react-doctor-disable-line";
+const REACT_DOCTOR_DISABLE_NEXT_LINE_DIRECTIVE = "react-doctor-disable-next-line";
+const REACT_DOCTOR_RULE_NAMESPACE = "react-doctor/";
+const DISABLE_TOKEN_SEPARATOR_PATTERN = /[\s,]+/;
+const DISABLE_COMMENT_BOUNDARY_PATTERN = /\*\/|-->/;
+const REGEX_METACHARACTER_PATTERN = /[.*+?^${}()|[\]\\]/g;
+const ECOSYSTEM_RULE_PREFIX_PATTERN =
+  /^(?:nextjs|rn|tailwind|query|swr|mobx|shadcn|radix|rhf|r3f|storybook|testing)-/;
+
+const escapeRegExpMetacharacters = (value: string): string =>
+  value.replace(REGEX_METACHARACTER_PATTERN, "\\$&");
+
+const EFFECT_RULE_ALIASES: ReadonlyMap<string, string> = new Map([
+  ["react-doctor/effect-no-event-handler", "effect-event-handler"],
+  ["react-doctor/no-effect-event-handler", "effect-event-handler"],
+  ["effect/no-event-handler", "effect-event-handler"],
+  ["react-doctor/effect-no-derived-state", "effect-derived-state"],
+  ["react-doctor/no-derived-state-effect", "effect-derived-state"],
+  ["effect/no-derived-state", "effect-derived-state"],
+  ["react-doctor/effect-no-chain-state-updates", "effect-chain-state"],
+  ["react-doctor/no-effect-chain", "effect-chain-state"],
+  ["effect/no-chain-state-updates", "effect-chain-state"],
+  ["react-doctor/effect-no-adjust-state-on-prop-change", "effect-adjust-prop"],
+  ["effect/no-adjust-state-on-prop-change", "effect-adjust-prop"],
+  ["react-doctor/effect-no-initialize-state", "effect-init-state"],
+  ["effect/no-initialize-state", "effect-init-state"],
+  ["react-doctor/effect-no-pass-data-to-parent", "effect-pass-parent"],
+  ["effect/no-pass-data-to-parent", "effect-pass-parent"],
+  ["react-doctor/effect-no-pass-live-state-to-parent", "effect-pass-live-state"],
+  ["effect/no-pass-live-state-to-parent", "effect-pass-live-state"],
+  ["react-doctor/effect-no-reset-all-state-on-prop-change", "effect-reset-state"],
+  ["effect/no-reset-all-state-on-prop-change", "effect-reset-state"],
+]);
+
+const toCanonicalEffectKey = (ruleId: string): string | null =>
+  EFFECT_RULE_ALIASES.get(ruleId) ?? null;
+
 const toMetadataRuleKey = (issue: ReactDoctorIssue): string | null => {
   const ruleId = issue.source?.ruleId;
   if (!ruleId) return null;
@@ -61,8 +98,6 @@ const normalizeRuleId = (issue: ReactDoctorIssue): string => {
 
 const stripRuleNamespace = (ruleId: string): string => ruleId.split("/").at(-1) ?? ruleId;
 
-const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
 const matchesRule = (issue: ReactDoctorIssue, rulePatterns: ReadonlySet<string>): boolean => {
   const ruleId = normalizeRuleId(issue);
   return rulePatterns.has(ruleId) || rulePatterns.has(stripRuleNamespace(ruleId));
@@ -80,10 +115,7 @@ const matchesPathPattern = (filePath: string, pattern: string): boolean => {
   }
   if (normalizedPattern.includes("*")) {
     const expression = new RegExp(
-      `^${normalizedPattern
-        .split("*")
-        .map((segment) => segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-        .join(".*")}$`,
+      `^${normalizedPattern.split("*").map(escapeRegExpMetacharacters).join(".*")}$`,
     );
     return expression.test(normalizedFilePath);
   }
@@ -118,6 +150,71 @@ const isIgnoredByOverride = (
   return false;
 };
 
+const tokenizeReactDoctorDisableDirective = (
+  commentLine: string,
+  directive: string,
+): string[] | null => {
+  const directiveIndex = commentLine.indexOf(directive);
+  if (directiveIndex === -1) return null;
+  const afterDirective = commentLine.slice(directiveIndex + directive.length);
+  const boundaryMatch = DISABLE_COMMENT_BOUNDARY_PATTERN.exec(afterDirective);
+  const ruleSection = boundaryMatch ? afterDirective.slice(0, boundaryMatch.index) : afterDirective;
+  return ruleSection
+    .split(DISABLE_TOKEN_SEPARATOR_PATTERN)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+};
+
+const matchesReactDoctorDisableToken = (token: string, ruleId: string): boolean => {
+  if (token === ruleId) return true;
+  if (!token.startsWith(REACT_DOCTOR_RULE_NAMESPACE)) return false;
+  return token.slice(REACT_DOCTOR_RULE_NAMESPACE.length) === ruleId;
+};
+
+const isLineDisabledByReactDoctorComment = (
+  commentLine: string,
+  directive: string,
+  ruleId: string,
+): boolean => {
+  const tokens = tokenizeReactDoctorDisableDirective(commentLine, directive);
+  if (tokens === null) return false;
+  if (tokens.length === 0) return true;
+  return tokens.some((token) => matchesReactDoctorDisableToken(token, ruleId));
+};
+
+const isDisabledByStackedDisableNextLine = (
+  sourceLines: string[],
+  issueLineIndex: number,
+  ruleId: string,
+): boolean => {
+  let cursorLineIndex = issueLineIndex - 2;
+  while (cursorLineIndex >= 0) {
+    const commentLine = sourceLines[cursorLineIndex];
+    if (commentLine === undefined) return false;
+    const tokens = tokenizeReactDoctorDisableDirective(
+      commentLine,
+      REACT_DOCTOR_DISABLE_NEXT_LINE_DIRECTIVE,
+    );
+    if (tokens === null) return false;
+    if (tokens.length === 0) return true;
+    if (tokens.some((token) => matchesReactDoctorDisableToken(token, ruleId))) return true;
+    cursorLineIndex -= 1;
+  }
+  return false;
+};
+
+const isDisabledByEcosystemDisableNextLine = (previousLine: string, ruleId: string): boolean => {
+  if (
+    !previousLine.includes("eslint-disable-next-line") &&
+    !previousLine.includes("oxlint-disable-next-line")
+  ) {
+    return false;
+  }
+  if (previousLine.includes(ruleId)) return true;
+  const baseRuleName = ruleId.replace(ECOSYSTEM_RULE_PREFIX_PATTERN, "");
+  return baseRuleName !== ruleId && previousLine.includes(baseRuleName);
+};
+
 const isDisabledByInlineComment = (
   issue: ReactDoctorIssue,
   sourceLines: string[] | undefined,
@@ -127,27 +224,13 @@ const isDisabledByInlineComment = (
 
   const ruleId = stripRuleNamespace(normalizeRuleId(issue));
   const sameLine = sourceLines[line - 1] ?? "";
-  const previousLine = sourceLines[line - 2] ?? "";
-  if (
-    (sameLine.includes("react-doctor-disable-line") &&
-      (sameLine.includes(ruleId) || !sameLine.includes("react-doctor/"))) ||
-    (previousLine.includes("react-doctor-disable-next-line") &&
-      (previousLine.includes(ruleId) || !previousLine.includes("react-doctor/")))
-  ) {
+  if (isLineDisabledByReactDoctorComment(sameLine, REACT_DOCTOR_DISABLE_LINE_DIRECTIVE, ruleId)) {
     return true;
   }
-  if (
-    previousLine.includes("eslint-disable-next-line") ||
-    previousLine.includes("oxlint-disable-next-line")
-  ) {
-    if (previousLine.includes(ruleId)) return true;
-    const baseRuleName = ruleId.replace(
-      /^(?:nextjs|rn|tailwind|query|swr|mobx|shadcn|radix|rhf|r3f|storybook|testing)-/,
-      "",
-    );
-    if (baseRuleName !== ruleId && previousLine.includes(baseRuleName)) return true;
-  }
-  return false;
+  if (isDisabledByStackedDisableNextLine(sourceLines, line, ruleId)) return true;
+
+  const previousLine = sourceLines[line - 2] ?? "";
+  return isDisabledByEcosystemDisableNextLine(previousLine, ruleId);
 };
 
 const toLineStartIndex = (sourceLines: string[], line: number): number => {
@@ -159,7 +242,7 @@ const toLineStartIndex = (sourceLines: string[], line: number): number => {
 };
 
 const findComponentMatches = (sourceText: string, componentName: string): ComponentMatch[] => {
-  const escapedComponentName = escapeRegExp(componentName);
+  const escapedComponentName = escapeRegExpMetacharacters(componentName);
   const componentPattern = new RegExp(
     `<${escapedComponentName}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${escapedComponentName}>`,
     "g",
@@ -319,31 +402,6 @@ export const filterReactDoctorIssues = (
   });
 
   const seen = new Set<string>();
-
-  const EFFECT_RULE_ALIASES: ReadonlyMap<string, string> = new Map([
-    ["react-doctor/effect-no-event-handler", "effect-event-handler"],
-    ["react-doctor/no-effect-event-handler", "effect-event-handler"],
-    ["effect/no-event-handler", "effect-event-handler"],
-    ["react-doctor/effect-no-derived-state", "effect-derived-state"],
-    ["react-doctor/no-derived-state-effect", "effect-derived-state"],
-    ["effect/no-derived-state", "effect-derived-state"],
-    ["react-doctor/effect-no-chain-state-updates", "effect-chain-state"],
-    ["react-doctor/no-effect-chain", "effect-chain-state"],
-    ["effect/no-chain-state-updates", "effect-chain-state"],
-    ["react-doctor/effect-no-adjust-state-on-prop-change", "effect-adjust-prop"],
-    ["effect/no-adjust-state-on-prop-change", "effect-adjust-prop"],
-    ["react-doctor/effect-no-initialize-state", "effect-init-state"],
-    ["effect/no-initialize-state", "effect-init-state"],
-    ["react-doctor/effect-no-pass-data-to-parent", "effect-pass-parent"],
-    ["effect/no-pass-data-to-parent", "effect-pass-parent"],
-    ["react-doctor/effect-no-pass-live-state-to-parent", "effect-pass-live-state"],
-    ["effect/no-pass-live-state-to-parent", "effect-pass-live-state"],
-    ["react-doctor/effect-no-reset-all-state-on-prop-change", "effect-reset-state"],
-    ["effect/no-reset-all-state-on-prop-change", "effect-reset-state"],
-  ]);
-
-  const toCanonicalEffectKey = (ruleId: string): string | null =>
-    EFFECT_RULE_ALIASES.get(ruleId) ?? null;
 
   return filtered.filter((issue) => {
     const loc = issue.location;

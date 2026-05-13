@@ -10,5 +10,4 @@ Drops the `eslint-plugin-react-hooks` /
 (`eslint-plugin-react-hooks` is now a regular dependency; the
 "you-might-not-need-an-effect" rules are skipped unless the plugin is
 installed in the consumer project). Other runtime deps trimmed: `knip`,
-`bippy`, `ora`, `@oxc-parser/wasm` dropped; `oxc-parser`, `oxc-resolver`
-added.
+`bippy`, `@oxc-parser/wasm` dropped; `oxc-parser`, `oxc-resolver` added.

@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import path from "node:path";
 import { reactDoctorOxlintRules } from "./rules.js";
 
 const esmRequire = createRequire(import.meta.url);
@@ -10,6 +11,9 @@ export interface OxlintRuleSeverityMap {
 const REACT_DOCTOR_OXLINT_RULE_KEY_PREFIX = "react-doctor/";
 const REACT_HOOKS_JS_NAMESPACE = "react-hooks-js";
 const REACT_HOOKS_PLUGIN_SPECIFIER = "eslint-plugin-react-hooks";
+// Sentinel "no installed/declared React version" — chosen high enough to never
+// gate a future React-major-specific rule by accident.
+const UNCONSTRAINED_REACT_MAJOR = 99;
 // HACK: oxlint-namespaces eslint-plugin-react-you-might-not-need-an-effect
 // under `effect/` to keep rule keys short. Mirrors v1 (oxlint-config.ts).
 // The plugin is opt-in: skipped when not installed.
@@ -239,6 +243,7 @@ export type ReactDoctorOxlintFramework =
 
 export interface ReactDoctorOxlintConfigOptions {
   pluginPath: string;
+  projectRootDirectory?: string;
   project?: ReactDoctorOxlintProjectInfo;
   framework?: ReactDoctorOxlintFramework;
   customRulesOnly?: boolean;
@@ -380,9 +385,12 @@ const REACT_DOCTOR_FRAMEWORK_RULE_GROUPS: ReadonlyArray<RuleGroupConfig> = [
   { rules: TANSTACK_QUERY_OXLINT_RULES, requires: ["tanstack-query"] },
 ];
 
-const readPluginRuleNames = (pluginSpecifier: string): ReadonlySet<string> => {
+const readPluginRuleNames = (
+  pluginSpecifier: string,
+  pluginRequire: NodeJS.Require,
+): ReadonlySet<string> => {
   try {
-    const pluginModule: MaybePluginModule = esmRequire(pluginSpecifier);
+    const pluginModule: MaybePluginModule = pluginRequire(pluginSpecifier);
     const rules = pluginModule.rules ?? pluginModule.default?.rules;
     return rules ? new Set(Object.keys(rules)) : new Set();
   } catch {
@@ -393,12 +401,16 @@ const readPluginRuleNames = (pluginSpecifier: string): ReadonlySet<string> => {
 const resolveOptionalJsPlugin = (
   namespace: string,
   pluginSpecifier: string,
+  projectRootDirectory: string | undefined,
 ): ResolvedPlugin | null => {
   try {
-    const resolvedSpecifier = esmRequire.resolve(pluginSpecifier);
+    const pluginRequire = projectRootDirectory
+      ? createRequire(path.join(projectRootDirectory, "package.json"))
+      : esmRequire;
+    const resolvedSpecifier = pluginRequire.resolve(pluginSpecifier);
     return {
       entry: { name: namespace, specifier: resolvedSpecifier },
-      availableRuleNames: readPluginRuleNames(resolvedSpecifier),
+      availableRuleNames: readPluginRuleNames(resolvedSpecifier, pluginRequire),
     };
   } catch {
     return null;
@@ -429,9 +441,14 @@ const filterRulesToAvailable = (
 const buildOptionalReactCompilerConfig = (
   customRulesOnly: boolean,
   hasReactCompiler: boolean,
+  projectRootDirectory: string | undefined,
 ): { jsPlugin: ReactDoctorOxlintJsPluginEntry | null; rules: OxlintRuleSeverityMap } => {
   if (customRulesOnly || !hasReactCompiler) return { jsPlugin: null, rules: {} };
-  const plugin = resolveOptionalJsPlugin(REACT_HOOKS_JS_NAMESPACE, REACT_HOOKS_PLUGIN_SPECIFIER);
+  const plugin = resolveOptionalJsPlugin(
+    REACT_HOOKS_JS_NAMESPACE,
+    REACT_HOOKS_PLUGIN_SPECIFIER,
+    projectRootDirectory,
+  );
   if (!plugin) return { jsPlugin: null, rules: {} };
   return {
     jsPlugin: plugin.entry,
@@ -445,11 +462,13 @@ const buildOptionalReactCompilerConfig = (
 
 const buildOptionalYouMightNotNeedEffectConfig = (
   customRulesOnly: boolean,
+  projectRootDirectory: string | undefined,
 ): { jsPlugin: ReactDoctorOxlintJsPluginEntry | null; rules: OxlintRuleSeverityMap } => {
   if (customRulesOnly) return { jsPlugin: null, rules: {} };
   const plugin = resolveOptionalJsPlugin(
     YOU_MIGHT_NOT_NEED_EFFECT_NAMESPACE,
     YOU_MIGHT_NOT_NEED_EFFECT_PLUGIN_SPECIFIER,
+    projectRootDirectory,
   );
   if (!plugin) return { jsPlugin: null, rules: {} };
   return {
@@ -508,7 +527,7 @@ const effectiveReactMajor = (project: ReactDoctorOxlintProjectInfo): number => {
   const installedMajor = project.reactMajorVersion ?? null;
   const peerMajor = reactPeerRangeMinMajor(project.reactPeerDependencyRange);
   if (installedMajor !== null && peerMajor !== null) return Math.min(installedMajor, peerMajor);
-  return installedMajor ?? peerMajor ?? 99;
+  return installedMajor ?? peerMajor ?? UNCONSTRAINED_REACT_MAJOR;
 };
 
 export const buildReactDoctorOxlintCapabilities = (
@@ -574,6 +593,7 @@ const addEnabledRules = (
 
 export const createReactDoctorOxlintConfig = ({
   pluginPath,
+  projectRootDirectory,
   project,
   framework = "unknown",
   customRulesOnly = false,
@@ -594,8 +614,12 @@ export const createReactDoctorOxlintConfig = ({
   const reactCompilerConfig = buildOptionalReactCompilerConfig(
     customRulesOnly,
     Boolean(projectInfo.hasReactCompiler),
+    projectRootDirectory,
   );
-  const youMightNotNeedEffectConfig = buildOptionalYouMightNotNeedEffectConfig(customRulesOnly);
+  const youMightNotNeedEffectConfig = buildOptionalYouMightNotNeedEffectConfig(
+    customRulesOnly,
+    projectRootDirectory,
+  );
   const jsPlugins: Array<string | ReactDoctorOxlintJsPluginEntry> = [];
   if (reactCompilerConfig.jsPlugin) jsPlugins.push(reactCompilerConfig.jsPlugin);
   if (youMightNotNeedEffectConfig.jsPlugin) jsPlugins.push(youMightNotNeedEffectConfig.jsPlugin);

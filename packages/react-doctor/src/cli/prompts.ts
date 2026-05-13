@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
 import basePrompts, { type PromptObject, type Answers } from "prompts";
+import { SIGINT_EXIT_CODE } from "../constants.js";
 
 interface PromptMultiselectChoiceState {
   selected?: boolean;
@@ -23,7 +24,7 @@ const onCancel = () => {
   console.log("");
   console.log("Cancelled.");
   console.log("");
-  process.exit(0);
+  process.exit(SIGINT_EXIT_CODE);
 };
 
 const shouldSelectAll = (choiceStates: PromptMultiselectChoiceState[]): boolean =>

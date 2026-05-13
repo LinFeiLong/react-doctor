@@ -97,6 +97,7 @@ export interface ImportedBinding {
   isNamespace: boolean;
   start: number;
   end: number;
+  referenceStart?: number;
 }
 
 export interface ImportRecord {
@@ -161,11 +162,20 @@ export interface NamespaceMemberReference {
   namespace: string;
   memberName: string;
   memberPath: string[];
+  start: number;
+  end: number;
 }
 
 export interface MemberObjectReference {
   namespace: string;
   memberPath: string[];
+  start: number;
+  end: number;
+}
+
+export interface ShadowRange {
+  start: number;
+  end: number;
 }
 
 export interface NamespaceObjectAlias {
@@ -177,6 +187,8 @@ export interface NamespaceObjectAlias {
 export interface NamespaceLocalAlias {
   aliasName: string;
   namespaceLocalName: string;
+  start: number;
+  end: number;
 }
 
 export interface NamespaceLocalObjectAlias {
@@ -191,6 +203,8 @@ export interface CodebaseModule {
   exports: ExportRecord[];
   directives: Set<string>;
   usedIdentifiers: Set<string>;
+  usedIdentifierRanges: Map<string, number[]>;
+  shadowRangesByName: Map<string, ShadowRange[]>;
   namespaceMemberReferences: NamespaceMemberReference[];
   memberObjectReferences: MemberObjectReference[];
   namespaceObjectAliases: NamespaceObjectAlias[];
@@ -241,6 +255,8 @@ export interface ModuleGraphNode {
   directives: Set<string>;
   parseErrors: string[];
   usedIdentifiers: Set<string>;
+  usedIdentifierRanges: Map<string, number[]>;
+  shadowRangesByName: Map<string, ShadowRange[]>;
   namespaceMemberReferences: NamespaceMemberReference[];
   memberObjectReferences: MemberObjectReference[];
   namespaceObjectAliases: NamespaceObjectAlias[];

@@ -38,6 +38,7 @@ const PROJECT_CONFIG_FILENAMES = [
   "tsconfig.json",
   "tsconfig.base.json",
   "package.json",
+  "pnpm-workspace.yaml",
   "react-doctor.config.json",
   "knip.json",
   "knip.jsonc",
@@ -46,6 +47,34 @@ const PROJECT_CONFIG_FILENAMES = [
   "oxlint.json",
   ".oxlintrc.json",
 ];
+
+const collectConfigFilePaths = (stagedFiles: string[]): string[] => {
+  const configFilePaths = new Set(PROJECT_CONFIG_FILENAMES);
+  for (const stagedFile of stagedFiles) {
+    let directory = path.dirname(stagedFile);
+    while (directory !== ".") {
+      for (const configFilename of PROJECT_CONFIG_FILENAMES) {
+        configFilePaths.add(path.join(directory, configFilename));
+      }
+      const parentDirectory = path.dirname(directory);
+      if (parentDirectory === directory) break;
+      directory = parentDirectory;
+    }
+  }
+  return [...configFilePaths].sort();
+};
+
+const resolveSafeStagedTargetPath = (
+  tempDirectory: string,
+  relativePath: string,
+): string | null => {
+  if (path.isAbsolute(relativePath)) return null;
+  const normalizedTempDirectory = path.resolve(tempDirectory);
+  const targetPath = path.resolve(normalizedTempDirectory, relativePath);
+  const relativeToTemp = path.relative(normalizedTempDirectory, targetPath);
+  if (relativeToTemp.startsWith("..") || path.isAbsolute(relativeToTemp)) return null;
+  return targetPath;
+};
 
 export const materializeStagedFiles = (
   directory: string,
@@ -57,17 +86,26 @@ export const materializeStagedFiles = (
   for (const relativePath of stagedFiles) {
     const content = readStagedContent(directory, relativePath);
     if (content === null) continue;
-
-    const targetPath = path.join(tempDirectory, relativePath);
+    const targetPath = resolveSafeStagedTargetPath(tempDirectory, relativePath);
+    if (!targetPath) continue;
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
     fs.writeFileSync(targetPath, content);
     materializedFiles.push(relativePath);
   }
 
-  for (const configFilename of PROJECT_CONFIG_FILENAMES) {
-    const sourcePath = path.join(directory, configFilename);
-    const targetPath = path.join(tempDirectory, configFilename);
-    if (fs.existsSync(sourcePath) && !fs.existsSync(targetPath)) {
+  for (const configFilePath of collectConfigFilePaths(stagedFiles)) {
+    const targetPath = resolveSafeStagedTargetPath(tempDirectory, configFilePath);
+    if (!targetPath) continue;
+    if (fs.existsSync(targetPath)) continue;
+    const stagedContent = readStagedContent(directory, configFilePath);
+    if (stagedContent !== null) {
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      fs.writeFileSync(targetPath, stagedContent);
+      continue;
+    }
+    const sourcePath = path.join(directory, configFilePath);
+    if (fs.existsSync(sourcePath)) {
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.cpSync(sourcePath, targetPath);
     }
   }

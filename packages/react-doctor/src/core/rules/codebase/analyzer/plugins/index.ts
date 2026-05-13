@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import type { CodebasePlugin, CodebasePluginResult } from "./types.js";
 import type { WorkspaceInfo } from "../types.js";
 
@@ -15,37 +17,40 @@ const builtInPlugins: CodebasePlugin[] = [
     name: "nextjs",
     enablers: ["next"],
     entryPatterns: [
-      "app/**/page.{js,jsx,ts,tsx}",
-      "app/**/layout.{js,jsx,ts,tsx}",
-      "app/**/route.{js,ts}",
-      "app/**/not-found.{js,jsx,ts,tsx}",
-      "app/**/error.{js,jsx,ts,tsx}",
-      "app/**/global-error.{js,jsx,ts,tsx}",
-      "app/**/loading.{js,jsx,ts,tsx}",
-      "app/**/template.{js,jsx,ts,tsx}",
-      "app/**/default.{js,jsx,ts,tsx}",
-      "app/**/opengraph-image.{js,jsx,ts,tsx}",
-      "app/**/twitter-image.{js,jsx,ts,tsx}",
-      "app/**/icon.{js,jsx,ts,tsx}",
-      "app/**/apple-icon.{js,jsx,ts,tsx}",
-      "app/**/sitemap.{js,ts}",
-      "app/**/robots.{js,ts}",
-      "app/**/manifest.{js,ts}",
-      "pages/**/*.{js,jsx,ts,tsx}",
+      "{src/,}app/**/page.{js,jsx,ts,tsx}",
+      "{src/,}app/**/layout.{js,jsx,ts,tsx}",
+      "{src/,}app/**/route.{js,ts}",
+      "{src/,}app/**/not-found.{js,jsx,ts,tsx}",
+      "{src/,}app/**/error.{js,jsx,ts,tsx}",
+      "{src/,}app/**/global-error.{js,jsx,ts,tsx}",
+      "{src/,}app/**/loading.{js,jsx,ts,tsx}",
+      "{src/,}app/**/template.{js,jsx,ts,tsx}",
+      "{src/,}app/**/default.{js,jsx,ts,tsx}",
+      "{src/,}app/**/opengraph-image.{js,jsx,ts,tsx}",
+      "{src/,}app/**/twitter-image.{js,jsx,ts,tsx}",
+      "{src/,}app/**/icon.{js,jsx,ts,tsx}",
+      "{src/,}app/**/apple-icon.{js,jsx,ts,tsx}",
+      "{src/,}app/**/sitemap.{js,ts}",
+      "{src/,}app/**/robots.{js,ts}",
+      "{src/,}app/**/manifest.{js,ts}",
+      "{src/,}pages/**/*.{js,jsx,ts,tsx}",
       "next.config.{js,mjs,cjs,ts}",
     ],
     entryRole: "runtime",
     alwaysUsedPatterns: [
-      "middleware.{js,ts}",
-      "instrumentation.{js,ts}",
-      "instrumentation-client.{js,ts}",
-      "mdx-components.{js,jsx,ts,tsx}",
+      "{src/,}middleware.{js,ts}",
+      "{src/,}instrumentation.{js,ts}",
+      "{src/,}instrumentation-client.{js,ts}",
+      "{src/,}mdx-components.{js,jsx,ts,tsx}",
+      // Next.js loads `sentry.{client,server,edge}.config.{js,ts}` automatically
+      // when @sentry/nextjs is configured; user code never imports them.
+      "sentry.{client,server,edge}.config.{js,mjs,cjs,ts}",
     ],
     toolingDependencies: ["next", "react", "react-dom"],
     usedExports: [
       {
         pattern:
-          "app/**/{page,layout,route,not-found,error,global-error,loading,template,default}.{js,jsx,ts,tsx}",
+          "{src/,}app/**/{page,layout,route,not-found,error,global-error,loading,template,default}.{js,jsx,ts,tsx}",
         exports: [
           "default",
           "metadata",
@@ -61,6 +66,7 @@ const builtInPlugins: CodebasePlugin[] = [
           "preferredRegion",
           "revalidate",
           "runtime",
+          "experimental_ppr",
           "GET",
           "POST",
           "PUT",
@@ -71,12 +77,35 @@ const builtInPlugins: CodebasePlugin[] = [
         ],
       },
       {
-        pattern: "app/**/{opengraph-image,twitter-image,icon,apple-icon}.{js,jsx,ts,tsx}",
+        pattern: "{src/,}app/**/{opengraph-image,twitter-image,icon,apple-icon}.{js,jsx,ts,tsx}",
         exports: ["default", "alt", "size", "contentType", "generateImageMetadata"],
       },
       {
-        pattern: "app/**/{sitemap,robots,manifest}.{js,ts}",
+        pattern: "{src/,}app/**/{sitemap,robots,manifest}.{js,ts}",
         exports: ["default"],
+      },
+      {
+        pattern: "{src/,}pages/**/*.{js,jsx,ts,tsx}",
+        exports: [
+          "default",
+          "getStaticProps",
+          "getStaticPaths",
+          "getServerSideProps",
+          "config",
+          "reportWebVitals",
+        ],
+      },
+      {
+        pattern: "{src/,}middleware.{js,ts}",
+        exports: ["default", "middleware", "config"],
+      },
+      {
+        pattern: "{src/,}instrumentation.{js,ts}",
+        exports: ["register", "onRequestError"],
+      },
+      {
+        pattern: "{src/,}instrumentation-client.{js,ts}",
+        exports: ["onRouterTransitionStart"],
       },
       {
         pattern: "next.config.{js,mjs,cjs,ts}",
@@ -152,6 +181,22 @@ const builtInPlugins: CodebasePlugin[] = [
     entryRole: "support",
     toolingDependencies: ["tsup"],
     usedExports: [{ pattern: "tsup.config.{js,mjs,cjs,ts}", exports: ["default"] }],
+  },
+  {
+    // shadcn/ui generates registry-installed component files under
+    // `components/ui/` (or the user-configured alias). The user only
+    // imports the top-level component (`Sidebar`, `Dialog`, ...) — many of
+    // the named sub-component exports (`SidebarHeader`, `DialogTrigger`,
+    // ...) ship intentionally over-exported as part of the design-system
+    // surface, so we exempt the whole directory from dead-code analysis.
+    name: "shadcn",
+    enablers: [],
+    isEnabled: (workspace: WorkspaceInfo) =>
+      existsSync(path.join(workspace.directory, "components.json")),
+    entryPatterns: [],
+    entryRole: "support",
+    alwaysUsedPatterns: ["{src/,}components/ui/**/*.{js,jsx,ts,tsx}"],
+    toolingDependencies: [],
   },
   {
     name: "storybook",

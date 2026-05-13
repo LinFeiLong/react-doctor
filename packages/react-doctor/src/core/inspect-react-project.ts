@@ -45,6 +45,46 @@ const mergeConfig = (
   offline: options.offline ?? options.config?.offline ?? loadedConfig?.config.offline,
 });
 
+const INLINE_CONFIG_SOURCE_PATH = "<inline>";
+
+const toInlineLoadedConfig = (
+  config: ReactDoctorConfig,
+  sourceDirectory: string,
+): LoadedReactDoctorConfig => ({
+  config,
+  sourceDirectory,
+  sourcePath: INLINE_CONFIG_SOURCE_PATH,
+});
+
+const withCallerRootDir = (
+  loadedConfig: LoadedReactDoctorConfig,
+  callerRootDir: string,
+  callerSourceDirectory: string,
+): LoadedReactDoctorConfig => ({
+  ...loadedConfig,
+  // Caller-supplied rootDir is resolved relative to the caller's requested
+  // directory, not the disk config's source directory, so we re-anchor here.
+  sourceDirectory: callerSourceDirectory,
+  config: { ...loadedConfig.config, rootDir: callerRootDir },
+});
+
+const getLoadedConfig = async (
+  requestedRootDirectory: string,
+  options: InspectReactProjectOptions,
+): Promise<LoadedReactDoctorConfig | null> => {
+  if (options.loadedConfig !== undefined) return options.loadedConfig;
+  if (!options.config) return loadReactDoctorConfig(requestedRootDirectory);
+  if (!options.config.rootDir) return null;
+  // Caller passed rootDir programmatically: honor it directly rather than
+  // requiring a matching react-doctor.config.json on disk, but still pick up
+  // adjacent disk config when present so other keys (ignore, ignoredTags, ...)
+  // still apply. The caller's rootDir always wins over any rootDir already
+  // declared on disk.
+  const diskConfig = await loadReactDoctorConfig(requestedRootDirectory);
+  if (!diskConfig) return toInlineLoadedConfig(options.config, requestedRootDirectory);
+  return withCallerRootDir(diskConfig, options.config.rootDir, requestedRootDirectory);
+};
+
 const mergeRuleSelection = (
   selection: ReactDoctorRuleSelection | undefined,
   config: ReactDoctorConfig,
@@ -138,8 +178,7 @@ export const inspectReactProjectCore = async (
   const startedAt = new Date();
   const startedMilliseconds = globalThis.performance.now();
   const requestedRootDirectory = path.resolve(options.rootDirectory ?? DEFAULT_DIRECTORY);
-  const loadedConfig =
-    options.config === undefined ? await loadReactDoctorConfig(requestedRootDirectory) : null;
+  const loadedConfig = await getLoadedConfig(requestedRootDirectory, options);
   const rootDirectory = await resolveConfigRootDirectory(loadedConfig, requestedRootDirectory);
   const config = mergeConfig(loadedConfig, options);
   const project = await discoverReactProject(rootDirectory);
@@ -177,7 +216,9 @@ export const inspectReactProjectCore = async (
   );
   const filteredChecks = applyIssueFiltering(allChecks, issues);
   const hasFailedChecks = filteredChecks.some((check) => check.status === "failed");
-  const remoteScore = config.offline ? null : await tryScoreFromApi(issues, proxyFetch);
+  const remoteScore = config.offline
+    ? null
+    : await tryScoreFromApi(issues, proxyFetch, { silent: options.silentLogs === true });
   const score = remoteScore ?? calculateReactDoctorScore(issues);
 
   return {

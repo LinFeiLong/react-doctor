@@ -10,6 +10,7 @@ import type {
   EntryPoint,
   EntryPointRole,
   GraphExportSymbol,
+  ImportedBinding,
   ModuleGraph,
   ModuleGraphNode,
   ResolvedImport,
@@ -44,6 +45,8 @@ const createGraphNode = (
   directives: resolvedModule.module.directives,
   parseErrors: resolvedModule.module.parseErrors,
   usedIdentifiers: resolvedModule.module.usedIdentifiers,
+  usedIdentifierRanges: resolvedModule.module.usedIdentifierRanges,
+  shadowRangesByName: resolvedModule.module.shadowRangesByName,
   namespaceMemberReferences: resolvedModule.module.namespaceMemberReferences,
   memberObjectReferences: resolvedModule.module.memberObjectReferences,
   namespaceObjectAliases: resolvedModule.module.namespaceObjectAliases,
@@ -156,39 +159,121 @@ const addAllExportMemberReferences = (exportSymbol: GraphExportSymbol): void => 
   );
 };
 
+const isPositionShadowed = (
+  node: ModuleGraphNode,
+  localName: string,
+  position: number,
+  binding?: { start: number; end: number },
+): boolean =>
+  (node.shadowRangesByName ?? new Map<string, never[]>())
+    .get(localName)
+    ?.some(
+      (range) =>
+        (!binding || binding.start < range.start || binding.start > range.end) &&
+        position >= range.start &&
+        position <= range.end,
+    ) ?? false;
+
+const isReferenceShadowed = (
+  node: ModuleGraphNode,
+  localName: string,
+  reference: { start: number },
+  binding?: { start: number; end: number },
+): boolean => isPositionShadowed(node, localName, reference.start, binding);
+
+const isLocalNameUsed = (
+  node: ModuleGraphNode,
+  localName: string,
+  binding?: { start: number; end: number },
+): boolean =>
+  (node.usedIdentifierRanges ?? new Map<string, number[]>())
+    .get(localName)
+    ?.some((position) => !isPositionShadowed(node, localName, position, binding)) ?? false;
+
 const getMemberReferencesForLocalName = (node: ModuleGraphNode, localName: string): string[] =>
   node.namespaceMemberReferences
-    .filter((reference) => reference.namespace === localName && reference.memberPath.length >= 1)
+    .filter(
+      (reference) =>
+        reference.namespace === localName &&
+        reference.memberPath.length >= 1 &&
+        !isReferenceShadowed(node, localName, reference),
+    )
     .map((reference) => reference.memberPath[0])
     .filter((memberName): memberName is string => Boolean(memberName));
 
 const getMemberObjectReferencesForLocalName = (node: ModuleGraphNode, localName: string) =>
-  node.memberObjectReferences.filter((reference) => reference.namespace === localName);
+  node.memberObjectReferences.filter(
+    (reference) =>
+      reference.namespace === localName && !isReferenceShadowed(node, localName, reference),
+  );
 
-const getNamespaceMemberReferencesForLocalName = (node: ModuleGraphNode, localName: string) => [
-  ...node.namespaceMemberReferences.filter((reference) => reference.namespace === localName),
+const getNamespaceMemberReferencesForLocalName = (
+  node: ModuleGraphNode,
+  localName: string,
+  binding?: ImportedBinding,
+) => [
+  ...node.namespaceMemberReferences.filter(
+    (reference) =>
+      reference.namespace === localName &&
+      !isReferenceShadowed(node, localName, reference, binding),
+  ),
   ...node.namespaceLocalAliases
     .filter(
       (alias) =>
-        alias.namespaceLocalName === localName && node.usedIdentifiers.has(alias.aliasName),
+        alias.namespaceLocalName === localName && isLocalNameUsed(node, alias.aliasName, alias),
     )
     .flatMap((alias) =>
-      node.namespaceMemberReferences.filter((reference) => reference.namespace === alias.aliasName),
+      node.namespaceMemberReferences.filter(
+        (reference) =>
+          reference.namespace === alias.aliasName &&
+          !isReferenceShadowed(node, alias.aliasName, reference, alias),
+      ),
     ),
 ];
 
 const getNamespaceMemberObjectReferencesForLocalName = (
   node: ModuleGraphNode,
   localName: string,
+  binding?: ImportedBinding,
 ) => [
-  ...getMemberObjectReferencesForLocalName(node, localName),
+  ...node.memberObjectReferences.filter(
+    (reference) =>
+      reference.namespace === localName &&
+      !isReferenceShadowed(node, localName, reference, binding),
+  ),
   ...node.namespaceLocalAliases
     .filter(
       (alias) =>
-        alias.namespaceLocalName === localName && node.usedIdentifiers.has(alias.aliasName),
+        alias.namespaceLocalName === localName && isLocalNameUsed(node, alias.aliasName, alias),
     )
-    .flatMap((alias) => getMemberObjectReferencesForLocalName(node, alias.aliasName)),
+    .flatMap((alias) =>
+      node.memberObjectReferences.filter(
+        (reference) =>
+          reference.namespace === alias.aliasName &&
+          !isReferenceShadowed(node, alias.aliasName, reference, alias),
+      ),
+    ),
 ];
+
+const isImportBindingUsed = (
+  node: ModuleGraphNode,
+  binding: ImportedBinding,
+  importKind: ResolvedImport["importRecord"]["kind"],
+): boolean => {
+  if (
+    importKind === "dynamic" &&
+    !binding.isNamespace &&
+    binding.localName !== binding.importedName
+  ) {
+    return !isPositionShadowed(
+      node,
+      binding.localName,
+      binding.referenceStart ?? binding.start,
+      binding,
+    );
+  }
+  return isLocalNameUsed(node, binding.localName, binding);
+};
 
 const addImportReferences = (nodes: Map<number, ModuleGraphNode>): void => {
   const pathToNode = createPathToNodeMap(nodes);
@@ -206,17 +291,23 @@ const addImportReferences = (nodes: Map<number, ModuleGraphNode>): void => {
         }
         const isReExport = resolvedImport.importRecord.kind === "re-export";
         const isCommentReference = resolvedImport.importRecord.kind === "comment";
-        if (!isReExport && !isCommentReference && !node.usedIdentifiers.has(binding.localName)) {
+        if (
+          !isReExport &&
+          !isCommentReference &&
+          !isImportBindingUsed(node, binding, resolvedImport.importRecord.kind)
+        ) {
           continue;
         }
         if (binding.isNamespace) {
           const namespaceReferences = getNamespaceMemberReferencesForLocalName(
             node,
             binding.localName,
+            binding,
           );
           const namespaceObjectReferences = getNamespaceMemberObjectReferencesForLocalName(
             node,
             binding.localName,
+            binding,
           );
           const referencedMemberNames = new Set(
             [...namespaceReferences, ...namespaceObjectReferences]
@@ -757,6 +848,12 @@ const collectNamedImportReferencesToNode = (
           binding.isNamespace ||
           binding.importedName === "default" ||
           binding.importedName === "*"
+        ) {
+          continue;
+        }
+        if (
+          resolvedImport.importRecord.kind !== "re-export" &&
+          !isImportBindingUsed(importerNode, binding, resolvedImport.importRecord.kind)
         ) {
           continue;
         }

@@ -1,4 +1,8 @@
-import { describe, expect, it } from "vite-plus/test";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, expect, it } from "vite-plus/test";
+import reactDoctorEslintPlugin from "../src/eslint-plugin.js";
 import {
   GLOBAL_REACT_DOCTOR_OXLINT_RULES,
   REACT_DOCTOR_CUSTOM_OXLINT_RULES,
@@ -10,6 +14,16 @@ import { TEST_OR_INFRA_FILE_PATTERN } from "../src/core/rules/lint/constants.js"
 import { isWebOnlyPath } from "../src/core/rules/lint/react-native/utils/is-web-only-path.js";
 import { buildPreventDefaultMessage } from "../src/core/rules/lint/react/utils/build-prevent-default-message.js";
 import type { EsTreeNode } from "../src/core/rules/lint/utils/index.js";
+
+const createdFixtureDirectories: string[] = [];
+
+afterEach(async () => {
+  while (createdFixtureDirectories.length > 0) {
+    const fixtureDirectory = createdFixtureDirectories.pop();
+    if (!fixtureDirectory) continue;
+    await fs.rm(fixtureDirectory, { recursive: true, force: true });
+  }
+});
 
 describe("tailwind rule recategorization", () => {
   const renamedRuleNames = [
@@ -53,6 +67,53 @@ describe("tailwind rule recategorization", () => {
       includeEcosystemRules: false,
     });
     expect(config.rules["react-doctor/tailwind-no-redundant-size-axes"]).toBeUndefined();
+  });
+
+  it("resolves optional JS plugins from the scanned project root", async () => {
+    const rootDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "react-doctor-plugin-root-"));
+    createdFixtureDirectories.push(rootDirectory);
+    const pluginDirectory = path.join(
+      rootDirectory,
+      "node_modules/eslint-plugin-react-you-might-not-need-an-effect",
+    );
+    await fs.mkdir(pluginDirectory, { recursive: true });
+    await fs.writeFile(
+      path.join(pluginDirectory, "package.json"),
+      JSON.stringify({
+        name: "eslint-plugin-react-you-might-not-need-an-effect",
+        main: "index.js",
+      }),
+    );
+    await fs.writeFile(
+      path.join(pluginDirectory, "index.js"),
+      "module.exports = { rules: { 'no-derived-state': {} } };\n",
+    );
+
+    const config = createReactDoctorOxlintConfig({
+      pluginPath: "/tmp/plugin.js",
+      projectRootDirectory: rootDirectory,
+    });
+
+    const effectPlugin = config.jsPlugins.find(
+      (plugin) =>
+        typeof plugin === "object" && plugin !== null && Reflect.get(plugin, "name") === "effect",
+    );
+    expect(effectPlugin).toBeDefined();
+    expect(config.rules["effect/no-derived-state"]).toBe("warn");
+  });
+});
+
+describe("eslint plugin export", () => {
+  it("preserves the published flat config shape", () => {
+    expect(reactDoctorEslintPlugin.configs.recommended.plugins["react-doctor"]).toBe(
+      reactDoctorEslintPlugin,
+    );
+    expect(reactDoctorEslintPlugin.configs.next.rules["react-doctor/nextjs-no-img-element"]).toBe(
+      "warn",
+    );
+    expect(reactDoctorEslintPlugin.configs.all.rules["react-doctor/no-fetch-in-effect"]).toBe(
+      "warn",
+    );
   });
 });
 

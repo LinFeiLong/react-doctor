@@ -170,13 +170,28 @@ export class ReactDoctorReportError extends ReactDoctorError {
 export const isReactDoctorError = (value: unknown): value is ReactDoctorError =>
   value instanceof ReactDoctorError;
 
-export const toReactDoctorErrorInfo = (error: unknown): ReactDoctorErrorInfo => {
+const toReactDoctorErrorInfoWithVisited = (
+  error: unknown,
+  visited: Set<unknown>,
+): ReactDoctorErrorInfo => {
+  if (visited.has(error)) {
+    return {
+      name: "Error",
+      message: "Cycle detected in error cause chain.",
+      code: "react-doctor/cause-cycle",
+    };
+  }
+  if (error instanceof Error) visited.add(error);
+
+  const toCause = (cause: unknown): ReactDoctorErrorInfo | undefined =>
+    cause === undefined ? undefined : toReactDoctorErrorInfoWithVisited(cause, visited);
+
   if (error instanceof ReactDoctorError) {
     return {
       name: error.name,
       message: error.message,
       code: error.code,
-      cause: error.cause === undefined ? undefined : toReactDoctorErrorInfo(error.cause),
+      cause: toCause(error.cause),
     };
   }
 
@@ -185,7 +200,7 @@ export const toReactDoctorErrorInfo = (error: unknown): ReactDoctorErrorInfo => 
       name: error.name || "Error",
       message: error.message || error.name || "Unknown error",
       code: "react-doctor/unknown-error",
-      cause: error.cause === undefined ? undefined : toReactDoctorErrorInfo(error.cause),
+      cause: toCause(error.cause),
     };
   }
 
@@ -195,3 +210,6 @@ export const toReactDoctorErrorInfo = (error: unknown): ReactDoctorErrorInfo => 
     code: "react-doctor/unknown-error",
   };
 };
+
+export const toReactDoctorErrorInfo = (error: unknown): ReactDoctorErrorInfo =>
+  toReactDoctorErrorInfoWithVisited(error, new Set());

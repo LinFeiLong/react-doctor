@@ -5,13 +5,19 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseSync } from "oxc-parser";
 import { ReactDoctorCheckFailedError, ReactDoctorRunnerUnavailableError } from "../errors.js";
 import { createReactDoctorOxlintConfig, reactDoctorOxlintRuleMetadata } from "../rules/index.js";
+import { collectPatternNames, isNodeOfType, walkAst } from "../rules/lint/utils/index.js";
+import type { EsTreeNode } from "../rules/lint/utils/index.js";
 import type { ReactDoctorOxlintProjectInfo } from "../rules/index.js";
 import type { ReactDoctorIssue } from "../types.js";
+import { OXLINT_CHECK_ID } from "./check-ids.js";
 import { collectIgnorePatterns } from "./collect-ignore-patterns.js";
 
-interface OxlintSpan {
+export { OXLINT_CHECK_ID };
+
+export interface OxlintSpan {
   line?: number;
   column?: number;
   endLine?: number;
@@ -36,6 +42,11 @@ interface OxlintOutput {
   diagnostics?: OxlintDiagnostic[];
 }
 
+interface SourceRange {
+  start: number;
+  end: number;
+}
+
 export interface RunOxlintOptions {
   rootDirectory: string;
   includePaths?: string[];
@@ -48,10 +59,11 @@ export interface RunOxlintOptions {
   signal?: AbortSignal;
 }
 
-export const OXLINT_CHECK_ID = "react-doctor/oxlint";
-
 const esmRequire = createRequire(import.meta.url);
 const OXLINT_STDERR_PREVIEW_LENGTH = 2_000;
+const REACT_RULES_OF_HOOKS_CODE = "react/rules-of-hooks";
+const REACT_USE_HOOK_MESSAGE_FRAGMENT = 'React Hook "use"';
+const USE_IDENTIFIER_NAME = "use";
 const USER_LINT_CONFIG_FILENAMES = [".oxlintrc.json", ".eslintrc.json"];
 const TSCONFIG_FILENAMES = ["tsconfig.json", "tsconfig.base.json"];
 
@@ -353,16 +365,120 @@ const toReactDoctorIssue = (
   };
 };
 
+const isFunctionNode = (node: EsTreeNode): boolean =>
+  isNodeOfType(node, "ArrowFunctionExpression") ||
+  isNodeOfType(node, "FunctionDeclaration") ||
+  isNodeOfType(node, "FunctionExpression");
+
+const hasUseParameterInScope = (node: EsTreeNode): boolean => {
+  let currentNode = node.parent;
+  while (currentNode) {
+    if (isFunctionNode(currentNode)) {
+      const parameterNames = new Set<string>();
+      for (const parameter of currentNode.params ?? []) {
+        collectPatternNames(parameter, parameterNames);
+      }
+      if (parameterNames.has(USE_IDENTIFIER_NAME)) return true;
+    }
+    currentNode = currentNode.parent;
+  }
+  return false;
+};
+
+const getNodeRange = (node: EsTreeNode): SourceRange | null => {
+  if (!Array.isArray(node.range)) return null;
+  const [start, end] = node.range;
+  if (typeof start !== "number" || typeof end !== "number") return null;
+  return { start, end };
+};
+
+const toLineRange = (sourceText: string, line: number | undefined): SourceRange | null => {
+  if (!line || line < 1) return null;
+  let currentLine = 1;
+  let lineStart = 0;
+  for (let index = 0; index < sourceText.length; index += 1) {
+    if (currentLine === line) {
+      const newlineIndex = sourceText.indexOf("\n", index);
+      return { start: lineStart, end: newlineIndex === -1 ? sourceText.length : newlineIndex };
+    }
+    if (sourceText[index] === "\n") {
+      currentLine += 1;
+      lineStart = index + 1;
+    }
+  }
+  return currentLine === line ? { start: lineStart, end: sourceText.length } : null;
+};
+
+const rangesOverlap = (firstRange: SourceRange, secondRange: SourceRange): boolean =>
+  firstRange.start <= secondRange.end && secondRange.start <= firstRange.end;
+
+export const isLocalUseRulesOfHooksFalsePositive = (
+  sourceText: string,
+  filePath: string,
+  span: OxlintSpan | undefined,
+): boolean => {
+  const lineRange = toLineRange(sourceText, span?.line);
+  if (!lineRange) return false;
+
+  try {
+    const parseResult = parseSync(filePath, sourceText, {
+      sourceType: "unambiguous",
+      range: true,
+    });
+    let didFindLocalUseCall = false;
+    walkAst(parseResult.program as EsTreeNode, (node) => {
+      if (didFindLocalUseCall) return false;
+      if (!isNodeOfType(node, "CallExpression")) return;
+      if (!isNodeOfType(node.callee, "Identifier")) return;
+      if (node.callee.name !== USE_IDENTIFIER_NAME) return;
+      const callRange = getNodeRange(node);
+      if (!callRange || !rangesOverlap(callRange, lineRange)) return;
+      didFindLocalUseCall = hasUseParameterInScope(node);
+      if (didFindLocalUseCall) return false;
+    });
+    return didFindLocalUseCall;
+  } catch {
+    return false;
+  }
+};
+
+const shouldSuppressLocalUseRulesOfHooksDiagnostic = async (
+  diagnostic: OxlintDiagnostic,
+  rootDirectory: string,
+): Promise<boolean> => {
+  if (diagnostic.code !== REACT_RULES_OF_HOOKS_CODE) return false;
+  if (!diagnostic.message?.includes(REACT_USE_HOOK_MESSAGE_FRAGMENT)) return false;
+  const span = diagnostic.labels?.[0]?.span;
+  const filename = diagnostic.filename;
+  if (!filename || !span?.line) return false;
+
+  const filePath = path.isAbsolute(filename) ? filename : path.join(rootDirectory, filename);
+  try {
+    const sourceText = await fs.readFile(filePath, "utf8");
+    return isLocalUseRulesOfHooksFalsePositive(sourceText, filePath, span);
+  } catch {
+    return false;
+  }
+};
+
+const filterOxlintDiagnostics = async (
+  diagnostics: OxlintDiagnostic[],
+  rootDirectory: string,
+): Promise<OxlintDiagnostic[]> => {
+  const filteredDiagnostics: OxlintDiagnostic[] = [];
+  for (const diagnostic of diagnostics) {
+    if (await shouldSuppressLocalUseRulesOfHooksDiagnostic(diagnostic, rootDirectory)) continue;
+    filteredDiagnostics.push(diagnostic);
+  }
+  return filteredDiagnostics;
+};
+
 const formatOxlintOutputPreview = (stdout: string, stderr = ""): string => {
   const combinedOutput = [stdout, stderr].filter((value) => value.trim().length > 0).join("\n");
   return combinedOutput.trim().slice(0, OXLINT_STDERR_PREVIEW_LENGTH);
 };
 
-const parseOxlintOutput = (
-  stdout: string,
-  rootDirectory: string,
-  stderr = "",
-): ReactDoctorIssue[] => {
+const parseOxlintOutput = (stdout: string, stderr = ""): OxlintDiagnostic[] => {
   if (!stdout.trim()) return [];
   let output: OxlintOutput;
   try {
@@ -377,9 +493,7 @@ const parseOxlintOutput = (
       },
     );
   }
-  return (output.diagnostics ?? []).map((diagnostic) =>
-    toReactDoctorIssue(diagnostic, rootDirectory),
-  );
+  return output.diagnostics ?? [];
 };
 
 const spawnOxlint = (
@@ -426,6 +540,7 @@ export const runOxlint = async (options: RunOxlintOptions): Promise<ReactDoctorI
   const oxlintBinary = resolveOxlintBinary();
   const config = createReactDoctorOxlintConfig({
     pluginPath: resolvePluginPath(),
+    projectRootDirectory: options.rootDirectory,
     project: options.project,
     customRulesOnly: options.customRulesOnly,
     includeEcosystemRules: options.includeEcosystemRules,
@@ -464,7 +579,11 @@ export const runOxlint = async (options: RunOxlintOptions): Promise<ReactDoctorI
     }
     args.push(...(options.includePaths?.length ? options.includePaths : ["."]));
     const { stdout, stderr } = await spawnOxlint(args, options.rootDirectory, options.signal);
-    return parseOxlintOutput(stdout, options.rootDirectory, stderr);
+    const diagnostics = parseOxlintOutput(stdout, stderr);
+    const filteredDiagnostics = await filterOxlintDiagnostics(diagnostics, options.rootDirectory);
+    return filteredDiagnostics.map((diagnostic) =>
+      toReactDoctorIssue(diagnostic, options.rootDirectory),
+    );
   } finally {
     await fs.rm(configDirectory, { recursive: true, force: true });
   }

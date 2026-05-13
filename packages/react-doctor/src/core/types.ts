@@ -147,10 +147,15 @@ export interface InspectReactProjectOptions {
   excludePatterns?: string[];
   rules?: ReactDoctorRuleSelection;
   config?: ReactDoctorConfig | null;
+  loadedConfig?: LoadedReactDoctorConfig | null;
   lint?: boolean;
   deadCode?: boolean;
   customRulesOnly?: boolean;
   respectInlineDisables?: boolean;
   offline?: boolean;
+  // Suppress non-fatal stderr warnings (e.g. score API connectivity failures).
+  // Intended for JSON / score-only output modes where extra log lines would
+  // muddle a script-consumed stream.
+  silentLogs?: boolean;
   signal?: AbortSignal;
 }
