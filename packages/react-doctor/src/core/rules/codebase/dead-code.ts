@@ -48,7 +48,7 @@ const createCodebaseIssue = (
   },
 ): ReactDoctorIssue => ({
   severity: issue.severity ?? "warning",
-  category: issue.category ?? "codebase",
+  category: issue.category ?? "Dead Code",
   ...issue,
 });
 
