@@ -235,17 +235,16 @@ const RULE_TITLE_WORD_UPPERCASE = /\b(css|html|url|svg|jsx|api|ua|rn)\b/gi;
 const toRuleTitle = (ruleName: string): string => {
   const readable = ruleName
     .replace(/^(no|prefer|require|use)-/, "")
-    .replace(/^(nextjs|tanstack-start|tanstack-query|rn|js|server|client|query|effect|design|rendering|rerender|react-compiler|advanced)-/, "")
+    .replace(
+      /^(nextjs|tanstack-start|tanstack-query|rn|js|server|client|query|effect|design|rendering|rerender|react-compiler|advanced)-/,
+      "",
+    )
     .replaceAll("-", " ");
   const titled = readable.charAt(0).toUpperCase() + readable.slice(1);
   return titled.replace(RULE_TITLE_WORD_UPPERCASE, (match) => match.toUpperCase());
 };
 
-const resolveCategoryForCode = (
-  code: string,
-  pluginName: string,
-  ruleId: string,
-): string => {
+const resolveCategoryForCode = (code: string, pluginName: string, ruleId: string): string => {
   const normalized = `${pluginName}/${ruleId}`;
   const fromRule = RULE_CATEGORY_MAP[normalized] ?? RULE_CATEGORY_MAP[code];
   if (fromRule) return fromRule;
@@ -332,8 +331,7 @@ const toReactDoctorIssue = (
   const code = diagnostic.code ?? "oxlint/unknown";
   const ruleSource = splitRuleCode(code);
   const normalizedCode = `${ruleSource.pluginName}/${ruleSource.ruleId}`;
-  const metadata =
-    metadataByRuleKey.get(code) ?? metadataByRuleKey.get(normalizedCode);
+  const metadata = metadataByRuleKey.get(code) ?? metadataByRuleKey.get(normalizedCode);
   const firstSpan = diagnostic.labels?.[0]?.span;
   const filePath = toRelativeFilename(rootDirectory, diagnostic.filename);
   const severity = diagnostic.severity === "error" ? "error" : "warning";

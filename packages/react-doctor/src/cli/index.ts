@@ -354,7 +354,9 @@ const shouldFailForIssues = (
   failOnLevel: ReactDoctorFailOnLevel,
 ): boolean => {
   if (failOnLevel === "none") return false;
-  if (failOnLevel === "warning") return issues.length > 0;
+  if (failOnLevel === "warning") {
+    return issues.some((issue) => issue.severity === "error" || issue.severity === "warning");
+  }
   return issues.some((issue) => issue.severity === "error");
 };
 
@@ -1230,6 +1232,8 @@ const runExplain = async (
     rootDirectory: targetDirectory,
   }).inspect({
     offline: true,
+    lint: true,
+    deadCode: true,
     config,
   });
 
@@ -1640,7 +1644,7 @@ const program = new Command()
         scanRootDirectory,
         flags.project,
         shouldSkipPrompts,
-        isJsonMode,
+        isQuiet,
       );
 
       const inspectOptions = {
