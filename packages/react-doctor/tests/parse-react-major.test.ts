@@ -21,9 +21,10 @@ describe("parseReactMajor", () => {
     expect(parseReactMajor("<19")).toBeNull();
     expect(parseReactMajor("<=18")).toBeNull();
     expect(parseReactMajor("< 19")).toBeNull();
+    expect(parseReactMajor("<20 || >=17")).toBeNull();
   });
 
-  it("returns null for tags, workspace protocols, and missing/empty input", () => {
+  it("returns null for tags, unresolvable protocols, and missing/empty input", () => {
     expect(parseReactMajor(null)).toBeNull();
     expect(parseReactMajor(undefined)).toBeNull();
     expect(parseReactMajor("")).toBeNull();
@@ -31,12 +32,20 @@ describe("parseReactMajor", () => {
     expect(parseReactMajor("latest")).toBeNull();
     expect(parseReactMajor("next")).toBeNull();
     expect(parseReactMajor("workspace:*")).toBeNull();
+    expect(parseReactMajor("github:facebook/react#1234567890")).toBeNull();
+    expect(parseReactMajor("file:../react-19-local.tgz")).toBeNull();
+    expect(parseReactMajor("npm:@scope/react19-fork@latest")).toBeNull();
     expect(parseReactMajor("*")).toBeNull();
   });
 
   it("ignores leading whitespace and prefixes", () => {
     expect(parseReactMajor("  ^19.0.0  ")).toBe(19);
-    expect(parseReactMajor("npm:react@^19")).toBe(19);
+  });
+
+  it("returns null for non-lower-bound comparators", () => {
+    expect(parseReactMajor(">18")).toBeNull();
+    expect(parseReactMajor(">18 <20")).toBeNull();
+    expect(parseReactMajor("!=19")).toBeNull();
   });
 
   it("returns null for React experimental / canary builds (0.0.0-...)", () => {

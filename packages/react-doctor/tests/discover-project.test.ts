@@ -422,6 +422,33 @@ describe("discoverProject", () => {
     expect(projectInfo.tailwindVersion).toBeNull();
   });
 
+  it("uses monorepo React fallback for Next leaf packages without direct React declarations", () => {
+    const monorepoRoot = path.join(tempDirectory, "next-leaf-uses-root-react-fallback");
+    fs.mkdirSync(path.join(monorepoRoot, "packages", "next-adapter"), { recursive: true });
+    fs.writeFileSync(
+      path.join(monorepoRoot, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n\ncatalog:\n  react: ^19.0.0\n  next: ^16.0.0\n",
+    );
+    fs.writeFileSync(
+      path.join(monorepoRoot, "package.json"),
+      JSON.stringify({
+        name: "root",
+        devDependencies: { react: "catalog:", next: "catalog:" },
+      }),
+    );
+    fs.writeFileSync(
+      path.join(monorepoRoot, "packages", "next-adapter", "package.json"),
+      JSON.stringify({
+        name: "next-adapter",
+        peerDependencies: { next: ">=15" },
+      }),
+    );
+
+    const projectInfo = discoverProject(path.join(monorepoRoot, "packages", "next-adapter"));
+    expect(projectInfo.reactVersion).toBe("^19.0.0");
+    expect(projectInfo.reactMajorVersion).toBe(19);
+  });
+
   it("resolves React version from pnpm workspace named catalog", () => {
     const projectInfo = discoverProject(
       path.join(FIXTURES_DIRECTORY, "pnpm-named-catalog", "packages", "app"),

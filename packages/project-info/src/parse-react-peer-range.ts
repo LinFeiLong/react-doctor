@@ -6,13 +6,19 @@ const COMPARATOR_SEPARATOR = /[\s,|]+/;
 const OR_SEPARATOR = /\s*\|\|\s*/;
 const HAS_UPPER_BOUND_COMPARATOR = /<\s*=?\s*\d+(?:\.\d+){0,2}(?:-[^\s,|]+)?/;
 const UPPER_BOUND_COMPARATOR = /<\s*=?\s*\d+(?:\.\d+){0,2}(?:-[^\s,|]+)?/g;
+const UNRESOLVABLE_PROTOCOL_VERSION = /^(?:file|git|github|https?|link|patch|portal|workspace|npm):/i;
+const DIST_TAG_VERSION = /^[a-z][a-z0-9._-]*$/i;
+const NON_LOWER_BOUND_COMPARATOR = /^(?:>(?!=)|!={0,2})\s*\d/;
 const WILDCARD_COMPARATOR = /^[*xX](?:\.[*xX])*$/;
 
 const extractComparatorMajor = (comparator: string): number | null => {
+  if (UNRESOLVABLE_PROTOCOL_VERSION.test(comparator)) return null;
+  if (DIST_TAG_VERSION.test(comparator) && !/^v\d/i.test(comparator)) return null;
   if (WILDCARD_COMPARATOR.test(comparator)) return null;
-  const firstIntegerMatch = comparator.match(/\d+/);
+  if (NON_LOWER_BOUND_COMPARATOR.test(comparator)) return null;
+  const firstIntegerMatch = comparator.match(/^(?:>=\s*|[~^=v]\s*)?(\d+)(?=$|[.*xX-])/);
   if (!firstIntegerMatch) return null;
-  const major = Number.parseInt(firstIntegerMatch[0], 10);
+  const major = Number.parseInt(firstIntegerMatch[1], 10);
   return major >= 1 ? major : null;
 };
 
