@@ -26,6 +26,10 @@ import {
   encodeAnnotationProperty,
   encodeAnnotationMessage,
 } from "../../src/cli/utils/annotation-encoding.js";
+import {
+  SCORE_UNAVAILABLE_API_FAILURE_MESSAGE,
+  SCORE_UNAVAILABLE_OFFLINE_MESSAGE,
+} from "../../src/cli/utils/constants.js";
 import { setupReactProject, writeFile, writeJson } from "./_helpers.js";
 
 const PACKAGE_ROOT = path.resolve(import.meta.dirname, "..", "..");
@@ -221,49 +225,98 @@ describe("issue #135: lint failures surface in skippedChecks", () => {
 // HACK: PR #249 (Bugbot review): `noScoreMessage` was unconditionally
 // "Score unavailable in offline mode." so every null-score scan claimed
 // the user was offline — including the case where the user is online
-// but the score API simply timed out or returned non-2xx. Branch the
-// message on `options.offline` so the two reasons read differently.
+// but the score API timed out or returned non-2xx. We pin the contract
+// by branch (offline vs API-failure) and by API-failure *mode* (the
+// three distinct ways calculateScore returns null: throw, !response.ok,
+// malformed-body). All three failure modes must produce the API-failure
+// message, never the offline message.
+interface NoScoreScenario {
+  label: string;
+  caseId: string;
+  options: Parameters<typeof inspect>[1];
+  setupFetchStub?: () => void;
+  expectedMessage: string;
+  forbiddenMessage: string;
+}
+
+const NO_SCORE_SCENARIOS: NoScoreScenario[] = [
+  {
+    label: "--offline set",
+    caseId: "pr-249-offline",
+    options: { offline: true, lint: false },
+    expectedMessage: SCORE_UNAVAILABLE_OFFLINE_MESSAGE,
+    forbiddenMessage: SCORE_UNAVAILABLE_API_FAILURE_MESSAGE,
+  },
+  {
+    label: "online + score API throws (DNS / network / abort)",
+    caseId: "pr-249-api-throws",
+    options: { offline: false, lint: false },
+    setupFetchStub: () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          throw new Error("network unavailable");
+        }),
+      );
+    },
+    expectedMessage: SCORE_UNAVAILABLE_API_FAILURE_MESSAGE,
+    forbiddenMessage: SCORE_UNAVAILABLE_OFFLINE_MESSAGE,
+  },
+  {
+    label: "online + score API returns non-2xx",
+    caseId: "pr-249-api-non-2xx",
+    options: { offline: false, lint: false },
+    setupFetchStub: () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(
+          async () => new Response("internal error", { status: 500, statusText: "Server Error" }),
+        ),
+      );
+    },
+    expectedMessage: SCORE_UNAVAILABLE_API_FAILURE_MESSAGE,
+    forbiddenMessage: SCORE_UNAVAILABLE_OFFLINE_MESSAGE,
+  },
+  {
+    label: "online + score API returns malformed body",
+    caseId: "pr-249-api-malformed",
+    options: { offline: false, lint: false },
+    setupFetchStub: () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => new Response("not-json{{{", { status: 200 })),
+      );
+    },
+    expectedMessage: SCORE_UNAVAILABLE_API_FAILURE_MESSAGE,
+    forbiddenMessage: SCORE_UNAVAILABLE_OFFLINE_MESSAGE,
+  },
+];
+
 describe("'score unavailable' message branches on offline vs API failure (#249)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it("renders the offline-mode message when --offline is set", async () => {
-    const projectDir = setupMinimalReactProject("pr-249-offline");
-    const { result, stdout } = await captureScanOutput(projectDir, {
-      offline: true,
-      lint: false,
-    });
+  it.each(NO_SCORE_SCENARIOS)(
+    "renders the right message when $label",
+    async ({ caseId, options, setupFetchStub, expectedMessage, forbiddenMessage }) => {
+      if (setupFetchStub) {
+        setupFetchStub();
+        // HACK: calculate-score logs a warning to stderr on every API
+        // failure; silence it so the test output stays readable.
+        vi.spyOn(console, "warn").mockImplementation(() => {});
+      }
 
-    expect(result.score).toBeNull();
-    const plainStdout = stripAnsi(stdout);
-    expect(plainStdout).toContain("Score unavailable in offline mode");
-    expect(plainStdout).not.toContain("could not reach the score API");
-  });
+      const projectDir = setupMinimalReactProject(caseId);
+      const { result, stdout } = await captureScanOutput(projectDir, options);
 
-  it("renders the API-failure message when calculateScore returns null and --offline is NOT set", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        throw new Error("network unavailable");
-      }),
-    );
-    // HACK: calculate-score logs a warning to stderr on every API failure;
-    // silence it so the test output stays readable.
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    const projectDir = setupMinimalReactProject("pr-249-api-failure");
-    const { result, stdout } = await captureScanOutput(projectDir, {
-      offline: false,
-      lint: false,
-    });
-
-    expect(result.score).toBeNull();
-    const plainStdout = stripAnsi(stdout);
-    expect(plainStdout).toContain("could not reach the score API");
-    expect(plainStdout).not.toContain("in offline mode");
-  });
+      expect(result.score).toBeNull();
+      const plainStdout = stripAnsi(stdout);
+      expect(plainStdout).toContain(expectedMessage);
+      expect(plainStdout).not.toContain(forbiddenMessage);
+    },
+  );
 });
 
 describe("issue #43: no silent global npm install", () => {

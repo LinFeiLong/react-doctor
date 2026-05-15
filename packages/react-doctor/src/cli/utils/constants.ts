@@ -8,3 +8,13 @@ export const STAGED_FILES_TEMP_DIR_PREFIX = "react-doctor-staged-";
 // stdout valid JSON so downstream parsers don't see a half-written report.
 export const INTERNAL_ERROR_JSON_FALLBACK =
   '{"schemaVersion":1,"ok":false,"error":{"message":"Internal error","name":"Error","chain":[]}}\n';
+
+// Score-unavailable messages. Two distinct reasons => two distinct
+// strings so the renderer can't conflate them (PR #249 Bugbot finding).
+// Kept here as named constants so tests can import them instead of
+// duplicating the literal — renaming the user-facing copy then flows
+// through to assertions automatically.
+export const SCORE_UNAVAILABLE_OFFLINE_MESSAGE = "Score unavailable in offline mode.";
+
+export const SCORE_UNAVAILABLE_API_FAILURE_MESSAGE =
+  "Score unavailable (could not reach the score API).";

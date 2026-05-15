@@ -21,6 +21,10 @@ import type {
   InspectResult,
   ReactDoctorConfig,
 } from "@react-doctor/types";
+import {
+  SCORE_UNAVAILABLE_API_FAILURE_MESSAGE,
+  SCORE_UNAVAILABLE_OFFLINE_MESSAGE,
+} from "./cli/utils/constants.js";
 import { printDiagnostics } from "./cli/utils/render-diagnostics.js";
 import { printProjectDetection } from "./cli/utils/render-project-detection.js";
 import {
@@ -205,8 +209,8 @@ const runInspect = async (
   // the API was unreachable.
   const scoreResult = options.offline ? null : await calculateScore(diagnostics);
   const noScoreMessage = options.offline
-    ? "Score unavailable in offline mode."
-    : "Score unavailable (could not reach the score API).";
+    ? SCORE_UNAVAILABLE_OFFLINE_MESSAGE
+    : SCORE_UNAVAILABLE_API_FAILURE_MESSAGE;
 
   const buildResult = (): InspectResult => ({
     diagnostics,
