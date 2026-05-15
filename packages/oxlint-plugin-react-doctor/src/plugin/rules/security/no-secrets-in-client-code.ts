@@ -1,4 +1,5 @@
 import {
+  NON_CLIENT_SECRET_HEURISTIC_FILE_PATTERN,
   SECRET_FALSE_POSITIVE_SUFFIXES,
   SECRET_MIN_LENGTH_CHARS,
   SECRET_PATTERNS,
@@ -14,36 +15,45 @@ export const noSecretsInClientCode = defineRule<Rule>({
   id: "no-secrets-in-client-code",
   severity: "warn",
   recommendation:
-    "Move to server-side `process.env.SECRET_NAME`. Only `NEXT_PUBLIC_*` vars are safe for the client (and should not contain secrets)",
-  create: (context: RuleContext) => ({
-    VariableDeclarator(node: EsTreeNodeOfType<"VariableDeclarator">) {
-      if (!isNodeOfType(node.id, "Identifier")) return;
-      if (!isNodeOfType(node.init, "Literal") || typeof node.init.value !== "string") return;
+    "Move secrets to server-only code. Public client environment variables are bundled into browser code and must not contain secrets",
+  create: (context: RuleContext) => {
+    const filename = context.getFilename?.() ?? "";
+    const normalizedFilename = filename.replaceAll("\\", "/");
+    const canUseVariableNameHeuristic =
+      normalizedFilename.length === 0 ||
+      !NON_CLIENT_SECRET_HEURISTIC_FILE_PATTERN.test(normalizedFilename);
 
-      const variableName = node.id.name;
-      const literalValue = node.init.value;
+    return {
+      VariableDeclarator(node: EsTreeNodeOfType<"VariableDeclarator">) {
+        if (!isNodeOfType(node.id, "Identifier")) return;
+        if (!isNodeOfType(node.init, "Literal") || typeof node.init.value !== "string") return;
 
-      const trailingSuffix = variableName.split("_").pop()?.toLowerCase() ?? "";
-      const isUiConstant = SECRET_FALSE_POSITIVE_SUFFIXES.has(trailingSuffix);
+        const variableName = node.id.name;
+        const literalValue = node.init.value;
 
-      if (
-        SECRET_VARIABLE_PATTERN.test(variableName) &&
-        !isUiConstant &&
-        literalValue.length > SECRET_MIN_LENGTH_CHARS
-      ) {
-        context.report({
-          node,
-          message: `Possible hardcoded secret in "${variableName}" — use environment variables instead`,
-        });
-        return;
-      }
+        const trailingSuffix = variableName.split("_").pop()?.toLowerCase() ?? "";
+        const isUiConstant = SECRET_FALSE_POSITIVE_SUFFIXES.has(trailingSuffix);
 
-      if (SECRET_PATTERNS.some((pattern) => pattern.test(literalValue))) {
-        context.report({
-          node,
-          message: "Hardcoded secret detected — use environment variables instead",
-        });
-      }
-    },
-  }),
+        if (
+          canUseVariableNameHeuristic &&
+          SECRET_VARIABLE_PATTERN.test(variableName) &&
+          !isUiConstant &&
+          literalValue.length > SECRET_MIN_LENGTH_CHARS
+        ) {
+          context.report({
+            node,
+            message: `Possible hardcoded secret in "${variableName}" — use environment variables instead`,
+          });
+          return;
+        }
+
+        if (SECRET_PATTERNS.some((pattern) => pattern.test(literalValue))) {
+          context.report({
+            node,
+            message: "Hardcoded secret detected — use environment variables instead",
+          });
+        }
+      },
+    };
+  },
 });

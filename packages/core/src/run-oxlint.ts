@@ -18,15 +18,43 @@ import reactDoctorPlugin, {
   FRAMEWORK_SPECIFIC_RULE_KEYS,
 } from "oxlint-plugin-react-doctor";
 import type { CleanedDiagnostic, Diagnostic, OxlintOutput, ProjectInfo } from "@react-doctor/types";
+import { formatFrameworkName } from "@react-doctor/project-info";
 import { neutralizeDisableDirectives } from "./neutralize-disable-directives.js";
 
-// Reads the rule's recommendation off its `defineRule({...})` metadata
-// (colocated in `plugin/rules/<bucket>/<rule>.ts`). Returns undefined when
-// the rule isn't a react-doctor rule (oxlint surfaces diagnostics from
-// builtin / community plugins too) or the rule simply doesn't ship a
-// recommendation yet.
-const getRuleRecommendation = (ruleName: string): string | undefined =>
-  reactDoctorPlugin.rules[ruleName]?.recommendation;
+const getPublicEnvPrefix = (framework: ProjectInfo["framework"]): string | null => {
+  switch (framework) {
+    case "nextjs":
+      return "NEXT_PUBLIC_*";
+    case "vite":
+    case "tanstack-start":
+      return "VITE_*";
+    case "cra":
+      return "REACT_APP_*";
+    case "gatsby":
+      return "GATSBY_*";
+    default:
+      return null;
+  }
+};
+
+const buildNoSecretsRecommendation = (project: ProjectInfo): string => {
+  const publicEnvPrefix = getPublicEnvPrefix(project.framework);
+  if (!publicEnvPrefix) {
+    return (
+      reactDoctorPlugin.rules["no-secrets-in-client-code"]?.recommendation ??
+      "Move secrets to server-only code"
+    );
+  }
+  const frameworkName = formatFrameworkName(project.framework);
+  return `Move secrets to server-only code. In ${frameworkName}, only \`${publicEnvPrefix}\` env vars are exposed to the browser, and they must not contain secrets`;
+};
+
+const getRuleRecommendation = (ruleName: string, project: ProjectInfo): string | undefined => {
+  if (ruleName === "no-secrets-in-client-code") {
+    return buildNoSecretsRecommendation(project);
+  }
+  return reactDoctorPlugin.rules[ruleName]?.recommendation;
+};
 
 // Same shape as `getRuleRecommendation`, but for the diagnostic category
 // (`State & Effects`, `Performance`, …) the rule rolls up under in the
@@ -79,13 +107,17 @@ const cleanDiagnosticMessage = (
   help: string,
   plugin: string,
   rule: string,
+  project: ProjectInfo,
 ): CleanedDiagnostic => {
   if (plugin === "react-hooks-js") {
     const rawMessage = message.replace(FILEPATH_WITH_LOCATION_PATTERN, "").trim();
     return { message: REACT_COMPILER_MESSAGE, help: rawMessage || help };
   }
   const cleaned = message.replace(FILEPATH_WITH_LOCATION_PATTERN, "").trim();
-  return { message: cleaned || message, help: help || getRuleRecommendation(rule) || "" };
+  return {
+    message: cleaned || message,
+    help: help || getRuleRecommendation(rule, project) || "",
+  };
 };
 
 const parseRuleCode = (code: string): { plugin: string; rule: string } => {
@@ -219,7 +251,7 @@ const isOxlintOutput = (value: unknown): value is OxlintOutput => {
   return Array.isArray(candidate.diagnostics);
 };
 
-const parseOxlintOutput = (stdout: string): Diagnostic[] => {
+const parseOxlintOutput = (stdout: string, project: ProjectInfo): Diagnostic[] => {
   if (!stdout) return [];
 
   // HACK: oxlint sometimes prepends a notice line to stdout (e.g. when
@@ -259,7 +291,13 @@ const parseOxlintOutput = (stdout: string): Diagnostic[] => {
       const { plugin, rule } = parseRuleCode(diagnostic.code);
       const primaryLabel = diagnostic.labels[0];
 
-      const cleaned = cleanDiagnosticMessage(diagnostic.message, diagnostic.help, plugin, rule);
+      const cleaned = cleanDiagnosticMessage(
+        diagnostic.message,
+        diagnostic.help,
+        plugin,
+        rule,
+        project,
+      );
 
       return {
         filePath: diagnostic.filename,
@@ -311,7 +349,7 @@ const validateRuleRegistration = (): void => {
     if (!getRuleCategory(ruleName)) {
       missingCategory.push(fullKey);
     }
-    if (!getRuleRecommendation(ruleName)) {
+    if (!reactDoctorPlugin.rules[ruleName]?.recommendation) {
       missingHelp.push(fullKey);
     }
     if (FRAMEWORK_SPECIFIC_RULE_KEYS.has(fullKey) && !reactDoctorPlugin.rules[ruleName]?.requires) {
@@ -439,7 +477,7 @@ export const runOxlint = async (options: RunOxlintOptions): Promise<Diagnostic[]
       for (const batch of fileBatches) {
         const batchArgs = [...baseArgs, ...batch];
         const stdout = await spawnOxlint(batchArgs, rootDirectory, nodeBinaryPath);
-        allDiagnostics.push(...parseOxlintOutput(stdout));
+        allDiagnostics.push(...parseOxlintOutput(stdout, project));
       }
       return allDiagnostics;
     };

@@ -31,6 +31,9 @@ export const SECRET_PATTERNS = [
 
 export const SECRET_VARIABLE_PATTERN = /(?:api_?key|secret|token|password|credential|auth)/i;
 
+export const NON_CLIENT_SECRET_HEURISTIC_FILE_PATTERN =
+  /(?:^|\/)(?:[^/]+\.config\.[cm]?[jt]s|\.?[a-z-]+rc\.[cm]?[jt]s|[^/]+\.(?:server|test|spec|stories|story|fixture|fixtures)\.[cm]?[jt]sx?)$|(?:^|\/)(?:scripts?|bin|tools?)\//;
+
 export const SECRET_FALSE_POSITIVE_SUFFIXES = new Set([
   "modal",
   "label",

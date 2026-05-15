@@ -142,3 +142,62 @@ export const AppGuard = () => {
     expect(appIssue?.message).not.toContain("getServerSideProps");
   });
 });
+
+describe("no-secrets-in-client-code avoids framework-biased false positives", () => {
+  it("uses Vite env guidance for Vite projects", async () => {
+    const projectDir = setupReactProject(tempRoot, "vite-secret-help", {
+      packageJsonExtras: {
+        dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", vite: "^7.0.0" },
+      },
+      files: {
+        "src/token-display.tsx": `const PUBLIC_BEARER_TOKEN_FALLBACK = "fixture_token_1234567890abcdef";
+
+export const TokenDisplay = () => <div>{PUBLIC_BEARER_TOKEN_FALLBACK}</div>;
+`,
+      },
+    });
+
+    const diagnostics = await runOxlint({
+      rootDirectory: projectDir,
+      project: buildTestProject({
+        rootDirectory: projectDir,
+        framework: "vite",
+      }),
+    });
+
+    const secretIssue = diagnostics.find(
+      (diagnostic) => diagnostic.rule === "no-secrets-in-client-code",
+    );
+    expect(secretIssue, "expected a client secret diagnostic").toBeDefined();
+    expect(secretIssue?.help).toContain("Vite");
+    expect(secretIssue?.help).toContain("VITE_*");
+    expect(secretIssue?.help).not.toContain("NEXT_PUBLIC");
+  });
+
+  it("does not run the weak variable-name heuristic in Vite config files", async () => {
+    const projectDir = setupReactProject(tempRoot, "vite-config-secret-false-positive", {
+      packageJsonExtras: {
+        dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", vite: "^7.0.0" },
+      },
+      files: {
+        "vite.config.ts": `const PUBLIC_BEARER_TOKEN_FALLBACK = "fixture_token_1234567890abcdef";
+
+export default {};
+`,
+      },
+    });
+
+    const diagnostics = await runOxlint({
+      rootDirectory: projectDir,
+      project: buildTestProject({
+        rootDirectory: projectDir,
+        framework: "vite",
+      }),
+    });
+
+    const secretIssues = diagnostics.filter(
+      (diagnostic) => diagnostic.rule === "no-secrets-in-client-code",
+    );
+    expect(secretIssues).toEqual([]);
+  });
+});
