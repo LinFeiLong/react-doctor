@@ -3,6 +3,7 @@
 // a library with `"react": "^17 || ^18 || ^19"` has an effective major
 // of 17, so version-gated rules that require React 19+ are suppressed.
 const COMPARATOR_SEPARATOR = /[\s,|]+/;
+const UPPER_BOUND_COMPARATOR = /<\s*=?\s*\d+(?:\.\d+){0,2}(?:-[^\s,|]+)?/g;
 const WILDCARD_COMPARATOR = /^[*xX](?:\.[*xX])*$/;
 
 const extractComparatorMajor = (comparator: string): number | null => {
@@ -15,8 +16,12 @@ const extractComparatorMajor = (comparator: string): number | null => {
 
 export const peerRangeMinMajor = (range: string | null | undefined): number | null => {
   if (typeof range !== "string") return null;
+  const lowerBoundComparators = range.replace(UPPER_BOUND_COMPARATOR, " ");
   let lowestMajor: number | null = null;
-  for (const comparator of range.trim().split(COMPARATOR_SEPARATOR).filter(Boolean)) {
+  for (const comparator of lowerBoundComparators
+    .trim()
+    .split(COMPARATOR_SEPARATOR)
+    .filter(Boolean)) {
     const major = extractComparatorMajor(comparator);
     if (major !== null && (lowestMajor === null || major < lowestMajor)) {
       lowestMajor = major;

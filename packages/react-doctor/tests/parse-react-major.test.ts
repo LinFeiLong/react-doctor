@@ -17,6 +17,12 @@ describe("parseReactMajor", () => {
     expect(parseReactMajor("18 || 19")).toBe(18);
   });
 
+  it("returns null for upper-bound-only ranges", () => {
+    expect(parseReactMajor("<19")).toBeNull();
+    expect(parseReactMajor("<=18")).toBeNull();
+    expect(parseReactMajor("< 19")).toBeNull();
+  });
+
   it("returns null for tags, workspace protocols, and missing/empty input", () => {
     expect(parseReactMajor(null)).toBeNull();
     expect(parseReactMajor(undefined)).toBeNull();

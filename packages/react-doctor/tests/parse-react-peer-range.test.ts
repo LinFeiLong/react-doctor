@@ -7,7 +7,14 @@ describe("peerRangeMinMajor", () => {
     expect(peerRangeMinMajor("^18.0.0 || ^19.0.0")).toBe(18);
     expect(peerRangeMinMajor("^19.0.0")).toBe(19);
     expect(peerRangeMinMajor(">=17")).toBe(17);
+    expect(peerRangeMinMajor(">=18 <20")).toBe(18);
     expect(peerRangeMinMajor("18 || 19")).toBe(18);
+  });
+
+  it("returns null for upper-bound-only ranges", () => {
+    expect(peerRangeMinMajor("<19")).toBeNull();
+    expect(peerRangeMinMajor("<=18")).toBeNull();
+    expect(peerRangeMinMajor("< 19")).toBeNull();
   });
 
   it("returns null for wildcards, tags, and missing input", () => {
