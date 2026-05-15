@@ -26,6 +26,8 @@ const isInsideIgnoredTextElement = (node: EsTreeNode): boolean => {
 
 export const i18nNoLiteralJsxText = defineRule<Rule>({
   id: "i18n-no-literal-jsx-text",
+  requires: ["uses-i18n"],
+  tags: ["test-noise"],
   severity: "warn",
   recommendation: "Move user-facing JSX copy through the project translation layer",
   create: (context: RuleContext) => ({

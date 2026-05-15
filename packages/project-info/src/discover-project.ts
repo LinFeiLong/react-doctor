@@ -9,6 +9,7 @@ import { extractDependencyInfo } from "./extract-dependency-info.js";
 import { findDependencyInfoFromMonorepoRoot } from "./find-dependency-info-from-monorepo-root.js";
 import { findMonorepoRoot, isMonorepoRoot } from "./find-monorepo-root.js";
 import { findReactInWorkspaces } from "./find-react-in-workspaces.js";
+import { hasI18n } from "./has-i18n.js";
 import { hasTanStackQuery } from "./has-tanstack-query.js";
 import { readPackageJson } from "./read-package-json.js";
 import { extractCatalogName, resolveCatalogVersion } from "./resolve-catalog-version.js";
@@ -145,6 +146,7 @@ export const discoverProject = (directory: string): ProjectInfo => {
     hasTypeScript,
     hasReactCompiler: detectReactCompiler(directory, packageJson),
     hasTanStackQuery: hasTanStackQuery(packageJson),
+    hasI18n: hasI18n(packageJson),
     sourceFileCount,
   };
   cachedProjectInfos.set(directory, projectInfo);

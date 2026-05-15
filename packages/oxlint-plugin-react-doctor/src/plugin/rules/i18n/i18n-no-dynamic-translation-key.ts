@@ -17,6 +17,8 @@ const isStaticKey = (node: EsTreeNode | undefined): boolean =>
 
 export const i18nNoDynamicTranslationKey = defineRule<Rule>({
   id: "i18n-no-dynamic-translation-key",
+  requires: ["uses-i18n"],
+  tags: ["test-noise"],
   severity: "warn",
   recommendation:
     "Use literal translation keys so extraction, type generation, and missing-key checks can see every message",

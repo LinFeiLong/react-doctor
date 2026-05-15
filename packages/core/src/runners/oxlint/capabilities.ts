@@ -30,6 +30,7 @@ export const buildCapabilities = (project: ProjectInfo): ReadonlySet<string> => 
 
   if (project.hasReactCompiler) capabilities.add("react-compiler");
   if (project.hasTanStackQuery) capabilities.add("tanstack-query");
+  if (project.hasI18n) capabilities.add("uses-i18n");
   if (project.hasTypeScript) capabilities.add("typescript");
 
   return capabilities;
