@@ -16,21 +16,37 @@ const extractComparatorMajor = (comparator: string): number | null => {
   return major >= 1 ? major : null;
 };
 
+const getBranchLowestMajor = (branch: string): number | null => {
+  const lowerBoundComparators = branch.replace(UPPER_BOUND_COMPARATOR, " ");
+  let branchLowestMajor: number | null = null;
+  for (const comparator of lowerBoundComparators
+    .trim()
+    .split(COMPARATOR_SEPARATOR)
+    .filter(Boolean)) {
+    const major = extractComparatorMajor(comparator);
+    if (major !== null && (branchLowestMajor === null || major < branchLowestMajor)) {
+      branchLowestMajor = major;
+    }
+  }
+  return branchLowestMajor;
+};
+
+export const hasUpperBoundOnlyPeerRange = (range: string | null | undefined): boolean => {
+  if (typeof range !== "string") return false;
+  return range
+    .trim()
+    .split(OR_SEPARATOR)
+    .filter(Boolean)
+    .some(
+      (branch) => getBranchLowestMajor(branch) === null && HAS_UPPER_BOUND_COMPARATOR.test(branch),
+    );
+};
+
 export const peerRangeMinMajor = (range: string | null | undefined): number | null => {
   if (typeof range !== "string") return null;
   let lowestMajor: number | null = null;
   for (const branch of range.trim().split(OR_SEPARATOR).filter(Boolean)) {
-    const lowerBoundComparators = branch.replace(UPPER_BOUND_COMPARATOR, " ");
-    let branchLowestMajor: number | null = null;
-    for (const comparator of lowerBoundComparators
-      .trim()
-      .split(COMPARATOR_SEPARATOR)
-      .filter(Boolean)) {
-      const major = extractComparatorMajor(comparator);
-      if (major !== null && (branchLowestMajor === null || major < branchLowestMajor)) {
-        branchLowestMajor = major;
-      }
-    }
+    const branchLowestMajor = getBranchLowestMajor(branch);
     if (branchLowestMajor === null && HAS_UPPER_BOUND_COMPARATOR.test(branch)) {
       return null;
     }

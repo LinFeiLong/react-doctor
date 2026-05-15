@@ -1,6 +1,6 @@
 import type { PackageJson } from "@react-doctor/types";
 import { parseReactMajor } from "./parse-react-major.js";
-import { peerRangeMinMajor } from "./parse-react-peer-range.js";
+import { hasUpperBoundOnlyPeerRange, peerRangeMinMajor } from "./parse-react-peer-range.js";
 
 export const resolveEffectiveReactMajor = (
   reactVersion: string | null,
@@ -11,6 +11,8 @@ export const resolveEffectiveReactMajor = (
   if (typeof peerReactRange !== "string") return installedReactMajor;
 
   const peerFloor = peerRangeMinMajor(peerReactRange);
-  if (peerFloor === null) return null;
+  if (peerFloor === null) {
+    return hasUpperBoundOnlyPeerRange(peerReactRange) ? null : installedReactMajor;
+  }
   return installedReactMajor !== null ? Math.min(installedReactMajor, peerFloor) : peerFloor;
 };

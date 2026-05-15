@@ -66,6 +66,43 @@ describe("discoverProject", () => {
     expect(projectInfo.reactMajorVersion).toBe(18);
   });
 
+  it("uses concrete React devDependencies when runtime React uses an unresolvable workspace protocol", () => {
+    const projectDirectory = path.join(tempDirectory, "react-workspace-protocol-over-dev-deps");
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "react-workspace-protocol-over-dev-deps",
+        dependencies: { react: "workspace:*" },
+        devDependencies: { react: "^18.3.1" },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.reactVersion).toBe("^18.3.1");
+    expect(projectInfo.reactMajorVersion).toBe(18);
+  });
+
+  it("uses concrete React devDependencies when peer React uses an unresolvable workspace protocol", () => {
+    const projectDirectory = path.join(
+      tempDirectory,
+      "react-peer-workspace-protocol-over-dev-deps",
+    );
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "react-peer-workspace-protocol-over-dev-deps",
+        peerDependencies: { react: "workspace:*" },
+        devDependencies: { react: "^18.3.1" },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.reactVersion).toBe("^18.3.1");
+    expect(projectInfo.reactMajorVersion).toBe(18);
+  });
+
   it("prefers runtime React catalog declarations over concrete devDependencies", () => {
     const monorepoRoot = path.join(tempDirectory, "react-runtime-catalog-over-dev-deps");
     fs.mkdirSync(path.join(monorepoRoot, "apps", "web"), { recursive: true });
@@ -124,6 +161,22 @@ describe("discoverProject", () => {
 
     const projectInfo = discoverProject(path.join(monorepoRoot, "packages", "ui"));
     expect(projectInfo.tailwindVersion).toBe("^4.0.0");
+  });
+
+  it("uses concrete Tailwind devDependencies when runtime Tailwind uses an unresolvable workspace protocol", () => {
+    const projectDirectory = path.join(tempDirectory, "tw-workspace-protocol-over-dev-deps");
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "tw-workspace-protocol-over-dev-deps",
+        dependencies: { react: "^19.0.0", tailwindcss: "workspace:*" },
+        devDependencies: { tailwindcss: "^3.4.1" },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.tailwindVersion).toBe("^3.4.1");
   });
 
   it("prefers Tailwind dependency catalog declarations over concrete devDependencies", () => {

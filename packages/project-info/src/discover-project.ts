@@ -12,7 +12,7 @@ import { findReactInWorkspaces } from "./find-react-in-workspaces.js";
 import { getDependencyDeclaration } from "./utils/get-dependency-declaration.js";
 import { hasTanStackQuery } from "./has-tanstack-query.js";
 import { readPackageJson } from "./read-package-json.js";
-import { resolveCatalogVersion } from "./resolve-catalog-version.js";
+import { isCatalogReference, resolveCatalogVersion } from "./resolve-catalog-version.js";
 import { resolveEffectiveReactMajor } from "./resolve-effective-react-major.js";
 
 export { discoverReactSubprojects } from "./discover-react-subprojects.js";
@@ -128,6 +128,17 @@ export const discoverProject = (directory: string): ProjectInfo => {
     if (framework === "unknown") {
       framework = monorepoInfo.framework;
     }
+  }
+
+  if (!reactVersion && reactDeclaration.version && !isCatalogReference(reactDeclaration.version)) {
+    reactVersion = reactDeclaration.version;
+  }
+  if (
+    !tailwindVersion &&
+    tailwindDeclaration.version &&
+    !isCatalogReference(tailwindDeclaration.version)
+  ) {
+    tailwindVersion = tailwindDeclaration.version;
   }
 
   const projectName = packageJson.name ?? path.basename(directory);
