@@ -5,10 +5,10 @@ import { walkAst } from "../../../utils/walk-ast.js";
 const DOCUMENT_CLASS_LIST_MUTATION_METHOD_NAMES = new Set(["add", "remove", "toggle"]);
 const DOCUMENT_CLASS_LIST_TARGET_NAMES = new Set(["body", "documentElement"]);
 
-export const findDocumentClassListMutationName = (node: EsTreeNode): string | null => {
-  let mutationName: string | null = null;
+export const hasDocumentClassListMutation = (node: EsTreeNode): boolean => {
+  let didFindMutation = false;
   walkAst(node, (child: EsTreeNode) => {
-    if (mutationName) return false;
+    if (didFindMutation) return false;
     if (!isNodeOfType(child, "CallExpression")) return;
     const callee = child.callee;
     if (
@@ -26,17 +26,17 @@ export const findDocumentClassListMutationName = (node: EsTreeNode): string | nu
     ) {
       return;
     }
-    const elementExpression = classListExpression.object;
+    const documentElementExpression = classListExpression.object;
     if (
-      !isNodeOfType(elementExpression, "MemberExpression") ||
-      !isNodeOfType(elementExpression.object, "Identifier") ||
-      elementExpression.object.name !== "document" ||
-      !isNodeOfType(elementExpression.property, "Identifier") ||
-      !DOCUMENT_CLASS_LIST_TARGET_NAMES.has(elementExpression.property.name)
+      !isNodeOfType(documentElementExpression, "MemberExpression") ||
+      !isNodeOfType(documentElementExpression.object, "Identifier") ||
+      documentElementExpression.object.name !== "document" ||
+      !isNodeOfType(documentElementExpression.property, "Identifier") ||
+      !DOCUMENT_CLASS_LIST_TARGET_NAMES.has(documentElementExpression.property.name)
     ) {
       return;
     }
-    mutationName = `document.${elementExpression.property.name}.classList.${callee.property.name}`;
+    didFindMutation = true;
   });
-  return mutationName;
+  return didFindMutation;
 };

@@ -4,8 +4,8 @@ import { getCallbackStatements } from "../../utils/get-callback-statements.js";
 import { getEffectCallback } from "../../utils/get-effect-callback.js";
 import { getRootIdentifierName } from "../../utils/get-root-identifier-name.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
-import { findDocumentClassListMutationName } from "./utils/find-document-class-list-mutation-name.js";
 import { findTriggeredSideEffectCalleeName } from "./utils/find-triggered-side-effect-callee-name.js";
+import { hasDocumentClassListMutation } from "./utils/has-document-class-list-mutation.js";
 import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -15,7 +15,7 @@ const hasEventLikeConsequent = (
   consequentNode: EsTreeNodeOfType<"IfStatement">["consequent"],
 ): boolean =>
   findTriggeredSideEffectCalleeName(consequentNode) !== null ||
-  findDocumentClassListMutationName(consequentNode) !== null;
+  hasDocumentClassListMutation(consequentNode);
 
 export const noEffectEventHandler = defineRule<Rule>({
   id: "no-effect-event-handler",
