@@ -149,20 +149,21 @@ describe("discoverProject", () => {
     fs.mkdirSync(path.join(monorepoRoot, "apps", "web"), { recursive: true });
     fs.writeFileSync(
       path.join(monorepoRoot, "pnpm-workspace.yaml"),
-      "packages:\n  - apps/*\n\ncatalog:\n  react: ^19.0.0\n",
+      "packages:\n  - apps/*\n\ncatalog:\n  react: ^19.0.0\n  tailwindcss: ^4.0.0\n",
     );
     fs.writeFileSync(path.join(monorepoRoot, "package.json"), JSON.stringify({ name: "root" }));
     fs.writeFileSync(
       path.join(monorepoRoot, "apps", "web", "package.json"),
       JSON.stringify({
         name: "web",
-        dependencies: { react: "catalog:" },
+        dependencies: { react: "catalog:", tailwindcss: "catalog:" },
       }),
     );
 
     const projectInfo = discoverProject(monorepoRoot);
     expect(projectInfo.reactVersion).toBe("^19.0.0");
     expect(projectInfo.reactMajorVersion).toBe(19);
+    expect(projectInfo.tailwindVersion).toBe("^4.0.0");
   });
 
   it("does not apply root React catalogs to workspaces without React declarations", () => {
