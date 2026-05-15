@@ -3,6 +3,7 @@ import { isNodeOfType } from "../../../utils/is-node-of-type.js";
 import { walkAst } from "../../../utils/walk-ast.js";
 
 const DOCUMENT_CLASS_LIST_MUTATION_METHOD_NAMES = new Set(["add", "remove", "toggle"]);
+const DOCUMENT_CLASS_LIST_TARGET_NAMES = new Set(["body", "documentElement"]);
 
 export const findDocumentClassListMutationName = (node: EsTreeNode): string | null => {
   let mutationName: string | null = null;
@@ -31,11 +32,11 @@ export const findDocumentClassListMutationName = (node: EsTreeNode): string | nu
       !isNodeOfType(elementExpression.object, "Identifier") ||
       elementExpression.object.name !== "document" ||
       !isNodeOfType(elementExpression.property, "Identifier") ||
-      elementExpression.property.name !== "body"
+      !DOCUMENT_CLASS_LIST_TARGET_NAMES.has(elementExpression.property.name)
     ) {
       return;
     }
-    mutationName = `document.body.classList.${callee.property.name}`;
+    mutationName = `document.${elementExpression.property.name}.classList.${callee.property.name}`;
   });
   return mutationName;
 };

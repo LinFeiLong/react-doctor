@@ -54,6 +54,31 @@ export const Modal = ({ isOpen }: { isOpen: boolean }) => {
     expect(hits).toHaveLength(1);
   });
 
+  it("flags documentElement classList mutations", async () => {
+    const projectDir = setupReactProject(
+      tempRoot,
+      "no-effect-event-handler-document-element-class-list",
+      {
+        files: {
+          "src/Theme.tsx": `import { useEffect } from "react";
+
+export const Theme = ({ isDark }: { isDark: boolean }) => {
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    }
+  }, [isDark]);
+  return <div />;
+};
+`,
+        },
+      },
+    );
+
+    const hits = await collectRuleHits(projectDir, "no-effect-event-handler");
+    expect(hits).toHaveLength(1);
+  });
+
   it("does NOT flag when the test's root identifier is not in the deps", async () => {
     const projectDir = setupReactProject(tempRoot, "no-effect-event-handler-unrelated-test", {
       files: {
