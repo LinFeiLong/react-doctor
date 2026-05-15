@@ -346,8 +346,22 @@ export const token = stripeSecret;
     const projectDir = setupReactProject(tempRoot, "client-ui-suffix-secret-false-positive", {
       files: {
         "src/token-display.tsx": `const SECRET_LABEL = "fixture_token_1234567890abcdef";
+const hiddenSecretText = "Values of secret constants are hidden";
 
-export const TokenDisplay = () => <div>{SECRET_LABEL}</div>;
+export const TokenDisplay = () => <div>{SECRET_LABEL}{hiddenSecretText}</div>;
+`,
+      },
+    });
+
+    await expect(getSecretIssues(projectDir)).resolves.toEqual([]);
+  });
+
+  it("does not report client storage key prefixes through the weak variable-name heuristic", async () => {
+    const projectDir = setupReactProject(tempRoot, "client-storage-prefix-secret-false-positive", {
+      files: {
+        "src/desktop-auth-token.tsx": `const DESKTOP_AUTH_PREFIX = "desktop_auth_client_token";
+
+export const token = sessionStorage.getItem(DESKTOP_AUTH_PREFIX);
 `,
       },
     });

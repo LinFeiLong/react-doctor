@@ -6,6 +6,7 @@ import {
 } from "../../constants/security.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { classifySecretFileExposure } from "../../utils/classify-secret-file-exposure.js";
+import { getIdentifierTrailingWord } from "../../utils/get-identifier-trailing-word.js";
 import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { hasDirective } from "../../utils/has-directive.js";
@@ -60,7 +61,7 @@ export const noSecretsInClientCode = defineRule<Rule>({
         const literalValue = node.init.value;
         const isServerOnlyScope = isInsideServerOnlyScope(node);
 
-        const trailingSuffix = variableName.split("_").pop()?.toLowerCase() ?? "";
+        const trailingSuffix = getIdentifierTrailingWord(variableName);
         const isUiConstant = SECRET_FALSE_POSITIVE_SUFFIXES.has(trailingSuffix);
 
         if (

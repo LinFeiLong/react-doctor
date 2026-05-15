@@ -121,6 +121,7 @@ export const SECRET_FALSE_POSITIVE_SUFFIXES = new Set([
   "column",
   "header",
   "placeholder",
+  "prefix",
   "description",
   "type",
   "icon",
