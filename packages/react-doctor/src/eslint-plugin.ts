@@ -8,7 +8,7 @@ import {
 } from "./core/runners/oxlint/react-doctor-rules.js";
 import type { EsTreeNode } from "./plugin/utils/es-tree-node.js";
 import type { Rule as PluginRule } from "./plugin/utils/rule.js";
-import type { RuleSeverity } from "./core/runners/oxlint/types.js";
+import type { OxlintRuleSeverity } from "./core/runners/oxlint/types.js";
 import type { RuleVisitors } from "./plugin/utils/rule-visitors.js";
 
 interface EslintRuleContext {
@@ -34,7 +34,7 @@ interface EslintRule {
 interface EslintFlatConfig {
   name: string;
   plugins: Record<string, EslintPlugin>;
-  rules: Record<string, RuleSeverity>;
+  rules: Record<string, OxlintRuleSeverity>;
 }
 
 interface EslintPlugin {
@@ -80,14 +80,14 @@ const eslintShapedRules: Record<string, EslintRule> = Object.fromEntries(
 
 const buildFlatConfig = (
   configName: string,
-  ruleSet: Record<string, RuleSeverity>,
+  ruleSet: Record<string, OxlintRuleSeverity>,
 ): EslintFlatConfig => ({
   name: `react-doctor/${configName}`,
   plugins: {},
   rules: { ...ruleSet },
 });
 
-const ALL_RULES_AT_RECOMMENDED_SEVERITY: Record<string, RuleSeverity> = {
+const ALL_RULES_AT_RECOMMENDED_SEVERITY: Record<string, OxlintRuleSeverity> = {
   ...GLOBAL_REACT_DOCTOR_RULES,
   ...NEXTJS_RULES,
   ...REACT_NATIVE_RULES,

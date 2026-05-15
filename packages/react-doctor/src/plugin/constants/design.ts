@@ -86,8 +86,6 @@ export const VAGUE_BUTTON_LABELS = new Set([
 
 export const ELLIPSIS_EXCLUDED_TAG_NAMES = new Set(["code", "pre", "kbd", "samp", "var", "tt"]);
 
-export const EM_DASH_CHARACTER = "\u2014";
-
 // HACK: trailing boundary uses a LOOKAHEAD `(?=...)` so the whitespace
 // between Tailwind tokens isn't consumed. With a consuming `(?:$|\s|:)`
 // trailing group, `matchAll` over `"px-4 px-6"` would catch `px-4` plus

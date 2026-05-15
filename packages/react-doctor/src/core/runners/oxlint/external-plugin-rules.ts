@@ -1,4 +1,4 @@
-import type { RuleSeverity } from "./types.js";
+import type { OxlintRuleSeverity } from "./types.js";
 
 // These four maps enumerate rules from OTHER plugins (not react-doctor's own
 // registry) that the scan opts into via the generated oxlint config. They
@@ -17,7 +17,7 @@ import type { RuleSeverity } from "./types.js";
 // `"warn"` as part of a broader refactor, which made "React Compiler
 // can't optimize this code" diagnostics stop counting toward
 // `errorCount` and stop failing CI; restored here.
-export const REACT_COMPILER_RULES: Record<string, RuleSeverity> = {
+export const REACT_COMPILER_RULES: Record<string, OxlintRuleSeverity> = {
   "react-hooks-js/set-state-in-render": "error",
   "react-hooks-js/immutability": "error",
   "react-hooks-js/refs": "error",
@@ -43,7 +43,7 @@ export const REACT_COMPILER_RULES: Record<string, RuleSeverity> = {
 // detection for effects. Severities are `warn` to match the rest of
 // the effects-rule cohort and avoid changing CI pass/fail behavior
 // for projects that adopt the plugin.
-export const YOU_MIGHT_NOT_NEED_EFFECT_RULES: Record<string, RuleSeverity> = {
+export const YOU_MIGHT_NOT_NEED_EFFECT_RULES: Record<string, OxlintRuleSeverity> = {
   "effect/no-derived-state": "warn",
   "effect/no-chain-state-updates": "warn",
   "effect/no-event-handler": "warn",
@@ -54,7 +54,7 @@ export const YOU_MIGHT_NOT_NEED_EFFECT_RULES: Record<string, RuleSeverity> = {
   "effect/no-initialize-state": "warn",
 };
 
-export const BUILTIN_REACT_RULES: Record<string, RuleSeverity> = {
+export const BUILTIN_REACT_RULES: Record<string, OxlintRuleSeverity> = {
   "react/rules-of-hooks": "error",
   "react/no-direct-mutation-state": "error",
   "react/jsx-no-duplicate-props": "error",
@@ -69,7 +69,7 @@ export const BUILTIN_REACT_RULES: Record<string, RuleSeverity> = {
   "react/no-unknown-property": "warn",
 };
 
-export const BUILTIN_A11Y_RULES: Record<string, RuleSeverity> = {
+export const BUILTIN_A11Y_RULES: Record<string, OxlintRuleSeverity> = {
   "jsx-a11y/alt-text": "error",
   "jsx-a11y/anchor-is-valid": "warn",
   "jsx-a11y/click-events-have-key-events": "warn",

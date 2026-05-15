@@ -13,7 +13,7 @@ import {
   REACT_COMPILER_RULES,
   YOU_MIGHT_NOT_NEED_EFFECT_RULES,
 } from "./external-plugin-rules.js";
-import type { OxlintConfigOptions, RuleSeverity } from "./types.js";
+import type { OxlintConfigOptions, OxlintRuleSeverity } from "./types.js";
 
 export const createOxlintConfig = ({
   pluginPath,
@@ -46,7 +46,7 @@ export const createOxlintConfig = ({
 
   const capabilities = buildCapabilities(project);
 
-  const enabledReactDoctorRules: Record<string, RuleSeverity> = {};
+  const enabledReactDoctorRules: Record<string, OxlintRuleSeverity> = {};
   for (const [ruleId, rule] of Object.entries(reactDoctorPlugin.rules)) {
     const fullKey = `react-doctor/${ruleId}`;
     // Framework-specific rules MUST opt in via a `requires` capability

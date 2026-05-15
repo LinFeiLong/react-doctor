@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import type { RuleSeverity } from "./types.js";
+import type { OxlintRuleSeverity } from "./types.js";
 
 const esmRequire = createRequire(import.meta.url);
 
@@ -86,16 +86,16 @@ export const resolveYouMightNotNeedEffectPlugin = (
 };
 
 export const filterRulesToAvailable = (
-  rules: Record<string, RuleSeverity>,
+  rules: Record<string, OxlintRuleSeverity>,
   pluginNamespace: string,
   availableRuleNames: ReadonlySet<string>,
-): Record<string, RuleSeverity> => {
+): Record<string, OxlintRuleSeverity> => {
   // Empty `availableRuleNames` means we couldn't introspect the plugin
   // (e.g. exotic export shape). Fall back to the unfiltered rule set so
   // we don't silently disable rules in supported configurations.
   if (availableRuleNames.size === 0) return rules;
   const ruleKeyPrefix = `${pluginNamespace}/`;
-  const filtered: Record<string, RuleSeverity> = {};
+  const filtered: Record<string, OxlintRuleSeverity> = {};
   for (const [ruleKey, severity] of Object.entries(rules)) {
     if (!ruleKey.startsWith(ruleKeyPrefix)) {
       filtered[ruleKey] = severity;

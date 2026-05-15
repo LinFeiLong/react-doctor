@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "src/cli/index.ts",
+    "src/index.ts",
+    "src/plugin/react-doctor-plugin.ts",
+    "src/eslint-plugin.ts",
+    "scripts/*.mjs"
+  ],
+  "ignorePatterns": ["dist/**", "tests/fixtures/**"]
+}

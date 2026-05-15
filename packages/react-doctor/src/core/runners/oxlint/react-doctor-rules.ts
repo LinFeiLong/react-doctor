@@ -1,6 +1,6 @@
 import reactDoctorPlugin from "../../../plugin/react-doctor-plugin.js";
 import type { RuleFramework } from "../../../plugin/utils/rule.js";
-import type { RuleSeverity } from "./types.js";
+import type { OxlintRuleSeverity } from "./types.js";
 
 // All exports here are derived at module load from the colocated
 // `defineRule({...})` metadata on each rule in
@@ -15,8 +15,10 @@ const formatFullKey = (ruleId: string): string => `react-doctor/${ruleId}`;
 // `createOxlintConfig` (oxlint scan) and `eslint-plugin.ts` (ESLint
 // `recommended` / `next` / `react-native` / `tanstack-start` /
 // `tanstack-query` flat configs).
-const collectRulesByFramework = (frameworkName: RuleFramework): Record<string, RuleSeverity> => {
-  const collected: Record<string, RuleSeverity> = {};
+const collectRulesByFramework = (
+  frameworkName: RuleFramework,
+): Record<string, OxlintRuleSeverity> => {
+  const collected: Record<string, OxlintRuleSeverity> = {};
   for (const [ruleId, rule] of Object.entries(reactDoctorPlugin.rules)) {
     if (rule.framework === frameworkName && rule.severity) {
       collected[formatFullKey(ruleId)] = rule.severity;

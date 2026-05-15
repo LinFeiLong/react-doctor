@@ -96,10 +96,6 @@ export const JSX_OPENER_SCAN_MAX_LINES = 32;
 // Larger gaps stop being intentional suppressions and become noise.
 export const SUPPRESSION_NEAR_MISS_MAX_LINES = 10;
 
-// `useEffectEvent` requires React 19+. Below the threshold, the rule
-// that suggests it (`prefer-use-effect-event`) stays silent.
-export const USE_EFFECT_EVENT_MIN_MAJOR = 19;
-
 // In the default human output, show several category sections like an
 // audit report, but cap each section so one noisy category does not
 // bury the rest of the scan.
