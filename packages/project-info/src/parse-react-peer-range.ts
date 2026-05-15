@@ -6,7 +6,8 @@ const COMPARATOR_SEPARATOR = /[\s,|]+/;
 const OR_SEPARATOR = /\s*\|\|\s*/;
 const HAS_UPPER_BOUND_COMPARATOR = /<\s*=?\s*\d+(?:\.\d+){0,2}(?:-[^\s,|]+)?/;
 const UPPER_BOUND_COMPARATOR = /<\s*=?\s*\d+(?:\.\d+){0,2}(?:-[^\s,|]+)?/g;
-const UNRESOLVABLE_PROTOCOL_VERSION = /^(?:file|git|github|https?|link|patch|portal|workspace|npm):/i;
+const UNRESOLVABLE_PROTOCOL_VERSION =
+  /^(?:file|git|github|https?|link|patch|portal|workspace|npm):/i;
 const DIST_TAG_VERSION = /^[a-z][a-z0-9._-]*$/i;
 const NON_LOWER_BOUND_COMPARATOR = /^(?:>(?!=)|!={0,2})\s*\d/;
 const WILDCARD_COMPARATOR = /^[*xX](?:\.[*xX])*$/;
@@ -16,7 +17,8 @@ const extractComparatorMajor = (comparator: string): number | null => {
   const npmAliasMatch = comparator.match(NPM_ALIAS_VERSION);
   const normalizedComparator = npmAliasMatch?.[1]?.trim() ?? comparator;
   if (UNRESOLVABLE_PROTOCOL_VERSION.test(normalizedComparator)) return null;
-  if (DIST_TAG_VERSION.test(normalizedComparator) && !/^v\d/i.test(normalizedComparator)) return null;
+  if (DIST_TAG_VERSION.test(normalizedComparator) && !/^v\d/i.test(normalizedComparator))
+    return null;
   if (WILDCARD_COMPARATOR.test(normalizedComparator)) return null;
   if (NON_LOWER_BOUND_COMPARATOR.test(normalizedComparator)) return null;
   const firstIntegerMatch = normalizedComparator.match(/^(?:>=\s*|[~^=v]\s*)?(\d+)(?=$|[.*xX-])/);

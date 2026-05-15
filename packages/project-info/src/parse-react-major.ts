@@ -20,7 +20,8 @@
 const UPPER_BOUND_COMPARATOR = /<\s*=?\s*\d+(?:\.\d+){0,2}(?:-[^\s,|]+)?/g;
 const HAS_UPPER_BOUND_COMPARATOR = /<\s*=?\s*\d+(?:\.\d+){0,2}(?:-[^\s,|]+)?/;
 const OR_SEPARATOR = /\s*\|\|\s*/;
-const UNRESOLVABLE_PROTOCOL_VERSION = /^(?:file|git|github|https?|link|patch|portal|workspace|npm):/i;
+const UNRESOLVABLE_PROTOCOL_VERSION =
+  /^(?:file|git|github|https?|link|patch|portal|workspace|npm):/i;
 const DIST_TAG_VERSION = /^[a-z][a-z0-9._-]*$/i;
 const WILDCARD_VERSION = /^[*xX](?:\.[*xX])*$/;
 const NON_LOWER_BOUND_COMPARATOR = /(?:^|[\s,|])(?:>(?!=)|!={0,2})\s*\d/;
