@@ -78,7 +78,7 @@ export const printReactReviewCta = (): void => {
     `  ${highlighter.bold("→ Catch these issues on every PR:")} ${highlighter.info(REACT_REVIEW_URL)}`,
   );
   logger.log(
-    `  ${highlighter.dim("React Review is a GitHub App built on React Doctor — it runs on each pull request,")}`,
+    `  ${highlighter.dim("React Review is a GitHub App built on React Doctor, and it runs on each pull request,")}`,
   );
   logger.log(
     `  ${highlighter.dim("posts new issues as inline review comments, and tracks your team's score over time.")}`,
