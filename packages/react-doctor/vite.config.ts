@@ -58,6 +58,19 @@ export default defineConfig({
         alwaysBundle: ["commander", "ora"],
         neverBundle: [
           "agent-install",
+          // HACK: deslop-js wraps oxc-parser / oxc-resolver, both of
+          // which load platform-specific NAPI bindings via require().
+          // Rollup happily inlines the JS loader chain but rewrites
+          // the native lookups to fingerprinted `./assets/*.node`
+          // paths that never make it into the published tarball (and
+          // also strips the standard `@oxc-{parser,resolver}/binding-
+          // <platform>` fallback). Keep deslop-js (and its native
+          // siblings) external so the loaders run untouched and Node
+          // resolves the bindings from the deslop-js node_modules
+          // tree on install — see issue #404.
+          "deslop-js",
+          "oxc-parser",
+          "oxc-resolver",
           "oxlint",
           "oxlint-plugin-react-doctor",
           "prompts",
@@ -90,6 +103,9 @@ export default defineConfig({
         alwaysBundle: ["commander", "ora"],
         neverBundle: [
           "agent-install",
+          "deslop-js",
+          "oxc-parser",
+          "oxc-resolver",
           "oxlint",
           "oxlint-plugin-react-doctor",
           "prompts",
