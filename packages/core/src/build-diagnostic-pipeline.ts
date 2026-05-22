@@ -1,11 +1,13 @@
 import reactDoctorPlugin from "oxlint-plugin-react-doctor";
-import type { Diagnostic, ReactDoctorConfig, RuleSeverityOverride } from "@react-doctor/types";
+import type { Diagnostic, ReactDoctorConfig } from "@react-doctor/types";
 import {
   compileIgnoreOverrides,
   isDiagnosticIgnoredByOverrides,
 } from "./apply-ignore-overrides.js";
+import { restampSeverity } from "./apply-severity-controls.js";
 import { buildRuleSeverityControls } from "./build-rule-severity-controls.js";
 import { evaluateSuppression } from "./evaluate-suppression.js";
+import { resolveCandidateReadPath } from "./filter-diagnostics.js";
 import { getDiagnosticRuleIdentity } from "./get-diagnostic-rule-identity.js";
 import { compileIgnoredFilePatterns, isFileIgnoredByPatterns } from "./is-ignored-file.js";
 import { isTestFilePath } from "./is-test-file.js";
@@ -22,37 +24,6 @@ interface BuildDiagnosticPipelineInput {
 export interface DiagnosticPipeline {
   readonly apply: (diagnostic: Diagnostic) => Diagnostic | null;
 }
-
-const SEVERITY_FOR_OVERRIDE: Record<
-  Exclude<RuleSeverityOverride, "off">,
-  Diagnostic["severity"]
-> = {
-  error: "error",
-  warn: "warning",
-};
-
-const restampSeverity = (
-  diagnostic: Diagnostic,
-  override: Exclude<RuleSeverityOverride, "off">,
-): Diagnostic => {
-  const targetSeverity = SEVERITY_FOR_OVERRIDE[override];
-  return diagnostic.severity === targetSeverity
-    ? diagnostic
-    : { ...diagnostic, severity: targetSeverity };
-};
-
-const resolveCandidateReadPath = (rootDirectory: string, filePath: string): string => {
-  const normalizedFile = filePath.replace(/\\/g, "/");
-  if (
-    normalizedFile.startsWith("/") ||
-    /^[a-zA-Z]:\//.test(normalizedFile) ||
-    /^[a-zA-Z]:\\/.test(filePath)
-  ) {
-    return filePath;
-  }
-  const root = rootDirectory.replace(/\\/g, "/").replace(/\/$/, "");
-  return `${root}/${normalizedFile.replace(/^\.\//, "")}`;
-};
 
 /**
  * Pre-compiles every stateful filter and returns a single

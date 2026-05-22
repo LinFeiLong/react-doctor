@@ -4,13 +4,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
-import type {
-  Diagnostic,
-  DiagnosticSurface,
-  ProjectInfo,
-  ReactDoctorConfig,
-  ScoreResult,
-} from "@react-doctor/types";
+import type { Diagnostic, ProjectInfo, ReactDoctorConfig, ScoreResult } from "@react-doctor/types";
 import { buildDiagnosticPipeline } from "./build-diagnostic-pipeline.js";
 import { checkReducedMotion } from "./check-reduced-motion.js";
 import { computeJsxIncludePaths } from "./jsx-include-paths.js";
@@ -31,7 +25,6 @@ export interface InspectInput {
   readonly respectInlineDisables: boolean;
   readonly adoptExistingLintConfig: boolean;
   readonly ignoredTags: ReadonlySet<string>;
-  readonly outputSurface: DiagnosticSurface;
   readonly nodeBinaryPath?: string;
   /** Whether dead-code analysis runs. Gated also on `!isDiffMode`. */
   readonly runDeadCode: boolean;

@@ -65,7 +65,6 @@ const baseInput: InspectInput = {
   respectInlineDisables: true,
   adoptExistingLintConfig: true,
   ignoredTags: new Set<string>(),
-  outputSurface: "cli",
   runDeadCode: true,
   isCi: false,
 };
