@@ -133,7 +133,7 @@ The architecture in this repo (Effect v4 services + tagged errors + streaming pi
 packages/
   core/                          PRIVATE  the diagnostic engine
     src/
-      run-inspect.ts             the streaming orchestrator (see .specs/inspect-pipeline.md)
+      run-inspect.ts             the streaming orchestrator
       build-diagnostic-pipeline  per-element pure filter
       errors.ts                  tagged Schema.TaggedErrorClass leaves + ReactDoctorError union
       schemas.ts                 Diagnostic, Severity, JsonReport (wire types)
@@ -150,14 +150,12 @@ packages/
   website/                       PRIVATE  docs / leaderboard site
 
 action.yml                       composite GitHub action (npx-shaped)
-.specs/                          design specs (see inspect-pipeline.md)
 CONTEXT.md                       this file — domain glossary
 AGENTS.md                        coding conventions + Effect v4 rules
 ```
 
 ## Reference reading
 
-- `.specs/inspect-pipeline.md` — design spec for the orchestrator.
 - `AGENTS.md` — Effect v4 conventions enforced across the codebase.
 - `~/Developer/react-doctor-evals/` — sister repo this codebase's runtime patterns are modeled on (`Schemas.ts`, `Runner.ts`, `WorkerPool.ts`, `errors.ts` shapes).
 - `tmp/effect/.patterns/effect.md` — canonical Effect v4 idioms (cloned reference, gitignored).
