@@ -73,12 +73,14 @@ describe("installReactDoctorAgentHooks", () => {
     const hookCommands = settings.hooks.PostToolBatch.flatMap((group) =>
       group.hooks.map((hook) => hook.command),
     );
+    const hookContent = readFileSync(hookPath, "utf8");
 
     expect(result.installedAgents).toEqual(["claude-code"]);
     expect(result.files).toContain(settingsPath);
     expect(settings.permissions.allow).toEqual(["Bash(git status)"]);
     expect(hookCommands.filter((command) => command.includes("react-doctor.sh"))).toHaveLength(1);
-    expect(readFileSync(hookPath, "utf8")).toContain("react-doctor --verbose --diff");
+    expect(hookContent).toContain("project_root=${CLAUDE_PROJECT_DIR:-}");
+    expect(hookContent).toContain("react-doctor --verbose --diff");
     expect(Boolean(statSync(hookPath).mode & fsConstants.S_IXUSR)).toBe(true);
   });
 
@@ -114,6 +116,7 @@ describe("installReactDoctorAgentHooks", () => {
     }>(configPath);
 
     expect(result.installedAgents).toEqual(["cursor"]);
+    const hookContent = readFileSync(hookPath, "utf8");
     expect(config.version).toBe(1);
     expect(config.hooks.sessionStart).toEqual([{ command: ".cursor/hooks/bootstrap.sh" }]);
     expect(config.hooks.postToolUse).toHaveLength(1);
@@ -123,7 +126,8 @@ describe("installReactDoctorAgentHooks", () => {
       timeout: 120,
     });
     expect(existsSync(hookPath)).toBe(true);
-    expect(readFileSync(hookPath, "utf8")).toContain("additional_context");
+    expect(hookContent).toContain('project_root=$(CDPATH= cd "$script_dir/../.." && pwd)');
+    expect(hookContent).toContain("additional_context");
     expect(Boolean(statSync(hookPath).mode & fsConstants.S_IXUSR)).toBe(true);
   });
 
