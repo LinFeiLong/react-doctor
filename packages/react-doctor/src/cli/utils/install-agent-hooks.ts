@@ -73,9 +73,7 @@ const writeHookScript = (filePath: string): void => {
 };
 
 const hasClaudeHookCommand = (groups: readonly ClaudeHookGroup[]): boolean =>
-  groups.some((group) =>
-    (group.hooks ?? []).some((hook) => hook.command === CLAUDE_HOOK_COMMAND),
-  );
+  groups.some((group) => (group.hooks ?? []).some((hook) => hook.command === CLAUDE_HOOK_COMMAND));
 
 const installClaudeHook = (projectRoot: string): readonly string[] => {
   const settingsPath = path.join(projectRoot, CLAUDE_SETTINGS_RELATIVE_PATH);
@@ -136,10 +134,10 @@ const buildAgentHookScript = (): string =>
     "#!/bin/sh",
     "set -u",
     "",
-    "input_file=$(mktemp \"${TMPDIR:-/tmp}/react-doctor-agent-hook.XXXXXX\")",
-    "output_file=$(mktemp \"${TMPDIR:-/tmp}/react-doctor-agent-hook-output.XXXXXX\")",
-    "trap 'rm -f \"$input_file\" \"$output_file\"' EXIT",
-    "cat > \"$input_file\"",
+    'input_file=$(mktemp "${TMPDIR:-/tmp}/react-doctor-agent-hook.XXXXXX")',
+    'output_file=$(mktemp "${TMPDIR:-/tmp}/react-doctor-agent-hook-output.XXXXXX")',
+    'trap \'rm -f "$input_file" "$output_file"\' EXIT',
+    'cat > "$input_file"',
     "",
     "should_scan() {",
     "  if ! command -v node >/dev/null 2>&1; then",
@@ -194,11 +192,11 @@ const buildAgentHookScript = (): string =>
     "  exit 0",
     "fi",
     "",
-    "if run_react_doctor > \"$output_file\" 2>&1; then",
+    'if run_react_doctor > "$output_file" 2>&1; then',
     "  exit 0",
     "fi",
     "",
-    "node - \"$input_file\" \"$output_file\" <<'NODE'",
+    'node - "$input_file" "$output_file" <<\'NODE\'',
     "const fs = require('node:fs');",
     "const inputPath = process.argv[2];",
     "const outputPath = process.argv[3];",
