@@ -4,14 +4,19 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
-import { installReactDoctorGitHook } from "../src/cli/utils/install-git-hook.js";
+import {
+  detectGitHookTarget,
+  installReactDoctorGitHook,
+} from "../src/cli/utils/install-git-hook.js";
 
 interface GitHookFixture {
   readonly projectRoot: string;
@@ -90,5 +95,21 @@ describe("installReactDoctorGitHook", () => {
     const managedBlockMatches = hookContent.match(/# react-doctor hook launcher start/g) ?? [];
 
     expect(managedBlockMatches).toHaveLength(1);
+  });
+
+  it("detects the default hook path at the repository root when run from a subdirectory", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    const packageDirectory = path.join(fixture.projectRoot, "packages/app");
+    mkdirSync(packageDirectory, { recursive: true });
+    const realProjectRoot = realpathSync(fixture.projectRoot);
+
+    const target = detectGitHookTarget(packageDirectory);
+    if (target === null) throw new Error("Expected git hook target");
+
+    expect(realpathSync(path.dirname(target.hookPath))).toBe(
+      path.join(realProjectRoot, ".git/hooks"),
+    );
+    expect(path.basename(target.hookPath)).toBe("pre-commit");
+    expect(target.runnerRoot).toBe(realProjectRoot);
   });
 });
