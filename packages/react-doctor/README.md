@@ -96,64 +96,12 @@ Prefer not to add a marketplace action? The bare `npx` form works too:
 
 ## PR blocking and exit codes
 
-Two independent gates can block a PR — pick one or both:
+Two independent gates — pick one or both:
 
-- **`--fail-on <level>`** exits non-zero on diagnostics: `error` (default, any error-severity rule fires), `warning` (any diagnostic fires), or `none` (never). Runs against the `ciFailure` surface, so the default `design`-tag exclusion still applies.
-- **Score floor** — a follow-up step that reads the action's `score` output and `exit 1`s when it's below your threshold.
+- **`--fail-on <level>`** exits non-zero on diagnostics: `error` (default), `warning`, or `none`. Combine with `--diff <base>` to gate on PR-introduced regressions only.
+- **Score floor** — read the action's `score` output in a follow-up step and `exit 1` below your threshold. `score` can be empty (offline mode, API unreachable) — treat empty as a no-op or you'll block unrelated PRs. Pin a specific `react-doctor` version when gating on score; new rule releases can lower it.
 
-Combine `--fail-on` with `--diff <base>` to scope the gate to the PR's changed files only — that's the built-in way to fail on **new** regressions without dragging in baseline backlog. There is no separate `--fail-on-new` flag.
-
-`--annotations` (bare `npx` only) and `github-token` (sticky PR comment) are visualization layers and never change the exit code.
-
-### Examples
-
-**Advisory mode** — never blocks, always comments:
-
-```yaml
-- uses: millionco/react-doctor@main
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    fail-on: none
-```
-
-**Regression-only mode** — fail only on new diagnostics introduced by the PR:
-
-```yaml
-- uses: actions/checkout@v5
-  with:
-    fetch-depth: 0 # required for `diff`
-- uses: millionco/react-doctor@main
-  with:
-    diff: main
-    fail-on: warning
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-```
-
-**Strict threshold mode** — fail when the baseline score drops below a floor:
-
-```yaml
-- id: doctor
-  uses: millionco/react-doctor@main
-  with:
-    fail-on: error
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-- env:
-    SCORE: ${{ steps.doctor.outputs.score }}
-    FLOOR: "80"
-  run: |
-    # `score` is best-effort and may be empty (e.g. when offline is on).
-    # Skip the floor when it's empty so unrelated PRs aren't blocked.
-    if [ -z "$SCORE" ]; then
-      echo "::notice::React Doctor score unavailable — skipping floor check"
-      exit 0
-    fi
-    if [ "$SCORE" -lt "$FLOOR" ]; then
-      echo "::error::React Doctor score $SCORE is below floor $FLOOR"
-      exit 1
-    fi
-```
-
-Pin a specific `react-doctor` version when using a score floor — new rule releases can lower the score even when your code hasn't changed (see [Scoring](#scoring)).
+`--annotations` and `github-token` are visualization layers and never change the exit code.
 
 ## Configuration
 
@@ -190,24 +138,20 @@ React Doctor respects `.gitignore`, `.eslintignore`, `.oxlintignore`, `.prettier
 
 If you have a JSON oxlint or eslint config (`.oxlintrc.json` or `.eslintrc.json`), its rules get merged into the scan automatically and count toward the score. Set `adoptExistingLintConfig: false` to opt out.
 
-#### Surface controls (CLI, PR comments, score, CI failure)
+#### Surface controls
 
-Diagnostics flow through four independent surfaces — `cli`, `prComment`, `score`, and `ciFailure` — and each one can be tuned per tag, category, or rule id. By default the `design` tag (Tailwind shorthand cleanup like `w-5 h-5 → size-5`, pure-black backgrounds, gradient text, …) stays visible on the local CLI but is excluded from the PR comment, the score, and the `--fail-on` gate so style cleanup can't dilute meaningful React findings:
+Diagnostics flow through four surfaces — `cli`, `prComment`, `score`, `ciFailure` — each independently tunable. By default the `design` tag (Tailwind shorthand, pure-black backgrounds, gradient text) stays on the CLI but is excluded from PR comments, score, and `--fail-on` so style cleanup doesn't dilute React findings.
 
 ```json
 {
   "surfaces": {
-    "prComment": {
-      "includeTags": ["design"],
-      "excludeCategories": ["Performance"]
-    },
-    "score": { "includeRules": ["react-doctor/design-no-redundant-size-axes"] },
+    "prComment": { "includeTags": ["design"] },
     "ciFailure": { "excludeTags": ["test-noise"] }
   }
 }
 ```
 
-Each surface accepts `includeTags`, `excludeTags`, `includeCategories`, `excludeCategories`, `includeRules`, and `excludeRules`. Include wins over exclude when both match. Run the CLI with `--pr-comment` (the GitHub Action passes it automatically when `github-token` is set) to apply the `prComment` surface to the printed output destined for sticky PR comments.
+Each surface accepts `include`/`exclude` × `Tags`/`Categories`/`Rules`. Include wins over exclude.
 
 #### Rule severity (`rules`, `categories`)
 
@@ -224,13 +168,7 @@ Per-rule wins over per-category. `"off"` short-circuits before the rule runs; `"
 
 #### Optional companion plugins
 
-When the following ESLint plugins are installed in the scanned project (or hoisted in your monorepo), React Doctor folds their rules into the same scan. Listed as **optional peer dependencies** — install only what you want.
-
-| Plugin                                                                                            | Adds                                                                                                      | Namespace          |
-| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------ |
-| [`eslint-plugin-react-hooks`](https://www.npmjs.com/package/eslint-plugin-react-hooks) (v6 or v7) | The React Compiler frontend's correctness rules — fired when a React Compiler is detected in the project. | `react-hooks-js/*` |
-
-The 8 rules from [`eslint-plugin-react-you-might-not-need-an-effect`](https://github.com/nickjvandyke/eslint-plugin-react-you-might-not-need-an-effect) (NickvanDyke, MIT) are now ported natively into React Doctor — they fire as `react-doctor/no-derived-state`, `react-doctor/no-chain-state-updates`, `react-doctor/no-event-handler`, `react-doctor/no-adjust-state-on-prop-change`, `react-doctor/no-reset-all-state-on-prop-change`, `react-doctor/no-pass-live-state-to-parent`, `react-doctor/no-pass-data-to-parent`, and `react-doctor/no-initialize-state`. No peer dependency required.
+If [`eslint-plugin-react-hooks`](https://www.npmjs.com/package/eslint-plugin-react-hooks) (v6 or v7) is installed in the scanned project, the React Compiler frontend's correctness rules fold into the same scan under the `react-hooks-js/*` namespace.
 
 ### Inline suppressions
 
@@ -242,70 +180,13 @@ useEffect(() => {
 }, [value]);
 ```
 
-When two rules fire on the same line, you have two equivalent options. Comma-separate the rule ids on a single comment:
+For multiple rules on one line, comma-separate them or stack one comment per rule directly above. Stacked comments only chain when nothing but other `react-doctor-disable-next-line` comments sits between them and the target. Block comments (`{/* react-doctor-disable-next-line ... */}`) work inside JSX.
 
-```tsx
-// react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers, react-doctor/no-derived-useState
-const [localSearch, setLocalSearch] = useState(searchQuery);
-```
-
-Or stack one comment per rule directly above the diagnostic. Stacked comments are honored as long as nothing but other `react-doctor-disable-next-line` comments sits between them and the target line:
-
-```tsx
-// react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
-// react-doctor-disable-next-line react-doctor/no-derived-useState
-const [localSearch, setLocalSearch] = useState(searchQuery);
-```
-
-A code line between stacked comments breaks the chain: only the comment immediately above the diagnostic (and any contiguous `react-doctor-disable-next-line` comments stacked on top of it) is honored. If a comment looks adjacent but the rule still fires, run `react-doctor --explain <file:line>` — it reports whether a nearby suppression was found, what rules it covers, and why it didn't apply.
-
-Block comments work inside JSX:
-
-<!-- prettier-ignore -->
-```tsx
-{/* react-doctor-disable-next-line react-doctor/no-danger */}
-<div dangerouslySetInnerHTML={{ __html }} />
-```
-
-For multi-line JSX, putting the comment immediately above the opening tag covers the entire attribute list (matching ESLint convention).
+If a suppression looks adjacent but doesn't take, `react-doctor --explain <file:line>` reports why.
 
 ## Custom rules (user plugins)
 
-Drop your own oxlint-shaped plugin into `react-doctor.config.json`'s `plugins` field and react-doctor runs your rules alongside the built-in ones. Useful for team-specific conventions ("no `<Box>` outside `packages/ui`", "all API calls go through `lib/client`", etc.) that don't belong upstream.
-
-### 1. Write the plugin
-
-Create a file anywhere in your repo. The shape is the oxlint plugin contract — a default-exported `{ meta: { name }, rules: { ... } }`. Each rule's `create(context)` returns ESTree-style visitors.
-
-```js
-// lint/team-conventions.cjs
-const noBareFetchRule = {
-  create: (context) => ({
-    CallExpression(node) {
-      if (node.callee.type === "Identifier" && node.callee.name === "fetch") {
-        context.report({
-          node,
-          message:
-            "Use `lib/client.request()` instead of bare `fetch` — keeps auth + tracing consistent.",
-        });
-      }
-    },
-  }),
-};
-
-module.exports = {
-  meta: { name: "team-conventions" },
-  rules: {
-    "no-bare-fetch": noBareFetchRule,
-  },
-};
-```
-
-For a richer authoring experience (TypeScript types, severity defaults, recommendation strings, category metadata, the `defineRule` helper), install [`oxlint-plugin-react-doctor`](https://npmjs.com/package/oxlint-plugin-react-doctor) and import `defineRule` + the `RulePlugin` types — the built-in plugin uses the same SDK.
-
-### 2. Register the plugin in `react-doctor.config.json`
-
-`plugins` accepts either a **relative path** (resolved relative to the config file) or an **npm package name**:
+Drop an oxlint-shaped plugin into `react-doctor.config.json` to run team-specific rules alongside the built-ins:
 
 ```json
 {
@@ -317,16 +198,9 @@ For a richer authoring experience (TypeScript types, severity defaults, recommen
 }
 ```
 
-### 3. Run
+`plugins` accepts a path relative to the config file or an npm package name. The plugin module exports `{ meta: { name }, rules: { [name]: { create(context) { ... } } } }` — the standard oxlint plugin contract. Rule keys are `<plugin.meta.name>/<rule>`; `meta.name` is required.
 
-`npx react-doctor .` picks up the plugin and flows its diagnostics through every surface (CLI / PR comment / score / `--fail-on` gate) the same as built-in rules.
-
-### Notes
-
-- **Opt-in by default**: a user-plugin rule only runs when `rules: { "<plugin-name>/<rule>": "warn" | "error" }` explicitly enables it. Mirrors how `defaultEnabled: false` built-in rules behave so installing a third-party plugin doesn't surprise you with a flood of new diagnostics on the first scan.
-- **`meta.name` is required**: rule keys are `<plugin.meta.name>/<rule-name>`. A plugin without `meta.name` is rejected (with a warning) so rule keys in `config.rules` can't silently change when a file gets renamed.
-- **Failure tolerance**: a plugin entry that can't be resolved or doesn't look like an oxlint plugin logs a warning to stderr and is skipped — your scan keeps going.
-- **Per-rule severity / ignore / surfaces**: every existing severity / ignore / surface knob (`rules`, `categories`, `ignore.{paths, rules, tags}`, `surfaces.{cli, prComment, score, ciFailure}`) treats user-plugin rules the same as built-in rules. You can demote a user-plugin rule out of CI without touching the rule's source.
+Plugin rules are **opt-in** (only fire when explicitly enabled in `rules`) and flow through every surface (CLI / PR comment / score / `--fail-on`) the same as built-ins. An unresolvable plugin logs a warning and is skipped — the scan keeps going. For TypeScript types and a `defineRule` helper, install [`oxlint-plugin-react-doctor`](https://npmjs.com/package/oxlint-plugin-react-doctor) and import from there.
 
 ## Lint plugin (standalone)
 
@@ -411,37 +285,23 @@ When a suppression isn't working, `--explain <file:line>` (or its alias `--why <
 | `adoptExistingLintConfig`  | `boolean`                        | `true`   |
 | `ignore.tags`              | `string[]`                       | `[]`     |
 
-`textComponents` is the broad escape hatch for `rn-no-raw-text` — list components that themselves behave like React Native's `<Text>` (custom `Typography`, `NativeTabs.Trigger.Label`, etc.) and the rule will treat them as text containers regardless of what their children look like.
-
-`rawTextWrapperComponents` is the narrower option for components that are not text elements but safely route string-only children through an internal `<Text>` (e.g. `heroui-native`'s `Button`, which stringifies its children and renders them through a `ButtonLabel`). Listed wrappers suppress `rn-no-raw-text` only when their children are entirely stringifiable. A wrapper with mixed children — e.g. `<Button>Save<Icon /></Button>` — still reports because the wrapper can't safely route raw text alongside a sibling JSX element.
-
-`serverAuthFunctionNames` teaches `server-auth-actions` about custom auth guards your codebase wraps around its auth library (e.g. `requireWorkspaceMember`, `ensureSignedIn`). Listed names are accepted as a valid top-of-action auth check whether called bare (`requireWorkspaceMember()`) or as a member (`guards.requireWorkspaceMember()`), and — unlike the built-in default list — are treated as distinctive so the receiver is not re-validated.
-
-`ignore.tags` suppresses entire categories of rules by tag. For example, `"tags": ["design"]` disables all opinionated design rules (gradient text, pure black backgrounds, side tab borders, default Tailwind palettes). Available tags: `"design"`.
-
-`offline` skips the score API entirely — no score is shown and no share URL is generated. CI runs (GitHub Actions, GitLab CI, CircleCI) are not offline by default; only the share URL is suppressed. Set `offline: true` (or `--offline`) explicitly when you want zero network.
+- `textComponents` — components that behave like RN's `<Text>` (custom `Typography`, `NativeTabs.Trigger.Label`). Broad escape hatch for `rn-no-raw-text`.
+- `rawTextWrapperComponents` — wrappers that route stringifiable children through an internal `<Text>` (e.g. `heroui-native`'s `Button`). Narrower: only suppresses when children are entirely strings.
+- `serverAuthFunctionNames` — custom auth guards (`requireWorkspaceMember`, `ensureSignedIn`) `server-auth-actions` should accept as a top-of-action auth check.
+- `ignore.tags` — suppresses rule families by tag. Available: `"design"` (gradient text, pure black backgrounds, default Tailwind palettes).
+- `offline` — skip the score API entirely. CI is not offline by default; only the share URL is suppressed there.
 
 ### React Native rules in mixed monorepos
 
-`rn-*` rules respect per-package boundaries automatically. In a mixed React Native + web monorepo (`apps/mobile` alongside `apps/web` / `apps/vite-app` / `packages/storybook` / `apps/docs`), every `rn-*` rule walks up to the file's nearest `package.json` before running:
+`rn-*` rules respect per-package boundaries automatically. Every `rn-*` rule walks to the file's nearest `package.json`:
 
-- Packages that declare `react-native`, `react-native-tvos`, `expo`, `expo-router`, `@expo/*`, `react-native-windows`, `react-native-macos`, anything under the `@react-native/` or `@react-native-` namespaces (`@react-native-firebase/app`, `@react-native-async-storage/async-storage`, …), or Metro's top-level `"react-native"` resolution field → rules ON.
-- Packages that declare a web-only framework (`next`, `vite`, `react-scripts`, `gatsby`, `@remix-run/*`, `@docusaurus/*`, `@storybook/*`, or plain `react-dom` without an RN sibling) → rules OFF.
-- Packages with no clear local signal → fall back to the project-level framework detection.
+- Declares `react-native`, `react-native-tvos`, `expo`, `expo-router`, `@expo/*`, `react-native-windows` / `-macos`, any `@react-native/` or `@react-native-*` package, or Metro's top-level `"react-native"` field → rules ON.
+- Declares a web-only framework (`next`, `vite`, `react-scripts`, `gatsby`, `@remix-run/*`, `@docusaurus/*`, `@storybook/*`, or plain `react-dom`) → rules OFF.
+- No local signal → falls back to project-level detection.
 
-File extensions override the package classification when they're unambiguous: `*.web.tsx` / `*.web.jsx` are always skipped (Metro resolves these only against `react-native-web`); `*.ios.tsx` / `*.android.tsx` / `*.native.tsx` are always scanned (mobile-only).
+File extensions override the package classification: `*.web.tsx` / `.web.jsx` are always skipped; `*.ios.tsx` / `.android.tsx` / `.native.tsx` are always scanned.
 
-The detection is bidirectional: a web-rooted monorepo (root `package.json` declares `next` or `vite`) still loads the `rn-*` rules when any workspace targets React Native — the file-level boundary then keeps them silent on the web workspaces and active on the mobile ones.
-
-`rn-no-raw-text` additionally short-circuits raw text inside platform-fork branches:
-
-- `if (Platform.OS === "web") { … }` consequent — and the `else` branch of `if (Platform.OS !== "web")`.
-- `Platform.OS === "web" ? <X /> : …` ternaries, `Platform.OS === "web" && <X />` short-circuits, and the reversed-operand form `"web" === Platform.OS`.
-- `switch (Platform.OS) { case "web": … }` case bodies (other cases still report).
-- `Platform.select({ web: <X />, default: <Y /> })` — only the `web` arm is exempt.
-- `Platform?.OS === "web"` (optional chain) and `Platform.OS! === "web"` (TS non-null assertion) parse the same way as the bare form.
-
-The walker stops at function and `Program` boundaries — JSX defined inside a callback hoisted out of a `Platform.OS` branch does not inherit the parent guard. Negative platform checks like `Platform.OS === "ios"` are deliberately NOT treated as web exemptions; only the explicit web branch is.
+`rn-no-raw-text` additionally short-circuits inside `Platform.OS === "web"` branches (`if` / ternary / `&&` / `switch` / `Platform.select({ web })`). Only the explicit web branch is exempt — negative checks like `Platform.OS === "ios"` are not treated as web guards.
 
 ## Scoring
 
@@ -469,24 +329,9 @@ When on a feature branch without explicit flags, you'll be prompted: "Only scan 
 
 `--staged` and `--diff` cannot be combined.
 
-### Pre-commit hooks with Husky + lint-staged
+### Pre-commit hooks
 
-The most common setup is [Husky](https://typicode.github.io/husky/) for the git hook and [lint-staged](https://github.com/lint-staged/lint-staged) to filter which files run through each tool. React Doctor's `--staged` mode is built for this: it reads file contents from the git **index** (not the working tree) and materializes them into a temp directory, so partially-staged files are scanned exactly as they will be committed.
-
-Install both, then wire them up:
-
-```bash
-npx ni -D husky lint-staged
-npx husky init
-```
-
-`husky init` creates `.husky/pre-commit`. Replace its contents with:
-
-```bash
-npx lint-staged
-```
-
-Then add a `lint-staged` block to your `package.json`. Because React Doctor already filters to the staged set via `--staged`, **do not pass the lint-staged-injected file list** — invoke it with a single command and let it discover the index itself:
+`--staged` reads from the git **index** (not the working tree), so partially-staged files scan exactly as they'll be committed. The most common shape with [lint-staged](https://github.com/lint-staged/lint-staged):
 
 ```json
 {
@@ -496,37 +341,7 @@ Then add a `lint-staged` block to your `package.json`. Because React Doctor alre
 }
 ```
 
-A few notes that bite people:
-
-- **Don't append `{staged-files}`** — lint-staged would otherwise pass the matched paths as positional arguments and you'd get the union (path filter + index scan) instead of the intent.
-- **Use the function form when you only want the hook to run if any matching file is staged** but still want a single project-wide scan:
-
-  ```js
-  // lint-staged.config.js
-  export default {
-    "*.{ts,tsx,js,jsx}": () => "react-doctor --staged --fail-on warning",
-  };
-  ```
-
-- **`--fail-on warning`** blocks the commit on any diagnostic. Use `--fail-on error` for a softer gate, or `--fail-on none` to lint advisory-only.
-- **Index vs. working tree:** `--staged` reflects `git diff --cached`, not your editor buffer. If you `git add` half a file and keep typing, only the added half is scanned — the unstaged tail is ignored.
-- **Skip in CI:** lint-staged is a pre-commit concern. In CI, use the GitHub Action (above) or `react-doctor --diff <base>` directly; running both does duplicate work.
-- **Other hook managers:** the same `react-doctor --staged --fail-on warning` command works under [Lefthook](https://lefthook.dev/), [pre-commit](https://pre-commit.com/), or a hand-written `.git/hooks/pre-commit` — `--staged` is hook-manager-agnostic.
-
-To bypass the hook for a one-off commit, use `git commit --no-verify`.
-
-## Agent and CI integration
-
-React Doctor detects 50+ coding agents (Claude Code, Cursor, Codex, OpenCode, Windsurf, and more) and adapts its behavior automatically:
-
-- **Install for agents**: `npx react-doctor@latest install` writes agent-specific rule files (SKILL.md, AGENTS.md, .cursorrules) into your project so agents learn React best practices.
-- **JSON output**: `--json` produces a structured `JsonReport` on stdout. Errors still produce a valid JSON document with `ok: false`. Use `--json-compact` for minimal whitespace.
-- **Score-only output**: `--score` outputs just the numeric score (0-100), useful for threshold checks in agent loops.
-- **GitHub Actions annotations**: `--annotations` emits `::error` / `::warning` format for inline PR annotations. Annotations don't change the exit code.
-- **Exit codes**: `--fail-on error` (default) exits non-zero when error-severity diagnostics are found. Use `--fail-on warning` or `--fail-on none` to tune CI gating. See [PR blocking and exit codes](#pr-blocking-and-exit-codes) for the full model — including how to fail only on new regressions vs. fail on the baseline score.
-- **Programmatic API**: `import { diagnose } from "react-doctor/api"` for direct integration in scripts and automation.
-
-In CI environments, prompts are automatically skipped. Pass `--offline` explicitly when you need zero network.
+Do **not** append `{staged-files}` — react-doctor already discovers the index itself, and passing the list as positional args turns the scan into a union (path filter + index scan). The same command works under [Husky](https://typicode.github.io/husky/), [Lefthook](https://lefthook.dev/), [pre-commit](https://pre-commit.com/), or a hand-written `.git/hooks/pre-commit`.
 
 ## Node.js API
 
@@ -572,22 +387,8 @@ Top React codebases scanned by React Doctor, ranked by score. Updated automatica
 
 See the [full leaderboard](https://www.react.doctor/leaderboard).
 
-## Resources & Contributing Back
+## Contributing
 
-Want to try it out? Check out [the demo](https://react.doctor).
+PRs and issues welcome — [issue tracker](https://github.com/millionco/react-doctor/issues). Local dev: `pnpm install && pnpm build`.
 
-Looking to contribute back? Clone the repo, install, build, and submit a PR.
-
-```bash
-git clone https://github.com/millionco/react-doctor
-cd react-doctor
-pnpm install
-pnpm build
-node packages/react-doctor/bin/react-doctor.js /path/to/your/react-project
-```
-
-Find a bug? Head to the [issue tracker](https://github.com/millionco/react-doctor/issues).
-
-### License
-
-React Doctor is MIT-licensed open-source software.
+MIT-licensed.

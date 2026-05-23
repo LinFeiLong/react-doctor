@@ -5,7 +5,7 @@ Domain glossary and conceptual map for react-doctor.
 Two views of the same codebase:
 
 1. **End-user view** — react-doctor is a CLI + npm package that scans a React project and prints diagnostics ("lint check failed in src/App.tsx:42" / "use `useEffect` here"), with a 0–100 score and a sharable URL. Optional: a GitHub Action that posts the same diagnostics inline on PRs.
-2. **Architecture view** — an Effect v4 runtime that orchestrates 9 services (Project / Config / Files / Linter / DeadCode / Score / Reporter / Progress / Git) into a single streaming pipeline. The CLI and the programmatic `diagnose()` API are both thin shells around `runInspect`.
+2. **Architecture view** — an Effect v4 runtime that orchestrates 11 services (Project / Config / Files / Linter / DeadCode / Score / Reporter / Progress / Git / NodeResolver / StagedFiles) into a single streaming pipeline. The CLI and the programmatic `diagnose()` API are both thin shells around `runInspect`.
 
 The end-user view is what the README and the website document. This file is the architecture view.
 
@@ -81,11 +81,11 @@ All three end up calling `runInspect` with `Effect.runPromise(Effect.provide(lay
 
 The single error type on the orchestrator's error channel. Defined as `Schema.TaggedErrorClass<ReactDoctorError>()("ReactDoctorError", { reason: Schema.Union([…]) })` in `packages/core/src/errors.ts`.
 
-13 leaf reasons today: `OxlintUnavailable`, `OxlintBatchExceeded`, `OxlintSpawnFailed`, `OxlintOutputUnparseable`, `ConfigParseFailed`, `ProjectNotFound`, `NoReactDependency`, `AmbiguousProject`, `DeadCodeAnalysisFailed`, `GitInvocationFailed`, `GitBaseBranchMissing`, `GitBaseBranchInvalid`. Each leaf is itself a `Schema.TaggedErrorClass` with a `get message()` getter and (where applicable) a `cause: Schema.Unknown` for the underlying JS error.
+12 leaf reasons today: `OxlintUnavailable`, `OxlintBatchExceeded`, `OxlintSpawnFailed`, `OxlintOutputUnparseable`, `ConfigParseFailed`, `ProjectNotFound`, `NoReactDependency`, `AmbiguousProject`, `DeadCodeAnalysisFailed`, `GitInvocationFailed`, `GitBaseBranchMissing`, `GitBaseBranchInvalid`. Each leaf is itself a `Schema.TaggedErrorClass` with a `get message()` getter and (where applicable) a `cause: Schema.Unknown` for the underlying JS error.
 
 Renderers dispatch on `error.reason._tag` via `Effect.catchReasons("ReactDoctorError", { TagA: …, TagB: … })`. NEVER on `error.message.includes(...)`.
 
-### Legacy thrown errors (`@react-doctor/project-info`)
+### Legacy thrown errors (`core/src/project-info`)
 
 Pre-Effect-runtime errors that the public `inspect()` / `diagnose()` API still throws for back-compat: `NoReactDependencyError`, `ProjectNotFoundError`, `AmbiguousProjectError`, `PackageJsonNotFoundError`. Translation from the tagged reason happens at the outer boundary via `Effect.catchReasons(...)` → `Effect.die(new LegacyError(...))`.
 
@@ -113,17 +113,9 @@ The headline 0–100 react-doctor number. Computed by POSTing the diagnostic set
 
 The score is computed AFTER `runInspect` returns with the surface filter applied (the `score` surface demotes weak-signal rule families like `design`), so the orchestrator's `Score` service runs with `layerOf(null)` from the CLI path. The programmatic `diagnose()` uses `Score.layerHttp` directly because its caller doesn't need surface filtering.
 
-### Composite action (`actions/review/`)
+### Composite action (`action.yml`)
 
-The GitHub composite action lives in `actions/review/` (a separate workspace package, `@react-doctor/review-action`). On `pull_request` events it:
-
-1. Materializes a base worktree at `pull_request.base.sha` in `RUNNER_TEMP`.
-2. Runs `runDiagnoseAcrossWorkspace` against head + base.
-3. Diffs the two snapshots by `(relativePath, rule, message)` identity → `{ newDiagnostics, fixedDiagnostics }`.
-4. Posts a sticky summary comment + inline review comments on the `+` lines.
-5. Resolves prior threads when their underlying diagnostic disappears.
-
-`runDiagnoseAcrossWorkspace(scanDir, pathBaseDir)` takes both args so emitted `relativePath`s are repo-root-relative (the GitHub API key shape), even when `INPUT_DIRECTORY` scopes the scan to a subtree.
+The GitHub composite action lives at the repo root in `action.yml`. On `pull_request` events with `github-token` set it runs `npx react-doctor@latest` once for the gating output and again with `--score` to populate the `score` output, then posts/updates a sticky comment via `actions/github-script`.
 
 ### Eval harness (separate repo)
 
@@ -147,19 +139,17 @@ packages/
       schemas.ts                 Diagnostic, Severity, JsonReport (wire types)
       refs.ts                    Context.Reference for ambient config
       paths.ts                   branded path types
-      services/                  10 Context.Service classes — see Service section above
+      services/                  11 Context.Service classes — see Service section above
+      project-info/              project discovery + legacy thrown error classes
+      types/                     shared cross-package type interfaces
       ...                        rest of the lint / score / suppression engine
   api/                           PRIVATE  programmatic `diagnose()` (Effect.runPromise shell + legacy translation)
-  project-info/                  PRIVATE  legacy React project discovery + legacy thrown error classes
-  types/                         PRIVATE  shared cross-package type interfaces + RN dependency name constants
   react-doctor/                  PUBLISHED  CLI + public `inspect()` + bin
   oxlint-plugin-react-doctor/    PUBLISHED  the 100+ rules
   eslint-plugin-react-doctor/    PUBLISHED  ESLint mirror of the oxlint plugin
   website/                       PRIVATE  docs / leaderboard site
 
-actions/
-  review/                        PRIVATE  composite GitHub action (@react-doctor/review-action)
-
+action.yml                       composite GitHub action (npx-shaped)
 .specs/                          design specs (see inspect-pipeline.md)
 CONTEXT.md                       this file — domain glossary
 AGENTS.md                        coding conventions + Effect v4 rules

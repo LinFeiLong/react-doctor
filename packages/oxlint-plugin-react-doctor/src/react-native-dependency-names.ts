@@ -1,14 +1,8 @@
-// Canonical RN-aware-manifest detection rules. Lives in `@react-doctor/types`
-// — even though this package is otherwise type-only — so the two layers
-// that need to agree about "what counts as React Native" can share a
-// single source instead of duplicating the lists:
-//
-//   - `oxlint-plugin-react-doctor` / `classify-package-platform.ts`
-//     (file-level rule gate; decides whether each file's nearest
-//     `package.json` is RN-aware).
-//   - `@react-doctor/project-info` / `is-package-json-react-native-aware.ts`
-//     (project-level capability gate; decides whether any `rn-*` rule
-//     loads at all on a web-rooted monorepo with an RN workspace).
+// Canonical RN-aware-manifest detection rules. Co-located with the rule
+// gate (`classify-package-platform.ts`) that is the only direct consumer.
+// A short-lived twin list lives at
+// `core/src/project-info/internal-rn-dependency-names.ts` (see #440) so
+// the project-discovery gate can stay independent of this plugin.
 //
 // `react-native-web` is intentionally NOT included — it's a DOM compat
 // layer that pairs with `react-dom` / Next / Vite hosts, not a mobile

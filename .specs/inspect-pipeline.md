@@ -17,7 +17,7 @@ Lives in `packages/core/src/run-inspect.ts`. Wires 9 services (`Project`, `Confi
 
 | Service               | Purpose                                                                                                          | Live layer                                                               | Test surface                                           |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------ |
-| `Project`             | Discover the React project at a directory (framework, react version, tailwind, etc.).                            | `layerNode` (wraps `@react-doctor/project-info`)                         | `layerOf(projectInfo)`                                 |
+| `Project`             | Discover the React project at a directory (framework, react version, tailwind, etc.).                            | `layerNode` (wraps `core/src/project-info`)                              | `layerOf(projectInfo)`                                 |
 | `Config`              | Resolve `react-doctor.config.json` + `rootDir` redirect; cached.                                                 | `layerNode` (`Cache.make`-backed)                                        | `layerOf({ config, resolvedDirectory })`               |
 | `Files`               | Read source-file lines + walk source files; abstracts `node:fs` for the per-element pipeline.                    | `layerNode`                                                              | `layerInMemory(Map<absolutePath, content>)`            |
 | `Linter`              | Produces `Stream<Diagnostic, ReactDoctorError, LintPartialFailures>` from oxlint.                                | `layerOxlint` (wraps `runOxlint`)                                        | `layerOf(diagnostics[])`, `layerComposite(backends[])` |
@@ -45,7 +45,7 @@ packages/core/src/
     linter.ts                # runOxlint wrapper + LintPartialFailures companion Ref
     node-resolver.ts         # nvm / Node-version compatibility for the oxlint binding
     progress.ts              # spinner / progress reporter (ora-backed in CLI)
-    project.ts               # @react-doctor/project-info wrapper
+    project.ts               # wrapper over core/src/project-info
     reporter.ts              # per-diagnostic side-channel
     score.ts                 # score API client (HTTP)
     staged-files.ts          # materialize git-staged files into temp tree
