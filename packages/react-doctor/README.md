@@ -13,7 +13,8 @@ React Doctor deterministically scans your codebase and finds issues across state
 
 Works for all React frameworks and libraries - Next.js, Vite, TanStack, React Native, Expo, you name it.
 
-### [Website](https://react.doctor) | [Docs](https://react.doctor/docs)
+| [Website](https://react.doctor) | [Docs](https://react.doctor/docs) |
+| --- | --- |
 
 ## Install
 
