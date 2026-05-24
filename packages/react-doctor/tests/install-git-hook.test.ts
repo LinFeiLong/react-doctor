@@ -364,6 +364,42 @@ describe("installReactDoctorGitHook", () => {
     expect(configContent).toContain("run: react-doctor --staged --fail-on none || true");
   });
 
+  it("merges React Doctor into an existing Lefthook pre-commit section", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    const configPath = path.join(fixture.projectRoot, "lefthook.yml");
+    writeFileSync(
+      configPath,
+      [
+        "pre-commit:",
+        "  commands:",
+        "    lint:",
+        "      run: pnpm lint",
+        "commit-msg:",
+        "  commands:",
+        "    commitlint:",
+        "      run: commitlint --edit",
+        "",
+      ].join("\n"),
+    );
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const configContent = readFileSync(configPath, "utf8");
+    expect(configContent.match(/^pre-commit:/gm)).toHaveLength(1);
+    expect(configContent).toContain("    lint:\n      run: pnpm lint");
+    expect(configContent).toContain(
+      "    react-doctor:\n      run: react-doctor --staged --fail-on none || true",
+    );
+    expect(configContent).toContain("commit-msg:");
+  });
+
   it("updates pre-commit config with a local hook", () => {
     execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
     const configPath = path.join(fixture.projectRoot, ".pre-commit-config.yaml");
@@ -416,6 +452,38 @@ describe("installReactDoctorGitHook", () => {
     expect(configContent).toContain(
       "command: ['sh', '-c', 'react-doctor --staged --fail-on none || true']",
     );
+  });
+
+  it("merges React Doctor into an existing Overcommit PreCommit section", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    const configPath = path.join(fixture.projectRoot, ".overcommit.yml");
+    writeFileSync(
+      configPath,
+      [
+        "PreCommit:",
+        "  RuboCop:",
+        "    enabled: true",
+        "CommitMsg:",
+        "  CapitalizedSubject:",
+        "    enabled: true",
+        "",
+      ].join("\n"),
+    );
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const configContent = readFileSync(configPath, "utf8");
+    expect(configContent.match(/^PreCommit:/gm)).toHaveLength(1);
+    expect(configContent).toContain("  RuboCop:\n    enabled: true");
+    expect(configContent).toContain("  ReactDoctor:\n    enabled: true");
+    expect(configContent).toContain("CommitMsg:");
   });
 
   it("updates Yorkie gitHooks config", () => {

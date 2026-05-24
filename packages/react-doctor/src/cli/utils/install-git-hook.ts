@@ -518,23 +518,48 @@ const installStagedConfig = (
 const installPrettyQuick = (options: InstallGitHookOptions): InstallGitHookResult =>
   installPackageJsonPreCommitString(options, "pretty-quick", "gitHooks");
 
+const appendIndentedBlockToTopLevelSection = (
+  content: string,
+  sectionName: string,
+  block: readonly string[],
+): string => {
+  const normalizedContent = ensureTrailingNewline(content);
+  const sectionPattern = new RegExp(`^${sectionName}:\\s*$`, "m");
+  const match = sectionPattern.exec(normalizedContent);
+  if (match === null) {
+    return ensureTrailingNewline(
+      [normalizedContent.trimEnd(), "", `${sectionName}:`, ...block, ""]
+        .filter((line, index) => index > 0 || line.length > 0)
+        .join("\n"),
+    );
+  }
+
+  const sectionStartIndex = match.index;
+  const nextSectionPattern = /^[A-Za-z0-9_-]+:\s*$/gm;
+  nextSectionPattern.lastIndex = sectionStartIndex + match[0].length;
+  let nextSectionMatch = nextSectionPattern.exec(normalizedContent);
+  while (nextSectionMatch !== null && nextSectionMatch.index === sectionStartIndex) {
+    nextSectionMatch = nextSectionPattern.exec(normalizedContent);
+  }
+
+  const insertIndex = nextSectionMatch?.index ?? normalizedContent.length;
+  const prefix = normalizedContent.slice(0, insertIndex).trimEnd();
+  const suffix = normalizedContent.slice(insertIndex);
+  return ensureTrailingNewline([prefix, ...block, suffix.trimStart()].join("\n"));
+};
+
 const installLefthook = (options: InstallGitHookOptions): InstallGitHookResult => {
   const didHookExist = existsSync(options.hookPath);
   const existingContent = didHookExist ? readFileSync(options.hookPath, "utf8") : "";
   if (!existingContent.includes("react-doctor")) {
-    const nextContent = [
-      ensureTrailingNewline(existingContent).trimEnd(),
-      "",
-      "pre-commit:",
+    const nextContent = appendIndentedBlockToTopLevelSection(existingContent, "pre-commit", [
       "  commands:",
       "    react-doctor:",
       `      run: ${NON_BLOCKING_REACT_DOCTOR_COMMAND}`,
       "",
-    ]
-      .filter((line, index) => index > 0 || line.length > 0)
-      .join("\n");
+    ]);
     mkdirSync(path.dirname(options.hookPath), { recursive: true });
-    writeFileSync(options.hookPath, ensureTrailingNewline(nextContent));
+    writeFileSync(options.hookPath, nextContent);
   }
   removeLegacyManagedRunner(options.projectRoot);
 
@@ -579,19 +604,14 @@ const installOvercommit = (options: InstallGitHookOptions): InstallGitHookResult
   const didHookExist = existsSync(options.hookPath);
   const existingContent = didHookExist ? readFileSync(options.hookPath, "utf8") : "";
   if (!existingContent.includes("ReactDoctor")) {
-    const nextContent = [
-      ensureTrailingNewline(existingContent).trimEnd(),
-      "",
-      "PreCommit:",
+    const nextContent = appendIndentedBlockToTopLevelSection(existingContent, "PreCommit", [
       "  ReactDoctor:",
       "    enabled: true",
       `    command: ['sh', '-c', '${NON_BLOCKING_REACT_DOCTOR_COMMAND}']`,
       "",
-    ]
-      .filter((line, index) => index > 0 || line.length > 0)
-      .join("\n");
+    ]);
     mkdirSync(path.dirname(options.hookPath), { recursive: true });
-    writeFileSync(options.hookPath, ensureTrailingNewline(nextContent));
+    writeFileSync(options.hookPath, nextContent);
   }
   removeLegacyManagedRunner(options.projectRoot);
   return {
