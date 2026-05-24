@@ -40,8 +40,6 @@ Supported integrations include:
 - Yorkie
 - ghooks
 - git-hooks-js
-- lint-staged
-- nano-staged
 - pretty-quick
 
 When a manager owns the hook flow, React Doctor updates that manager's config instead of overwriting its generated hook file.

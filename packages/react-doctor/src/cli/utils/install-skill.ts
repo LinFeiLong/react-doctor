@@ -11,26 +11,42 @@ import { highlighter, SKILL_NAME } from "@react-doctor/core";
 import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
 import { installReactDoctorAgentHooks } from "./install-agent-hooks.js";
-import {
-  detectGitHookTarget,
-  installReactDoctorGitHook,
-  type GitHookTarget,
-} from "./install-git-hook.js";
+import { GitHookKind, type GitHookTarget } from "./git-hook-types.js";
+import { detectGitHookTarget, installReactDoctorGitHook } from "./install-git-hook.js";
 import { prompts } from "./prompts.js";
 import { shouldSkipPrompts } from "./should-skip-prompts.js";
 import { spinner } from "./spinner.js";
 
-const GIT_HOOK_KIND = "git";
 const NATIVE_AGENT_HOOK_AGENTS = new Set<SkillAgentType>(["claude-code", "cursor"]);
+const CONFIG_ONLY_GIT_HOOK_KINDS = new Set([
+  GitHookKind.Ghooks,
+  GitHookKind.GitHooksJs,
+  GitHookKind.Lefthook,
+  GitHookKind.Overcommit,
+  GitHookKind.PreCommit,
+  GitHookKind.PreCommitNpm,
+  GitHookKind.PrettyQuick,
+  GitHookKind.SimpleGitHooks,
+  GitHookKind.Yorkie,
+]);
 
 const buildManualGitHookTarget = (hookPath: string, projectRoot: string): GitHookTarget => ({
   hookPath,
   runnerRoot: projectRoot,
-  kind: GIT_HOOK_KIND,
+  kind: GitHookKind.Git,
 });
 
 const hasNativeAgentHookTarget = (agents: readonly SkillAgentType[]): boolean =>
   agents.some((agent) => NATIVE_AGENT_HOOK_AGENTS.has(agent));
+
+const formatGitHookInstallMessage = (
+  hookResult: ReturnType<typeof installReactDoctorGitHook>,
+): string => {
+  if (CONFIG_ONLY_GIT_HOOK_KINDS.has(hookResult.kind)) {
+    return `React Doctor pre-commit config ${hookResult.status} at ${hookResult.hookPath}. Run your hook manager's install command if hooks are not already installed.`;
+  }
+  return `React Doctor pre-commit hook ${hookResult.status} at ${hookResult.hookPath}.`;
+};
 
 interface InstallSkillOptions {
   yes?: boolean;
@@ -182,9 +198,7 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
         kind: gitHookTarget.kind,
         hooksPathConfig: gitHookTarget.hooksPathConfig,
       });
-      hookSpinner.succeed(
-        `React Doctor pre-commit hook ${hookResult.status} at ${hookResult.hookPath}.`,
-      );
+      hookSpinner.succeed(formatGitHookInstallMessage(hookResult));
     } catch (error) {
       hookSpinner.fail("Failed to install React Doctor pre-commit hook.");
       throw error;
