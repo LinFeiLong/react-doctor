@@ -35,17 +35,15 @@ npx react-doctor@latest install
 
 Works with Claude Code, Cursor, Codex, OpenCode, and many more.
 
-If this is a Git repo, `install` also asks whether to add a non-blocking pre-commit hook that runs `react-doctor --staged --fail-on none`, so staged-file findings are logged without blocking commits. Existing hook setups are reused when detected, including `core.hooksPath`, Husky, Vite Plus, simple-git-hooks, Lefthook, pre-commit, Overcommit, Yorkie, ghooks, git-hooks-js, lint-staged, nano-staged, and pretty-quick; otherwise React Doctor writes directly to `.git/hooks/pre-commit`.
+If this is a Git repo, `install` also asks whether to add a non-blocking pre-commit hook. It runs `react-doctor --staged --fail-on none`, reuses common hook managers when present, and falls back to `.git/hooks/pre-commit`.
 
-For agents with native lifecycle hooks, opt in to automatic post-edit checks:
+For agents with native lifecycle hooks, the interactive installer offers automatic post-edit checks as an optional step. This defaults to **No**. To opt in from CI or scripts, pass:
 
 ```bash
 npx react-doctor@latest install --agent-hooks
 ```
 
-This currently installs project hooks for Claude Code and Cursor. They run `react-doctor --verbose --diff --fail-on warning --offline` after agent file edits and feed findings back to the agent without blocking tool calls. Agents without a stable hook API still use the installed skill plus the Git hook.
-
-In the interactive installer, native agent hooks are offered as an optional step and default to **No**. Pass `--agent-hooks` to opt in from CI or scripts.
+This currently installs project hooks for Claude Code and Cursor that run after agent file edits and feed findings back without blocking tool calls.
 
 ### 3. Run in CI (GitHub Actions) for your team
 
@@ -208,8 +206,8 @@ Options:
   -h, --help              display help
 
 Commands:
-  install --agent-hooks   install native non-blocking agent hooks for Claude Code
-                          and Cursor
+  install                 install React Doctor skills and optionally set up hooks
+  install --agent-hooks   opt into native Claude Code / Cursor hooks
 ```
 
 When a suppression isn't working, `--explain <file:line>` (or its alias `--why <file:line>`) reports what the scanner sees at that location, including why a nearby `react-doctor-disable-next-line` didn't apply. The diagnosis distinguishes the common failure modes — adjacent comment for a different rule (use the comma form), a code line between the comment and the diagnostic (the chain is broken), or no nearby suppression at all. The same hint surfaces inline with `--verbose` for every flagged site, and in `--json` output as `diagnostic.suppressionHint`, so a single scan doubles as a suppression audit without a separate flag.
