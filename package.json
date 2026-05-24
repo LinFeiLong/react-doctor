@@ -23,7 +23,6 @@
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build && changeset publish",
-    "leaderboard:update": "node --experimental-strip-types --no-warnings scripts/update-leaderboard.ts",
     "smoke:json-report": "node --experimental-strip-types --no-warnings scripts/smoke-json-report.ts"
   },
   "devDependencies": {
