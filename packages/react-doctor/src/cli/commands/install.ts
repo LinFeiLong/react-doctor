@@ -13,11 +13,23 @@ interface InstallCommandOptions {
   cwd?: string;
 }
 
-export const installAction = async (options: InstallCommandOptions): Promise<void> => {
+interface InstallCommand {
+  parent?: {
+    opts?: () => {
+      yes?: boolean;
+    };
+  };
+}
+
+export const installAction = async (
+  options: InstallCommandOptions,
+  command?: InstallCommand,
+): Promise<void> => {
   Effect.runSync(printBrandedHeader);
   try {
+    const parentOptions = command?.parent?.opts?.();
     await runInstallSkill({
-      yes: options.yes,
+      yes: options.yes ?? parentOptions?.yes,
       dryRun: options.dryRun,
       agentHooks: options.agentHooks,
       projectRoot: options.cwd ?? process.cwd(),

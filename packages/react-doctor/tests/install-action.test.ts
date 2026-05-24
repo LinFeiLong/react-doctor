@@ -73,6 +73,68 @@ describe("installAction (Commander action wrapper)", () => {
     });
   });
 
+  it("uses the parent --yes value when Commander stores it on the root command", async () => {
+    await installAction(
+      {
+        dryRun: true,
+        cwd: "/tmp/root-yes",
+      },
+      {
+        parent: {
+          opts: () => ({ yes: true }),
+        },
+      },
+    );
+    expect(runInstallSkill).toHaveBeenCalledWith({
+      yes: true,
+      dryRun: true,
+      agentHooks: undefined,
+      projectRoot: "/tmp/root-yes",
+    });
+  });
+
+  it("keeps an explicit child yes value ahead of the parent value", async () => {
+    await installAction(
+      {
+        yes: false,
+        dryRun: true,
+        cwd: "/tmp/child-yes",
+      },
+      {
+        parent: {
+          opts: () => ({ yes: true }),
+        },
+      },
+    );
+    expect(runInstallSkill).toHaveBeenCalledWith({
+      yes: false,
+      dryRun: true,
+      agentHooks: undefined,
+      projectRoot: "/tmp/child-yes",
+    });
+  });
+
+  it("forwards --yes from Commander-shaped command arguments", async () => {
+    await installAction(
+      {
+        dryRun: true,
+        agentHooks: true,
+        cwd: "/tmp/commander-shape",
+      },
+      {
+        parent: {
+          opts: () => ({ yes: true }),
+        },
+      },
+    );
+    expect(runInstallSkill).toHaveBeenCalledWith({
+      yes: true,
+      dryRun: true,
+      agentHooks: true,
+      projectRoot: "/tmp/commander-shape",
+    });
+  });
+
   it("delegates thrown errors to handleError without re-throwing", async () => {
     vi.mocked(runInstallSkill).mockRejectedValueOnce(new Error("boom"));
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {

@@ -11,10 +11,22 @@ import { highlighter, SKILL_NAME } from "@react-doctor/core";
 import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
 import { installReactDoctorAgentHooks } from "./install-agent-hooks.js";
-import { detectGitHookTarget, installReactDoctorGitHook } from "./install-git-hook.js";
+import {
+  detectGitHookTarget,
+  installReactDoctorGitHook,
+  type GitHookTarget,
+} from "./install-git-hook.js";
 import { prompts } from "./prompts.js";
 import { shouldSkipPrompts } from "./should-skip-prompts.js";
 import { spinner } from "./spinner.js";
+
+const GIT_HOOK_KIND = "git";
+
+const buildManualGitHookTarget = (hookPath: string, projectRoot: string): GitHookTarget => ({
+  hookPath,
+  runnerRoot: projectRoot,
+  kind: GIT_HOOK_KIND,
+});
 
 interface InstallSkillOptions {
   yes?: boolean;
@@ -59,7 +71,7 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
       ? detectGitHookTarget(projectRoot)
       : options.gitHookPath === null
         ? null
-        : { hookPath: options.gitHookPath, runnerRoot: projectRoot };
+        : buildManualGitHookTarget(options.gitHookPath, projectRoot);
   const gitHookPath = gitHookTarget?.hookPath;
 
   const selectedAgents: SkillAgentType[] = skipPrompts
@@ -148,9 +160,11 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
       const hookResult = installReactDoctorGitHook({
         hookPath: gitHookTarget.hookPath,
         projectRoot: gitHookTarget.runnerRoot,
+        kind: gitHookTarget.kind,
+        hooksPathConfig: gitHookTarget.hooksPathConfig,
       });
       hookSpinner.succeed(
-        `React Doctor pre-commit hook ${hookResult.status} at ${hookResult.hookPath} using ${hookResult.runnerPath}.`,
+        `React Doctor pre-commit hook ${hookResult.status} at ${hookResult.hookPath}.`,
       );
     } catch (error) {
       hookSpinner.fail("Failed to install React Doctor pre-commit hook.");

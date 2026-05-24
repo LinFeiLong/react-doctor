@@ -22,7 +22,6 @@ import {
 interface GitHookFixture {
   readonly projectRoot: string;
   readonly hookPath: string;
-  readonly runnerPath: string;
   readonly cleanup: () => void;
 }
 
@@ -31,12 +30,17 @@ const setupFixture = (): GitHookFixture => {
   return {
     projectRoot: root,
     hookPath: path.join(root, ".git/hooks/pre-commit"),
-    runnerPath: path.join(root, ".react-doctor/hooks/pre-commit"),
     cleanup: () => rmSync(root, { recursive: true, force: true }),
   };
 };
 
 const readHook = (hookPath: string): string => readFileSync(hookPath, "utf8");
+
+const writePackageJson = (projectRoot: string, content: object): void => {
+  writeFileSync(path.join(projectRoot, "package.json"), `${JSON.stringify(content, null, 2)}\n`);
+};
+
+const readJsonFile = <Value>(filePath: string): Value => JSON.parse(readFileSync(filePath, "utf8"));
 
 describe("installReactDoctorGitHook", () => {
   let fixture: GitHookFixture;
@@ -49,28 +53,24 @@ describe("installReactDoctorGitHook", () => {
     fixture.cleanup();
   });
 
-  it("creates a dependency-free non-blocking pre-commit hook", () => {
+  it("creates a dependency-free non-blocking pre-commit hook without a managed runner", () => {
     const result = installReactDoctorGitHook({
       hookPath: fixture.hookPath,
       projectRoot: fixture.projectRoot,
     });
     const hookContent = readHook(fixture.hookPath);
-    const runnerContent = readHook(fixture.runnerPath);
 
     expect(result.status).toBe("created");
-    expect(result.runnerPath).toBe(fixture.runnerPath);
+    expect(result.kind).toBe("git");
     expect(hookContent).toContain("#!/bin/sh");
-    expect(hookContent).toContain(".react-doctor/hooks/pre-commit");
-    expect(runnerContent).toContain("react-doctor --staged --fail-on none");
-    expect(runnerContent).toContain("pnpm dlx react-doctor@latest --staged --fail-on none");
-    expect(runnerContent).toContain("npx --yes react-doctor@latest --staged --fail-on none");
-    expect(runnerContent).toContain("if ! react_doctor_scan_staged_files; then");
-    expect(runnerContent).toContain("exit 0");
+    expect(hookContent).toContain("react-doctor --staged --fail-on none");
+    expect(hookContent).toContain("pnpm dlx react-doctor@latest --staged --fail-on none");
+    expect(hookContent).toContain("npx --yes react-doctor@latest --staged --fail-on none");
+    expect(hookContent).toContain("if ! react_doctor_scan_staged_files; then");
+    expect(hookContent).not.toContain(".react-doctor/hooks/pre-commit");
     expect(hookContent).not.toContain("husky");
     expect(existsSync(fixture.hookPath)).toBe(true);
-    expect(existsSync(fixture.runnerPath)).toBe(true);
     expect(Boolean(statSync(fixture.hookPath).mode & fsConstants.S_IXUSR)).toBe(true);
-    expect(Boolean(statSync(fixture.runnerPath).mode & fsConstants.S_IXUSR)).toBe(true);
   });
 
   it("does not detect a Git hook target outside a Git repository", () => {
@@ -88,22 +88,49 @@ describe("installReactDoctorGitHook", () => {
     const hookContent = readHook(fixture.hookPath);
 
     expect(result.status).toBe("updated");
-    expect(hookContent.startsWith("#!/bin/sh\n\n# react-doctor hook launcher start")).toBe(true);
+    expect(hookContent.startsWith("#!/bin/sh\n\n# react-doctor hook start")).toBe(true);
     expect(hookContent).toContain("npm test\n");
   });
 
-  it("updates the managed block instead of duplicating it", () => {
+  it("updates the React Doctor block instead of duplicating it", () => {
     installReactDoctorGitHook({ hookPath: fixture.hookPath, projectRoot: fixture.projectRoot });
-    writeFileSync(fixture.runnerPath, "#!/bin/sh\nprintf stale-runner\n");
     installReactDoctorGitHook({ hookPath: fixture.hookPath, projectRoot: fixture.projectRoot });
 
     const hookContent = readHook(fixture.hookPath);
-    const runnerContent = readHook(fixture.runnerPath);
-    const managedBlockMatches = hookContent.match(/# react-doctor hook launcher start/g) ?? [];
+    const managedBlockMatches = hookContent.match(/# react-doctor hook start/g) ?? [];
 
     expect(managedBlockMatches).toHaveLength(1);
-    expect(runnerContent).toContain("react-doctor --staged --fail-on none");
-    expect(runnerContent).not.toContain("stale-runner");
+    expect(hookContent).toContain("react-doctor --staged --fail-on none");
+  });
+
+  it("replaces the legacy managed-runner launcher block", () => {
+    const legacyRunnerPath = path.join(fixture.projectRoot, ".react-doctor/hooks/pre-commit");
+    mkdirSync(path.dirname(fixture.hookPath), { recursive: true });
+    mkdirSync(path.dirname(legacyRunnerPath), { recursive: true });
+    writeFileSync(legacyRunnerPath, "#!/bin/sh\nprintf stale-runner\n");
+    writeFileSync(
+      fixture.hookPath,
+      [
+        "#!/bin/sh",
+        "",
+        "# react-doctor hook launcher start",
+        'if [ -f ".react-doctor/hooks/pre-commit" ]; then',
+        '  sh ".react-doctor/hooks/pre-commit"',
+        "fi",
+        "# react-doctor hook launcher end",
+        "",
+      ].join("\n"),
+    );
+
+    installReactDoctorGitHook({ hookPath: fixture.hookPath, projectRoot: fixture.projectRoot });
+
+    const hookContent = readHook(fixture.hookPath);
+    expect(hookContent).toContain("# react-doctor hook start");
+    expect(hookContent).toContain("react-doctor --staged --fail-on none");
+    expect(hookContent).not.toContain("hook launcher");
+    expect(hookContent).not.toContain(".react-doctor/hooks/pre-commit");
+    expect(existsSync(legacyRunnerPath)).toBe(false);
+    expect(existsSync(path.dirname(legacyRunnerPath))).toBe(false);
   });
 
   it("detects the default hook path at the repository root when run from a subdirectory", () => {
@@ -120,6 +147,7 @@ describe("installReactDoctorGitHook", () => {
     );
     expect(path.basename(target.hookPath)).toBe("pre-commit");
     expect(target.runnerRoot).toBe(realProjectRoot);
+    expect(target.kind).toBe("git");
   });
 
   it("detects a configured hooks directory from a subdirectory", () => {
@@ -136,6 +164,7 @@ describe("installReactDoctorGitHook", () => {
     expect(target).toEqual({
       hookPath: path.join(realProjectRoot, ".githooks/pre-commit"),
       runnerRoot: realProjectRoot,
+      kind: "configured",
     });
   });
 
@@ -154,7 +183,451 @@ describe("installReactDoctorGitHook", () => {
     expect(target).toEqual({
       hookPath: path.join(hooksDirectory, "pre-commit"),
       runnerRoot: realProjectRoot,
+      kind: "configured",
     });
+  });
+
+  it("keeps an explicit core.hooksPath ahead of hook manager detection", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    execFileSync("git", ["config", "core.hooksPath", ".custom-hooks"], {
+      cwd: fixture.projectRoot,
+    });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        husky: "^9.0.0",
+        "vite-plus": "^0.1.20",
+      },
+    });
+    const realProjectRoot = realpathSync(fixture.projectRoot);
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+
+    expect(target).toEqual({
+      hookPath: path.join(realProjectRoot, ".custom-hooks/pre-commit"),
+      runnerRoot: realProjectRoot,
+      kind: "configured",
+    });
+  });
+
+  it("uses Husky when the project has Husky installed", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        husky: "^9.0.0",
+      },
+    });
+    const realProjectRoot = realpathSync(fixture.projectRoot);
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    const result = installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    expect(target).toEqual({
+      hookPath: path.join(realProjectRoot, ".husky/pre-commit"),
+      runnerRoot: realProjectRoot,
+      kind: "husky",
+      hooksPathConfig: ".husky",
+    });
+    expect(result.kind).toBe("husky");
+    expect(
+      execFileSync("git", ["config", "--path", "--get", "core.hooksPath"], {
+        cwd: fixture.projectRoot,
+        encoding: "utf8",
+      }).trim(),
+    ).toBe(".husky");
+    expect(readHook(target.hookPath)).toContain("react-doctor --staged --fail-on none");
+  });
+
+  it("uses Vite Plus hooks when the project has Vite Plus installed", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        "vite-plus": "^0.1.20",
+      },
+    });
+    const realProjectRoot = realpathSync(fixture.projectRoot);
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    const result = installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    expect(target).toEqual({
+      hookPath: path.join(realProjectRoot, ".vite-hooks/pre-commit"),
+      runnerRoot: realProjectRoot,
+      kind: "vite-plus",
+      hooksPathConfig: ".vite-hooks",
+    });
+    expect(result.kind).toBe("vite-plus");
+    expect(
+      execFileSync("git", ["config", "--path", "--get", "core.hooksPath"], {
+        cwd: fixture.projectRoot,
+        encoding: "utf8",
+      }).trim(),
+    ).toBe(".vite-hooks");
+    expect(readHook(target.hookPath)).toContain("react-doctor --staged --fail-on none");
+  });
+
+  it("uses Husky before Vite Plus when both are present", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        husky: "^9.0.0",
+        "vite-plus": "^0.1.20",
+      },
+    });
+    const realProjectRoot = realpathSync(fixture.projectRoot);
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+
+    expect(target).toEqual({
+      hookPath: path.join(realProjectRoot, ".husky/pre-commit"),
+      runnerRoot: realProjectRoot,
+      kind: "husky",
+      hooksPathConfig: ".husky",
+    });
+  });
+
+  it("updates package.json simple-git-hooks config", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      scripts: {
+        test: "echo test",
+      },
+      devDependencies: {
+        "simple-git-hooks": "^2.11.0",
+      },
+      "simple-git-hooks": {
+        "pre-commit": "pnpm lint",
+      },
+    });
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const packageJson = readJsonFile<{
+      "simple-git-hooks": { "pre-commit": string };
+    }>(path.join(fixture.projectRoot, "package.json"));
+    const preCommit = packageJson["simple-git-hooks"]["pre-commit"];
+    expect(target.kind).toBe("simple-git-hooks");
+    expect(preCommit).toContain("pnpm lint");
+    expect(preCommit.match(/react-doctor --staged --fail-on none/g)).toHaveLength(1);
+  });
+
+  it("creates lefthook config for lefthook projects", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        lefthook: "^1.13.0",
+      },
+    });
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const configContent = readFileSync(path.join(fixture.projectRoot, "lefthook.yml"), "utf8");
+    expect(target.kind).toBe("lefthook");
+    expect(configContent.match(/react-doctor/g)).toHaveLength(2);
+    expect(configContent).toContain("run: react-doctor --staged --fail-on none || true");
+  });
+
+  it("updates pre-commit config with a local hook", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    const configPath = path.join(fixture.projectRoot, ".pre-commit-config.yaml");
+    writeFileSync(configPath, "repos:\n");
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const configContent = readFileSync(configPath, "utf8");
+    expect(target.kind).toBe("pre-commit");
+    expect(configContent.match(/id: react-doctor/g)).toHaveLength(1);
+    expect(configContent).toContain("entry: sh -c 'react-doctor --staged --fail-on none || true'");
+  });
+
+  it("updates Overcommit config", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    const configPath = path.join(fixture.projectRoot, ".overcommit.yml");
+    writeFileSync(configPath, "CommitMsg:\n  CapitalizedSubject:\n    enabled: true\n");
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const configContent = readFileSync(configPath, "utf8");
+    expect(target.kind).toBe("overcommit");
+    expect(configContent.match(/ReactDoctor/g)).toHaveLength(1);
+    expect(configContent).toContain(
+      "command: ['sh', '-c', 'react-doctor --staged --fail-on none || true']",
+    );
+  });
+
+  it("updates Yorkie gitHooks config", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        yorkie: "^2.0.0",
+      },
+      gitHooks: {
+        "pre-commit": "pnpm lint",
+      },
+    });
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const packageJson = readJsonFile<{ gitHooks: { "pre-commit": string } }>(
+      path.join(fixture.projectRoot, "package.json"),
+    );
+    expect(target.kind).toBe("yorkie");
+    expect(packageJson.gitHooks["pre-commit"]).toContain("pnpm lint");
+    expect(packageJson.gitHooks["pre-commit"]).toContain(
+      "react-doctor --staged --fail-on none || true",
+    );
+  });
+
+  it("updates ghooks config", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        ghooks: "^2.0.0",
+      },
+      config: {
+        ghooks: {
+          "pre-commit": "pnpm lint",
+        },
+      },
+    });
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const packageJson = readJsonFile<{ config: { ghooks: { "pre-commit": string } } }>(
+      path.join(fixture.projectRoot, "package.json"),
+    );
+    expect(target.kind).toBe("ghooks");
+    expect(packageJson.config.ghooks["pre-commit"]).toContain("pnpm lint");
+    expect(packageJson.config.ghooks["pre-commit"]).toContain(
+      "react-doctor --staged --fail-on none || true",
+    );
+  });
+
+  it("updates git-hooks-js config", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        "git-hooks-js": "^1.0.0",
+      },
+      "git-hooks": {
+        "pre-commit": "pnpm lint",
+      },
+    });
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const packageJson = readJsonFile<{ "git-hooks": { "pre-commit": string } }>(
+      path.join(fixture.projectRoot, "package.json"),
+    );
+    expect(target.kind).toBe("git-hooks-js");
+    expect(packageJson["git-hooks"]["pre-commit"]).toContain("pnpm lint");
+    expect(packageJson["git-hooks"]["pre-commit"]).toContain(
+      "react-doctor --staged --fail-on none || true",
+    );
+  });
+
+  it("updates npm pre-commit package config", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        "pre-commit": "^1.2.2",
+      },
+      "pre-commit": ["lint"],
+    });
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const packageJson = readJsonFile<{ "pre-commit": string[] }>(
+      path.join(fixture.projectRoot, "package.json"),
+    );
+    expect(target.kind).toBe("pre-commit-npm");
+    expect(packageJson["pre-commit"]).toEqual([
+      "lint",
+      "react-doctor --staged --fail-on none || true",
+    ]);
+  });
+
+  it("updates lint-staged package config", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        "lint-staged": "^16.0.0",
+      },
+      "lint-staged": {
+        "*.ts": "eslint",
+      },
+    });
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const packageJson = readJsonFile<{ "lint-staged": { "*": string[]; "*.ts": string } }>(
+      path.join(fixture.projectRoot, "package.json"),
+    );
+    expect(target.kind).toBe("lint-staged");
+    expect(packageJson["lint-staged"]["*.ts"]).toBe("eslint");
+    expect(packageJson["lint-staged"]["*"]).toEqual([
+      "react-doctor --staged --fail-on none || true",
+    ]);
+  });
+
+  it("updates nano-staged package config", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        "nano-staged": "^0.8.0",
+      },
+      "nano-staged": {
+        "*.ts": "eslint",
+      },
+    });
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const packageJson = readJsonFile<{ "nano-staged": { "*": string[]; "*.ts": string } }>(
+      path.join(fixture.projectRoot, "package.json"),
+    );
+    expect(target.kind).toBe("nano-staged");
+    expect(packageJson["nano-staged"]["*.ts"]).toBe("eslint");
+    expect(packageJson["nano-staged"]["*"]).toEqual([
+      "react-doctor --staged --fail-on none || true",
+    ]);
+  });
+
+  it("updates pretty-quick through gitHooks config", () => {
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        "pretty-quick": "^4.0.0",
+      },
+    });
+
+    const target = detectGitHookTarget(fixture.projectRoot);
+    if (target === null) throw new Error("Expected git hook target");
+    installReactDoctorGitHook({
+      hookPath: target.hookPath,
+      projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
+    });
+
+    const packageJson = readJsonFile<{ gitHooks: { "pre-commit": string } }>(
+      path.join(fixture.projectRoot, "package.json"),
+    );
+    expect(target.kind).toBe("pretty-quick");
+    expect(packageJson.gitHooks["pre-commit"]).toContain(
+      "react-doctor --staged --fail-on none || true",
+    );
   });
 
   it("runs through a configured hooks directory during a real git commit", () => {
@@ -175,16 +648,16 @@ describe("installReactDoctorGitHook", () => {
     installReactDoctorGitHook({
       hookPath: target.hookPath,
       projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
     });
 
     const localBinaryPath = path.join(fixture.projectRoot, "node_modules/.bin/react-doctor");
-    const invocationPath = path.join(fixture.projectRoot, ".react-doctor/hook-invocation.txt");
+    const invocationPath = path.join(fixture.projectRoot, "hook-invocation.txt");
     mkdirSync(path.dirname(localBinaryPath), { recursive: true });
     writeFileSync(
       localBinaryPath,
-      ["#!/bin/sh", "printf '%s\\n' \"$@\" > .react-doctor/hook-invocation.txt", "exit 0", ""].join(
-        "\n",
-      ),
+      ["#!/bin/sh", "printf '%s\\n' \"$@\" > hook-invocation.txt", "exit 0", ""].join("\n"),
     );
     chmodSync(localBinaryPath, fsConstants.S_IRWXU);
 
@@ -201,7 +674,7 @@ describe("installReactDoctorGitHook", () => {
     expect(readFileSync(invocationPath, "utf8")).toBe("--staged\n--fail-on\nnone\n");
   });
 
-  it("runs the managed pre-commit runner during a real git commit", () => {
+  it("runs the inline pre-commit hook during a real git commit", () => {
     execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
     execFileSync("git", ["config", "user.email", "doctor@example.com"], {
       cwd: fixture.projectRoot,
@@ -217,16 +690,16 @@ describe("installReactDoctorGitHook", () => {
     installReactDoctorGitHook({
       hookPath: target.hookPath,
       projectRoot: target.runnerRoot,
+      kind: target.kind,
+      hooksPathConfig: target.hooksPathConfig,
     });
 
     const localBinaryPath = path.join(fixture.projectRoot, "node_modules/.bin/react-doctor");
-    const invocationPath = path.join(fixture.projectRoot, ".react-doctor/hook-invocation.txt");
+    const invocationPath = path.join(fixture.projectRoot, "hook-invocation.txt");
     mkdirSync(path.dirname(localBinaryPath), { recursive: true });
     writeFileSync(
       localBinaryPath,
-      ["#!/bin/sh", "printf '%s\\n' \"$@\" > .react-doctor/hook-invocation.txt", "exit 1", ""].join(
-        "\n",
-      ),
+      ["#!/bin/sh", "printf '%s\\n' \"$@\" > hook-invocation.txt", "exit 1", ""].join("\n"),
     );
     chmodSync(localBinaryPath, fsConstants.S_IRWXU);
 
@@ -265,13 +738,11 @@ describe("installReactDoctorGitHook", () => {
     });
 
     const localBinaryPath = path.join(fixture.projectRoot, "node_modules/.bin/react-doctor");
-    const invocationPath = path.join(fixture.projectRoot, ".react-doctor/hook-invocation.txt");
+    const invocationPath = path.join(fixture.projectRoot, "hook-invocation.txt");
     mkdirSync(path.dirname(localBinaryPath), { recursive: true });
     writeFileSync(
       localBinaryPath,
-      ["#!/bin/sh", "printf '%s\\n' \"$@\" > .react-doctor/hook-invocation.txt", "exit 0", ""].join(
-        "\n",
-      ),
+      ["#!/bin/sh", "printf '%s\\n' \"$@\" > hook-invocation.txt", "exit 0", ""].join("\n"),
     );
     chmodSync(localBinaryPath, fsConstants.S_IRWXU);
 

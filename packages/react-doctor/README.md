@@ -35,7 +35,7 @@ npx react-doctor@latest install
 
 Works with Claude Code, Cursor, Codex, OpenCode, and many more.
 
-If this is a Git repo, `install` also asks whether to add React Doctor's dependency-free hook runner. It installs a tiny `.git/hooks/pre-commit` launcher plus a managed `.react-doctor/hooks/pre-commit` script that runs `react-doctor --staged --fail-on none`, so staged-file findings are logged without blocking commits. No Husky or lint-staged dependency required.
+If this is a Git repo, `install` also asks whether to add a non-blocking pre-commit hook that runs `react-doctor --staged --fail-on none`, so staged-file findings are logged without blocking commits. Existing hook setups are reused when detected, including `core.hooksPath`, Husky, Vite Plus, simple-git-hooks, Lefthook, pre-commit, Overcommit, Yorkie, ghooks, git-hooks-js, lint-staged, nano-staged, and pretty-quick; otherwise React Doctor writes directly to `.git/hooks/pre-commit`.
 
 For agents with native lifecycle hooks, opt in to automatic post-edit checks:
 

@@ -174,7 +174,6 @@ describe("runInstallSkill", () => {
   it("--yes installs a non-blocking pre-commit hook when a git hook target is detected", async () => {
     writeValidSkill(fixture.sourceDir);
     const hookPath = path.join(fixture.projectRoot, ".git/hooks/pre-commit");
-    const runnerPath = path.join(fixture.projectRoot, ".react-doctor/hooks/pre-commit");
 
     await runInstallSkill({
       yes: true,
@@ -187,8 +186,10 @@ describe("runInstallSkill", () => {
     expect(existsSync(path.join(fixture.projectRoot, ".agents/skills/react-doctor/SKILL.md"))).toBe(
       true,
     );
-    expect(readFileSync(hookPath, "utf8")).toContain(".react-doctor/hooks/pre-commit");
-    expect(readFileSync(runnerPath, "utf8")).toContain("react-doctor --staged --fail-on none");
+    expect(readFileSync(hookPath, "utf8")).toContain("react-doctor --staged --fail-on none");
+    expect(existsSync(path.join(fixture.projectRoot, ".react-doctor/hooks/pre-commit"))).toBe(
+      false,
+    );
   });
 
   it("--agent-hooks installs native hooks for selected supported agents", async () => {
@@ -232,11 +233,11 @@ describe("runInstallSkill", () => {
     });
 
     expect(readFileSync(path.join(fixture.projectRoot, ".git/hooks/pre-commit"), "utf8")).toContain(
-      ".react-doctor/hooks/pre-commit",
+      "react-doctor --staged --fail-on none",
     );
-    expect(
-      readFileSync(path.join(fixture.projectRoot, ".react-doctor/hooks/pre-commit"), "utf8"),
-    ).toContain("react-doctor --staged --fail-on none");
+    expect(existsSync(path.join(fixture.projectRoot, ".react-doctor/hooks/pre-commit"))).toBe(
+      false,
+    );
     expect(readFileSync(path.join(fixture.projectRoot, ".cursor/hooks.json"), "utf8")).toContain(
       "postToolUse",
     );
