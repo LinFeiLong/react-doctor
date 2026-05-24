@@ -53,6 +53,6 @@ Add the reusable GitHub Action from Marketplace to scan every pull request, show
 
 ## Contributing
 
-PRs and issues welcome — [issue tracker](https://github.com/millionco/react-doctor/issues). Local dev: `pnpm install && pnpm build`.
+[Issues welcome!](https://github.com/millionco/react-doctor/issues)
 
-MIT-licensed.
+MIT-licensed
