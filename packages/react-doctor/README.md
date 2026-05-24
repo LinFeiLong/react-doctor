@@ -45,6 +45,8 @@ npx react-doctor@latest install --agent-hooks
 
 This currently installs project hooks for Claude Code and Cursor. They run `react-doctor --verbose --diff --fail-on warning --offline` after agent file edits and feed findings back to the agent without blocking tool calls. Agents without a stable hook API still use the installed skill plus the Git hook.
 
+In the interactive installer, native agent hooks are offered as an optional step and default to **No**. Pass `--agent-hooks` to opt in from CI or scripts.
+
 ### 3. Run in CI (GitHub Actions) for your team
 
 Add a workflow to scan every pull request and leave findings where reviewers already look:

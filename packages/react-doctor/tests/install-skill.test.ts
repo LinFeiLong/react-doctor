@@ -219,6 +219,27 @@ describe("runInstallSkill", () => {
     expect(existsSync(path.join(fixture.projectRoot, ".codex/hooks.json"))).toBe(false);
   });
 
+  it("--yes does not install native agent hooks unless --agent-hooks is set", async () => {
+    writeValidSkill(fixture.sourceDir);
+
+    await runInstallSkill({
+      yes: true,
+      sourceDir: fixture.sourceDir,
+      projectRoot: fixture.projectRoot,
+      detectedAgents: ["cursor", "claude-code"],
+      gitHookPath: null,
+    });
+
+    expect(existsSync(path.join(fixture.projectRoot, ".agents/skills/react-doctor/SKILL.md"))).toBe(
+      true,
+    );
+    expect(existsSync(path.join(fixture.projectRoot, ".claude/skills/react-doctor/SKILL.md"))).toBe(
+      true,
+    );
+    expect(existsSync(path.join(fixture.projectRoot, ".cursor/hooks.json"))).toBe(false);
+    expect(existsSync(path.join(fixture.projectRoot, ".claude/settings.json"))).toBe(false);
+  });
+
   it("--yes installs Git and agent hooks in CI using real git detection", async () => {
     writeValidSkill(fixture.sourceDir);
     process.env.CI = "1";

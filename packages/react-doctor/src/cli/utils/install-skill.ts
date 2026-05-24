@@ -21,12 +21,16 @@ import { shouldSkipPrompts } from "./should-skip-prompts.js";
 import { spinner } from "./spinner.js";
 
 const GIT_HOOK_KIND = "git";
+const NATIVE_AGENT_HOOK_AGENTS = new Set<SkillAgentType>(["claude-code", "cursor"]);
 
 const buildManualGitHookTarget = (hookPath: string, projectRoot: string): GitHookTarget => ({
   hookPath,
   runnerRoot: projectRoot,
   kind: GIT_HOOK_KIND,
 });
+
+const hasNativeAgentHookTarget = (agents: readonly SkillAgentType[]): boolean =>
+  agents.some((agent) => NATIVE_AGENT_HOOK_AGENTS.has(agent));
 
 interface InstallSkillOptions {
   yes?: boolean;
@@ -109,6 +113,21 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
           ).installGitHook,
         )));
 
+  const shouldInstallAgentHooks =
+    Boolean(options.agentHooks) ||
+    (!skipPrompts &&
+      hasNativeAgentHookTarget(selectedAgents) &&
+      Boolean(
+        (
+          await prompts<"installAgentHooks">({
+            type: "confirm",
+            name: "installAgentHooks",
+            message: "Install native agent hooks after file edits? (Claude Code / Cursor)",
+            initial: false,
+          })
+        ).installAgentHooks,
+      ));
+
   if (options.dryRun) {
     logger.log(`Dry run — would install ${SKILL_NAME} skill for:`);
     for (const agent of selectedAgents) {
@@ -118,7 +137,7 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
     if (shouldInstallGitHook) {
       logger.dim(`  Git hook: ${gitHookPath}`);
     }
-    if (options.agentHooks) {
+    if (shouldInstallAgentHooks) {
       logger.dim("  Agent hooks: Claude Code / Cursor when selected");
     }
     return;
@@ -172,7 +191,7 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
     }
   }
 
-  if (options.agentHooks) {
+  if (shouldInstallAgentHooks) {
     const hookSpinner = spinner("Installing React Doctor agent hooks...").start();
     try {
       const hookResult = installReactDoctorAgentHooks({
