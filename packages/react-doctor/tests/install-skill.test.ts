@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -34,12 +35,14 @@ const writeValidSkill = (sourceDir: string): void => {
 
 describe("runInstallSkill", () => {
   let fixture: InstallSkillFixture;
-  let originalExitCode: number | string | undefined;
+  let originalExitCode: number | string | null | undefined;
+  let originalCi: string | undefined;
   let restoreConsole: () => void;
 
   beforeEach(() => {
     fixture = setupFixture();
     originalExitCode = process.exitCode;
+    originalCi = process.env.CI;
     process.exitCode = 0;
     restoreConsole = silenceConsoleForTest();
     setSpinnerSilent(true);
@@ -48,6 +51,11 @@ describe("runInstallSkill", () => {
   afterEach(() => {
     fixture.cleanup();
     process.exitCode = originalExitCode;
+    if (originalCi === undefined) {
+      delete process.env.CI;
+    } else {
+      process.env.CI = originalCi;
+    }
     restoreConsole();
     setSpinnerSilent(false);
   });
@@ -208,5 +216,56 @@ describe("runInstallSkill", () => {
       "postToolUse",
     );
     expect(existsSync(path.join(fixture.projectRoot, ".codex/hooks.json"))).toBe(false);
+  });
+
+  it("--yes installs Git and agent hooks in CI using real git detection", async () => {
+    writeValidSkill(fixture.sourceDir);
+    process.env.CI = "1";
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+
+    await runInstallSkill({
+      yes: true,
+      agentHooks: true,
+      sourceDir: fixture.sourceDir,
+      projectRoot: fixture.projectRoot,
+      detectedAgents: ["cursor", "claude-code"],
+    });
+
+    expect(readFileSync(path.join(fixture.projectRoot, ".git/hooks/pre-commit"), "utf8")).toContain(
+      ".react-doctor/hooks/pre-commit",
+    );
+    expect(
+      readFileSync(path.join(fixture.projectRoot, ".react-doctor/hooks/pre-commit"), "utf8"),
+    ).toContain("react-doctor --staged --fail-on none");
+    expect(readFileSync(path.join(fixture.projectRoot, ".cursor/hooks.json"), "utf8")).toContain(
+      "postToolUse",
+    );
+    expect(readFileSync(path.join(fixture.projectRoot, ".claude/settings.json"), "utf8")).toContain(
+      "PostToolBatch",
+    );
+  });
+
+  it("CI skips prompts without --yes but does not install the optional Git hook", async () => {
+    writeValidSkill(fixture.sourceDir);
+    process.env.CI = "1";
+    execFileSync("git", ["init"], { cwd: fixture.projectRoot, stdio: "ignore" });
+
+    await runInstallSkill({
+      agentHooks: true,
+      sourceDir: fixture.sourceDir,
+      projectRoot: fixture.projectRoot,
+      detectedAgents: ["cursor"],
+    });
+
+    expect(existsSync(path.join(fixture.projectRoot, ".agents/skills/react-doctor/SKILL.md"))).toBe(
+      true,
+    );
+    expect(readFileSync(path.join(fixture.projectRoot, ".cursor/hooks.json"), "utf8")).toContain(
+      "postToolUse",
+    );
+    expect(existsSync(path.join(fixture.projectRoot, ".git/hooks/pre-commit"))).toBe(false);
+    expect(existsSync(path.join(fixture.projectRoot, ".react-doctor/hooks/pre-commit"))).toBe(
+      false,
+    );
   });
 });

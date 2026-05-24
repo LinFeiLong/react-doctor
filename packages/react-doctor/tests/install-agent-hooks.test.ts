@@ -1,13 +1,16 @@
 import {
+  chmodSync,
   constants as fsConstants,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
@@ -16,6 +19,23 @@ import { installReactDoctorAgentHooks } from "../src/cli/utils/install-agent-hoo
 interface AgentHooksFixture {
   readonly projectRoot: string;
   readonly cleanup: () => void;
+}
+
+interface AgentHookJsonOutput {
+  readonly additional_context: string;
+}
+
+interface ClaudeAgentHookJsonOutput {
+  readonly hookSpecificOutput: {
+    readonly hookEventName: string;
+    readonly additionalContext: string;
+  };
+}
+
+interface FakeBinaryOptions {
+  readonly exitCode: number;
+  readonly output?: string;
+  readonly invocationFileName?: string;
 }
 
 const setupFixture = (): AgentHooksFixture => {
@@ -27,6 +47,48 @@ const setupFixture = (): AgentHooksFixture => {
 };
 
 const readJson = <Value>(filePath: string): Value => JSON.parse(readFileSync(filePath, "utf8"));
+
+const writeFakeReactDoctorBinary = (projectRoot: string, options: FakeBinaryOptions): void => {
+  const localBinaryPath = path.join(projectRoot, "node_modules/.bin/react-doctor");
+  mkdirSync(path.dirname(localBinaryPath), { recursive: true });
+  const output = options.output ?? "fake scan output";
+  const invocationFileName = options.invocationFileName ?? "agent-hook-args.txt";
+  writeFileSync(
+    localBinaryPath,
+    [
+      "#!/bin/sh",
+      "printf '%s\\n' \"$PWD\" > .react-doctor/agent-hook-cwd.txt",
+      `printf '%s\\n' "$@" > .react-doctor/${invocationFileName}`,
+      `printf '%s\\n' '${output}'`,
+      `exit ${options.exitCode}`,
+      "",
+    ].join("\n"),
+  );
+  chmodSync(localBinaryPath, fsConstants.S_IRWXU);
+};
+
+const writeFakePathReactDoctorBinary = (
+  binDirectory: string,
+  projectRoot: string,
+  options: FakeBinaryOptions,
+): void => {
+  mkdirSync(binDirectory, { recursive: true });
+  const output = options.output ?? "fake scan output";
+  const invocationFileName = options.invocationFileName ?? "path-agent-hook-args.txt";
+  const binaryPath = path.join(binDirectory, "react-doctor");
+  writeFileSync(
+    binaryPath,
+    [
+      "#!/bin/sh",
+      `printf '%s\\n' "$PWD" > "${projectRoot}/.react-doctor/path-agent-hook-cwd.txt"`,
+      `printf '%s\\n' "$@" > "${projectRoot}/.react-doctor/${invocationFileName}"`,
+      `printf '%s\\n' '${output}'`,
+      `exit ${options.exitCode}`,
+      "",
+    ].join("\n"),
+  );
+  chmodSync(binaryPath, fsConstants.S_IRWXU);
+};
 
 describe("installReactDoctorAgentHooks", () => {
   let fixture: AgentHooksFixture;
@@ -129,6 +191,232 @@ describe("installReactDoctorAgentHooks", () => {
     expect(hookContent).toContain('project_root=$(CDPATH= cd "$script_dir/../.." && pwd)');
     expect(hookContent).toContain("additional_context");
     expect(Boolean(statSync(hookPath).mode & fsConstants.S_IXUSR)).toBe(true);
+  });
+
+  it("runs generated agent hooks from the project root and returns scan context", () => {
+    const hookPath = path.join(fixture.projectRoot, ".cursor/hooks/react-doctor.sh");
+    const nestedDirectory = path.join(fixture.projectRoot, "packages/app/src");
+    mkdirSync(nestedDirectory, { recursive: true });
+    mkdirSync(path.join(fixture.projectRoot, ".react-doctor"), { recursive: true });
+    installReactDoctorAgentHooks({
+      projectRoot: fixture.projectRoot,
+      agents: ["cursor"],
+    });
+    writeFakeReactDoctorBinary(fixture.projectRoot, { exitCode: 1 });
+
+    const output = execFileSync("sh", [hookPath], {
+      cwd: nestedDirectory,
+      input: JSON.stringify({
+        tool_name: "Write",
+      }),
+      encoding: "utf8",
+    });
+    const parsedOutput: AgentHookJsonOutput = JSON.parse(output);
+
+    expect(
+      realpathSync(
+        readFileSync(
+          path.join(fixture.projectRoot, ".react-doctor/agent-hook-cwd.txt"),
+          "utf8",
+        ).trim(),
+      ),
+    ).toBe(realpathSync(fixture.projectRoot));
+    expect(
+      readFileSync(path.join(fixture.projectRoot, ".react-doctor/agent-hook-args.txt"), "utf8"),
+    ).toBe("--verbose\n--diff\n--fail-on\nwarning\n--offline\n");
+    expect(parsedOutput.additional_context).toContain("fake scan output");
+  });
+
+  it("uses CLAUDE_PROJECT_DIR when a generated Claude hook runs outside the repo", () => {
+    const hookPath = path.join(fixture.projectRoot, ".claude/hooks/react-doctor.sh");
+    const outsideDirectory = path.join(fixture.projectRoot, "..", "outside-cwd");
+    mkdirSync(outsideDirectory, { recursive: true });
+    mkdirSync(path.join(fixture.projectRoot, ".react-doctor"), { recursive: true });
+    installReactDoctorAgentHooks({
+      projectRoot: fixture.projectRoot,
+      agents: ["claude-code"],
+    });
+    writeFakeReactDoctorBinary(fixture.projectRoot, { exitCode: 1 });
+
+    const output = execFileSync("sh", [hookPath], {
+      cwd: outsideDirectory,
+      env: {
+        ...process.env,
+        CLAUDE_PROJECT_DIR: fixture.projectRoot,
+      },
+      input: JSON.stringify({
+        hook_event_name: "PostToolBatch",
+        tool_calls: [{ tool_name: "Write" }],
+      }),
+      encoding: "utf8",
+    });
+    const parsedOutput: ClaudeAgentHookJsonOutput = JSON.parse(output);
+
+    expect(
+      realpathSync(
+        readFileSync(
+          path.join(fixture.projectRoot, ".react-doctor/agent-hook-cwd.txt"),
+          "utf8",
+        ).trim(),
+      ),
+    ).toBe(realpathSync(fixture.projectRoot));
+    expect(parsedOutput.hookSpecificOutput).toEqual({
+      hookEventName: "PostToolBatch",
+      additionalContext: expect.stringContaining("fake scan output"),
+    });
+  });
+
+  it("uses a PATH react-doctor binary when the local binary is missing", () => {
+    const hookPath = path.join(fixture.projectRoot, ".cursor/hooks/react-doctor.sh");
+    const binDirectory = path.join(fixture.projectRoot, "fake-bin");
+    mkdirSync(path.join(fixture.projectRoot, ".react-doctor"), { recursive: true });
+    installReactDoctorAgentHooks({
+      projectRoot: fixture.projectRoot,
+      agents: ["cursor"],
+    });
+    writeFakePathReactDoctorBinary(binDirectory, fixture.projectRoot, {
+      exitCode: 1,
+      output: "path scan output",
+    });
+
+    const output = execFileSync("sh", [hookPath], {
+      cwd: fixture.projectRoot,
+      env: {
+        ...process.env,
+        PATH: [
+          binDirectory,
+          path.dirname(process.execPath),
+          "/usr/bin",
+          "/bin",
+          process.env.PATH ?? "",
+        ].join(path.delimiter),
+      },
+      input: JSON.stringify({
+        tool_name: "Write",
+      }),
+      encoding: "utf8",
+    });
+    const parsedOutput: AgentHookJsonOutput = JSON.parse(output);
+
+    expect(
+      readFileSync(
+        path.join(fixture.projectRoot, ".react-doctor/path-agent-hook-args.txt"),
+        "utf8",
+      ),
+    ).toBe("--verbose\n--diff\n--fail-on\nwarning\n--offline\n");
+    expect(parsedOutput.additional_context).toContain("path scan output");
+  });
+
+  it("exits quietly when no react-doctor runner is available", () => {
+    const hookPath = path.join(fixture.projectRoot, ".cursor/hooks/react-doctor.sh");
+    const invocationPath = path.join(fixture.projectRoot, ".react-doctor/agent-hook-args.txt");
+    mkdirSync(path.join(fixture.projectRoot, ".react-doctor"), { recursive: true });
+    installReactDoctorAgentHooks({
+      projectRoot: fixture.projectRoot,
+      agents: ["cursor"],
+    });
+
+    const output = execFileSync("sh", [hookPath], {
+      cwd: fixture.projectRoot,
+      env: {
+        ...process.env,
+        PATH: "/usr/bin:/bin",
+      },
+      input: JSON.stringify({
+        tool_name: "Write",
+      }),
+      encoding: "utf8",
+    });
+
+    expect(output).toBe("");
+    expect(existsSync(invocationPath)).toBe(false);
+  });
+
+  it("skips generated agent hooks for non-edit tool batches", () => {
+    const hookPath = path.join(fixture.projectRoot, ".claude/hooks/react-doctor.sh");
+    const invocationPath = path.join(fixture.projectRoot, ".react-doctor/agent-hook-args.txt");
+    mkdirSync(path.join(fixture.projectRoot, ".react-doctor"), { recursive: true });
+    installReactDoctorAgentHooks({
+      projectRoot: fixture.projectRoot,
+      agents: ["claude-code"],
+    });
+    writeFakeReactDoctorBinary(fixture.projectRoot, { exitCode: 1 });
+
+    const output = execFileSync("sh", [hookPath], {
+      cwd: path.join(fixture.projectRoot, ".claude/hooks"),
+      input: JSON.stringify({
+        hook_event_name: "PostToolBatch",
+        tool_calls: [{ tool_name: "Read" }],
+      }),
+      encoding: "utf8",
+    });
+
+    expect(output).toBe("");
+    expect(existsSync(invocationPath)).toBe(false);
+  });
+
+  it("returns no context when a generated agent hook scan succeeds", () => {
+    const hookPath = path.join(fixture.projectRoot, ".cursor/hooks/react-doctor.sh");
+    mkdirSync(path.join(fixture.projectRoot, ".react-doctor"), { recursive: true });
+    installReactDoctorAgentHooks({
+      projectRoot: fixture.projectRoot,
+      agents: ["cursor"],
+    });
+    writeFakeReactDoctorBinary(fixture.projectRoot, { exitCode: 0, output: "clean scan" });
+
+    const output = execFileSync("sh", [hookPath], {
+      cwd: fixture.projectRoot,
+      input: JSON.stringify({
+        tool_name: "Write",
+      }),
+      encoding: "utf8",
+    });
+
+    expect(output).toBe("");
+    expect(
+      readFileSync(path.join(fixture.projectRoot, ".react-doctor/agent-hook-args.txt"), "utf8"),
+    ).toBe("--verbose\n--diff\n--fail-on\nwarning\n--offline\n");
+  });
+
+  it("skips generated agent hooks for non-edit single tool events", () => {
+    const hookPath = path.join(fixture.projectRoot, ".cursor/hooks/react-doctor.sh");
+    const invocationPath = path.join(fixture.projectRoot, ".react-doctor/agent-hook-args.txt");
+    mkdirSync(path.join(fixture.projectRoot, ".react-doctor"), { recursive: true });
+    installReactDoctorAgentHooks({
+      projectRoot: fixture.projectRoot,
+      agents: ["cursor"],
+    });
+    writeFakeReactDoctorBinary(fixture.projectRoot, { exitCode: 1 });
+
+    const output = execFileSync("sh", [hookPath], {
+      cwd: fixture.projectRoot,
+      input: JSON.stringify({
+        tool_name: "Read",
+      }),
+      encoding: "utf8",
+    });
+
+    expect(output).toBe("");
+    expect(existsSync(invocationPath)).toBe(false);
+  });
+
+  it("scans when hook input is malformed instead of failing closed", () => {
+    const hookPath = path.join(fixture.projectRoot, ".cursor/hooks/react-doctor.sh");
+    mkdirSync(path.join(fixture.projectRoot, ".react-doctor"), { recursive: true });
+    installReactDoctorAgentHooks({
+      projectRoot: fixture.projectRoot,
+      agents: ["cursor"],
+    });
+    writeFakeReactDoctorBinary(fixture.projectRoot, { exitCode: 1 });
+
+    const output = execFileSync("sh", [hookPath], {
+      cwd: fixture.projectRoot,
+      input: "{not-json",
+      encoding: "utf8",
+    });
+    const parsedOutput: AgentHookJsonOutput = JSON.parse(output);
+
+    expect(parsedOutput.additional_context).toContain("fake scan output");
   });
 
   it("ignores agents without native hook support", () => {
