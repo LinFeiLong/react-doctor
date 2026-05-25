@@ -10,6 +10,7 @@ import {
 import { highlighter, SKILL_NAME } from "@react-doctor/core";
 import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
+import { installDoctorScript } from "./install-doctor-script.js";
 import { installReactDoctorAgentHooks } from "./install-agent-hooks.js";
 import { GitHookKind, type GitHookTarget } from "./git-hook-types.js";
 import { detectGitHookTarget, installReactDoctorGitHook } from "./install-git-hook.js";
@@ -46,6 +47,17 @@ const formatGitHookInstallMessage = (
     return `React Doctor pre-commit config ${hookResult.status} at ${hookResult.hookPath}. Run your hook manager's install command if hooks are not already installed.`;
   }
   return `React Doctor pre-commit hook ${hookResult.status} at ${hookResult.hookPath}.`;
+};
+
+const formatDoctorScriptInstallMessage = (
+  scriptResult: ReturnType<typeof installDoctorScript>,
+): string => {
+  if (scriptResult.status === "created") return "Added package script: doctor.";
+  if (scriptResult.status === "existing") return "Package script already exists: doctor.";
+  if (scriptResult.reason === "invalid-scripts") {
+    return `Skipped package script: scripts field is not an object in ${scriptResult.packageJsonPath}.`;
+  }
+  return `Skipped package script: package.json missing or invalid at ${scriptResult.packageJsonPath}.`;
 };
 
 interface InstallSkillOptions {
@@ -150,6 +162,7 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
       logger.dim(`  - ${getSkillAgentConfig(agent).displayName}`);
     }
     logger.dim(`  Source: ${sourceDir}`);
+    logger.dim("  Package script: doctor");
     if (shouldInstallGitHook) {
       logger.dim(`  Git hook: ${gitHookPath}`);
     }
@@ -186,6 +199,15 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
     );
   } catch (error) {
     installSpinner.fail(`Failed to install ${SKILL_NAME} skill.`);
+    throw error;
+  }
+
+  const scriptSpinner = spinner("Installing React Doctor package script...").start();
+  try {
+    const scriptResult = installDoctorScript({ projectRoot });
+    scriptSpinner.succeed(formatDoctorScriptInstallMessage(scriptResult));
+  } catch (error) {
+    scriptSpinner.fail("Failed to install React Doctor package script.");
     throw error;
   }
 

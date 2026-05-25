@@ -8,6 +8,8 @@ export const GIT_HOOK_EXECUTABLE_MODE = 0o755;
 
 export const AGENT_HOOK_TIMEOUT_SECONDS = 120;
 
+export const SETUP_PROMPT_DELAY_MS = 300;
+
 // Last-resort fallback when buildJsonReportError itself throws — keeps
 // stdout valid JSON so downstream parsers don't see a half-written report.
 export const INTERNAL_ERROR_JSON_FALLBACK =
