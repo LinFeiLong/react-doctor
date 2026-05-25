@@ -3,9 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vite-plus/test";
 import type { ProjectInfo } from "@react-doctor/core";
-import { collectFrameworkEntryPatterns } from "../../src/dead-code/collect-framework-entry-patterns.js";
+import { collectReachabilityEntryPatterns } from "../../src/reachability/collect-entry-patterns.js";
 
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "rd-dead-code-entry-patterns-"));
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "rd-reachability-entry-patterns-"));
 
 afterAll(() => {
   fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -36,7 +36,7 @@ const setupProject = (caseId: string, files: Record<string, string>): string => 
   return projectDirectory;
 };
 
-describe("collectFrameworkEntryPatterns", () => {
+describe("collectReachabilityEntryPatterns", () => {
   it("collects local Expo config plugins without treating package names as files", () => {
     const directory = setupProject("expo-plugin-paths", {
       "app.config.ts": `export default {
@@ -53,7 +53,7 @@ describe("collectFrameworkEntryPatterns", () => {
     });
 
     expect(
-      collectFrameworkEntryPatterns({
+      collectReachabilityEntryPatterns({
         rootDirectory: directory,
         project: expoProject(directory),
       }),
@@ -67,7 +67,7 @@ describe("collectFrameworkEntryPatterns", () => {
     });
 
     expect(
-      collectFrameworkEntryPatterns({
+      collectReachabilityEntryPatterns({
         rootDirectory: directory,
         project: {
           ...expoProject(directory),

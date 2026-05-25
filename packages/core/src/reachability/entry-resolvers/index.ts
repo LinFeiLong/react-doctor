@@ -1,7 +1,7 @@
 import { expoConfigPluginEntryResolver } from "./expo-config-plugins.js";
-import type { DeadCodeEntryResolver } from "../types.js";
+import type { ReachabilityEntryResolver } from "../types.js";
 
-export const deadCodeEntryResolvers: ReadonlyArray<DeadCodeEntryResolver> = [
+export const reachabilityEntryResolvers: ReadonlyArray<ReachabilityEntryResolver> = [
   expoConfigPluginEntryResolver,
 ];
 

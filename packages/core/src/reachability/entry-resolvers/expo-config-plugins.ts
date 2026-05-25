@@ -3,7 +3,7 @@ import path from "node:path";
 import ts from "typescript";
 import { IGNORED_DIRECTORIES } from "../../project-info/constants.js";
 import { toRelativePath } from "../../utils/to-relative-path.js";
-import type { DeadCodeEntryResolver, DeadCodeEntryResolverInput } from "../types.js";
+import type { ReachabilityEntryResolver, ReachabilityEntryResolverInput } from "../types.js";
 
 // Expo documents local config plugins as string paths in the app config
 // `plugins` array: https://docs.expo.dev/config-plugins/plugins/
@@ -19,7 +19,7 @@ const EXPO_CONFIG_FILENAMES = new Set([
 const EXPO_CONFIG_SCAN_MAX_DEPTH = 6;
 const EXPO_PLUGIN_RESOLVABLE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cjs", ".cts"];
 
-const isExpoOrReactNativeProject = ({ project }: DeadCodeEntryResolverInput): boolean =>
+const isExpoOrReactNativeProject = ({ project }: ReachabilityEntryResolverInput): boolean =>
   project === undefined ||
   project.framework === "expo" ||
   project.framework === "react-native" ||
@@ -169,7 +169,7 @@ const collectExpoPluginPathsFromConfig = (
 
     collectExpoPluginPathsFromAppConfig(configPath, entries, rootDirectory);
   } catch {
-    // Invalid or dynamic config should not prevent the normal dead-code scan.
+    // Invalid or dynamic config should not prevent the normal reachability scan.
   }
 };
 
@@ -208,7 +208,7 @@ const collectExpoConfigPluginEntryPatterns = (rootDirectory: string): string[] =
   return [...entries];
 };
 
-export const expoConfigPluginEntryResolver: DeadCodeEntryResolver = {
+export const expoConfigPluginEntryResolver: ReachabilityEntryResolver = {
   id: "expo-config-plugins",
   isEnabled: isExpoOrReactNativeProject,
   collectEntryPatterns: ({ rootDirectory }) => collectExpoConfigPluginEntryPatterns(rootDirectory),

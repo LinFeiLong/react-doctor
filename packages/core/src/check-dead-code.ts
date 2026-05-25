@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Diagnostic, ProjectInfo, ReactDoctorConfig } from "./types/index.js";
 import { collectIgnorePatterns } from "./collect-ignore-patterns.js";
-import { collectFrameworkEntryPatterns } from "./dead-code/collect-framework-entry-patterns.js";
+import { collectReachabilityEntryPatterns } from "./reachability/collect-entry-patterns.js";
 import { readIgnoreFile } from "./read-ignore-file.js";
 import { toRelativePath } from "./utils/to-relative-path.js";
 
@@ -67,9 +67,9 @@ export const checkDeadCode = async (options: CheckDeadCodeOptions): Promise<Diag
     tsConfigPath: resolveTsConfigPath(rootDirectory),
     ...(ignorePatterns.length > 0 ? { ignorePatterns } : {}),
   });
-  const frameworkEntryPatterns = collectFrameworkEntryPatterns({ rootDirectory, project });
-  if (frameworkEntryPatterns.length > 0) {
-    config.entryPatterns = [...new Set([...config.entryPatterns, ...frameworkEntryPatterns])];
+  const reachabilityEntryPatterns = collectReachabilityEntryPatterns({ rootDirectory, project });
+  if (reachabilityEntryPatterns.length > 0) {
+    config.entryPatterns = [...new Set([...config.entryPatterns, ...reachabilityEntryPatterns])];
   }
   const result = await analyze(config);
   const toRelative = (filePath: string): string => toRelativeFilePath(rootDirectory, filePath);
