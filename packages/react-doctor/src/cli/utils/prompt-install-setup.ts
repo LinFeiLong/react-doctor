@@ -67,7 +67,9 @@ interface SetupPromptGlobalConfig {
 
 const GLOBAL_CONFIG_PROJECT_NAME = "react-doctor";
 
-const getSetupPromptStore = (options: SetupPromptStoreOptions = {}): Conf<SetupPromptGlobalConfig> =>
+const getSetupPromptStore = (
+  options: SetupPromptStoreOptions = {},
+): Conf<SetupPromptGlobalConfig> =>
   new Conf<SetupPromptGlobalConfig>({
     projectName: GLOBAL_CONFIG_PROJECT_NAME,
     cwd: options.cwd,

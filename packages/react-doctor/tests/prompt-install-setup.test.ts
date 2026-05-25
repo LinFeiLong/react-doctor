@@ -380,8 +380,6 @@ describe("shouldPromptInstallSetup", () => {
   });
 
   it("pitches future regression checks when no issues were found", () => {
-    expect(buildInstallSetupPitchLines(0).join("\n")).toContain(
-      "catch future regressions early",
-    );
+    expect(buildInstallSetupPitchLines(0).join("\n")).toContain("catch future regressions early");
   });
 });

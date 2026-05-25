@@ -1,9 +1,4 @@
-import {
-  getPackageJsonPath,
-  isRecord,
-  readPackageJson,
-  writeJsonFile,
-} from "./git-hook-shared.js";
+import { getPackageJsonPath, isRecord, readPackageJson, writeJsonFile } from "./git-hook-shared.js";
 import { VERSION } from "./version.js";
 
 export const DOCTOR_SCRIPT_NAME = "doctor";
