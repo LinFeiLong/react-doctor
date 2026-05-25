@@ -4,5 +4,3 @@ import type { ReachabilityEntryResolver } from "../types.js";
 export const reachabilityEntryResolvers: ReadonlyArray<ReachabilityEntryResolver> = [
   expoConfigPluginEntryResolver,
 ];
-
-export { expoConfigPluginEntryResolver };

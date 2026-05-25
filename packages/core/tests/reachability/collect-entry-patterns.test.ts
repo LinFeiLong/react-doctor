@@ -43,12 +43,14 @@ describe("collectReachabilityEntryPatterns", () => {
   plugins: [
     "./plugins/with-secure-flag.plugin.ts",
     ["./plugins/with-day-night-theme", { enabled: true }],
+    "./plugins/with-directory-plugin",
     "expo-camera",
   ],
 };
 `,
       "plugins/with-secure-flag.plugin.ts": "export default (config: unknown) => config;\n",
       "plugins/with-day-night-theme.ts": "export default (config: unknown) => config;\n",
+      "plugins/with-directory-plugin/index.ts": "export default (config: unknown) => config;\n",
       "expo-camera.ts": "export const packageNameLookalike = true;\n",
     });
 
@@ -57,7 +59,11 @@ describe("collectReachabilityEntryPatterns", () => {
         rootDirectory: directory,
         project: expoProject(directory),
       }),
-    ).toEqual(["plugins/with-secure-flag.plugin.ts", "plugins/with-day-night-theme.ts"]);
+    ).toEqual([
+      "plugins/with-secure-flag.plugin.ts",
+      "plugins/with-day-night-theme.ts",
+      "plugins/with-directory-plugin/index.ts",
+    ]);
   });
 
   it("skips Expo config plugin discovery outside Expo or React Native projects", () => {
@@ -76,5 +82,6 @@ describe("collectReachabilityEntryPatterns", () => {
         },
       }),
     ).toEqual([]);
+    expect(collectReachabilityEntryPatterns({ rootDirectory: directory })).toEqual([]);
   });
 });

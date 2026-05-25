@@ -29,28 +29,36 @@ const EXPO_PLUGIN_RESOLVABLE_EXTENSIONS = [
 ];
 
 const isExpoOrReactNativeProject = ({ project }: ReachabilityEntryResolverInput): boolean =>
-  project === undefined ||
-  project.framework === "expo" ||
-  project.framework === "react-native" ||
-  project.hasReactNativeWorkspace;
+  project !== undefined &&
+  (project.framework === "expo" ||
+    project.framework === "react-native" ||
+    project.hasReactNativeWorkspace);
 
 const isLocalExpoPluginPath = (value: string): boolean =>
   (value.startsWith("./") || value.startsWith("../")) &&
   !value.includes("*") &&
   !value.includes("?");
 
+const isFile = (filePath: string): boolean => {
+  try {
+    return fs.statSync(filePath).isFile();
+  } catch {
+    return false;
+  }
+};
+
 const resolveExpoPluginPath = (configDirectory: string, pluginPath: string): string | undefined => {
   const candidate = path.resolve(configDirectory, pluginPath);
-  if (fs.existsSync(candidate)) return candidate;
+  if (isFile(candidate)) return candidate;
 
   for (const extension of EXPO_PLUGIN_RESOLVABLE_EXTENSIONS) {
     const withExtension = `${candidate}${extension}`;
-    if (fs.existsSync(withExtension)) return withExtension;
+    if (isFile(withExtension)) return withExtension;
   }
 
   for (const extension of EXPO_PLUGIN_RESOLVABLE_EXTENSIONS) {
     const indexCandidate = path.join(candidate, `index${extension}`);
-    if (fs.existsSync(indexCandidate)) return indexCandidate;
+    if (isFile(indexCandidate)) return indexCandidate;
   }
 
   return undefined;
