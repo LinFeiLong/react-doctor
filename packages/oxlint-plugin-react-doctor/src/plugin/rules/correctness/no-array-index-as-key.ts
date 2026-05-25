@@ -3,6 +3,7 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
+import { isAllLiteralArrayExpression } from "../../utils/is-all-literal-array-expression.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import {
@@ -107,20 +108,6 @@ const isArrayFromCall = (node: EsTreeNode | null | undefined): boolean => {
  * (number/string/boolean literal) — `[1, 2, 3]`, `['a', 'b']`. Such arrays
  * have a fixed order at every render, so an index key is stable.
  */
-const isAllLiteralArrayExpression = (node: EsTreeNode): boolean => {
-  if (!isNodeOfType(node, "ArrayExpression")) return false;
-  const elements = node.elements ?? [];
-  if (elements.length < 1) return false;
-  for (const element of elements) {
-    if (!element) return false;
-    if (!isNodeOfType(element, "Literal")) return false;
-    const value = element.value;
-    if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean")
-      return false;
-  }
-  return true;
-};
-
 /**
  * True if the call expression looks like a placeholder constructor whose
  * elements have no identity beyond their position — i.e. `Array.from(...)`,

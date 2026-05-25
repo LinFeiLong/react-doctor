@@ -2,6 +2,7 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
+import { isAllLiteralArrayExpression } from "../../utils/is-all-literal-array-expression.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import {
   containsStatefulDescendant,
@@ -36,20 +37,6 @@ const THIRD_INDEX_METHODS: ReadonlySet<string> = new Set(["reduce", "reduceRight
 // In each of these the array's identity-vs-position is fixed by the
 // source string/length — reordering can't happen, so using the index
 // as the key is semantically right.
-const isAllLiteralArrayExpression = (node: EsTreeNode): boolean => {
-  if (!isNodeOfType(node, "ArrayExpression")) return false;
-  const elements = node.elements ?? [];
-  if (elements.length < 1) return false;
-  for (const element of elements) {
-    if (!element) return false;
-    if (!isNodeOfType(element, "Literal")) return false;
-    const value = (element as { value: unknown }).value;
-    if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean")
-      return false;
-  }
-  return true;
-};
-
 const isPositionallyStableIterationReceiver = (receiver: EsTreeNode): boolean => {
   // `[lit, lit, lit].map(...)` — fixed-shape literal array, order is stable.
   if (isAllLiteralArrayExpression(receiver)) return true;
