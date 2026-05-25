@@ -8,6 +8,79 @@ import {
   isReactDoctorError,
 } from "@react-doctor/core";
 import type { HandleErrorOptions } from "@react-doctor/core";
+import { VERSION } from "./version.js";
+
+const OTLP_ENDPOINT_ENVIRONMENT_VARIABLE = "REACT_DOCTOR_OTLP_ENDPOINT";
+const OTLP_AUTH_HEADER_ENVIRONMENT_VARIABLE = "REACT_DOCTOR_OTLP_AUTH_HEADER";
+
+interface ErrorReportContext {
+  readonly cwd: string;
+  readonly command: string;
+  readonly nodeVersion: string;
+  readonly platform: NodeJS.Platform;
+  readonly architecture: string;
+  readonly isOtlpEndpointConfigured: boolean;
+  readonly isOtlpAuthHeaderConfigured: boolean;
+}
+
+const formatErrorForReport = (error: unknown): string =>
+  isReactDoctorError(error) ? formatReactDoctorError(error) : formatErrorChain(error);
+
+const formatSingleLine = (text: string): string => text.replaceAll(/\s+/g, " ").trim();
+
+const getErrorReportContext = (): ErrorReportContext => ({
+  cwd: process.cwd(),
+  command: process.argv.join(" "),
+  nodeVersion: process.version,
+  platform: process.platform,
+  architecture: process.arch,
+  isOtlpEndpointConfigured: Boolean(process.env[OTLP_ENDPOINT_ENVIRONMENT_VARIABLE]),
+  isOtlpAuthHeaderConfigured: Boolean(process.env[OTLP_AUTH_HEADER_ENVIRONMENT_VARIABLE]),
+});
+
+const formatConfiguredState = (isConfigured: boolean): string => (isConfigured ? "yes" : "no");
+
+const buildErrorIssueBody = (error: unknown, context: ErrorReportContext): string => {
+  const formattedError = formatErrorForReport(error) || "(empty error)";
+  const isOtlpExporterEnabled =
+    context.isOtlpEndpointConfigured && context.isOtlpAuthHeaderConfigured;
+
+  return [
+    "## Error",
+    "",
+    "```text",
+    formattedError,
+    "```",
+    "",
+    "## Runtime",
+    "",
+    `- react-doctor version: ${VERSION}`,
+    `- node: ${context.nodeVersion}`,
+    `- platform: ${context.platform} ${context.architecture}`,
+    `- cwd: ${context.cwd}`,
+    `- command: ${context.command}`,
+    "",
+    "## OpenTelemetry",
+    "",
+    `- ${OTLP_ENDPOINT_ENVIRONMENT_VARIABLE} configured: ${formatConfiguredState(context.isOtlpEndpointConfigured)}`,
+    `- ${OTLP_AUTH_HEADER_ENVIRONMENT_VARIABLE} configured: ${formatConfiguredState(context.isOtlpAuthHeaderConfigured)} (value redacted)`,
+    `- OTLP exporter enabled: ${formatConfiguredState(isOtlpExporterEnabled)}`,
+    "- trace/span link, if exported: ",
+    "",
+    "## Notes",
+    "",
+    "Please add reproduction steps and any relevant repository details.",
+  ].join("\n");
+};
+
+export const buildErrorIssueUrl = (error: unknown): string => {
+  const formattedError = formatSingleLine(formatErrorForReport(error));
+  const issueUrl = new URL(`${CANONICAL_GITHUB_URL}/issues/new`);
+  issueUrl.searchParams.set("title", formattedError ? `CLI error: ${formattedError}` : "CLI error");
+  issueUrl.searchParams.set("labels", "bug");
+  issueUrl.searchParams.set("body", buildErrorIssueBody(error, getErrorReportContext()));
+  return issueUrl.toString();
+};
 
 /**
  * Effect-typed renderer: every message routes through `Console.error`
@@ -24,15 +97,11 @@ export const handleErrorEffect = (error: unknown): Effect.Effect<void> =>
     );
     yield* Console.error(
       highlighter.error(
-        `If the problem persists, please open an issue at ${CANONICAL_GITHUB_URL}/issues.`,
+        `If the problem persists, please open this prefilled issue: ${buildErrorIssueUrl(error)}`,
       ),
     );
     yield* Console.error("");
-    yield* Console.error(
-      highlighter.error(
-        isReactDoctorError(error) ? formatReactDoctorError(error) : formatErrorChain(error),
-      ),
-    );
+    yield* Console.error(highlighter.error(formatErrorForReport(error)));
     yield* Console.error("");
   });
 

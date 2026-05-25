@@ -219,7 +219,7 @@ const buildAgentHookScript = (): string =>
     "const input = readInput();",
     "const scanOutput = fs.readFileSync(outputPath, 'utf8').trim();",
     "if (!scanOutput) process.exit(0);",
-    "const message = `React Doctor found issues in the changed files. Review this output and fix the regressions before finishing:\\n\\n${scanOutput}`;",
+    "const message = `React Doctor found issues in the changed files. Review this output and fix the regressions before finishing. For confirmed issues that cannot be fixed now, create GitHub issues with the rule, file/line, confidence, impact, and proposed fix.\\n\\n${scanOutput}`;",
     "if (input.hook_event_name === 'PostToolBatch') {",
     "  console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolBatch', additionalContext: message } }));",
     "} else {",

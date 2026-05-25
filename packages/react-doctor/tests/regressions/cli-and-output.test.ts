@@ -283,6 +283,9 @@ export const Cart = () => {
       "  - Split unrelated, broad, or behavior-changing work into separate PRs/branches",
     );
     expect(normalizedStdout).toContain("  - When available, spawn subagents or isolated worktrees");
+    expect(normalizedStdout).toContain(
+      "  - For confirmed issues that cannot be fixed now, create GitHub issues",
+    );
     expect(normalizedStdout).toContain("  - If a fix needs an API, UX, or architecture decision");
     expect(normalizedStdout.indexOf("Agent guidance")).toBeLessThan(
       normalizedStdout.indexOf("React Doctor"),

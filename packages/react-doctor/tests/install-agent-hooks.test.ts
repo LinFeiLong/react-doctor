@@ -225,6 +225,7 @@ describe("installReactDoctorAgentHooks", () => {
       readFileSync(path.join(fixture.projectRoot, ".react-doctor/agent-hook-args.txt"), "utf8"),
     ).toBe("--verbose\n--diff\n--fail-on\nwarning\n--no-score\n");
     expect(parsedOutput.additional_context).toContain("fake scan output");
+    expect(parsedOutput.additional_context).toContain("create GitHub issues");
   });
 
   it("uses CLAUDE_PROJECT_DIR when a generated Claude hook runs outside the repo", () => {
@@ -264,6 +265,7 @@ describe("installReactDoctorAgentHooks", () => {
       hookEventName: "PostToolBatch",
       additionalContext: expect.stringContaining("fake scan output"),
     });
+    expect(parsedOutput.hookSpecificOutput.additionalContext).toContain("create GitHub issues");
   });
 
   it("uses a PATH react-doctor binary when the local binary is missing", () => {
