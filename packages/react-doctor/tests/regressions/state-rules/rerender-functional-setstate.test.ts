@@ -32,40 +32,6 @@ export const Chat = () => {
     expect(hits[0].message).toContain("functional update");
   });
 
-  // SKIP: pre-existing rule behavior. The rerender-functional-setstate
-  // rule gates spread-shape detection on `isInsideDeferredCallback` —
-  // synchronous render-path handlers (`onChange={onChangeName}` where
-  // `onChangeName` is defined in the same render) close over fresh state
-  // every render, so there's no actual stale-closure risk. The test
-  // was authored before the gate was added; the spread-shape ARE still
-  // flagged inside setTimeout/.then()/useEffect callbacks (the canonical
-  // stale-closure surface).
-  it.skip("flags `setProfile({ ...profile, name })` object-spread shape", async () => {
-    const projectDir = setupReactProject(tempRoot, "rerender-functional-setstate-object-spread", {
-      files: {
-        "src/Profile.tsx": `import { useState } from "react";
-
-export const Profile = () => {
-  const [profile, setProfile] = useState({ name: "", email: "" });
-  const onChangeName = (event: { target: { value: string } }) => {
-    setProfile({ ...profile, name: event.target.value });
-  };
-  return (
-    <input
-      value={profile.name}
-      onChange={onChangeName}
-    />
-  );
-};
-`,
-      },
-    });
-
-    const hits = await collectRuleHits(projectDir, "rerender-functional-setstate");
-    expect(hits.length).toBeGreaterThanOrEqual(1);
-    expect(hits[0].message).toContain("...profile");
-  });
-
   it("does NOT flag `setMessages(msgs => [...msgs, item])` (the recommended fix)", async () => {
     const projectDir = setupReactProject(tempRoot, "rerender-functional-setstate-good", {
       files: {

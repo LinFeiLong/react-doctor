@@ -6,7 +6,6 @@ import * as Effect from "effect/Effect";
 import {
   buildJsonReport,
   filterDiagnosticsForSurface,
-  filterSourceFiles,
   getDiffInfo,
   highlighter,
   loadConfigWithSource,
@@ -34,6 +33,7 @@ import { resolveCliInspectOptions } from "../utils/resolve-cli-inspect-options.j
 import { resolveDiffMode } from "../utils/resolve-diff-mode.js";
 import { resolveEffectiveDiff } from "../utils/resolve-effective-diff.js";
 import { resolveFailOnLevel } from "../utils/resolve-fail-on-level.js";
+import { resolveProjectDiffIncludePaths } from "../utils/resolve-project-diff-include-paths.js";
 import { runExplain } from "../utils/run-explain.js";
 import { selectProjects } from "../utils/select-projects.js";
 import { shouldFailForDiagnostics } from "../utils/should-fail-for-diagnostics.js";
@@ -208,26 +208,18 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
     for (const projectDirectory of projectDirectories) {
       let includePaths: string[] | undefined;
       if (isDiffMode) {
-        const projectDiffInfo =
-          projectDirectory === resolvedDirectory
-            ? diffInfo
-            : await getDiffInfo(projectDirectory, explicitBaseBranch);
-        if (projectDiffInfo) {
-          const changedSourceFiles = filterSourceFiles(projectDiffInfo.changedFiles);
-          if (changedSourceFiles.length === 0) {
-            if (!isQuiet) {
-              logger.dim(`No changed source files in ${projectDirectory}, skipping.`);
-              logger.break();
-            }
-            continue;
+        const changedSourceFiles =
+          diffInfo === null
+            ? []
+            : resolveProjectDiffIncludePaths(resolvedDirectory, projectDirectory, diffInfo);
+        if (changedSourceFiles.length === 0) {
+          if (!isQuiet) {
+            logger.dim(`No changed source files in ${projectDirectory}, skipping.`);
+            logger.break();
           }
-          includePaths = changedSourceFiles;
-        } else if (!isQuiet) {
-          logger.dim(
-            `Cannot detect diff for ${projectDirectory} (not a git repository?) — scanning all files.`,
-          );
-          logger.break();
+          continue;
         }
+        includePaths = changedSourceFiles;
       }
 
       if (!isQuiet) {

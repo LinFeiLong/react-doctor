@@ -1,6 +1,6 @@
 import type { DependencyInfo, PackageJson } from "../types/index.js";
 import { detectFramework } from "./detect-framework.js";
-import { isConcreteDependencyVersion } from "./utils/is-concrete-dependency-version.js";
+import { isConcreteDependencyVersion } from "./utils/dependency-version-spec.js";
 import { isCatalogReference } from "./resolve-catalog-version.js";
 
 export const EMPTY_DEPENDENCY_INFO: DependencyInfo = {

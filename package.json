@@ -14,6 +14,7 @@
     "dev": "turbo run dev --filter=react-doctor",
     "build": "turbo run build",
     "test": "turbo run test --filter=react-doctor --filter=@react-doctor/core --filter=@react-doctor/api",
+    "test:public-react-repos": "REACT_DOCTOR_PUBLIC_REPOS=1 vp test run packages/react-doctor/tests/public-react-repos.test.ts",
     "typecheck": "turbo run typecheck",
     "lint": "vp lint",
     "lint:fix": "vp lint --fix",
@@ -23,7 +24,6 @@
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build && changeset publish",
-    "leaderboard:update": "node --experimental-strip-types --no-warnings scripts/update-leaderboard.ts",
     "smoke:json-report": "node --experimental-strip-types --no-warnings scripts/smoke-json-report.ts"
   },
   "devDependencies": {
@@ -36,7 +36,7 @@
     "vite-plus": "^0.1.15"
   },
   "engines": {
-    "node": ">=22",
+    "node": "^20.19.0 || >=22.12.0",
     "pnpm": ">=8"
   },
   "packageManager": "pnpm@10.29.1",
