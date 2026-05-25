@@ -33,8 +33,7 @@ const SHEBANG = "#!/bin/sh";
 const SHEBANG_PREFIX = "#!";
 const LOCAL_REACT_DOCTOR_BIN = "./node_modules/.bin/react-doctor";
 const PNPM_REACT_DOCTOR_COMMAND = "pnpm dlx react-doctor@latest --staged --fail-on warning";
-const NPX_REACT_DOCTOR_COMMAND =
-  "npx --yes react-doctor@latest --staged --fail-on warning";
+const NPX_REACT_DOCTOR_COMMAND = "npx --yes react-doctor@latest --staged --fail-on warning";
 
 const buildReactDoctorHookBlock = (): string =>
   [
@@ -63,11 +62,11 @@ const buildReactDoctorHookBlock = (): string =>
     "  printf '%s\\n' \"react-doctor: command not found; skipping staged scan.\"",
     "}",
     "",
-    "react_doctor_output=$(mktemp \"${TMPDIR:-/tmp}/react-doctor-hook.XXXXXX\")",
-    "if react_doctor_scan_staged_files > \"$react_doctor_output\" 2>&1; then",
-    "  rm -f \"$react_doctor_output\"",
+    'react_doctor_output=$(mktemp "${TMPDIR:-/tmp}/react-doctor-hook.XXXXXX")',
+    'if react_doctor_scan_staged_files > "$react_doctor_output" 2>&1; then',
+    '  rm -f "$react_doctor_output"',
     "else",
-    "  rm -f \"$react_doctor_output\"",
+    '  rm -f "$react_doctor_output"',
     `  printf '%s\\n' "React Doctor found staged regressions." "Run ${REACT_DOCTOR_COMMAND} to inspect." "Want them fixed? Ask your agent to run that command and resolve the findings." >&2`,
     "fi",
     REACT_DOCTOR_BLOCK_END,

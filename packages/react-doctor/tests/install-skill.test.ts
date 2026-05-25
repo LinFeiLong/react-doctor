@@ -303,9 +303,7 @@ describe("runInstallSkill", () => {
     expect(existsSync(path.join(fixture.projectRoot, ".agents/skills/react-doctor/SKILL.md"))).toBe(
       true,
     );
-    expect(readFileSync(hookPath, "utf8")).toContain(
-      "react-doctor --staged --fail-on warning",
-    );
+    expect(readFileSync(hookPath, "utf8")).toContain("react-doctor --staged --fail-on warning");
     expect(existsSync(path.join(fixture.projectRoot, ".react-doctor/hooks/pre-commit"))).toBe(
       false,
     );
