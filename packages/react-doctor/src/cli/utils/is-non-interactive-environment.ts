@@ -24,7 +24,7 @@ export const NON_INTERACTIVE_ENVIRONMENT_VARIABLES = [
   "TRAVIS",
   "DRONE",
   "GIT_DIR",
-];
+] as const;
 
 export const isNonInteractiveEnvironment = (): boolean =>
   isCodingAgentEnvironment() ||

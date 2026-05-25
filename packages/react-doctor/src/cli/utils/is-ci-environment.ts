@@ -1,9 +1,11 @@
 // Narrow on canonical CI signals only. Used to suppress the share
 // URL (noise in CI logs) and to mark the run as CI-originated for
 // the score path. Does not imply `--no-score`.
-const CI_ENVIRONMENT_VARIABLES = ["GITHUB_ACTIONS", "GITLAB_CI", "CIRCLECI"];
+export const CI_ENVIRONMENT_VARIABLES = ["GITHUB_ACTIONS", "GITLAB_CI", "CIRCLECI"] as const;
 
-const CODING_AGENT_ENVIRONMENT_VARIABLES = [
+// Runtime markers set by coding-agent subprocesses. Do not include
+// config-only or auth vars such as OPENAI_API_KEY or OPENCODE_CONFIG.
+export const CODING_AGENT_ENVIRONMENT_VARIABLES = [
   "CLAUDECODE",
   "CLAUDE_CODE",
   "CURSOR_AGENT",
@@ -17,9 +19,11 @@ const CODING_AGENT_ENVIRONMENT_VARIABLES = [
   "AGENT_THREAD_ID",
 ] as const;
 
+export const CODING_AGENT_ENVIRONMENT_VALUE_VARIABLES = ["AGENT"] as const;
+
 const CODING_AGENT_ENVIRONMENT_VALUES = {
   AGENT: ["amp", "goose"],
-} as const;
+} satisfies Record<(typeof CODING_AGENT_ENVIRONMENT_VALUE_VARIABLES)[number], readonly string[]>;
 
 export const isCiEnvironment = (): boolean =>
   CI_ENVIRONMENT_VARIABLES.some((envVariable) => Boolean(process.env[envVariable])) ||
@@ -27,8 +31,8 @@ export const isCiEnvironment = (): boolean =>
 
 export const isCodingAgentEnvironment = (): boolean =>
   CODING_AGENT_ENVIRONMENT_VARIABLES.some((envVariable) => Boolean(process.env[envVariable])) ||
-  Object.entries(CODING_AGENT_ENVIRONMENT_VALUES).some(([envVariable, values]) =>
-    values.some((value) => process.env[envVariable] === value),
+  CODING_AGENT_ENVIRONMENT_VALUE_VARIABLES.some((envVariable) =>
+    CODING_AGENT_ENVIRONMENT_VALUES[envVariable].some((value) => process.env[envVariable] === value),
   );
 
 export const isCiOrCodingAgentEnvironment = (): boolean =>

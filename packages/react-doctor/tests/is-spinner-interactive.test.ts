@@ -1,4 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
+import {
+  CODING_AGENT_ENVIRONMENT_VALUE_VARIABLES,
+  CODING_AGENT_ENVIRONMENT_VARIABLES,
+} from "../src/cli/utils/is-ci-environment.js";
+import { NON_INTERACTIVE_ENVIRONMENT_VARIABLES } from "../src/cli/utils/is-non-interactive-environment.js";
 import { isSpinnerInteractive } from "../src/cli/utils/is-spinner-interactive.js";
 
 interface StreamStubHandle {
@@ -42,31 +47,9 @@ const stubStream = (
 };
 
 const NON_INTERACTIVE_ENV_VARS = [
-  "CI",
-  "GITHUB_ACTIONS",
-  "GITLAB_CI",
-  "BUILDKITE",
-  "JENKINS_URL",
-  "TF_BUILD",
-  "CODEBUILD_BUILD_ID",
-  "TEAMCITY_VERSION",
-  "BITBUCKET_BUILD_NUMBER",
-  "CIRCLECI",
-  "TRAVIS",
-  "DRONE",
-  "CLAUDECODE",
-  "CLAUDE_CODE",
-  "CURSOR_AGENT",
-  "CODEX_CI",
-  "CODEX_SANDBOX",
-  "CODEX_SANDBOX_NETWORK_DISABLED",
-  "OPENCODE",
-  "GOOSE_TERMINAL",
-  "AGENT",
-  "AGENT_SESSION_ID",
-  "AMP_THREAD_ID",
-  "AGENT_THREAD_ID",
-  "GIT_DIR",
+  ...NON_INTERACTIVE_ENVIRONMENT_VARIABLES,
+  ...CODING_AGENT_ENVIRONMENT_VARIABLES,
+  ...CODING_AGENT_ENVIRONMENT_VALUE_VARIABLES,
   "TERM",
 ] as const;
 
