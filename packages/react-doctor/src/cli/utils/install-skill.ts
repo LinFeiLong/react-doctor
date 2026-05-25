@@ -96,6 +96,7 @@ interface InstallSkillOptions {
   projectRoot?: string;
   detectedAgents?: SkillAgentType[];
   gitHookPath?: string | null;
+  onPromptCancel?: () => void;
 }
 
 const getSkillSourceDirectory = (): string => {
@@ -136,22 +137,27 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
         ? null
         : buildManualGitHookTarget(options.gitHookPath, projectRoot);
   const gitHookPath = gitHookTarget?.hookPath;
+  const promptOptions =
+    options.onPromptCancel === undefined ? {} : { onCancel: options.onPromptCancel };
 
   const selectedAgents: SkillAgentType[] = skipPrompts
     ? detectedAgents
     : ((
-        await prompts({
-          type: "multiselect",
-          name: "agents",
-          message: `Install the ${highlighter.info(SKILL_NAME)} skill for:`,
-          choices: detectedAgents.map((agent) => ({
-            title: getSkillAgentConfig(agent).displayName,
-            value: agent,
-            selected: true,
-          })),
-          instructions: false,
-          min: 1,
-        })
+        await prompts(
+          {
+            type: "multiselect",
+            name: "agents",
+            message: `Install the ${highlighter.info(SKILL_NAME)} skill for:`,
+            choices: detectedAgents.map((agent) => ({
+              title: getSkillAgentConfig(agent).displayName,
+              value: agent,
+              selected: true,
+            })),
+            instructions: false,
+            min: 1,
+          },
+          promptOptions,
+        )
       ).agents ?? []);
 
   if (selectedAgents.length === 0) return;
@@ -163,12 +169,15 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
       (!skipPrompts &&
         Boolean(
           (
-            await prompts<"installGitHook">({
-              type: "confirm",
-              name: "installGitHook",
-              message: "Run React Doctor on staged files before commits? (non-blocking git hook)",
-              initial: true,
-            })
+            await prompts<"installGitHook">(
+              {
+                type: "confirm",
+                name: "installGitHook",
+                message: "Run React Doctor on staged files before commits? (non-blocking git hook)",
+                initial: true,
+              },
+              promptOptions,
+            )
           ).installGitHook,
         )));
 
@@ -178,12 +187,15 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
       hasNativeAgentHookTarget(selectedAgents) &&
       Boolean(
         (
-          await prompts<"installAgentHooks">({
-            type: "confirm",
-            name: "installAgentHooks",
-            message: "Install native agent hooks after file edits? (Claude Code / Cursor)",
-            initial: false,
-          })
+          await prompts<"installAgentHooks">(
+            {
+              type: "confirm",
+              name: "installAgentHooks",
+              message: "Install native agent hooks after file edits? (Claude Code / Cursor)",
+              initial: false,
+            },
+            promptOptions,
+          )
         ).installAgentHooks,
       ));
 

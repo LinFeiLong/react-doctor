@@ -17,6 +17,10 @@ const onCancel = () => {
   process.exit(0);
 };
 
+export interface CliPromptOptions {
+  readonly onCancel?: () => void;
+}
+
 const patchMultiselectToggleAll = (): void => {
   if (didPatchMultiselectToggleAll) return;
   didPatchMultiselectToggleAll = true;
@@ -60,8 +64,9 @@ const patchMultiselectSubmit = (): void => {
 
 export const prompts = <T extends string = string>(
   questions: PromptObject<T> | PromptObject<T>[],
+  options: CliPromptOptions = {},
 ): Promise<Answers<T>> => {
   patchMultiselectToggleAll();
   patchMultiselectSubmit();
-  return basePrompts(questions, { onCancel });
+  return basePrompts(questions, { onCancel: options.onCancel ?? onCancel });
 };

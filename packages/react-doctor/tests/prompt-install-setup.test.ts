@@ -257,6 +257,7 @@ describe("shouldPromptInstallSetup", () => {
   it("preserves the scan exit code when setup returns with a different exit code", async () => {
     writePackageJson(fixture.projectRoot, { scripts: {} });
     const originalExitCode = process.exitCode;
+    let didReceivePromptCancel = false;
     process.exitCode = undefined;
 
     try {
@@ -272,12 +273,15 @@ describe("shouldPromptInstallSetup", () => {
         wait: async () => {},
         writeLine: () => {},
         select: async () => SETUP_PROMPT_CHOICE_YES,
-        install: async () => {
+        install: async (installOptions) => {
+          didReceivePromptCancel = installOptions.onPromptCancel !== undefined;
+          installOptions.onPromptCancel?.();
           process.exitCode = 1;
         },
         warn: () => {},
       });
 
+      expect(didReceivePromptCancel).toBe(true);
       expect(process.exitCode).toBeUndefined();
     } finally {
       process.exitCode = originalExitCode;

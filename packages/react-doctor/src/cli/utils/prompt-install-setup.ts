@@ -7,6 +7,7 @@ import { SETUP_PROMPT_DELAY_MS } from "./constants.js";
 
 export interface InstallSkillRunnerOptions {
   readonly projectRoot?: string;
+  readonly onPromptCancel?: () => void;
 }
 
 export interface InstallSkillRunner {
@@ -206,6 +207,7 @@ export const promptInstallSetup = async (options: PromptInstallSetupOptions): Pr
     try {
       await install({
         projectRoot: options.projectRoot,
+        onPromptCancel: () => {},
       });
     } finally {
       process.exitCode = previousExitCode;
