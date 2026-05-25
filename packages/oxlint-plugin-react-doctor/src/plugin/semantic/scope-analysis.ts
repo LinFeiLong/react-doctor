@@ -1,7 +1,7 @@
-import { FUNCTION_LIKE_TYPES } from "../constants/js.js";
 import type { EsTreeNode } from "../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../utils/es-tree-node-of-type.js";
 import { isAstNode } from "../utils/is-ast-node.js";
+import { isFunctionLike } from "../utils/is-function-like.js";
 import { isNodeOfType } from "../utils/is-node-of-type.js";
 
 // Scope analyzer — per-file walker building a scope tree, symbol
@@ -99,8 +99,6 @@ export interface ScopeAnalysis {
   readonly referenceFor: (identifier: EsTreeNode) => ReferenceDescriptor | null;
   readonly isGlobalReference: (identifier: EsTreeNode) => boolean;
 }
-
-const isFunctionLike = (node: EsTreeNode): boolean => FUNCTION_LIKE_TYPES.has(node.type);
 
 const isHoistedBindingKind = (kind: SymbolKind): boolean => kind === "var" || kind === "function";
 

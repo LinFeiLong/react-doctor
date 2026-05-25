@@ -2,6 +2,7 @@ import type { Reference, Scope } from "eslint-scope";
 import type { EsTreeNode } from "../../../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../../../utils/es-tree-node-of-type.js";
 import { isAstNode } from "../../../../utils/is-ast-node.js";
+import { isFunctionLike } from "../../../../utils/is-function-like.js";
 import { isNodeOfType } from "../../../../utils/is-node-of-type.js";
 import { getDownstreamRefs, getRef, getUpstreamRefs, isEventualCallTo } from "./ast.js";
 import type { ProgramAnalysis } from "./get-program-analysis.js";
@@ -39,19 +40,6 @@ const KNOWN_PURE_HOC_NAMES = new Set(["memo", "forwardRef"]);
 
 const startsWithUppercase = (name: string | undefined): boolean =>
   Boolean(name && name.length > 0 && name[0] >= "A" && name[0] <= "Z");
-
-const isFunctionLike = (
-  node: EsTreeNode | null | undefined,
-): node is
-  | EsTreeNodeOfType<"ArrowFunctionExpression">
-  | EsTreeNodeOfType<"FunctionExpression">
-  | EsTreeNodeOfType<"FunctionDeclaration"> =>
-  Boolean(
-    node &&
-    (isNodeOfType(node, "ArrowFunctionExpression") ||
-      isNodeOfType(node, "FunctionExpression") ||
-      isNodeOfType(node, "FunctionDeclaration")),
-  );
 
 const isReactFunctionalComponent = (node: EsTreeNode | null | undefined): boolean => {
   if (!node) return false;
