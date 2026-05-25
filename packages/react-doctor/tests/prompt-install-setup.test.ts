@@ -284,6 +284,40 @@ describe("shouldPromptInstallSetup", () => {
     }
   });
 
+  it("does not prompt again after accepted setup completes without creating the doctor script", async () => {
+    writePackageJson(fixture.projectRoot, { scripts: "invalid" });
+
+    await promptInstallSetup({
+      projectRoot: fixture.projectRoot,
+      hasScoredScan: true,
+      issueCount: 1,
+      isJsonMode: false,
+      isScoreOnly: false,
+      isStaged: false,
+      skipPrompts: false,
+      store: { cwd: fixture.configRoot },
+      wait: async () => {},
+      writeLine: () => {},
+      select: async () => SETUP_PROMPT_CHOICE_YES,
+      install: async () => {},
+      warn: () => {},
+    });
+
+    expect(hasDisabledSetupPrompt(fixture.projectRoot, { cwd: fixture.configRoot })).toBe(true);
+    expect(
+      shouldPromptInstallSetup({
+        projectRoot: fixture.projectRoot,
+        hasScoredScan: true,
+        issueCount: 1,
+        isJsonMode: false,
+        isScoreOnly: false,
+        isStaged: false,
+        skipPrompts: false,
+        store: { cwd: fixture.configRoot },
+      }),
+    ).toBe(false);
+  });
+
   it("persists never ask again in the global config store without installing", async () => {
     writePackageJson(fixture.projectRoot, {
       reactDoctor: {

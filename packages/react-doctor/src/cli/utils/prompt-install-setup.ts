@@ -210,6 +210,7 @@ export const promptInstallSetup = async (options: PromptInstallSetupOptions): Pr
     } finally {
       process.exitCode = previousExitCode;
     }
+    disableSetupPrompt(options.projectRoot, options.store);
   } catch (error) {
     await warnSetupPromptFailure(options, error);
   }
