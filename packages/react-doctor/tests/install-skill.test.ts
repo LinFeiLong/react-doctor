@@ -68,6 +68,7 @@ describe("runInstallSkill", () => {
   });
 
   it("exits with code 1 when the bundled SKILL.md is missing", async () => {
+    writePackageJson(fixture.projectRoot, { scripts: {} });
     await runInstallSkill({
       yes: true,
       sourceDir: fixture.sourceDir,
@@ -75,10 +76,17 @@ describe("runInstallSkill", () => {
       detectedAgents: ["cursor"],
     });
     expect(process.exitCode).toBe(1);
+    expect(readFixturePackageJson(fixture.projectRoot).scripts).toEqual({
+      doctor: "react-doctor",
+    });
+    expect(readFixturePackageJson(fixture.projectRoot).devDependencies).toEqual({
+      "react-doctor": "latest",
+    });
   });
 
   it("exits with code 1 when no agents are detected", async () => {
     writeValidSkill(fixture.sourceDir);
+    writePackageJson(fixture.projectRoot, { scripts: {} });
     await runInstallSkill({
       yes: true,
       sourceDir: fixture.sourceDir,
@@ -87,6 +95,12 @@ describe("runInstallSkill", () => {
     });
     expect(process.exitCode).toBe(1);
     expect(existsSync(path.join(fixture.projectRoot, ".agents"))).toBe(false);
+    expect(readFixturePackageJson(fixture.projectRoot).scripts).toEqual({
+      doctor: "react-doctor",
+    });
+    expect(readFixturePackageJson(fixture.projectRoot).devDependencies).toEqual({
+      "react-doctor": "latest",
+    });
   });
 
   it("throws when SKILL.md exists but has no parseable frontmatter (H1 silent-success regression guard)", async () => {

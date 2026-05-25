@@ -200,9 +200,14 @@ export const promptInstallSetup = async (options: PromptInstallSetupOptions): Pr
     if (setupReactDoctorChoice !== SETUP_PROMPT_CHOICE_YES) return;
 
     const install = options.install ?? (await import("./install-skill.js")).runInstallSkill;
-    await install({
-      projectRoot: options.projectRoot,
-    });
+    const previousExitCode = process.exitCode;
+    try {
+      await install({
+        projectRoot: options.projectRoot,
+      });
+    } finally {
+      process.exitCode = previousExitCode;
+    }
   } catch (error) {
     await warnSetupPromptFailure(options, error);
   }

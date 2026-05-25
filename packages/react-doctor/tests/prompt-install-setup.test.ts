@@ -254,6 +254,36 @@ describe("shouldPromptInstallSetup", () => {
     expect(warnings).toEqual(["React Doctor setup prompt skipped: install unavailable"]);
   });
 
+  it("preserves the scan exit code when setup returns with a different exit code", async () => {
+    writePackageJson(fixture.projectRoot, { scripts: {} });
+    const originalExitCode = process.exitCode;
+    process.exitCode = undefined;
+
+    try {
+      await promptInstallSetup({
+        projectRoot: fixture.projectRoot,
+        hasScoredScan: true,
+        issueCount: 1,
+        isJsonMode: false,
+        isScoreOnly: false,
+        isStaged: false,
+        skipPrompts: false,
+        store: { cwd: fixture.configRoot },
+        wait: async () => {},
+        writeLine: () => {},
+        select: async () => SETUP_PROMPT_CHOICE_YES,
+        install: async () => {
+          process.exitCode = 1;
+        },
+        warn: () => {},
+      });
+
+      expect(process.exitCode).toBeUndefined();
+    } finally {
+      process.exitCode = originalExitCode;
+    }
+  });
+
   it("persists never ask again in the global config store without installing", async () => {
     writePackageJson(fixture.projectRoot, {
       reactDoctor: {

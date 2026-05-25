@@ -76,6 +76,17 @@ const formatDoctorScriptInstallMessage = (
   return messages.join(" ");
 };
 
+const installReactDoctorPackageSetup = (projectRoot: string): void => {
+  const scriptSpinner = spinner("Installing React Doctor package setup...").start();
+  try {
+    const scriptResult = installDoctorScript({ projectRoot });
+    scriptSpinner.succeed(formatDoctorScriptInstallMessage(scriptResult));
+  } catch (error) {
+    scriptSpinner.fail("Failed to install React Doctor package setup.");
+    throw error;
+  }
+};
+
 interface InstallSkillOptions {
   yes?: boolean;
   dryRun?: boolean;
@@ -95,6 +106,10 @@ const getSkillSourceDirectory = (): string => {
 export const runInstallSkill = async (options: InstallSkillOptions = {}): Promise<void> => {
   const projectRoot = options.projectRoot ?? process.cwd();
   const sourceDir = options.sourceDir ?? getSkillSourceDirectory();
+
+  if (!options.dryRun) {
+    installReactDoctorPackageSetup(projectRoot);
+  }
 
   if (!existsSync(path.join(sourceDir, SKILL_MANIFEST_FILE))) {
     logger.error(`Could not locate the ${SKILL_NAME} skill bundled with this package.`);
@@ -216,15 +231,6 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
     );
   } catch (error) {
     installSpinner.fail(`Failed to install ${SKILL_NAME} skill.`);
-    throw error;
-  }
-
-  const scriptSpinner = spinner("Installing React Doctor package setup...").start();
-  try {
-    const scriptResult = installDoctorScript({ projectRoot });
-    scriptSpinner.succeed(formatDoctorScriptInstallMessage(scriptResult));
-  } catch (error) {
-    scriptSpinner.fail("Failed to install React Doctor package setup.");
     throw error;
   }
 
