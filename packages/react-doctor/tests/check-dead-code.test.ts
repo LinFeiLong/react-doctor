@@ -124,7 +124,9 @@ describe("checkDeadCode", () => {
       .filter((diagnostic) => diagnostic.rule === "unused-file")
       .map((diagnostic) => diagnostic.filePath);
 
-    expect(unusedFiles.some((entry) => entry.endsWith("android-secure-flag.plugin.ts"))).toBe(false);
+    expect(unusedFiles.some((entry) => entry.endsWith("android-secure-flag.plugin.ts"))).toBe(
+      false,
+    );
     expect(unusedFiles.some((entry) => entry.endsWith("android-day-night-theme.ts"))).toBe(false);
     expect(unusedFiles.some((entry) => entry.endsWith("orphan.ts"))).toBe(true);
   });

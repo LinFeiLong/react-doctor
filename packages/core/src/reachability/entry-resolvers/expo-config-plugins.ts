@@ -17,7 +17,16 @@ const EXPO_CONFIG_FILENAMES = new Set([
   "app.json",
 ]);
 const EXPO_CONFIG_SCAN_MAX_DEPTH = 6;
-const EXPO_PLUGIN_RESOLVABLE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cjs", ".cts"];
+const EXPO_PLUGIN_RESOLVABLE_EXTENSIONS = [
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".mts",
+  ".cjs",
+  ".cts",
+];
 
 const isExpoOrReactNativeProject = ({ project }: ReachabilityEntryResolverInput): boolean =>
   project === undefined ||
@@ -26,7 +35,9 @@ const isExpoOrReactNativeProject = ({ project }: ReachabilityEntryResolverInput)
   project.hasReactNativeWorkspace;
 
 const isLocalExpoPluginPath = (value: string): boolean =>
-  (value.startsWith("./") || value.startsWith("../")) && !value.includes("*") && !value.includes("?");
+  (value.startsWith("./") || value.startsWith("../")) &&
+  !value.includes("*") &&
+  !value.includes("?");
 
 const resolveExpoPluginPath = (configDirectory: string, pluginPath: string): string | undefined => {
   const candidate = path.resolve(configDirectory, pluginPath);
@@ -63,7 +74,8 @@ const addExpoPluginEntryPattern = (
 };
 
 const getPropertyName = (name: ts.PropertyName): string | undefined => {
-  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name))
+    return name.text;
   return undefined;
 };
 
@@ -81,7 +93,10 @@ const collectExpoPluginPathsFromArray = (
 
     if (ts.isArrayLiteralExpression(element)) {
       const [pluginName] = element.elements;
-      if (pluginName && (ts.isStringLiteral(pluginName) || ts.isNoSubstitutionTemplateLiteral(pluginName))) {
+      if (
+        pluginName &&
+        (ts.isStringLiteral(pluginName) || ts.isNoSubstitutionTemplateLiteral(pluginName))
+      ) {
         addExpoPluginEntryPattern(entries, rootDirectory, configDirectory, pluginName.text);
       }
     }
