@@ -32,7 +32,9 @@ export const isCiEnvironment = (): boolean =>
 export const isCodingAgentEnvironment = (): boolean =>
   CODING_AGENT_ENVIRONMENT_VARIABLES.some((envVariable) => Boolean(process.env[envVariable])) ||
   CODING_AGENT_ENVIRONMENT_VALUE_VARIABLES.some((envVariable) =>
-    CODING_AGENT_ENVIRONMENT_VALUES[envVariable].some((value) => process.env[envVariable] === value),
+    CODING_AGENT_ENVIRONMENT_VALUES[envVariable].some(
+      (value) => process.env[envVariable] === value,
+    ),
   );
 
 export const isCiOrCodingAgentEnvironment = (): boolean =>
