@@ -55,7 +55,7 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "@effect/platform-node": "4.0.0-beta.70",
+    "@effect/platform-node-shared": "4.0.0-beta.70",
     "agent-install": "0.0.5",
     "conf": "^15.1.0",
     "deslop-js": "^0.0.12",
