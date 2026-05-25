@@ -63,12 +63,7 @@ export const HOOKS_WITH_DEPS = new Set(["useEffect", "useLayoutEffect", "useMemo
 // `exhaustive-deps`, `rules-of-hooks`, and `no-multi-comp` rule
 // detectors which were all maintaining their own identical copy of
 // this set.
-export const REACT_HOC_NAMES = new Set([
-  "memo",
-  "forwardRef",
-  "React.memo",
-  "React.forwardRef",
-]);
+export const REACT_HOC_NAMES = new Set(["memo", "forwardRef", "React.memo", "React.forwardRef"]);
 
 // Subscription-shaped method names recognized by `prefer-use-sync-external-store`.
 // Covers the canonical `store.subscribe`, the browser `addEventListener` /

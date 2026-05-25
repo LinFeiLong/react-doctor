@@ -85,7 +85,6 @@ const buildAdditionalHooksRegex = (additional: string): RegExp | null => {
   }
 };
 
-
 const getCallExpressionCalleeName = (
   callExpression: EsTreeNodeOfType<"CallExpression">,
 ): string | null => {
@@ -147,7 +146,6 @@ const getCallbackArgumentIndex = (hookName: string): number =>
 
 const getDepsArgumentIndex = (hookName: string): number =>
   hookName === "useImperativeHandle" ? 2 : 1;
-
 
 const getDestructuredPropertyPath = (pattern: EsTreeNode): string | null => {
   if (!isNodeOfType(pattern, "ObjectPattern")) return null;
@@ -250,7 +248,6 @@ const computeDepKey = (reference: ReferenceDescriptor): string => {
   }
   return fullName;
 };
-
 
 const computeDeclaredDepKey = (entry: EsTreeNode): string | null => {
   const stripped = unwrapExpression(entry);
@@ -359,7 +356,6 @@ const collectCaptureDepKeys = (callback: EsTreeNode, scopes: ScopeAnalysis): Cap
   }
   return { keys, stableCapturedNames };
 };
-
 
 const isLiteralOrEmptyTemplate = (node: EsTreeNode): boolean =>
   isNodeOfType(node, "Literal") ||

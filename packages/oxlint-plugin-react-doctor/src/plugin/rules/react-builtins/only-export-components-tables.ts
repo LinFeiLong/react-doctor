@@ -101,7 +101,6 @@ export const ENTRY_POINT_BASENAMES: ReadonlySet<string> = new Set([
   "App.jsx",
 ]);
 
-
 // Utility / helper / shared-config / column-renderer / node-registry
 // files. These conventionally hold a mix of component-style and
 // constant exports — `utils.tsx` for a slice that contains both a

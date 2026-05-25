@@ -19,7 +19,6 @@ import {
   isUseEffect,
 } from "./utils/effect/react.js";
 
-
 export const noPassLiveStateToParent = defineRule<Rule>({
   id: "no-pass-live-state-to-parent",
   severity: "warn",

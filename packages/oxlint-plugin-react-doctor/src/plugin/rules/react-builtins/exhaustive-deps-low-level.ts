@@ -58,11 +58,7 @@ export const getHookName = (callee: EsTreeNode): string | null => {
   return null;
 };
 
-const FUNCTION_SCOPE_KINDS: ReadonlySet<string> = new Set([
-  "function",
-  "arrow-function",
-  "method",
-]);
+const FUNCTION_SCOPE_KINDS: ReadonlySet<string> = new Set(["function", "arrow-function", "method"]);
 
 /**
  * True for symbols declared at module scope (outside any function

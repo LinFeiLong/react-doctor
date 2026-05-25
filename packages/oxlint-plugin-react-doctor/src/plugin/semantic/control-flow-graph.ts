@@ -47,7 +47,6 @@ export interface ControlFlowAnalysis {
   readonly dominatesExit: (node: EsTreeNode) => boolean;
 }
 
-
 interface CfgBuilder {
   blocks: BasicBlock[];
   entry: BasicBlock;

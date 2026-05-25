@@ -38,7 +38,6 @@ const normalizeExtensions = (raw: ReadonlyArray<string>): Set<string> => {
   return set;
 };
 
-
 // Port of `oxc_linter::rules::react::jsx_filename_extension`. Reports
 //   - JSX in a file whose extension isn't in the allowed set (default
 //     `jsx`, `tsx`),

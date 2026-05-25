@@ -164,7 +164,6 @@ const canBeReactFunctionComponent = (
   return false;
 };
 
-
 const isReactComponentInitializer = (expression: EsTreeNode, state: AnalyzerState): boolean => {
   const stripped = skipTsExpression(expression);
   if (isNodeOfType(stripped, "ArrowFunctionExpression")) return true;
@@ -269,8 +268,6 @@ const collectAllNodes = (programRoot: EsTreeNode): EsTreeNode[] => {
   visit(programRoot);
   return out;
 };
-
-
 
 const isEntryPointFile = (filename: string): boolean => {
   // Match the last path segment regardless of separator (`/` on POSIX,

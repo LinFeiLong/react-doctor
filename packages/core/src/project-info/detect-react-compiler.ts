@@ -67,7 +67,6 @@ const hasCompilerInConfigFile = (filePath: string): boolean => {
 const hasCompilerInConfigFiles = (directory: string, filenames: string[]): boolean =>
   filenames.some((filename) => hasCompilerInConfigFile(path.join(directory, filename)));
 
-
 export const detectReactCompiler = (directory: string, packageJson: PackageJson): boolean => {
   if (hasCompilerPackage(packageJson)) return true;
 

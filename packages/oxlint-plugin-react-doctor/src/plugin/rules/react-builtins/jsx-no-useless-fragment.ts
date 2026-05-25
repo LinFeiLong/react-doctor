@@ -55,7 +55,6 @@ const hasCallExpressionChild = (children: ReadonlyArray<EsTreeNode>): boolean =>
   return false;
 };
 
-
 const isLowercaseHtmlTag = (node: EsTreeNode): boolean => {
   if (!isNodeOfType(node, "JSXOpeningElement")) return false;
   const elementName = node.name;

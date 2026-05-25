@@ -17,8 +17,7 @@ export const hasBindingNamed = (root: EsTreeNode, bindingName: string): boolean 
   const visit = (node: EsTreeNode): void => {
     switch (node.type) {
       case "VariableDeclarator":
-        if ("id" in node && node.id)
-          collectPatternNames(node.id as EsTreeNode, collected);
+        if ("id" in node && node.id) collectPatternNames(node.id as EsTreeNode, collected);
         break;
       case "FunctionDeclaration":
       case "FunctionExpression":

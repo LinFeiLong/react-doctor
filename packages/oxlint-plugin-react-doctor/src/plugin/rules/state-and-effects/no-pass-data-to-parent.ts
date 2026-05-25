@@ -30,7 +30,6 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 
 // 1:1 port of upstream `src/rules/no-pass-data-to-parent.js`.
 
-
 // Local mirror of upstream's inline `isUseState`/`isUseRef` checks
 // that work on the *identifier* of an upstream ref (not on a ref).
 const isUseStateIdentifier = (identifier: EsTreeNode): boolean => {

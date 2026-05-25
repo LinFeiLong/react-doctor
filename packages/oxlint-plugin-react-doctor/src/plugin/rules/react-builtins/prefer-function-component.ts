@@ -44,7 +44,6 @@ const isErrorBoundaryClass = (classNode: EsTreeNode): boolean => {
   return false;
 };
 
-
 // Port of `oxc_linter::rules::react::prefer_function_component`. Flags
 // classes that look like React components and could be re-written as
 // functions. By default error boundary classes (those implementing

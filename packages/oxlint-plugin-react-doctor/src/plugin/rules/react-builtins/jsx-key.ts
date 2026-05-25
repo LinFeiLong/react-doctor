@@ -144,7 +144,6 @@ const isWithinChildrenToArray = (jsxNode: EsTreeNode): boolean => {
   return false;
 };
 
-
 const checkKeyBeforeSpread = (
   context: Parameters<Rule["create"]>[0],
   openingElement: EsTreeNodeOfType<"JSXOpeningElement">,

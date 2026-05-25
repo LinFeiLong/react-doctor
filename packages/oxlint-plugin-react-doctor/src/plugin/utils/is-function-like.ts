@@ -20,7 +20,7 @@ export const isFunctionLike = (
   | EsTreeNodeOfType<"FunctionDeclaration"> =>
   Boolean(
     node &&
-      (isNodeOfType(node, "ArrowFunctionExpression") ||
-        isNodeOfType(node, "FunctionExpression") ||
-        isNodeOfType(node, "FunctionDeclaration")),
+    (isNodeOfType(node, "ArrowFunctionExpression") ||
+      isNodeOfType(node, "FunctionExpression") ||
+      isNodeOfType(node, "FunctionDeclaration")),
   );
