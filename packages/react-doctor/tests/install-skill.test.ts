@@ -141,7 +141,7 @@ describe("runInstallSkill", () => {
     expect(readFixturePackageJson(fixture.projectRoot).scripts).toEqual({});
   });
 
-  it("adds a doctor package script when package.json exists and the script is missing", async () => {
+  it("adds doctor package setup when package.json exists and setup is missing", async () => {
     writeValidSkill(fixture.sourceDir);
     writePackageJson(fixture.projectRoot, {
       scripts: {
@@ -160,6 +160,9 @@ describe("runInstallSkill", () => {
     expect(readFixturePackageJson(fixture.projectRoot).scripts).toEqual({
       test: "vite-plus test",
       doctor: "react-doctor",
+    });
+    expect(readFixturePackageJson(fixture.projectRoot).devDependencies).toEqual({
+      "react-doctor": "latest",
     });
   });
 
@@ -181,6 +184,34 @@ describe("runInstallSkill", () => {
 
     expect(readFixturePackageJson(fixture.projectRoot).scripts).toEqual({
       doctor: "pnpm react-doctor --verbose",
+    });
+    expect(readFixturePackageJson(fixture.projectRoot).devDependencies).toEqual({
+      "react-doctor": "latest",
+    });
+  });
+
+  it("does not overwrite an existing react-doctor dependency", async () => {
+    writeValidSkill(fixture.sourceDir);
+    writePackageJson(fixture.projectRoot, {
+      devDependencies: {
+        "react-doctor": "^1.2.3",
+      },
+      scripts: {},
+    });
+
+    await runInstallSkill({
+      yes: true,
+      sourceDir: fixture.sourceDir,
+      projectRoot: fixture.projectRoot,
+      detectedAgents: ["cursor"],
+      gitHookPath: null,
+    });
+
+    expect(readFixturePackageJson(fixture.projectRoot).scripts).toEqual({
+      doctor: "react-doctor",
+    });
+    expect(readFixturePackageJson(fixture.projectRoot).devDependencies).toEqual({
+      "react-doctor": "^1.2.3",
     });
   });
 

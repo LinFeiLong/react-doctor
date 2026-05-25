@@ -52,12 +52,28 @@ const formatGitHookInstallMessage = (
 const formatDoctorScriptInstallMessage = (
   scriptResult: ReturnType<typeof installDoctorScript>,
 ): string => {
-  if (scriptResult.status === "created") return "Added package script: doctor.";
-  if (scriptResult.status === "existing") return "Package script already exists: doctor.";
-  if (scriptResult.reason === "invalid-scripts") {
-    return `Skipped package script: scripts field is not an object in ${scriptResult.packageJsonPath}.`;
+  const messages: string[] = [];
+  if (scriptResult.scriptStatus === "created") {
+    messages.push("Added package script: doctor.");
+  } else if (scriptResult.scriptStatus === "existing") {
+    messages.push("Package script already exists: doctor.");
+  } else if (scriptResult.scriptReason === "invalid-scripts") {
+    messages.push(`Skipped package script: scripts field is not an object.`);
+  } else {
+    messages.push("Skipped package script: package.json missing or invalid.");
   }
-  return `Skipped package script: package.json missing or invalid at ${scriptResult.packageJsonPath}.`;
+
+  if (scriptResult.dependencyStatus === "created") {
+    messages.push("Added dev dependency: react-doctor.");
+  } else if (scriptResult.dependencyStatus === "existing") {
+    messages.push("React Doctor dependency already exists.");
+  } else if (scriptResult.dependencyReason === "invalid-dev-dependencies") {
+    messages.push("Skipped dev dependency: devDependencies field is not an object.");
+  } else {
+    messages.push("Skipped dev dependency: package.json missing or invalid.");
+  }
+
+  return messages.join(" ");
 };
 
 interface InstallSkillOptions {
@@ -163,6 +179,7 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
     }
     logger.dim(`  Source: ${sourceDir}`);
     logger.dim("  Package script: doctor");
+    logger.dim("  Dev dependency: react-doctor");
     if (shouldInstallGitHook) {
       logger.dim(`  Git hook: ${gitHookPath}`);
     }
@@ -202,12 +219,12 @@ export const runInstallSkill = async (options: InstallSkillOptions = {}): Promis
     throw error;
   }
 
-  const scriptSpinner = spinner("Installing React Doctor package script...").start();
+  const scriptSpinner = spinner("Installing React Doctor package setup...").start();
   try {
     const scriptResult = installDoctorScript({ projectRoot });
     scriptSpinner.succeed(formatDoctorScriptInstallMessage(scriptResult));
   } catch (error) {
-    scriptSpinner.fail("Failed to install React Doctor package script.");
+    scriptSpinner.fail("Failed to install React Doctor package setup.");
     throw error;
   }
 
