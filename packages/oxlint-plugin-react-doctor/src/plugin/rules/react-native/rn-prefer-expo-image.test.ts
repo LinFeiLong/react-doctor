@@ -21,10 +21,7 @@ describe("rn-prefer-expo-image", () => {
 
   const createPackageFilename = (dependencies: Record<string, string>): string => {
     const packageDirectory = fs.mkdtempSync(path.join(temporaryDirectory, "package-"));
-    fs.writeFileSync(
-      path.join(packageDirectory, "package.json"),
-      JSON.stringify({ dependencies }),
-    );
+    fs.writeFileSync(path.join(packageDirectory, "package.json"), JSON.stringify({ dependencies }));
     return path.join(packageDirectory, "src", "App.tsx");
   };
 
