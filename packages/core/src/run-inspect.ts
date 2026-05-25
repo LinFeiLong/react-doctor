@@ -243,7 +243,7 @@ export const runInspect = <HooksR = never>(
     const shouldRunDeadCode = input.runDeadCode && !isDiffMode;
     const deadCodeStream: Stream.Stream<Diagnostic, never> = shouldRunDeadCode
       ? deadCodeService
-          .run({ rootDirectory: scanDirectory, userConfig: resolvedConfig.config })
+          .run({ rootDirectory: scanDirectory, userConfig: resolvedConfig.config, project })
           .pipe(
             Stream.catchTag("ReactDoctorError", (error: ReactDoctorError) =>
               Stream.unwrap(

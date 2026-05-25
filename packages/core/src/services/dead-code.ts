@@ -2,13 +2,14 @@ import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
-import type { Diagnostic, ReactDoctorConfig } from "../types/index.js";
+import type { Diagnostic, ProjectInfo, ReactDoctorConfig } from "../types/index.js";
 import { checkDeadCode } from "../check-dead-code.js";
 import { DeadCodeAnalysisFailed, ReactDoctorError } from "../errors.js";
 
 interface DeadCodeInput {
   readonly rootDirectory: string;
   readonly userConfig: ReactDoctorConfig | null;
+  readonly project?: ProjectInfo;
 }
 
 /**
@@ -41,6 +42,7 @@ export class DeadCode extends Context.Service<
                 checkDeadCode({
                   rootDirectory: input.rootDirectory,
                   userConfig: input.userConfig,
+                  project: input.project,
                 }),
               catch: (cause) =>
                 new ReactDoctorError({ reason: new DeadCodeAnalysisFailed({ cause }) }),

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vite-plus/test";
+import type { ProjectInfo } from "@react-doctor/core";
 import { checkDeadCode } from "@react-doctor/core";
 
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "rd-check-dead-code-"));
@@ -32,6 +33,20 @@ const setupProject = (caseId: string, files: Record<string, string>): string => 
   }
   return projectDirectory;
 };
+
+const expoProject = (rootDirectory: string, projectName: string): ProjectInfo => ({
+  rootDirectory,
+  projectName,
+  reactVersion: "19.0.0",
+  reactMajorVersion: 19,
+  tailwindVersion: null,
+  framework: "expo",
+  hasTypeScript: true,
+  hasReactCompiler: false,
+  hasTanStackQuery: false,
+  hasReactNativeWorkspace: true,
+  sourceFileCount: 1,
+});
 
 describe("checkDeadCode", () => {
   it("returns no diagnostics when the directory has no package.json", async () => {
@@ -72,5 +87,77 @@ describe("checkDeadCode", () => {
       .map((diagnostic) => diagnostic.filePath);
     expect(flagged.some((entry) => entry.endsWith("gitignored.ts"))).toBe(false);
     expect(flagged.some((entry) => entry.endsWith("configignored.ts"))).toBe(false);
+  });
+
+  it("treats local Expo config plugins in app.config.ts as entry points", async () => {
+    const directory = setupProject("expo-app-config-plugins", {
+      "package.json": JSON.stringify({
+        name: "expo-app-config-plugins",
+        type: "module",
+        dependencies: { expo: "^56.0.0", react: "^19.0.0" },
+      }),
+      "app.config.ts": `export default () => ({
+  plugins: [
+    "./plugins/android-secure-flag.plugin.ts",
+    ["./plugins/android-day-night-theme", { enabled: true }],
+    "expo-camera",
+  ],
+});
+`,
+      "plugins/android-secure-flag.plugin.ts": `export default function withAndroidSecureFlag(config: unknown): unknown {
+  return config;
+}
+`,
+      "plugins/android-day-night-theme.ts": `export default function withAndroidDayNightTheme(config: unknown): unknown {
+  return config;
+}
+`,
+      "plugins/orphan.ts": "export const orphan = 1;\n",
+      "src/index.ts": "export const app = 1;\n",
+    });
+
+    const diagnostics = await checkDeadCode({
+      rootDirectory: directory,
+      project: expoProject(directory, "expo-app-config-plugins"),
+    });
+    const unusedFiles = diagnostics
+      .filter((diagnostic) => diagnostic.rule === "unused-file")
+      .map((diagnostic) => diagnostic.filePath);
+
+    expect(unusedFiles.some((entry) => entry.endsWith("android-secure-flag.plugin.ts"))).toBe(false);
+    expect(unusedFiles.some((entry) => entry.endsWith("android-day-night-theme.ts"))).toBe(false);
+    expect(unusedFiles.some((entry) => entry.endsWith("orphan.ts"))).toBe(true);
+  });
+
+  it("treats local Expo config plugins in app.json as entry points", async () => {
+    const directory = setupProject("expo-app-json-plugins", {
+      "package.json": JSON.stringify({
+        name: "expo-app-json-plugins",
+        type: "module",
+        dependencies: { expo: "^56.0.0", react: "^19.0.0" },
+      }),
+      "app.json": JSON.stringify({
+        expo: {
+          plugins: [["./plugins/with-json-plugin.ts", { enabled: true }], "expo-router"],
+        },
+      }),
+      "plugins/with-json-plugin.ts": `export default function withJsonPlugin(config: unknown): unknown {
+  return config;
+}
+`,
+      "plugins/orphan.ts": "export const orphan = 1;\n",
+      "src/index.ts": "export const app = 1;\n",
+    });
+
+    const diagnostics = await checkDeadCode({
+      rootDirectory: directory,
+      project: expoProject(directory, "expo-app-json-plugins"),
+    });
+    const unusedFiles = diagnostics
+      .filter((diagnostic) => diagnostic.rule === "unused-file")
+      .map((diagnostic) => diagnostic.filePath);
+
+    expect(unusedFiles.some((entry) => entry.endsWith("with-json-plugin.ts"))).toBe(false);
+    expect(unusedFiles.some((entry) => entry.endsWith("orphan.ts"))).toBe(true);
   });
 });

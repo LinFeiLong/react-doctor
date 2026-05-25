@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Diagnostic, ReactDoctorConfig } from "./types/index.js";
+import type { Diagnostic, ProjectInfo, ReactDoctorConfig } from "./types/index.js";
 import { collectIgnorePatterns } from "./collect-ignore-patterns.js";
+import { collectFrameworkEntryPatterns } from "./dead-code/collect-framework-entry-patterns.js";
 import { readIgnoreFile } from "./read-ignore-file.js";
 import { toRelativePath } from "./utils/to-relative-path.js";
 
@@ -9,6 +10,8 @@ interface CheckDeadCodeOptions {
   rootDirectory: string;
   /** Loaded react-doctor config — `ignore.files` is forwarded to deslop. */
   userConfig?: ReactDoctorConfig | null;
+  /** Loaded project metadata for framework-specific entry resolvers. */
+  project?: ProjectInfo;
 }
 
 const TSCONFIG_FILENAMES = ["tsconfig.json", "tsconfig.base.json"];
@@ -49,7 +52,7 @@ const toRelativeFilePath = (rootDirectory: string, filePath: string): string => 
 };
 
 export const checkDeadCode = async (options: CheckDeadCodeOptions): Promise<Diagnostic[]> => {
-  const { rootDirectory, userConfig } = options;
+  const { rootDirectory, userConfig, project } = options;
   if (!fs.existsSync(path.join(rootDirectory, "package.json"))) return [];
 
   // HACK: lazy-load so a missing/incompatible native oxc binding inside
@@ -59,13 +62,16 @@ export const checkDeadCode = async (options: CheckDeadCodeOptions): Promise<Diag
   const { analyze, defineConfig } = await import("deslop-js");
 
   const ignorePatterns = collectDeadCodeIgnorePatterns(rootDirectory, userConfig);
-  const result = await analyze(
-    defineConfig({
-      rootDir: rootDirectory,
-      tsConfigPath: resolveTsConfigPath(rootDirectory),
-      ...(ignorePatterns.length > 0 ? { ignorePatterns } : {}),
-    }),
-  );
+  const config = defineConfig({
+    rootDir: rootDirectory,
+    tsConfigPath: resolveTsConfigPath(rootDirectory),
+    ...(ignorePatterns.length > 0 ? { ignorePatterns } : {}),
+  });
+  const frameworkEntryPatterns = collectFrameworkEntryPatterns({ rootDirectory, project });
+  if (frameworkEntryPatterns.length > 0) {
+    config.entryPatterns = [...new Set([...config.entryPatterns, ...frameworkEntryPatterns])];
+  }
+  const result = await analyze(config);
   const toRelative = (filePath: string): string => toRelativeFilePath(rootDirectory, filePath);
   const diagnostics: Diagnostic[] = [];
 
