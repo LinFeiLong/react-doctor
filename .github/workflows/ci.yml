@@ -38,8 +38,36 @@ jobs:
       - run: pnpm lint
         if: ${{ matrix.node-version == '22.18.0' }}
 
-      - run: pnpm format:check
+      - name: Check formatting
         if: ${{ matrix.node-version == '22.18.0' }}
+        shell: bash
+        run: |
+          format_output_file="$(mktemp)"
+
+          set +e
+          pnpm format:check 2>&1 | tee "$format_output_file"
+          format_status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$format_status" -ne 0 ]; then
+            while IFS= read -r format_line; do
+              format_file="${format_line%% (*}"
+
+              if [ "$format_file" = "$format_line" ] || [ ! -f "$format_file" ]; then
+                continue
+              fi
+
+              format_annotation_file="${format_file//'%'/'%25'}"
+              format_annotation_file="${format_annotation_file//$'\r'/'%0D'}"
+              format_annotation_file="${format_annotation_file//$'\n'/'%0A'}"
+              format_annotation_file="${format_annotation_file//':'/'%3A'}"
+              format_annotation_file="${format_annotation_file//','/'%2C'}"
+              echo "::error file=$format_annotation_file::File is not formatted. Run pnpm format."
+            done < "$format_output_file"
+          fi
+
+          rm -f "$format_output_file"
+          exit "$format_status"
 
       - name: Smoke test built CLI
         if: ${{ matrix.node-version == '22.18.0' }}
