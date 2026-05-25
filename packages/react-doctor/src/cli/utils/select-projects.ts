@@ -1,7 +1,11 @@
 import path from "node:path";
 import type { WorkspacePackage } from "@react-doctor/core";
-import { discoverReactSubprojects, listWorkspacePackages } from "@react-doctor/core";
-import { highlighter } from "@react-doctor/core";
+import {
+  discoverReactSubprojects,
+  highlighter,
+  isMonorepoRoot,
+  listWorkspacePackages,
+} from "@react-doctor/core";
 import { cliLogger as logger } from "./cli-logger.js";
 import { prompts } from "./prompts.js";
 
@@ -12,6 +16,7 @@ export const selectProjects = async (
 ): Promise<string[]> => {
   let packages = listWorkspacePackages(rootDirectory);
   if (packages.length === 0) {
+    if (!isMonorepoRoot(rootDirectory)) return [rootDirectory];
     packages = discoverReactSubprojects(rootDirectory);
   }
 
