@@ -28,8 +28,12 @@ describe("rn-prefer-expo-image", () => {
     return path.join(packageDirectory, "src", "App.tsx");
   };
 
+  const createStandaloneFilename = (): string =>
+    path.join(temporaryDirectory, "standalone", "App.tsx");
+
   it("flags react-native Image imports in Expo projects", () => {
     const result = runRule(rnPreferExpoImage, code, {
+      filename: createStandaloneFilename(),
       settings: { "react-doctor": { framework: "expo" } },
     });
 
@@ -39,6 +43,7 @@ describe("rn-prefer-expo-image", () => {
 
   it("does not flag react-native Image imports in bare React Native projects", () => {
     const result = runRule(rnPreferExpoImage, code, {
+      filename: createStandaloneFilename(),
       settings: { "react-doctor": { framework: "react-native" } },
     });
 

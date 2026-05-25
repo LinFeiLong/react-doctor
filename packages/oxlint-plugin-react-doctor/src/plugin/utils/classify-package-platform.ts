@@ -1,14 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import { isReactNativeDependencyName } from "../../react-native-dependency-names.js";
-
-const EXPO_MANAGED_DEPENDENCY_NAMES: ReadonlySet<string> = new Set([
-  "expo",
-  "expo-router",
-  "@expo/cli",
-  "@expo/metro-config",
-  "@expo/metro-runtime",
-]);
+import {
+  isExpoManagedDependencyName,
+  isReactNativeDependencyName,
+} from "../../react-native-dependency-names.js";
 
 // Packages that mark the manifest as a web-only React target. If a manifest
 // contains one of these AND has no React Native indicator, every React
@@ -130,7 +125,7 @@ const isReactNativeAware = (packageJson: PackageJsonDependencyView): boolean => 
 
 const isExpoManaged = (packageJson: PackageJsonDependencyView): boolean => {
   for (const dependencyName of iterateDependencyNames(packageJson)) {
-    if (EXPO_MANAGED_DEPENDENCY_NAMES.has(dependencyName)) return true;
+    if (isExpoManagedDependencyName(dependencyName)) return true;
   }
   return false;
 };
