@@ -270,7 +270,11 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
     await promptInstallSetup({
       projectRoot: resolvedDirectory,
       hasScoredScan: completedScans.some((scan) => scan.result.score !== null),
-      issueCount: allDiagnostics.length,
+      issueCount: filterDiagnosticsForSurface(
+        allDiagnostics,
+        scanOptions.outputSurface ?? "cli",
+        userConfig,
+      ).length,
       isJsonMode,
       isScoreOnly,
       isStaged: Boolean(flags.staged),

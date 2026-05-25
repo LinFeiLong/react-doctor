@@ -283,6 +283,36 @@ describe("shouldPromptInstallSetup", () => {
 
       expect(didReceivePromptCancel).toBe(true);
       expect(process.exitCode).toBeUndefined();
+      expect(hasDisabledSetupPrompt(fixture.projectRoot, { cwd: fixture.configRoot })).toBe(false);
+    } finally {
+      process.exitCode = originalExitCode;
+    }
+  });
+
+  it("preserves a previous scan failure while suppressing future prompts after successful setup", async () => {
+    writePackageJson(fixture.projectRoot, { scripts: {} });
+    const originalExitCode = process.exitCode;
+    process.exitCode = 1;
+
+    try {
+      await promptInstallSetup({
+        projectRoot: fixture.projectRoot,
+        hasScoredScan: true,
+        issueCount: 1,
+        isJsonMode: false,
+        isScoreOnly: false,
+        isStaged: false,
+        skipPrompts: false,
+        store: { cwd: fixture.configRoot },
+        wait: async () => {},
+        writeLine: () => {},
+        select: async () => SETUP_PROMPT_CHOICE_YES,
+        install: async () => {},
+        warn: () => {},
+      });
+
+      expect(process.exitCode).toBe(1);
+      expect(hasDisabledSetupPrompt(fixture.projectRoot, { cwd: fixture.configRoot })).toBe(true);
     } finally {
       process.exitCode = originalExitCode;
     }

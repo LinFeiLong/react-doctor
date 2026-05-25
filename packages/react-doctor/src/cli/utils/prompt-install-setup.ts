@@ -204,15 +204,20 @@ export const promptInstallSetup = async (options: PromptInstallSetupOptions): Pr
 
     const install = options.install ?? (await import("./install-skill.js")).runInstallSkill;
     const previousExitCode = process.exitCode;
+    let setupExitCode: typeof process.exitCode;
     try {
+      process.exitCode = undefined;
       await install({
         projectRoot: options.projectRoot,
         onPromptCancel: () => {},
       });
+      setupExitCode = process.exitCode;
     } finally {
       process.exitCode = previousExitCode;
     }
-    disableSetupPrompt(options.projectRoot, options.store);
+    if (setupExitCode === undefined || setupExitCode === 0) {
+      disableSetupPrompt(options.projectRoot, options.store);
+    }
   } catch (error) {
     await warnSetupPromptFailure(options, error);
   }
