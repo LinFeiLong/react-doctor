@@ -1,4 +1,4 @@
-import { isCodingAgentEnvironment } from "./is-ci-or-coding-agent-environment.js";
+import { isCodingAgentEnvironment } from "./is-ci-environment.js";
 
 // HACK: env vars that mean "user is not at an interactive shell." We use this
 // to skip prompts and disable the spinner animation but NOT to auto-flip
