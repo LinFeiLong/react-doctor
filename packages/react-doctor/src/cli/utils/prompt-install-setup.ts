@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
 import Conf from "conf";
+import basePrompts from "prompts";
 import { hasDoctorScript } from "./install-doctor-script.js";
 import { SETUP_PROMPT_DELAY_MS } from "./constants.js";
 
@@ -28,6 +29,10 @@ export interface SetupPitchWriter {
   (line?: string): void;
 }
 
+export interface SetupPromptWarningWriter {
+  (message: string): void | Promise<void>;
+}
+
 export interface SetupPromptStoreOptions {
   readonly cwd?: string;
 }
@@ -47,6 +52,7 @@ export interface PromptInstallSetupOptions extends ShouldPromptInstallSetupOptio
   readonly install?: InstallSkillRunner;
   readonly select?: SetupPromptSelect;
   readonly wait?: SetupPromptWait;
+  readonly warn?: SetupPromptWarningWriter;
   readonly writeLine?: SetupPitchWriter;
 }
 
@@ -116,21 +122,23 @@ const defaultWait: SetupPromptWait = (milliseconds) =>
   });
 
 const defaultSelect: SetupPromptSelect = async (message) => {
-  const { prompts } = await import("./prompts.js");
-  const { setupReactDoctorChoice } = await prompts<"setupReactDoctorChoice">({
-    type: "select",
-    name: "setupReactDoctorChoice",
-    message,
-    choices: [
-      { title: "Yes", value: SETUP_PROMPT_CHOICE_YES },
-      { title: "No", value: SETUP_PROMPT_CHOICE_NO },
-      {
-        title: "No, never ask again for this project",
-        value: SETUP_PROMPT_CHOICE_NEVER,
-      },
-    ],
-    initial: 0,
-  });
+  const { setupReactDoctorChoice } = await basePrompts<"setupReactDoctorChoice">(
+    {
+      type: "select",
+      name: "setupReactDoctorChoice",
+      message,
+      choices: [
+        { title: "Yes", value: SETUP_PROMPT_CHOICE_YES },
+        { title: "No", value: SETUP_PROMPT_CHOICE_NO },
+        {
+          title: "No, never ask again for this project",
+          value: SETUP_PROMPT_CHOICE_NEVER,
+        },
+      ],
+      initial: 0,
+    },
+    { onCancel: () => true },
+  );
   return setupReactDoctorChoice ?? SETUP_PROMPT_CHOICE_NO;
 };
 
@@ -153,27 +161,49 @@ export const buildInstallSetupPitchLines = (issueCount: number): readonly string
   ];
 };
 
-export const promptInstallSetup = async (options: PromptInstallSetupOptions): Promise<void> => {
-  if (!shouldPromptInstallSetup(options)) return;
+const formatSetupPromptFailure = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
-  await (options.wait ?? defaultWait)(SETUP_PROMPT_DELAY_MS);
-
-  const writeLine = options.writeLine ?? defaultWriteLine;
-  for (const line of buildInstallSetupPitchLines(options.issueCount)) {
-    writeLine(line);
-  }
-
-  const setupReactDoctorChoice = await (options.select ?? defaultSelect)(
-    "Set up React Doctor for this project?",
-  );
-  if (setupReactDoctorChoice === SETUP_PROMPT_CHOICE_NEVER) {
-    disableSetupPrompt(options.projectRoot, options.store);
+const warnSetupPromptFailure = async (
+  options: PromptInstallSetupOptions,
+  error: unknown,
+): Promise<void> => {
+  const message = `React Doctor setup prompt skipped: ${formatSetupPromptFailure(error)}`;
+  if (options.warn) {
+    await options.warn(message);
     return;
   }
-  if (setupReactDoctorChoice !== SETUP_PROMPT_CHOICE_YES) return;
+  try {
+    const { cliLogger } = await import("./cli-logger.js");
+    cliLogger.warn(message);
+  } catch {}
+};
 
-  const install = options.install ?? (await import("./install-skill.js")).runInstallSkill;
-  await install({
-    projectRoot: options.projectRoot,
-  });
+export const promptInstallSetup = async (options: PromptInstallSetupOptions): Promise<void> => {
+  try {
+    if (!shouldPromptInstallSetup(options)) return;
+
+    await (options.wait ?? defaultWait)(SETUP_PROMPT_DELAY_MS);
+
+    const writeLine = options.writeLine ?? defaultWriteLine;
+    for (const line of buildInstallSetupPitchLines(options.issueCount)) {
+      writeLine(line);
+    }
+
+    const setupReactDoctorChoice = await (options.select ?? defaultSelect)(
+      "Set up React Doctor for this project?",
+    );
+    if (setupReactDoctorChoice === SETUP_PROMPT_CHOICE_NEVER) {
+      disableSetupPrompt(options.projectRoot, options.store);
+      return;
+    }
+    if (setupReactDoctorChoice !== SETUP_PROMPT_CHOICE_YES) return;
+
+    const install = options.install ?? (await import("./install-skill.js")).runInstallSkill;
+    await install({
+      projectRoot: options.projectRoot,
+    });
+  } catch (error) {
+    await warnSetupPromptFailure(options, error);
+  }
 };

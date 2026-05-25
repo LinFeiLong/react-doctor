@@ -197,6 +197,63 @@ describe("shouldPromptInstallSetup", () => {
     expect(hasDisabledSetupPrompt(fixture.projectRoot, { cwd: fixture.configRoot })).toBe(false);
   });
 
+  it("treats prompt failures as a skipped optional setup prompt", async () => {
+    writePackageJson(fixture.projectRoot, { scripts: {} });
+    const warnings: string[] = [];
+
+    await expect(
+      promptInstallSetup({
+        projectRoot: fixture.projectRoot,
+        hasScoredScan: true,
+        issueCount: 1,
+        isJsonMode: false,
+        isScoreOnly: false,
+        isStaged: false,
+        skipPrompts: false,
+        store: { cwd: fixture.configRoot },
+        wait: async () => {},
+        writeLine: () => {},
+        select: async () => {
+          throw new Error("prompt unavailable");
+        },
+        warn: (message) => {
+          warnings.push(message);
+        },
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(warnings).toEqual(["React Doctor setup prompt skipped: prompt unavailable"]);
+  });
+
+  it("treats setup failures as non-fatal after the scan", async () => {
+    writePackageJson(fixture.projectRoot, { scripts: {} });
+    const warnings: string[] = [];
+
+    await expect(
+      promptInstallSetup({
+        projectRoot: fixture.projectRoot,
+        hasScoredScan: true,
+        issueCount: 1,
+        isJsonMode: false,
+        isScoreOnly: false,
+        isStaged: false,
+        skipPrompts: false,
+        store: { cwd: fixture.configRoot },
+        wait: async () => {},
+        writeLine: () => {},
+        select: async () => SETUP_PROMPT_CHOICE_YES,
+        install: async () => {
+          throw new Error("install unavailable");
+        },
+        warn: (message) => {
+          warnings.push(message);
+        },
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(warnings).toEqual(["React Doctor setup prompt skipped: install unavailable"]);
+  });
+
   it("persists never ask again in the global config store without installing", async () => {
     writePackageJson(fixture.projectRoot, {
       reactDoctor: {
