@@ -1,8 +1,8 @@
 import path from "node:path";
+import { containsJsxElement } from "../../utils/contains-jsx-element.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import { isAstNode } from "../../utils/is-ast-node.js";
 import type { Rule } from "../../utils/rule.js";
 
 const JSX_NOT_ALLOWED = (extension: string, allowedList: string): string =>
@@ -38,32 +38,6 @@ const normalizeExtensions = (raw: ReadonlyArray<string>): Set<string> => {
   return set;
 };
 
-const containsJsx = (root: EsTreeNode): boolean => {
-  let found = false;
-  const visit = (node: EsTreeNode): void => {
-    if (found) return;
-    if (node.type === "JSXElement" || node.type === "JSXFragment") {
-      found = true;
-      return;
-    }
-    const nodeRecord = node as unknown as Record<string, unknown>;
-    for (const key of Object.keys(nodeRecord)) {
-      if (key === "parent") continue;
-      const child = nodeRecord[key];
-      if (Array.isArray(child)) {
-        for (const item of child) {
-          if (isAstNode(item)) visit(item);
-          if (found) return;
-        }
-      } else if (isAstNode(child)) {
-        visit(child);
-      }
-      if (found) return;
-    }
-  };
-  visit(root);
-  return found;
-};
 
 // Port of `oxc_linter::rules::react::jsx_filename_extension`. Reports
 //   - JSX in a file whose extension isn't in the allowed set (default
@@ -97,7 +71,7 @@ export const jsxFilenameExtension = defineRule<Rule>({
         // checks for any non-comment statement in the body.
         const hasAnyStatements = Array.isArray(node.body) && node.body.length > 0;
         if (settings.ignoreFilesWithoutCode && !hasAnyStatements) return;
-        if (containsJsx(node as EsTreeNode)) return;
+        if (containsJsxElement(node as EsTreeNode)) return;
         context.report({
           node,
           message: EXTENSION_ONLY_FOR_JSX(`.${extensionOnly}`),

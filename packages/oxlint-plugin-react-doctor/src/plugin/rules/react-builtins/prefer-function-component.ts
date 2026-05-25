@@ -1,7 +1,7 @@
+import { containsJsxElement } from "../../utils/contains-jsx-element.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import { isAstNode } from "../../utils/is-ast-node.js";
 import { isEs6Component } from "../../utils/is-es6-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
@@ -44,29 +44,6 @@ const isErrorBoundaryClass = (classNode: EsTreeNode): boolean => {
   return false;
 };
 
-const containsJsx = (root: EsTreeNode): boolean => {
-  let found = false;
-  const visit = (node: EsTreeNode): void => {
-    if (found) return;
-    if (node.type === "JSXElement" || node.type === "JSXFragment") {
-      found = true;
-      return;
-    }
-    const nodeRecord = node as unknown as Record<string, unknown>;
-    for (const key of Object.keys(nodeRecord)) {
-      if (key === "parent") continue;
-      const child = nodeRecord[key];
-      if (Array.isArray(child)) {
-        for (const item of child) if (isAstNode(item)) visit(item);
-      } else if (isAstNode(child)) {
-        visit(child);
-      }
-      if (found) return;
-    }
-  };
-  visit(root);
-  return found;
-};
 
 // Port of `oxc_linter::rules::react::prefer_function_component`. Flags
 // classes that look like React components and could be re-written as
@@ -95,7 +72,7 @@ export const preferFunctionComponent = defineRule<Rule>({
           // jsx-utility-class branch is approximated by our default off.
           return;
         }
-        if (!containsJsx(node)) return;
+        if (!containsJsxElement(node)) return;
       }
       if (settings.allowErrorBoundary && isErrorBoundaryClass(node)) return;
       const reportNode = ((node as { id?: EsTreeNode }).id ?? node) as EsTreeNode;
