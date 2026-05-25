@@ -10,6 +10,13 @@ review-*.md
 *.review.md
 *.tgz
 
+# Track the installed React Doctor agent skill, but keep other local agent state out.
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/react-doctor/
+!/.agents/skills/react-doctor/**
+
 # Local-only: rule-catalog generators and per-rule prompts. The generated
 # `rules.json` and the prompts themselves live in the (private) evals repo;
 # only the source rules under packages/oxlint-plugin-react-doctor/src/plugin/rules
