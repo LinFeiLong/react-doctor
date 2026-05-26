@@ -36,14 +36,6 @@
     "@types/picomatch": "^4.0.3",
     "eslint-plugin-react-hooks": "^7.1.1"
   },
-  "peerDependencies": {
-    "eslint-plugin-react-hooks": "^6 || ^7"
-  },
-  "peerDependenciesMeta": {
-    "eslint-plugin-react-hooks": {
-      "optional": true
-    }
-  },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   }
