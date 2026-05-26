@@ -27,9 +27,7 @@ describe("selectProjects", () => {
   const tempDirectories: string[] = [];
 
   const createTempDirectory = (): string => {
-    const tempDirectory = fs.mkdtempSync(
-      path.join(os.tmpdir(), "react-doctor-select-projects-"),
-    );
+    const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "react-doctor-select-projects-"));
     tempDirectories.push(tempDirectory);
     return tempDirectory;
   };
@@ -64,9 +62,7 @@ describe("selectProjects", () => {
 
     expect(selectedDirectories).toEqual([projectDirectory]);
     expect(prompts).not.toHaveBeenCalled();
-    expect(cliLogger.log).toHaveBeenCalledWith(
-      expect.stringContaining("Select projects to scan"),
-    );
+    expect(cliLogger.log).toHaveBeenCalledWith(expect.stringContaining("Select projects to scan"));
   });
 
   it("falls through to subproject discovery for a monorepo with no workspace React packages", async () => {
@@ -82,8 +78,6 @@ describe("selectProjects", () => {
 
     expect(selectedDirectories).toEqual([projectDirectory]);
     expect(prompts).not.toHaveBeenCalled();
-    expect(cliLogger.log).toHaveBeenCalledWith(
-      expect.stringContaining("Select projects to scan"),
-    );
+    expect(cliLogger.log).toHaveBeenCalledWith(expect.stringContaining("Select projects to scan"));
   });
 });
