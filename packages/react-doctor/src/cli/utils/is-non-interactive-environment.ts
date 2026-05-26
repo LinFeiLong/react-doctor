@@ -27,5 +27,5 @@ export const NON_INTERACTIVE_ENVIRONMENT_VARIABLES = [
 ] as const;
 
 export const isNonInteractiveEnvironment = (): boolean =>
-  isCodingAgentEnvironment() ||
-  NON_INTERACTIVE_ENVIRONMENT_VARIABLES.some((envVariable) => Boolean(process.env[envVariable]));
+  NON_INTERACTIVE_ENVIRONMENT_VARIABLES.some((envVariable) => Boolean(process.env[envVariable])) ||
+  isCodingAgentEnvironment();

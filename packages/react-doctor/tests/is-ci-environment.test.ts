@@ -96,15 +96,50 @@ describe("isCiEnvironment", () => {
     expect(isCodingAgentEnvironment()).toBe(true);
   });
 
-  it("returns true for Amp tool execution", () => {
+  it("returns true for Codex sandboxed subprocesses with network disabled", () => {
+    process.env.CODEX_SANDBOX_NETWORK_DISABLED = "1";
+    expect(isCiEnvironment()).toBe(false);
+    expect(isCiOrCodingAgentEnvironment()).toBe(true);
+    expect(isCodingAgentEnvironment()).toBe(true);
+  });
+
+  it("returns true for Amp tool execution via AGENT value", () => {
     process.env.AGENT = "amp";
     expect(isCiEnvironment()).toBe(false);
     expect(isCiOrCodingAgentEnvironment()).toBe(true);
     expect(isCodingAgentEnvironment()).toBe(true);
   });
 
-  it("returns true for Goose shell execution", () => {
+  it("returns true for Amp tool execution via AMP_THREAD_ID", () => {
+    process.env.AMP_THREAD_ID = "thread-123";
+    expect(isCiEnvironment()).toBe(false);
+    expect(isCiOrCodingAgentEnvironment()).toBe(true);
+    expect(isCodingAgentEnvironment()).toBe(true);
+  });
+
+  it("returns true for Amp tool execution via AGENT_THREAD_ID", () => {
+    process.env.AGENT_THREAD_ID = "thread-456";
+    expect(isCiEnvironment()).toBe(false);
+    expect(isCiOrCodingAgentEnvironment()).toBe(true);
+    expect(isCodingAgentEnvironment()).toBe(true);
+  });
+
+  it("returns true for Amp tool execution via AGENT_SESSION_ID", () => {
+    process.env.AGENT_SESSION_ID = "session-789";
+    expect(isCiEnvironment()).toBe(false);
+    expect(isCiOrCodingAgentEnvironment()).toBe(true);
+    expect(isCodingAgentEnvironment()).toBe(true);
+  });
+
+  it("returns true for Goose shell execution via GOOSE_TERMINAL", () => {
     process.env.GOOSE_TERMINAL = "1";
+    expect(isCiEnvironment()).toBe(false);
+    expect(isCiOrCodingAgentEnvironment()).toBe(true);
+    expect(isCodingAgentEnvironment()).toBe(true);
+  });
+
+  it("returns true for Goose shell execution via AGENT value", () => {
+    process.env.AGENT = "goose";
     expect(isCiEnvironment()).toBe(false);
     expect(isCiOrCodingAgentEnvironment()).toBe(true);
     expect(isCodingAgentEnvironment()).toBe(true);
@@ -114,6 +149,14 @@ describe("isCiEnvironment", () => {
     process.env.OPENCODE = "1";
     expect(isCiEnvironment()).toBe(false);
     expect(isCiOrCodingAgentEnvironment()).toBe(true);
+    expect(isCodingAgentEnvironment()).toBe(true);
+  });
+
+  it("matches AGENT values case-insensitively", () => {
+    process.env.AGENT = "AMP";
+    expect(isCodingAgentEnvironment()).toBe(true);
+
+    process.env.AGENT = "Goose";
     expect(isCodingAgentEnvironment()).toBe(true);
   });
 
