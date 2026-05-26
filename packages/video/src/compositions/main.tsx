@@ -24,8 +24,12 @@ export const Main = () => {
   }, [handle]);
   return (
     <TransitionSeries>
-      <TransitionSeries.Sequence durationInFrames={SCENE_TYPING_DURATION_FRAMES}>
-        <TerminalTyping />
+      <TransitionSeries.Sequence durationInFrames={SCENE_DIAGNOSE_AND_FIX_DURATION_FRAMES}>
+        <DiagnoseAndFix />
+      </TransitionSeries.Sequence>
+
+      <TransitionSeries.Sequence durationInFrames={SCENE_SCORE_REVEAL_DURATION_FRAMES}>
+        <ScoreReveal />
       </TransitionSeries.Sequence>
 
       <TransitionSeries.Transition
@@ -36,8 +40,8 @@ export const Main = () => {
         })}
       />
 
-      <TransitionSeries.Sequence durationInFrames={SCENE_FILE_SCAN_DURATION_FRAMES}>
-        <FileScan />
+      <TransitionSeries.Sequence durationInFrames={SCENE_TYPING_DURATION_FRAMES}>
+        <TerminalTyping />
       </TransitionSeries.Sequence>
 
       <TransitionSeries.Transition
@@ -48,12 +52,8 @@ export const Main = () => {
         })}
       />
 
-      <TransitionSeries.Sequence durationInFrames={SCENE_DIAGNOSE_AND_FIX_DURATION_FRAMES}>
-        <DiagnoseAndFix />
-      </TransitionSeries.Sequence>
-
-      <TransitionSeries.Sequence durationInFrames={SCENE_SCORE_REVEAL_DURATION_FRAMES}>
-        <ScoreReveal />
+      <TransitionSeries.Sequence durationInFrames={SCENE_FILE_SCAN_DURATION_FRAMES}>
+        <FileScan />
       </TransitionSeries.Sequence>
     </TransitionSeries>
   );
