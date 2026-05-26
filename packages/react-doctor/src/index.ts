@@ -95,6 +95,7 @@ export const toJsonReport = (result: DiagnoseResult, options: ToJsonReportOption
             : {}),
           project: result.project,
           elapsedMilliseconds: result.elapsedMilliseconds,
+          diagnosticsDirectory: null,
         },
       },
     ],

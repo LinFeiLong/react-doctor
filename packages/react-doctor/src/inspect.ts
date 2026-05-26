@@ -57,6 +57,7 @@ interface ResolvedInspectOptions {
   adoptExistingLintConfig: boolean;
   ignoredTags: ReadonlySet<string>;
   outputSurface: DiagnosticSurface;
+  aggregateMode: boolean;
 }
 
 const buildIgnoredTags = (userConfig: ReactDoctorConfig | null): ReadonlySet<string> => {
@@ -87,6 +88,7 @@ const mergeInspectOptions = (
   adoptExistingLintConfig: userConfig?.adoptExistingLintConfig ?? true,
   ignoredTags: buildIgnoredTags(userConfig),
   outputSurface: inputOptions.outputSurface ?? "cli",
+  aggregateMode: inputOptions.aggregateMode ?? false,
 });
 
 export const inspect = async (
@@ -354,13 +356,14 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       skippedCheckReasons["dead-code"] = deadCodeFailureReason;
     }
 
-    const buildResult = (): InspectResult => ({
+    const buildResult = (diagnosticsDirectory: string | null): InspectResult => ({
       diagnostics: [...diagnostics],
       score,
       skippedChecks,
       ...(Object.keys(skippedCheckReasons).length > 0 ? { skippedCheckReasons } : {}),
       project,
       elapsedMilliseconds,
+      diagnosticsDirectory,
     });
 
     if (options.scoreOnly) {
@@ -369,7 +372,7 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       } else {
         yield* Console.log(highlighter.gray(noScoreMessage));
       }
-      return buildResult();
+      return buildResult(null);
     }
 
     const surfaceDiagnostics = filterDiagnosticsForSurface(
@@ -399,15 +402,22 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
         yield* Console.log(highlighter.success("No issues found!"));
       }
       yield* Console.log("");
-      if (hasSkippedChecks) {
-        yield* printBrandingOnlyHeader;
-        yield* Console.log(highlighter.gray("  Score not shown — some checks could not complete."));
-      } else if (score) {
-        yield* printScoreHeader(score);
-      } else {
-        yield* printNoScoreHeader(noScoreMessage);
+      // In aggregate mode the combined score header renders once at the
+      // end across every project, so suppress the per-project header
+      // here too.
+      if (!options.aggregateMode) {
+        if (hasSkippedChecks) {
+          yield* printBrandingOnlyHeader;
+          yield* Console.log(
+            highlighter.gray("  Score not shown — some checks could not complete."),
+          );
+        } else if (score) {
+          yield* printScoreHeader(score);
+        } else {
+          yield* printNoScoreHeader(noScoreMessage);
+        }
       }
-      return buildResult();
+      return buildResult(null);
     }
 
     yield* Console.log("");
@@ -426,7 +436,7 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
     }
 
     const shouldShowShareLink = !options.noScore && options.share && !options.isCi;
-    yield* printSummary({
+    const summaryResult = yield* printSummary({
       diagnostics: [...surfaceDiagnostics],
       elapsedMilliseconds,
       scoreResult: score,
@@ -434,6 +444,7 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       totalSourceFileCount: lintSourceFileCount,
       noScoreMessage,
       isOffline: !shouldShowShareLink,
+      aggregateMode: options.aggregateMode,
     });
 
     if (hasSkippedChecks) {
@@ -444,5 +455,5 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       );
     }
 
-    return buildResult();
+    return buildResult(summaryResult.diagnosticsDirectory);
   });

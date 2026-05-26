@@ -33,6 +33,8 @@ import {
 } from "../utils/json-mode.js";
 import { printAnnotations } from "../utils/print-annotations.js";
 import { printBrandedHeader } from "../utils/print-branded-header.js";
+import { printDoctorCallout } from "../utils/render-doctor-callout.js";
+import { printMonorepoSummary } from "../utils/render-monorepo-summary.js";
 import {
   promptInstallSetup,
   resolveInstallSetupProjectRoot,
@@ -251,6 +253,12 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
 
     const allDiagnostics: Diagnostic[] = [];
     const completedScans: Array<{ directory: string; result: InspectResult }> = [];
+    // Multi-project (monorepo) runs render an aggregate summary at the
+    // end: per-project score + share + diagnostics-dir + one combined
+    // score header. Suppress the per-project score header on each
+    // inspect() call so we don't print it twice. Quiet modes (JSON,
+    // score-only) skip the aggregate entirely.
+    const isMonorepoScan = projectDirectories.length > 1 && !isQuiet;
 
     for (const projectDirectory of projectDirectories) {
       let includePaths: string[] | undefined;
@@ -277,12 +285,31 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
         ...scanOptions,
         includePaths,
         configOverride: userConfig,
+        aggregateMode: isMonorepoScan,
       });
       allDiagnostics.push(...scanResult.diagnostics);
       completedScans.push({ directory: projectDirectory, result: scanResult });
       if (!isQuiet) {
         logger.break();
       }
+    }
+
+    // Render the aggregate even when only one project actually ran
+    // (e.g. monorepo diff scan where every other project had no
+    // changes) — otherwise the suppressed per-project score header
+    // would leave that scan with no final score at all.
+    if (isMonorepoScan && completedScans.length > 0) {
+      const isShareOffline =
+        scanOptions.noScore === true ||
+        userConfig?.share === false ||
+        scanOptions.isCi === true;
+      await Effect.runPromise(
+        printMonorepoSummary({
+          scans: completedScans,
+          rootDirectory: resolvedDirectory,
+          isOffline: isShareOffline,
+        }),
+      );
     }
 
     finalizeScans({
@@ -316,6 +343,10 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
         isStaged: Boolean(flags.staged),
         skipPrompts,
       });
+    }
+
+    if (!isQuiet && !flags.staged && scanOptions.isCi !== true) {
+      await Effect.runPromise(printDoctorCallout());
     }
   } catch (error) {
     if (isJsonMode) {

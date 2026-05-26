@@ -6,14 +6,14 @@ import { collectAffectedFiles, formatElapsedTime } from "./render-diagnostics.js
 import { printNoScoreHeader, printScoreHeader } from "./render-score-header.js";
 import { writeDiagnosticsDirectory } from "./write-diagnostics-directory.js";
 
-const buildShareUrl = (
-  diagnostics: Diagnostic[],
+export const buildShareUrl = (
+  diagnostics: ReadonlyArray<Diagnostic>,
   scoreResult: ScoreResult | null,
   projectName: string,
 ): string => {
   const errorCount = diagnostics.filter((diagnostic) => diagnostic.severity === "error").length;
   const warningCount = diagnostics.filter((diagnostic) => diagnostic.severity === "warning").length;
-  const affectedFileCount = collectAffectedFiles(diagnostics).size;
+  const affectedFileCount = collectAffectedFiles([...diagnostics]).size;
 
   const params = new URLSearchParams();
   params.set("p", projectName);
@@ -61,14 +61,29 @@ export interface PrintSummaryInput {
   readonly totalSourceFileCount: number;
   readonly noScoreMessage: string;
   readonly isOffline: boolean;
+  /**
+   * Suppress the per-project score header, the diagnostics-dir line,
+   * and the share-link line. The diagnostics dump still happens — the
+   * returned path is what the CLI feeds into the final monorepo
+   * aggregate summary. Counts line still prints so each project shows
+   * progress as it's scanned.
+   */
+  readonly aggregateMode?: boolean;
 }
 
-export const printSummary = (input: PrintSummaryInput): Effect.Effect<void> =>
+export interface PrintSummaryResult {
+  /** Path returned by writeDiagnosticsDirectory, or null if the write failed. */
+  readonly diagnosticsDirectory: string | null;
+}
+
+export const printSummary = (input: PrintSummaryInput): Effect.Effect<PrintSummaryResult> =>
   Effect.gen(function* () {
-    if (input.scoreResult) {
-      yield* printScoreHeader(input.scoreResult);
-    } else {
-      yield* printNoScoreHeader(input.noScoreMessage);
+    if (!input.aggregateMode) {
+      if (input.scoreResult) {
+        yield* printScoreHeader(input.scoreResult);
+      } else {
+        yield* printNoScoreHeader(input.noScoreMessage);
+      }
     }
 
     yield* printCountsSummaryLine(
@@ -86,11 +101,11 @@ export const printSummary = (input: PrintSummaryInput): Effect.Effect<void> =>
       try: () => writeDiagnosticsDirectory(input.diagnostics),
       catch: (cause) => cause,
     }).pipe(Effect.orElseSucceed(() => null as string | null));
-    if (diagnosticsDirectory !== null) {
+    if (!input.aggregateMode && diagnosticsDirectory !== null) {
       yield* Console.log(highlighter.gray(`  Full diagnostics written to ${diagnosticsDirectory}`));
     }
 
-    if (!input.isOffline) {
+    if (!input.aggregateMode && !input.isOffline) {
       yield* Console.log("");
       const shareUrl = buildShareUrl(input.diagnostics, input.scoreResult, input.projectName);
       yield* Console.log(
@@ -98,4 +113,6 @@ export const printSummary = (input: PrintSummaryInput): Effect.Effect<void> =>
       );
       yield* Console.log("");
     }
+
+    return { diagnosticsDirectory };
   });

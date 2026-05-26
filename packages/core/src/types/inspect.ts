@@ -18,6 +18,14 @@ export interface InspectResult {
   skippedCheckReasons?: Record<string, string>;
   project: ProjectInfo;
   elapsedMilliseconds: number;
+  /**
+   * Absolute path of the per-project diagnostics dump (rule-grouped
+   * `.txt` files + `diagnostics.json`). `null` when the dump was not
+   * written for this run (silent / score-only / JSON modes, or when the
+   * write failed). Populated for monorepo aggregation so the CLI can
+   * list each project's full-diagnostics path in the final summary.
+   */
+  diagnosticsDirectory: string | null;
 }
 
 /**
@@ -57,6 +65,15 @@ export interface InspectOptions {
    */
   isCi?: boolean;
   silent?: boolean;
+  /**
+   * Suppress the per-project score header (the ASCII face + score number
+   * + bar) and the per-project share-URL / diagnostics-dir lines. The
+   * inline diagnostics list and the counts line still render so the
+   * user sees progress per project. Set by the CLI's monorepo path so
+   * the final aggregate summary can list every project's score + share
+   * link + diagnostics path together, with one combined score header.
+   */
+  aggregateMode?: boolean;
   /**
    * Surface that consumes the printed diagnostic output (terminal
    * summary + per-rule list). Defaults to `"cli"`, which shows every
