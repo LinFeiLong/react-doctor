@@ -85,6 +85,7 @@ export interface SurfaceControls {
 }
 
 export interface ReactDoctorConfig {
+  $schema?: string;
   ignore?: ReactDoctorIgnoreConfig;
   lint?: boolean;
   /**
