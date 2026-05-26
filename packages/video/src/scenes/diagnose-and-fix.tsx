@@ -1,4 +1,4 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import {
   BACKGROUND_COLOR,
   CURSOR_BLINK_FRAMES,
@@ -26,8 +26,8 @@ import { getScoreColor, getScoreLabel } from "../utils/score-display";
 
 const VISIBLE_DIAGNOSTICS = DIAGNOSTICS.slice(0, 15);
 
-const COMMAND = "/doctor fix my code";
-const SLASH_COMMAND_PREFIX = "/doctor";
+const COMMAND = "/react-doctor fix my code";
+const SLASH_COMMAND_PREFIX = "/react-doctor";
 const CHAR_FRAMES = 2;
 const TYPING_INITIAL_DELAY_FRAMES = 8;
 const TYPING_POST_PAUSE_FRAMES = 8;
@@ -35,7 +35,7 @@ const TYPING_END_FRAME =
   TYPING_INITIAL_DELAY_FRAMES + COMMAND.length * CHAR_FRAMES + TYPING_POST_PAUSE_FRAMES;
 
 const ZOOM_SCALE = 1.8;
-const ZOOM_OUT_DURATION_FRAMES = 14;
+const ZOOM_OUT_DURATION_FRAMES = 28;
 const ZOOM_OUT_START_FRAME = TYPING_END_FRAME;
 const ZOOM_OUT_END_FRAME = ZOOM_OUT_START_FRAME + ZOOM_OUT_DURATION_FRAMES;
 
@@ -45,7 +45,10 @@ const SCAN_FADE_IN_FRAMES = 5;
 const SCAN_END_FRAME = SCAN_START_FRAME + VISIBLE_DIAGNOSTICS.length * SCAN_FRAMES_PER_ISSUE;
 
 const VERDICT_APPEAR_FRAME = SCAN_END_FRAME + 5;
-const VERDICT_HOLD_FRAMES = 25;
+const VERDICT_HOLD_FRAMES = 45;
+
+const VERDICT_ZOOM_SCALE = 1.3;
+const VERDICT_ZOOM_DURATION_FRAMES = 20;
 
 const FIX_START_FRAME = VERDICT_APPEAR_FRAME + VERDICT_HOLD_FRAMES;
 const FIX_INTERVAL_FRAMES = 5;
@@ -70,16 +73,13 @@ const BADGE_BAR_FONT_SIZE_PX = 32;
 const BADGE_GAP_PX = 16;
 
 const LOGO_FONT_SIZE_PX = 32;
-const ZOOMED_PROMPT_FONT_SIZE_PX = 72;
+const ZOOMED_PROMPT_FONT_SIZE_PX = 56;
 const NORMAL_PROMPT_FONT_SIZE_PX = 44;
 const DIAGNOSTIC_FONT_SIZE_PX = 32;
 const DIAGNOSTIC_ROW_HEIGHT_PX = DIAGNOSTIC_FONT_SIZE_PX * 1.7;
 const STATUS_FONT_SIZE_PX = 44;
 const VERDICT_FONT_SIZE_PX = 48;
 
-const CLAUDE_LOGO_ART = ` ▐▛███▜▌`;
-const CLAUDE_LOGO_ART_2 = `▝▜█████▛▘`;
-const CLAUDE_LOGO_ART_3 = `  ▘▘ ▝▝`;
 const CLAUDE_LOGO_COLOR = "#d77757";
 
 const SPINNER_CHARS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
@@ -110,12 +110,21 @@ export const DiagnoseAndFix = () => {
         { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
       );
 
-  const zoomScale = interpolate(
+  const initialZoom = interpolate(
     frame,
     [0, ZOOM_OUT_START_FRAME, ZOOM_OUT_END_FRAME],
     [ZOOM_SCALE, ZOOM_SCALE, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) },
   );
+
+  const verdictZoom = interpolate(
+    frame,
+    [VERDICT_APPEAR_FRAME, VERDICT_APPEAR_FRAME + VERDICT_ZOOM_DURATION_FRAMES],
+    [1, VERDICT_ZOOM_SCALE],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) },
+  );
+
+  const zoomScale = initialZoom * verdictZoom;
 
   const zoomProgress = interpolate(
     frame,
@@ -232,7 +241,17 @@ export const DiagnoseAndFix = () => {
           width: "100%",
           height: "100%",
           transform: `scale(${zoomScale})`,
-          transformOrigin: "10% 0%",
+          transformOrigin: `${interpolate(
+            frame,
+            [VERDICT_APPEAR_FRAME, VERDICT_APPEAR_FRAME + VERDICT_ZOOM_DURATION_FRAMES],
+            [0, 0],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) },
+          )}% ${interpolate(
+            frame,
+            [VERDICT_APPEAR_FRAME, VERDICT_APPEAR_FRAME + VERDICT_ZOOM_DURATION_FRAMES],
+            [0, 100],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) },
+          )}%`,
         }}
       >
         <div
@@ -242,21 +261,19 @@ export const DiagnoseAndFix = () => {
             left: SCENE_HORIZONTAL_PADDING_PX,
             fontFamily,
             fontSize: LOGO_FONT_SIZE_PX,
-            lineHeight: 1.4,
-            whiteSpace: "pre",
+            lineHeight: 1.6,
+            display: "flex",
+            alignItems: "center",
+            gap: 32,
           }}
         >
+          <Img
+            src={staticFile("claudecode-color.svg")}
+            style={{ width: 160, height: 160 }}
+          />
           <div>
-            <span style={{ color: CLAUDE_LOGO_COLOR }}>{CLAUDE_LOGO_ART}</span>
-            <span style={{ color: "white" }}> Claude Code</span>
-          </div>
-          <div>
-            <span style={{ color: CLAUDE_LOGO_COLOR }}>{CLAUDE_LOGO_ART_2}</span>
-            <span style={{ color: MUTED_COLOR }}> Opus 4.6 · Claude API</span>
-          </div>
-          <div>
-            <span style={{ color: CLAUDE_LOGO_COLOR }}>{CLAUDE_LOGO_ART_3}</span>
-            <span style={{ color: MUTED_COLOR }}> /Users/you/my-app</span>
+            <div style={{ color: "white", fontWeight: 500 }}>Claude Code</div>
+            <div style={{ color: MUTED_COLOR }}>/Developer/react-project</div>
           </div>
         </div>
 
