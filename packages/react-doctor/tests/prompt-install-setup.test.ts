@@ -47,12 +47,20 @@ const readSetupPromptConfig = (configRoot: string): Record<string, unknown> =>
 
 describe("shouldPromptInstallSetup", () => {
   let fixture: PromptInstallSetupFixture;
+  let previousCursorAgent: string | undefined;
 
   beforeEach(() => {
+    previousCursorAgent = process.env.CURSOR_AGENT;
+    delete process.env.CURSOR_AGENT;
     fixture = setupFixture();
   });
 
   afterEach(() => {
+    if (previousCursorAgent === undefined) {
+      delete process.env.CURSOR_AGENT;
+    } else {
+      process.env.CURSOR_AGENT = previousCursorAgent;
+    }
     fixture.cleanup();
   });
 
@@ -253,6 +261,23 @@ describe("shouldPromptInstallSetup", () => {
     expect(shouldPromptInstallSetup({ ...baseOptions, isStaged: true })).toBe(false);
     expect(shouldPromptInstallSetup({ ...baseOptions, skipPrompts: true })).toBe(false);
     expect(shouldPromptInstallSetup({ ...baseOptions, hasScoredScan: false })).toBe(false);
+  });
+
+  it("skips setup prompts in agent shells even when the caller did not pre-skip prompts", () => {
+    writePackageJson(fixture.projectRoot, { scripts: {} });
+    process.env.CURSOR_AGENT = "1";
+
+    expect(
+      shouldPromptInstallSetup({
+        projectRoot: fixture.projectRoot,
+        hasScoredScan: true,
+        isJsonMode: false,
+        isScoreOnly: false,
+        isStaged: false,
+        skipPrompts: false,
+        store: { cwd: fixture.configRoot },
+      }),
+    ).toBe(false);
   });
 
   it("waits after score output, prints a setup pitch, then installs when accepted", async () => {
