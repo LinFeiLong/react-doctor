@@ -69,13 +69,6 @@ export const REACT_NATIVE_LIST_COMPONENTS = new Set([
   "SectionList",
   "VirtualizedList",
   "FlashList",
-  "LegendList",
-]);
-
-export const RENDER_ITEM_PROP_NAMES = new Set([
-  "renderItem",
-  "renderSectionHeader",
-  "renderSectionFooter",
 ]);
 
 export const LEGACY_SHADOW_STYLE_PROPERTIES = new Set([
