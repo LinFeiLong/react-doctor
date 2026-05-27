@@ -8,6 +8,7 @@
 
 import type { Rule } from "./utils/rule.js";
 
+import { activityWrapsEffectHeavySubtree } from "./rules/state-and-effects/activity-wraps-effect-heavy-subtree.js";
 import { advancedEventHandlerRefs } from "./rules/state-and-effects/advanced-event-handler-refs.js";
 import { altText } from "./rules/a11y/alt-text.js";
 import { anchorAmbiguousText } from "./rules/a11y/anchor-ambiguous-text.js";
@@ -298,6 +299,17 @@ import { useLazyMotion } from "./rules/bundle-size/use-lazy-motion.js";
 import { voidDomElementsNoChildren } from "./rules/react-builtins/void-dom-elements-no-children.js";
 
 export const reactDoctorRules = [
+  {
+    key: "react-doctor/activity-wraps-effect-heavy-subtree",
+    id: "activity-wraps-effect-heavy-subtree",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...activityWrapsEffectHeavySubtree,
+      framework: "global",
+      category: "State & Effects",
+    },
+  },
   {
     key: "react-doctor/advanced-event-handler-refs",
     id: "advanced-event-handler-refs",
