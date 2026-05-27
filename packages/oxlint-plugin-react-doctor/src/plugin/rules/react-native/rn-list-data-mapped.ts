@@ -10,10 +10,8 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 const FRESH_ARRAY_METHODS = new Set([
   "map",
   "filter",
-  "sort",
   "toSorted",
   "slice",
-  "reverse",
   "toReversed",
   "concat",
   "flat",
