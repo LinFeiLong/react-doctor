@@ -1,5 +1,6 @@
 import path from "node:path";
 import { loadConfigWithSource } from "./load-config.js";
+import { isDirectory, NotADirectoryError } from "./project-info/index.js";
 import { resolveConfigRootDir } from "./resolve-config-root-dir.js";
 import { resolveDiagnoseTarget } from "./resolve-diagnose-target.js";
 import type { ReactDoctorConfig } from "./types/index.js";
@@ -59,8 +60,14 @@ export const resolveScanTarget = (requestedDirectory: string): ResolvedScanTarge
   // requested directory has multiple React subprojects; let it
   // propagate to the caller.
   const resolved = resolveDiagnoseTarget(directoryAfterRedirect);
+  const resolvedDirectory = resolved ?? directoryAfterRedirect;
+
+  if (!isDirectory(resolvedDirectory)) {
+    throw new NotADirectoryError(resolvedDirectory);
+  }
+
   return {
-    resolvedDirectory: resolved ?? directoryAfterRedirect,
+    resolvedDirectory,
     requestedDirectory: absoluteRequested,
     userConfig,
     configSourceDirectory,

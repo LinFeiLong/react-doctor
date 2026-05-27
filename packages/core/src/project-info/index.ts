@@ -15,6 +15,7 @@ export {
   ProjectNotFoundError,
   NoReactDependencyError,
   PackageJsonNotFoundError,
+  NotADirectoryError,
   AmbiguousProjectError,
   isProjectDiscoveryError,
 } from "./errors.js";

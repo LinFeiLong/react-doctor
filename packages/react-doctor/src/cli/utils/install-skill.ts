@@ -142,6 +142,7 @@ const defaultInstallDependencyRunner = (input: InstallReactDoctorDependencyRunne
     cwd: input.cwd,
     stdio: "inherit",
     env: { ...process.env, REACT_DOCTOR_INSTALL: "1" },
+    shell: process.platform === "win32",
   });
 };
 

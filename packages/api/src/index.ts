@@ -19,6 +19,7 @@ export {
   ProjectNotFoundError,
   NoReactDependencyError,
   PackageJsonNotFoundError,
+  NotADirectoryError,
   AmbiguousProjectError,
   isReactDoctorError,
 } from "@react-doctor/core";

@@ -6,6 +6,7 @@ import {
   diagnose,
   diagnoseProjects,
   NoReactDependencyError,
+  NotADirectoryError,
   ProjectNotFoundError,
 } from "../src/index.js";
 
@@ -55,6 +56,17 @@ describe("diagnose", () => {
       await expect(diagnose(emptyDirectory, { lint: false })).rejects.toThrow(ProjectNotFoundError);
     } finally {
       fs.rmSync(emptyDirectory, { recursive: true, force: true });
+    }
+  });
+
+  it("throws NotADirectoryError when the path is a file instead of a directory", async () => {
+    const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "rdc-file-"));
+    const filePath = path.join(tempDirectory, "not-a-directory.txt");
+    fs.writeFileSync(filePath, "");
+    try {
+      await expect(diagnose(filePath, { lint: false })).rejects.toThrow(NotADirectoryError);
+    } finally {
+      fs.rmSync(tempDirectory, { recursive: true, force: true });
     }
   });
 
