@@ -101,7 +101,9 @@ const countEffectHookCalls = (body: EsTreeNode | null): number => {
 export const activityWrapsEffectHeavySubtree = defineRule<Rule>({
   id: "activity-wraps-effect-heavy-subtree",
   severity: "warn",
-  requires: ["react:19"],
+  // `<Activity>` shipped in React 19.2; gate on the minor-version
+  // capability so the rule stays inert on 19.0 / 19.1 projects.
+  requires: ["react:19.2"],
   recommendation:
     "Audit the subtree under `<Activity>` — every hide / show cycle tears down and recreates every Effect inside. Move subscriptions and effect-driven setState chains outside the Activity boundary, or pre-resolve the data above it",
   create: (context: RuleContext) => {
