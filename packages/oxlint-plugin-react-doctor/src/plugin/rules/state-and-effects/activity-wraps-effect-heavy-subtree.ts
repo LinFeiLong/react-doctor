@@ -37,14 +37,6 @@ const isStaticallyKnownMode = (modeAttribute: EsTreeNodeOfType<"JSXAttribute">):
   return false;
 };
 
-const getJsxElementName = (node: EsTreeNode): string | null => {
-  if (isNodeOfType(node, "JSXIdentifier")) return node.name;
-  if (isNodeOfType(node, "JSXMemberExpression")) {
-    if (isNodeOfType(node.property, "JSXIdentifier")) return node.property.name;
-  }
-  return null;
-};
-
 const COMPONENT_NAME_PATTERN = /^[A-Z]/;
 
 const collectChildComponentNames = (
@@ -53,8 +45,15 @@ const collectChildComponentNames = (
 ): void => {
   walkAst(element, (child: EsTreeNode) => {
     if (!isNodeOfType(child, "JSXOpeningElement")) return;
-    const name = getJsxElementName(child.name);
-    if (!name) return;
+    // Skip JSXMemberExpression children (`<Charts.Bar />`,
+    // `<Foo.Bar.Baz />`). Member-expression children are by
+    // definition not same-file references — they resolve through a
+    // namespace / module. Extracting the trailing identifier and
+    // looking up a same-file component of that name produces false
+    // positives (e.g. `<Charts.Bar />` would collide with a same-file
+    // `Bar` helper that has nothing to do with this boundary).
+    if (!isNodeOfType(child.name, "JSXIdentifier")) return;
+    const name = child.name.name;
     if (!COMPONENT_NAME_PATTERN.test(name)) return;
     into.add(name);
   });

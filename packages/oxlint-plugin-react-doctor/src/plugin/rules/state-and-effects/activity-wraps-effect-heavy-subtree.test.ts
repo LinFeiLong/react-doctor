@@ -201,6 +201,29 @@ describe("activity-wraps-effect-heavy-subtree", () => {
     expect(result.diagnostics).toHaveLength(1);
   });
 
+  it("regression: <Charts.Bar /> child does NOT collide with same-file `Bar` helper", () => {
+    // Bugbot caught that collectChildComponentNames was extracting
+    // "Bar" from <Charts.Bar /> via the trailing-identifier shape,
+    // then findSameFileComponentBody would look up "Bar" in the same
+    // file. If a same-file `Bar` exists with effects, this produced
+    // a false positive even though `<Charts.Bar />` resolves to an
+    // external namespace, not the same-file Bar.
+    const code = `
+      import { Activity, useEffect } from "react";
+      const Bar = () => {
+        useEffect(() => observe(), []);
+        return null;
+      };
+      const Screen = ({ open }) => (
+        <Activity mode={open ? "visible" : "hidden"}>
+          <Charts.Bar />
+        </Activity>
+      );
+    `;
+    const result = runRule(activityWrapsEffectHeavySubtree, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
   it("regression: namespace <React.Activity> with same-file user component named `Activity` — no false positive", () => {
     // Bugbot caught that the child-name walker pulls "Activity" out of
     // <React.Activity> via the trailing-identifier shape, then asked
