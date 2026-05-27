@@ -13,6 +13,14 @@ interface ReactMajorMinor {
   minor: number;
 }
 
+// HACK: CodeQL flags unbounded `\d+` on untrusted package.json input as
+// a polynomial-backtracking risk (even though the patterns here are
+// not actually polynomial — there's no nested quantifier). Bound the
+// digit count so the regex is provably O(1) on any input. React
+// major/minor numbers won't realistically exceed 4 digits anyway.
+const MAJOR_MINOR_PATTERN = /(\d{1,4})\.(\d{1,4})/;
+const MAJOR_ONLY_PATTERN = /(\d{1,4})/;
+
 export const parseReactMajorMinor = (
   reactVersion: string | null | undefined,
 ): ReactMajorMinor | null => {
@@ -20,7 +28,7 @@ export const parseReactMajorMinor = (
   const trimmed = reactVersion.trim();
   if (trimmed.length === 0) return null;
 
-  const majorMinorMatch = trimmed.match(/(\d+)\.(\d+)/);
+  const majorMinorMatch = trimmed.match(MAJOR_MINOR_PATTERN);
   if (majorMinorMatch) {
     const major = Number.parseInt(majorMinorMatch[1], 10);
     const minor = Number.parseInt(majorMinorMatch[2], 10);
@@ -29,7 +37,7 @@ export const parseReactMajorMinor = (
     return { major, minor };
   }
 
-  const majorOnlyMatch = trimmed.match(/(\d+)/);
+  const majorOnlyMatch = trimmed.match(MAJOR_ONLY_PATTERN);
   if (!majorOnlyMatch) return null;
   const major = Number.parseInt(majorOnlyMatch[1], 10);
   if (!Number.isFinite(major) || major <= 0) return null;
