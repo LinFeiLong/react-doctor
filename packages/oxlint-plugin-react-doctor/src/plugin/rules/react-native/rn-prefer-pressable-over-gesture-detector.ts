@@ -20,20 +20,9 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // (`Gesture.Race`, `Gesture.Simultaneous`, multi-tap, pan) still need
 // the handler, so this rule only fires for the lone `Gesture.Tap()` case.
 
-const NON_TAP_GESTURE_FACTORY_NAMES = new Set([
-  "Pan",
-  "Pinch",
-  "Rotation",
-  "Fling",
-  "LongPress",
-  "ForceTouch",
-  "Manual",
-  "Native",
-  "Hover",
-  "ContextMenu",
-]);
-
-const GESTURE_COMPOSITION_FACTORY_NAMES = new Set(["Race", "Simultaneous", "Exclusive"]);
+// Existing valid-case tests cover the other gesture factories
+// (`Gesture.Pan/Pinch/Race/...`) — they all fail the `factoryName === "Tap"`
+// gate above. No need to enumerate them here.
 
 const COMPOSING_CHAIN_METHOD_NAMES = new Set([
   "simultaneousWithExternalGesture",
@@ -83,8 +72,6 @@ const analyzeGestureChain = (expression: EsTreeNode): GestureChainInfo | null =>
 
 const isTapChainEligibleForPressable = (chain: GestureChainInfo): boolean => {
   if (chain.factoryName !== "Tap") return false;
-  if (NON_TAP_GESTURE_FACTORY_NAMES.has(chain.factoryName)) return false;
-  if (GESTURE_COMPOSITION_FACTORY_NAMES.has(chain.factoryName)) return false;
   for (const methodName of chain.chainMethodNames) {
     if (COMPOSING_CHAIN_METHOD_NAMES.has(methodName)) return false;
   }
