@@ -28,7 +28,13 @@ const MAJOR_ONLY_PATTERN = /(\d{1,4})/;
 // Mirrors the same stripping that `dependency-version-spec`'s lower-
 // bound major extractor does, kept inline to keep this parser
 // dependency-free.
-const UPPER_BOUND_COMPARATOR_PATTERN = /<\s*=?\s*\d{1,4}(?:\.\d{1,4}){0,2}(?:-[^\s,|]+)?/g;
+//
+// HACK: CodeQL flags consecutive `\s*` groups as polynomial-backtracking
+// risk on attacker-controlled input. Use a single bounded `\s{0,8}` so
+// the regex is unambiguous and linear. Semver upper bounds never
+// contain internal whitespace between `<` and `=`; 8 chars between
+// `<=` and the digit is more than any real spec uses.
+const UPPER_BOUND_COMPARATOR_PATTERN = /<=?\s{0,8}\d{1,4}(?:\.\d{1,4}){0,2}(?:-[^\s,|]+)?/g;
 
 export const parseReactMajorMinor = (
   reactVersion: string | null | undefined,
