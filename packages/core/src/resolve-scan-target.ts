@@ -1,11 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { loadConfigWithSource } from "./load-config.js";
-import {
-  isDirectory,
-  NotADirectoryError,
-  ProjectNotFoundError,
-} from "./project-info/index.js";
+import { isDirectory, NotADirectoryError, ProjectNotFoundError } from "./project-info/index.js";
 import { resolveConfigRootDir } from "./resolve-config-root-dir.js";
 import { resolveDiagnoseTarget } from "./resolve-diagnose-target.js";
 import type { ReactDoctorConfig } from "./types/index.js";
