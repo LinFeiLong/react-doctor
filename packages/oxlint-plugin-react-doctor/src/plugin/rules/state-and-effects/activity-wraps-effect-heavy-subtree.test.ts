@@ -251,6 +251,32 @@ describe("activity-wraps-effect-heavy-subtree", () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 
+  it("flags aliased boundary wrapping a same-file user component named `Activity`", () => {
+    // Regression for an earlier over-eager cleanup that silently
+    // dropped `Activity` from the child candidate set whenever it
+    // appeared — including legitimate same-file user components.
+    // With aliased import `unstable_Activity as UA`, the boundary
+    // element is `<UA>`, the child `<Activity />` is a user
+    // component, and if `Activity` is defined in the same file with
+    // effects, it's a real positive that should fire.
+    const code = `
+      import { unstable_Activity as UA, useEffect } from "react";
+      const Activity = ({ user }) => {
+        useEffect(() => sub(user.id), [user.id]);
+        useEffect(() => track(user.id), [user.id]);
+        return null;
+      };
+      const Screen = ({ open, user }) => (
+        <UA mode={open ? "visible" : "hidden"}>
+          <Activity user={user} />
+        </UA>
+      );
+    `;
+    const result = runRule(activityWrapsEffectHeavySubtree, code);
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics[0].message).toContain("Activity");
+  });
+
   it("does NOT flag <Calendar.Activity> (namespace isn't a React import)", () => {
     const code = `
       import * as Calendar from "./calendar";

@@ -1,5 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
-import { EFFECT_HOOK_NAMES } from "../../constants/react.js";
+import { EFFECT_HOOK_NAMES, UPPERCASE_PATTERN } from "../../constants/react.js";
 import { findProgramRoot } from "../../utils/find-program-root.js";
 import { getImportedName } from "../../utils/get-imported-name.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
@@ -37,8 +37,6 @@ const isStaticallyKnownMode = (modeAttribute: EsTreeNodeOfType<"JSXAttribute">):
   return false;
 };
 
-const COMPONENT_NAME_PATTERN = /^[A-Z]/;
-
 const collectChildComponentNames = (
   element: EsTreeNodeOfType<"JSXElement">,
   into: Set<string>,
@@ -54,7 +52,7 @@ const collectChildComponentNames = (
     // `Bar` helper that has nothing to do with this boundary).
     if (!isNodeOfType(child.name, "JSXIdentifier")) return;
     const name = child.name.name;
-    if (!COMPONENT_NAME_PATTERN.test(name)) return;
+    if (!UPPERCASE_PATTERN.test(name)) return;
     into.add(name);
   });
 };
@@ -177,20 +175,15 @@ export const activityWrapsEffectHeavySubtree = defineRule<Rule>({
 
         const childComponentNames = new Set<string>();
         collectChildComponentNames(node, childComponentNames);
-        // Drop any name that resolves to Activity itself, regardless of
-        // import shape:
-        //   - named import (`import { Activity }`) — covered by
-        //     `localActivityNames`
-        //   - namespace import (`<React.Activity>`) — the child walker
-        //     extracts the trailing identifier `"Activity"` which is
-        //     also one of `ACTIVITY_IMPORTED_NAMES`
-        // Without removing the canonical names, a same-file user
-        // component coincidentally named `Activity` produces a false
-        // positive on the namespace-import path.
+        // Drop the locally-bound Activity names so a nested
+        // `<Activity>` inside another `<Activity>` doesn't self-report.
+        // We DON'T drop the canonical `ACTIVITY_IMPORTED_NAMES`: the
+        // namespace path already skips JSXMemberExpression in
+        // `collectChildComponentNames`, and a same-file user component
+        // legitimately named `Activity` (with effects, used as a child
+        // inside an aliased boundary like `import { unstable_Activity as UA }`)
+        // is a real positive we shouldn't silently drop.
         for (const activityName of localActivityNames) childComponentNames.delete(activityName);
-        for (const canonicalActivityName of ACTIVITY_IMPORTED_NAMES) {
-          childComponentNames.delete(canonicalActivityName);
-        }
         if (childComponentNames.size === 0) return;
 
         const programRoot = findProgramRoot(node);
