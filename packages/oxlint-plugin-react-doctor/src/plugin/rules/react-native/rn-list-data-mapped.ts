@@ -1,3 +1,4 @@
+import { REACT_NATIVE_LIST_COMPONENTS } from "../../constants/react-native.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { Rule } from "../../utils/rule.js";
@@ -5,14 +6,6 @@ import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-
-const VIRTUALIZED_LIST_NAMES = new Set([
-  "FlatList",
-  "FlashList",
-  "LegendList",
-  "SectionList",
-  "VirtualizedList",
-]);
 
 const FRESH_ARRAY_METHODS = new Set([
   "map",
@@ -55,8 +48,6 @@ const isFreshArrayExpression = (node: EsTreeNode): string | null => {
     }
   }
 
-  if (isNodeOfType(node, "SpreadElement")) return "[...spread]";
-
   return null;
 };
 
@@ -75,7 +66,7 @@ export const rnListDataMapped = defineRule<Rule>({
   create: (context: RuleContext) => ({
     JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {
       const elementName = resolveJsxElementName(node);
-      if (!elementName || !VIRTUALIZED_LIST_NAMES.has(elementName)) return;
+      if (!elementName || !REACT_NATIVE_LIST_COMPONENTS.has(elementName)) return;
 
       for (const attr of node.attributes ?? []) {
         if (!isNodeOfType(attr, "JSXAttribute")) continue;
