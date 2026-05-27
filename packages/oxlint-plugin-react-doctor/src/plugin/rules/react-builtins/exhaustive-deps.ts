@@ -682,8 +682,19 @@ export const exhaustiveDeps = defineRule<Rule>({
   id: "exhaustive-deps",
   severity: "warn",
   tags: ["test-noise"],
-  recommendation:
-    "Don't blindly add missing dependencies. Read the hook callback first; for example, if it reads `count` and calls `setCount(count + 1)`, use a functional update instead of adding `count` and creating a loop.",
+  recommendation: `Don't blindly add missing dependencies. Read the hook callback first.
+
+Bad:
+useEffect(() => {
+  setCount(count + 1);
+}, [count]);
+
+Better:
+useEffect(() => {
+  setCount((currentCount) => currentCount + 1);
+}, []);
+
+If the missing value is recreated every render, move it inside the hook or stabilize it before adding it to deps.`,
   category: "Correctness",
   create: (context) => {
     const settings = resolveExhaustiveDepsSettings(context.settings);
