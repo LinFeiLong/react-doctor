@@ -21,14 +21,25 @@ interface ReactMajorMinor {
 const MAJOR_MINOR_PATTERN = /(\d{1,4})\.(\d{1,4})/;
 const MAJOR_ONLY_PATTERN = /(\d{1,4})/;
 
+// Strip upper-bound comparators (`<19.2`, `<=20.0.0`, `<19.2-beta`) from
+// the spec before regex-matching the lower bound. Without this, a spec
+// like `"<19.2 >=19.0"` matches `19.2` from the upper bound and reports
+// the project as React 19.2+ even though the range *excludes* 19.2.
+// Mirrors the same stripping that `dependency-version-spec`'s lower-
+// bound major extractor does, kept inline to keep this parser
+// dependency-free.
+const UPPER_BOUND_COMPARATOR_PATTERN = /<\s*=?\s*\d{1,4}(?:\.\d{1,4}){0,2}(?:-[^\s,|]+)?/g;
+
 export const parseReactMajorMinor = (
   reactVersion: string | null | undefined,
 ): ReactMajorMinor | null => {
   if (typeof reactVersion !== "string") return null;
   const trimmed = reactVersion.trim();
   if (trimmed.length === 0) return null;
+  const lowerBoundsOnly = trimmed.replace(UPPER_BOUND_COMPARATOR_PATTERN, " ").trim();
+  if (lowerBoundsOnly.length === 0) return null;
 
-  const majorMinorMatch = trimmed.match(MAJOR_MINOR_PATTERN);
+  const majorMinorMatch = lowerBoundsOnly.match(MAJOR_MINOR_PATTERN);
   if (majorMinorMatch) {
     const major = Number.parseInt(majorMinorMatch[1], 10);
     const minor = Number.parseInt(majorMinorMatch[2], 10);
@@ -37,7 +48,7 @@ export const parseReactMajorMinor = (
     return { major, minor };
   }
 
-  const majorOnlyMatch = trimmed.match(MAJOR_ONLY_PATTERN);
+  const majorOnlyMatch = lowerBoundsOnly.match(MAJOR_ONLY_PATTERN);
   if (!majorOnlyMatch) return null;
   const major = Number.parseInt(majorOnlyMatch[1], 10);
   if (!Number.isFinite(major) || major <= 0) return null;
