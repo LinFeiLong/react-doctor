@@ -123,9 +123,7 @@ export const diagnose = async (
   const program = buildInspectProgram(scanTarget, options);
 
   const output: InspectOutput = await Effect.runPromise(
-    restoreLegacyThrow(
-      program.pipe(Effect.provide(DEFAULT_LAYER), Effect.provide(layerOtlp)),
-    ),
+    restoreLegacyThrow(program.pipe(Effect.provide(DEFAULT_LAYER), Effect.provide(layerOtlp))),
   );
 
   return outputToDiagnoseResult(output, globalThis.performance.now() - startTime);
@@ -163,9 +161,7 @@ const diagnoseProject = async (
         : DEFAULT_LAYER;
 
     const output: InspectOutput = await Effect.runPromise(
-      restoreLegacyThrow(
-        program.pipe(Effect.provide(layer), Effect.provide(layerOtlp)),
-      ),
+      restoreLegacyThrow(program.pipe(Effect.provide(layer), Effect.provide(layerOtlp))),
     );
 
     return {
