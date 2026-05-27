@@ -20,8 +20,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 const VIRTUALIZED_LIST_NAMES = new Set(["FlashList", "LegendList"]);
 
-const STYLESHEET_CREATE_CALLEE_NAMES = new Set(["StyleSheet.create", "create"]);
-
 const getStaticMemberKeyName = (
   expression: EsTreeNodeOfType<"MemberExpression">,
 ): string | null => {
@@ -46,26 +44,17 @@ const isStyleSheetCreateCallExpression = (
   const callExpression = stripParenExpression(expression);
   if (!isNodeOfType(callExpression, "CallExpression")) return false;
   const callee = callExpression.callee;
-  // `StyleSheet.create(...)` — non-computed MemberExpression.
-  if (
+  // `StyleSheet.create(...)` — the only shape we recognize. Bare
+  // `create({})` from a named import is too ambiguous on its own
+  // (collides with too many user helpers); not followed today.
+  return (
     isNodeOfType(callee, "MemberExpression") &&
     !callee.computed &&
     isNodeOfType(callee.object, "Identifier") &&
     callee.object.name === "StyleSheet" &&
     isNodeOfType(callee.property, "Identifier") &&
     callee.property.name === "create"
-  ) {
-    return true;
-  }
-  // Named import: `import { create } from "react-native/StyleSheet"` is
-  // possible but rare; cover bare `create(...)` only when the binding
-  // looks StyleSheet-shaped. We don't follow that import scope today.
-  if (isNodeOfType(callee, "Identifier") && STYLESHEET_CREATE_CALLEE_NAMES.has(callee.name)) {
-    // Bare `create({})` is too ambiguous on its own — skip unless paired
-    // with the canonical StyleSheet member form above.
-    return false;
-  }
-  return false;
+  );
 };
 
 const resolveContentContainerStyleObject = (
