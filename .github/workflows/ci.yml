@@ -12,16 +12,12 @@ permissions:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.continue-on-error || false }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         node-version: ["20.19.0", "22.18.0", "24", "25", "26"]
         include:
-          - os: windows-latest
-            node-version: "22.18.0"
-            continue-on-error: true
           - os: macos-latest
             node-version: "22.18.0"
     steps:
