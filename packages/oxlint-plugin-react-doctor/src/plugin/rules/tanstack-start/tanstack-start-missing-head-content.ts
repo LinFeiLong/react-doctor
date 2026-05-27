@@ -1,5 +1,6 @@
 import { TANSTACK_ROOT_ROUTE_FILE_PATTERN } from "../../constants/tanstack.js";
 import { defineRule } from "../../utils/define-rule.js";
+import { normalizeFilename } from "../../utils/normalize-filename.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
@@ -18,7 +19,7 @@ export const tanstackStartMissingHeadContent = defineRule<Rule>({
 
     return {
       JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {
-        const filename = context.getFilename?.() ?? "";
+        const filename = normalizeFilename(context.getFilename?.() ?? "");
         const isRootRouteFile = TANSTACK_ROOT_ROUTE_FILE_PATTERN.test(filename);
         if (!isRootRouteFile) return;
 
@@ -27,7 +28,7 @@ export const tanstackStartMissingHeadContent = defineRule<Rule>({
         }
       },
       "Program:exit"(programNode: EsTreeNode) {
-        const filename = context.getFilename?.() ?? "";
+        const filename = normalizeFilename(context.getFilename?.() ?? "");
         const isRootRouteFile = TANSTACK_ROOT_ROUTE_FILE_PATTERN.test(filename);
         if (!isRootRouteFile) return;
 
