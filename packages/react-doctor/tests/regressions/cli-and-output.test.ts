@@ -24,6 +24,10 @@ import {
   encodeAnnotationProperty,
   encodeAnnotationMessage,
 } from "../../src/cli/utils/annotation-encoding.js";
+import {
+  CODING_AGENT_ENVIRONMENT_VALUE_VARIABLES,
+  CODING_AGENT_ENVIRONMENT_VARIABLES,
+} from "../../src/cli/utils/is-ci-environment.js";
 import { NON_INTERACTIVE_ENVIRONMENT_VARIABLES } from "../../src/cli/utils/is-non-interactive-environment.js";
 import { setupReactProject, writeFile, writeJson } from "./_helpers.js";
 
@@ -51,7 +55,12 @@ const withAutomatedEnvironmentVariables = async <Value>(
   callback: () => Promise<Value>,
 ): Promise<Value> => {
   const savedEnvironment: EnvironmentVariableValues = {};
-  for (const environmentVariableName of NON_INTERACTIVE_ENVIRONMENT_VARIABLES) {
+  const environmentVariableNames = [
+    ...NON_INTERACTIVE_ENVIRONMENT_VARIABLES,
+    ...CODING_AGENT_ENVIRONMENT_VARIABLES,
+    ...CODING_AGENT_ENVIRONMENT_VALUE_VARIABLES,
+  ];
+  for (const environmentVariableName of environmentVariableNames) {
     savedEnvironment[environmentVariableName] = process.env[environmentVariableName];
     delete process.env[environmentVariableName];
   }
@@ -66,7 +75,7 @@ const withAutomatedEnvironmentVariables = async <Value>(
   try {
     return await callback();
   } finally {
-    for (const environmentVariableName of NON_INTERACTIVE_ENVIRONMENT_VARIABLES) {
+    for (const environmentVariableName of environmentVariableNames) {
       const previousValue = savedEnvironment[environmentVariableName];
       if (previousValue === undefined) {
         delete process.env[environmentVariableName];
@@ -271,6 +280,9 @@ export const Cart = () => {
     expect(normalizedStdout).toContain("Confidence requires code context.");
     expect(normalizedStdout).toContain(
       "Fix the underlying code instead of changing react-doctor config",
+    );
+    expect(normalizedStdout).toContain(
+      "For hook dependency findings like exhaustive-deps, do not blindly add missing deps",
     );
     expect(normalizedStdout).toContain("race conditions, security-sensitive flows");
     expect(normalizedStdout).toContain("theoretical issues without real impact");

@@ -63,9 +63,12 @@ const buildIssuesSummary = (input: CopyIssuesInput): string => {
   lines.push("1. Run `npx react-doctor@latest --verbose` to see full details");
   lines.push("2. Fix errors first, then warnings. Start with high-count rules.");
   lines.push("3. Read the code before acting. Treat findings as hypotheses, not commands.");
-  lines.push("4. Fix root causes, not symptoms. Don't suppress rules without evidence.");
-  lines.push("5. Run `npx react-doctor@latest --verbose --diff` after changes to verify.");
-  lines.push("6. Split unrelated fixes into separate PRs.");
+  lines.push(
+    "4. For hook dependency findings, don't blindly add deps; check whether the effect should be removed, moved, split, or rewritten to avoid render loops.",
+  );
+  lines.push("5. Fix root causes, not symptoms. Don't suppress rules without evidence.");
+  lines.push("6. Run `npx react-doctor@latest --verbose --diff` after changes to verify.");
+  lines.push("7. Split unrelated fixes into separate PRs.");
 
   return lines.join("\n");
 };

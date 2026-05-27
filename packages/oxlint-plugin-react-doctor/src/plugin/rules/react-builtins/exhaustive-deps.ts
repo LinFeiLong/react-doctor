@@ -682,7 +682,8 @@ export const exhaustiveDeps = defineRule<Rule>({
   id: "exhaustive-deps",
   severity: "warn",
   tags: ["test-noise"],
-  recommendation: "List every value the hook callback captures in its dependency array.",
+  recommendation:
+    "Audit captured values before editing dependency arrays; avoid blindly adding deps when the effect also updates state or captures unstable values.",
   category: "Correctness",
   create: (context) => {
     const settings = resolveExhaustiveDepsSettings(context.settings);
