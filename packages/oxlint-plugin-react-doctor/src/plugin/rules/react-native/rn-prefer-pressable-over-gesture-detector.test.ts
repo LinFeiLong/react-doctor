@@ -102,6 +102,26 @@ describe("rn-prefer-pressable-over-gesture-detector", () => {
     expect(result.diagnostics).toHaveLength(1);
   });
 
+  it("regression: numberOfTaps(1).numberOfTaps(2) chain — outer wins, no false positive", () => {
+    // The walker visits OUTERMOST → INNERMOST. In a fluent chain the
+    // outermost `.numberOfTaps(2)` is the effective call (last
+    // assignment wins). An earlier draft unconditionally overwrote
+    // the captured value with each inner encounter and could flag
+    // `.numberOfTaps(1).numberOfTaps(2)` as Pressable-eligible
+    // (treating it as single-tap). The fix keeps only the FIRST
+    // encountered value (= outermost).
+    const code = `
+      import { GestureDetector, Gesture } from "react-native-gesture-handler";
+      const Button = ({ onPress }) => (
+        <GestureDetector gesture={Gesture.Tap().numberOfTaps(1).numberOfTaps(2).onStart(onPress)}>
+          <Animated.View />
+        </GestureDetector>
+      );
+    `;
+    const result = runRule(rnPreferPressableOverGestureDetector, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
   it("does NOT flag double-tap (numberOfTaps(2))", () => {
     const code = `
       import { GestureDetector, Gesture } from "react-native-gesture-handler";

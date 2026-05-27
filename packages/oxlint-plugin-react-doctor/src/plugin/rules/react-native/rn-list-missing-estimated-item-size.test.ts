@@ -26,15 +26,29 @@ describe("rn-list-missing-estimated-item-size", () => {
     expect(result.diagnostics).toHaveLength(1);
   });
 
-  it("flags aliased import `FlashList as List` from the recycler package", () => {
-    // Aliased imports preserve the originally-exported name in the
-    // import-lookup map; the rule asks `isImportedFromModule(node, "FlashList", ...)`
-    // against the LOCAL name in the JSX, which is "FlashList" here even
-    // though the local binding is aliased.
+  it("flags genuinely-aliased import `FlashList as List`", () => {
+    // The detector must resolve the LOCAL JSX name back to its
+    // originally-exported symbol — aliased local bindings (where the
+    // JSX element name no longer matches "FlashList") still need to
+    // fire. Bugbot caught a prior false confidence here.
     const code = `
-      import { FlashList } from "@shopify/flash-list";
+      import { FlashList as List } from "@shopify/flash-list";
       const Screen = ({ items }) => (
-        <FlashList data={items} renderItem={renderItem} />
+        <List data={items} renderItem={renderItem} />
+      );
+    `;
+    const result = runRule(rnListMissingEstimatedItemSize, code);
+    expect(result.diagnostics).toHaveLength(1);
+    // Message names BOTH the local JSX name and the canonical symbol.
+    expect(result.diagnostics[0].message).toContain("List");
+    expect(result.diagnostics[0].message).toContain("FlashList");
+  });
+
+  it("flags genuinely-aliased import `LegendList as VList`", () => {
+    const code = `
+      import { LegendList as VList } from "@legendapp/list";
+      const Screen = ({ items }) => (
+        <VList data={items} renderItem={renderItem} />
       );
     `;
     const result = runRule(rnListMissingEstimatedItemSize, code);

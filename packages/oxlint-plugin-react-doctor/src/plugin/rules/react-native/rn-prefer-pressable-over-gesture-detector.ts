@@ -61,7 +61,16 @@ const analyzeGestureChain = (expression: EsTreeNode): GestureChainInfo | null =>
         numberOfTapsArgument,
       };
     }
-    if (methodName === "numberOfTaps" && callExpression.arguments?.length === 1) {
+    // The walker visits OUTERMOST → INNERMOST. In a fluent chain,
+    // `.numberOfTaps(2)` outermost is the semantically effective call
+    // (last assignment wins in a fluent builder). Earlier inner
+    // `.numberOfTaps(1)` calls are overridden and shouldn't reset our
+    // captured value — so only record the FIRST occurrence we see.
+    if (
+      methodName === "numberOfTaps" &&
+      numberOfTapsArgument === null &&
+      callExpression.arguments?.length === 1
+    ) {
       numberOfTapsArgument = callExpression.arguments[0] ?? null;
     }
     chainMethodNames.push(methodName);

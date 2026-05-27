@@ -1,5 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
-import { isImportedFromModule } from "../../utils/find-import-source-for-name.js";
+import { getImportedNameFromModule } from "../../utils/find-import-source-for-name.js";
 import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
@@ -43,17 +43,25 @@ export const rnListMissingEstimatedItemSize = defineRule<Rule>({
     "Add `estimatedItemSize={<avg-row-height-in-px>}` so the initial container pool matches the real rows — without it the engine guesses and flashes blank cells on fast scroll",
   create: (context: RuleContext) => ({
     JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {
-      const elementName = resolveJsxElementName(node);
-      if (!elementName) return;
-      const packageSources = RECYCLABLE_LIST_PACKAGES[elementName];
-      if (!packageSources) return;
-      // Only fire when the local JSX name is imported from one of the
-      // recycler-owning packages. Skips homegrown / wrapper components
-      // that happen to reuse the FlashList / LegendList name.
-      const isImportedFromRecyclerPackage = packageSources.some((packageSource) =>
-        isImportedFromModule(node, elementName, packageSource),
-      );
-      if (!isImportedFromRecyclerPackage) return;
+      const localElementName = resolveJsxElementName(node);
+      if (!localElementName) return;
+      // Resolve the LOCAL JSX name back to its originally-exported
+      // symbol from one of the recycler-owning packages. This handles
+      // both plain (`import { FlashList }`) and aliased
+      // (`import { FlashList as List }; <List />`) imports — we never
+      // key off the local JSX name directly.
+      let canonicalRecyclerName: string | null = null;
+      for (const [canonicalName, packageSources] of Object.entries(RECYCLABLE_LIST_PACKAGES)) {
+        const matched = packageSources.some(
+          (packageSource) =>
+            getImportedNameFromModule(node, localElementName, packageSource) === canonicalName,
+        );
+        if (matched) {
+          canonicalRecyclerName = canonicalName;
+          break;
+        }
+      }
+      if (!canonicalRecyclerName) return;
 
       let hasSizingHint = false;
       let dataIsEmptyLiteral = false;
@@ -82,7 +90,7 @@ export const rnListMissingEstimatedItemSize = defineRule<Rule>({
 
       context.report({
         node,
-        message: `<${elementName}> is missing \`estimatedItemSize\` — the engine guesses the initial container pool from a default that often mismatches your rows, causing blank flashes on fast scroll`,
+        message: `<${localElementName}> (from ${canonicalRecyclerName}) is missing \`estimatedItemSize\` — the engine guesses the initial container pool from a default that often mismatches your rows, causing blank flashes on fast scroll`,
       });
     },
   }),
