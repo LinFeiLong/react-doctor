@@ -18,8 +18,6 @@ If the score dropped, fix the regressions before committing.
 
 Run `npx react-doctor@latest --verbose` (without `--diff`) to scan the full codebase. Fix issues by severity — errors first, then warnings.
 
-For hook dependency findings such as `exhaustive-deps`, do not blindly add missing dependencies. Read the effect first and check whether it should be removed, moved into an event handler, converted to a functional update, split, or otherwise rewritten to avoid creating a render loop.
-
 ## /doctor — full local triage workflow
 
 When the user types `/doctor`, says "run react doctor", or asks for a full triage / cleanup pass (not just a regression check), fetch the canonical local-triage playbook and follow every step in it:

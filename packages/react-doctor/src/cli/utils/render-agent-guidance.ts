@@ -7,7 +7,6 @@ const AGENT_GUIDANCE_LINES = [
   "For each group, decide true positive, false positive, or needs-human-review, then assign high/medium/low confidence.",
   "Do not suppress a finding without evidence from the file in question. Confidence requires code context.",
   "Understand the root cause before editing. Fix the underlying code instead of changing react-doctor config or suppressing rules unless explicitly asked.",
-  "For hook dependency findings like exhaustive-deps, do not blindly add missing deps; first check whether the effect should be removed, moved to an event handler, converted to a functional update, or split to avoid render loops.",
   "Investigate deeply where relevant: race conditions, security-sensitive flows, state propagation, multi-file refactors, and downstream dependency chains.",
   "Ignore pure style preferences, theoretical issues without real impact, missing features, and unrelated pre-existing code.",
   "Start with high-confidence fixes that preserve behavior. Leave low-confidence or product-dependent changes as notes.",
