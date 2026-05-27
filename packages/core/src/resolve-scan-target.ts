@@ -1,6 +1,11 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { loadConfigWithSource } from "./load-config.js";
-import { isDirectory, NotADirectoryError } from "./project-info/index.js";
+import {
+  isDirectory,
+  NotADirectoryError,
+  ProjectNotFoundError,
+} from "./project-info/index.js";
 import { resolveConfigRootDir } from "./resolve-config-root-dir.js";
 import { resolveDiagnoseTarget } from "./resolve-diagnose-target.js";
 import type { ReactDoctorConfig } from "./types/index.js";
@@ -63,7 +68,9 @@ export const resolveScanTarget = (requestedDirectory: string): ResolvedScanTarge
   const resolvedDirectory = resolved ?? directoryAfterRedirect;
 
   if (!isDirectory(resolvedDirectory)) {
-    throw new NotADirectoryError(resolvedDirectory);
+    throw existsSync(resolvedDirectory)
+      ? new NotADirectoryError(resolvedDirectory)
+      : new ProjectNotFoundError(resolvedDirectory);
   }
 
   return {
