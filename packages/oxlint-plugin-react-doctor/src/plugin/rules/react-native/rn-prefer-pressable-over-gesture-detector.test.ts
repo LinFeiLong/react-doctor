@@ -122,6 +122,37 @@ describe("rn-prefer-pressable-over-gesture-detector", () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 
+  it("regression: numberOfTaps(<dynamic>) — bail conservatively, no false positive", () => {
+    // Bugbot caught that the previous guard only rejected literal
+    // numeric values > 1. A non-literal argument like
+    // `numberOfTaps(config.taps)` fell through and was treated as
+    // Pressable-eligible, even though the runtime value could be 2+.
+    // Fix: any numberOfTaps call that isn't a static `1` literal bails.
+    const code = `
+      import { GestureDetector, Gesture } from "react-native-gesture-handler";
+      const Button = ({ config, onPress }) => (
+        <GestureDetector gesture={Gesture.Tap().numberOfTaps(config.taps).onStart(onPress)}>
+          <Animated.View />
+        </GestureDetector>
+      );
+    `;
+    const result = runRule(rnPreferPressableOverGestureDetector, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  it("regression: numberOfTaps(ternary) — bail conservatively", () => {
+    const code = `
+      import { GestureDetector, Gesture } from "react-native-gesture-handler";
+      const Button = ({ double, onPress }) => (
+        <GestureDetector gesture={Gesture.Tap().numberOfTaps(double ? 2 : 1).onStart(onPress)}>
+          <Animated.View />
+        </GestureDetector>
+      );
+    `;
+    const result = runRule(rnPreferPressableOverGestureDetector, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
   it("does NOT flag double-tap (numberOfTaps(2))", () => {
     const code = `
       import { GestureDetector, Gesture } from "react-native-gesture-handler";

@@ -85,8 +85,15 @@ const isTapChainEligibleForPressable = (chain: GestureChainInfo): boolean => {
     if (COMPOSING_CHAIN_METHOD_NAMES.has(methodName)) return false;
   }
   const tapsArg = chain.numberOfTapsArgument;
-  if (tapsArg !== null && isNodeOfType(tapsArg, "Literal") && typeof tapsArg.value === "number") {
-    if (tapsArg.value > 1) return false;
+  if (tapsArg !== null) {
+    // The chain called `.numberOfTaps(...)`. Only a static numeric `1`
+    // is Pressable-equivalent — anything else (`numberOfTaps(2)`,
+    // `numberOfTaps(config.taps)`, `numberOfTaps(double ? 2 : 1)`)
+    // signals potentially multi-tap behavior that Pressable can't
+    // model. Bail conservatively.
+    if (!isNodeOfType(tapsArg, "Literal")) return false;
+    if (typeof tapsArg.value !== "number") return false;
+    if (tapsArg.value !== 1) return false;
   }
   return true;
 };
