@@ -201,6 +201,33 @@ describe("activity-wraps-effect-heavy-subtree", () => {
     expect(result.diagnostics).toHaveLength(1);
   });
 
+  it("regression: namespace <React.Activity> with same-file user component named `Activity` — no false positive", () => {
+    // Bugbot caught that the child-name walker pulls "Activity" out of
+    // <React.Activity> via the trailing-identifier shape, then asked
+    // findSameFileComponentBody to look up "Activity" in the same
+    // file. If a user component happens to be named `Activity` with
+    // effects, this produced a false-positive diagnostic even though
+    // that component isn't actually a child of the boundary.
+    const code = `
+      import React, { useEffect } from "react";
+      const Activity = ({ children }) => {
+        useEffect(() => trackOpen(), []);
+        useEffect(() => measure(), []);
+        return <>{children}</>;
+      };
+      const Screen = ({ open }) => (
+        <React.Activity mode={open ? "visible" : "hidden"}>
+          <Spinner />
+        </React.Activity>
+      );
+    `;
+    const result = runRule(activityWrapsEffectHeavySubtree, code);
+    // The inner content is just <Spinner /> (no same-file body), and
+    // the canonical "Activity" name is explicitly excluded from the
+    // child set. No diagnostic.
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
   it("does NOT flag <Calendar.Activity> (namespace isn't a React import)", () => {
     const code = `
       import * as Calendar from "./calendar";

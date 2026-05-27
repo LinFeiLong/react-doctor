@@ -176,9 +176,20 @@ export const activityWrapsEffectHeavySubtree = defineRule<Rule>({
 
         const childComponentNames = new Set<string>();
         collectChildComponentNames(node, childComponentNames);
-        // Drop the Activity name itself if a child happens to be a
-        // nested <Activity /> — that's a different rule's concern.
+        // Drop any name that resolves to Activity itself, regardless of
+        // import shape:
+        //   - named import (`import { Activity }`) — covered by
+        //     `localActivityNames`
+        //   - namespace import (`<React.Activity>`) — the child walker
+        //     extracts the trailing identifier `"Activity"` which is
+        //     also one of `ACTIVITY_IMPORTED_NAMES`
+        // Without removing the canonical names, a same-file user
+        // component coincidentally named `Activity` produces a false
+        // positive on the namespace-import path.
         for (const activityName of localActivityNames) childComponentNames.delete(activityName);
+        for (const canonicalActivityName of ACTIVITY_IMPORTED_NAMES) {
+          childComponentNames.delete(canonicalActivityName);
+        }
         if (childComponentNames.size === 0) return;
 
         const programRoot = findProgramRoot(node);
