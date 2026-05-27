@@ -683,7 +683,7 @@ export const exhaustiveDeps = defineRule<Rule>({
   severity: "warn",
   tags: ["test-noise"],
   recommendation:
-    "Don't blindly add missing dependencies. Read the hook callback first; if a missing value is updated there or recreated every render, rewrite the code or stabilize the value instead.",
+    "Don't blindly add missing dependencies. Read the hook callback first; for example, if it reads `count` and calls `setCount(count + 1)`, use a functional update instead of adding `count` and creating a loop.",
   category: "Correctness",
   create: (context) => {
     const settings = resolveExhaustiveDepsSettings(context.settings);
