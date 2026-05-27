@@ -42,7 +42,7 @@
   },
   "scripts": {
     "dev": "vp pack --watch",
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && NODE_ENV=production vp pack",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && cross-env NODE_ENV=production vp pack",
     "typecheck": "tsc --noEmit",
     "test": "vp test run"
   },
