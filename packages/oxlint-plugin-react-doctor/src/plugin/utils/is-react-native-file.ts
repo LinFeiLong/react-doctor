@@ -26,7 +26,7 @@ const NATIVE_FILE_EXTENSION_PATTERN = /\.(?:ios|android|native)\.[cm]?[jt]sx?$/;
 //      `.native.tsx`) → ACTIVE. These files always target RN.
 //   2. Filename ends with a web extension (`.web.tsx`) → INACTIVE.
 //   3. Nearest package.json classifies as "web" → INACTIVE.
-//   4. Nearest package.json classifies as "react-native" → ACTIVE.
+//   4. Nearest package.json classifies as "expo" or "react-native" → ACTIVE.
 //   5. Nearest package.json classifies as "unknown" → fall back to the
 //      project-level framework setting:
 //      • `react-native` or `expo` → ACTIVE
@@ -51,7 +51,7 @@ export const isReactNativeFileActive = (context: RuleContext): boolean => {
 
   const packagePlatform = classifyPackagePlatform(filename);
   if (packagePlatform === "web") return false;
-  if (packagePlatform === "react-native") return true;
+  if (packagePlatform === "expo" || packagePlatform === "react-native") return true;
 
   const framework = getReactDoctorStringSetting(context.settings, "framework");
   if (framework === "react-native" || framework === "expo") return true;
