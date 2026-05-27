@@ -89,43 +89,37 @@ const freshFromObjectLiteral = (expression: EsTreeNode): FreshReturn | null => {
   return null;
 };
 
-// Walks a chain of CallExpressions looking for an "always-fresh"
-// producer step. Returns the outermost matching expression so the
-// diagnostic points at the actual chain (not a deeply-nested arg).
+// Only the OUTERMOST method in the chain decides whether the atom's
+// value is a fresh structure. Walking inward past non-matching methods
+// produces false positives: `get(users).filter(fn).reduce(sum, 0)`
+// consumes the filtered array and returns a primitive that dedupes
+// via Object.is correctly — even though `.filter()` appears inside
+// the chain.
 const freshFromMethodChain = (expression: EsTreeNode): FreshReturn | null => {
-  let cursor: EsTreeNode | null = expression;
-  while (cursor) {
-    if (!isNodeOfType(cursor, "CallExpression")) return null;
-    const callee = cursor.callee;
-    if (isNodeOfType(callee, "MemberExpression")) {
-      if (callee.computed) return null;
-      if (!isNodeOfType(callee.property, "Identifier")) return null;
-      const methodName = callee.property.name;
-      if (FRESH_ARRAY_INSTANCE_METHODS.has(methodName)) {
-        return { kind: "array", reportNode: expression };
-      }
-      // Static-method form: `Object.entries(get(x))`, `Array.from(get(x))`.
-      if (isNodeOfType(callee.object, "Identifier")) {
-        const staticMethods = FRESH_STATIC_OBJECT_CALLS[callee.object.name];
-        if (staticMethods?.has(methodName)) {
-          return {
-            kind:
-              callee.object.name === "Array" ||
-              methodName === "keys" ||
-              methodName === "values" ||
-              methodName === "entries"
-                ? "array"
-                : "object",
-            reportNode: expression,
-          };
-        }
-      }
-      // Not a fresh-producer step — walk inward through the receiver to
-      // see if an earlier link does produce a fresh value.
-      cursor = callee.object as EsTreeNode | null;
-      continue;
+  if (!isNodeOfType(expression, "CallExpression")) return null;
+  const callee = expression.callee;
+  if (!isNodeOfType(callee, "MemberExpression")) return null;
+  if (callee.computed) return null;
+  if (!isNodeOfType(callee.property, "Identifier")) return null;
+  const methodName = callee.property.name;
+  if (FRESH_ARRAY_INSTANCE_METHODS.has(methodName)) {
+    return { kind: "array", reportNode: expression };
+  }
+  // Static-method form: `Object.entries(get(x))`, `Array.from(get(x))`.
+  if (isNodeOfType(callee.object, "Identifier")) {
+    const staticMethods = FRESH_STATIC_OBJECT_CALLS[callee.object.name];
+    if (staticMethods?.has(methodName)) {
+      return {
+        kind:
+          callee.object.name === "Array" ||
+          methodName === "keys" ||
+          methodName === "values" ||
+          methodName === "entries"
+            ? "array"
+            : "object",
+        reportNode: expression,
+      };
     }
-    return null;
   }
   return null;
 };

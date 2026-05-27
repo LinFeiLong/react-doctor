@@ -159,6 +159,42 @@ describe("jotai-derived-atom-returns-fresh-object", () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 
+  it("does NOT flag .filter().reduce() — outer .reduce returns a primitive", () => {
+    // Regression: an earlier draft walked inward past non-matching
+    // methods and would flag any chain that included a fresh-producer
+    // step anywhere. The outer terminator (reduce/find/some/every/
+    // includes/at/join) consumes the array and returns a scalar that
+    // dedupes via Object.is. Only the OUTERMOST step decides freshness.
+    const code = `
+      import { atom } from "jotai";
+      const totalAtom = atom((get) =>
+        get(usersAtom).filter((u) => u.active).reduce((sum, u) => sum + u.score, 0)
+      );
+    `;
+    const result = runRule(jotaiDerivedAtomReturnsFreshObject, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  it("does NOT flag .find() / .some() / .includes() chains over a get-array", () => {
+    const code = `
+      import { atom } from "jotai";
+      const firstActiveAtom = atom((get) => get(usersAtom).filter((u) => u.active).find((u) => u.id === "primary"));
+      const anyActiveAtom = atom((get) => get(usersAtom).some((u) => u.active));
+      const hasPrimaryAtom = atom((get) => get(usersAtom).map((u) => u.id).includes("primary"));
+    `;
+    const result = runRule(jotaiDerivedAtomReturnsFreshObject, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  it("does NOT flag .join() — returns a string", () => {
+    const code = `
+      import { atom } from "jotai";
+      const csvAtom = atom((get) => get(usersAtom).map((u) => u.id).join(","));
+    `;
+    const result = runRule(jotaiDerivedAtomReturnsFreshObject, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
   it("flags atom whose block body has multiple returns ALL producing fresh literals", () => {
     const code = `
       import { atom } from "jotai";
