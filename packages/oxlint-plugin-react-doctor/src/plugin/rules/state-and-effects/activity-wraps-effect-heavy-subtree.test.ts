@@ -71,6 +71,37 @@ describe("activity-wraps-effect-heavy-subtree", () => {
     expect(result.diagnostics).toHaveLength(1);
   });
 
+  it('does NOT flag Activity with static `mode="hidden"` (pinned, no toggle)', () => {
+    // Regression: static `mode="hidden"` is also non-toggleable —
+    // there's no hide/show cycle, so no Effect teardown / recreate.
+    // The rule must only fire on truly dynamic mode expressions.
+    const code = `
+      import { Activity, useEffect } from "react";
+      const Sheet = () => { useEffect(() => subscribe(), []); return null; };
+      const Screen = () => (
+        <Activity mode="hidden">
+          <Sheet />
+        </Activity>
+      );
+    `;
+    const result = runRule(activityWrapsEffectHeavySubtree, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  it('does NOT flag Activity with static `mode={"hidden"}` JSXExpressionContainer', () => {
+    const code = `
+      import { Activity, useEffect } from "react";
+      const Sheet = () => { useEffect(() => subscribe(), []); return null; };
+      const Screen = () => (
+        <Activity mode={"hidden"}>
+          <Sheet />
+        </Activity>
+      );
+    `;
+    const result = runRule(activityWrapsEffectHeavySubtree, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
   it("does NOT flag Activity with statically visible mode (no toggle)", () => {
     const code = `
       import { Activity, useEffect } from "react";

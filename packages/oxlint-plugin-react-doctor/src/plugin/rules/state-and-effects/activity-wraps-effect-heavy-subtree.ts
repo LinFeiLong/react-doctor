@@ -23,13 +23,16 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 const ACTIVITY_IMPORTED_NAMES = new Set(["Activity", "unstable_Activity"]);
 
-const isStaticVisibleMode = (modeAttribute: EsTreeNodeOfType<"JSXAttribute">): boolean => {
+// A statically-known mode value (whether `"visible"`, `"hidden"`, or any
+// other literal) means the boundary has no toggle — and therefore no
+// hide/show cycle, no Effect teardown / recreate, no remount storm.
+// Only flag toggleable shapes like `mode={open ? "visible" : "hidden"}`.
+const isStaticallyKnownMode = (modeAttribute: EsTreeNodeOfType<"JSXAttribute">): boolean => {
   const value = modeAttribute.value;
   if (!value) return false;
-  if (isNodeOfType(value, "Literal")) return value.value === "visible";
+  if (isNodeOfType(value, "Literal")) return true;
   if (isNodeOfType(value, "JSXExpressionContainer")) {
-    const expression = value.expression;
-    if (isNodeOfType(expression, "Literal")) return expression.value === "visible";
+    return isNodeOfType(value.expression, "Literal");
   }
   return false;
 };
@@ -166,8 +169,10 @@ export const activityWrapsEffectHeavySubtree = defineRule<Rule>({
         // No `mode` prop = default visible = always visible = no
         // hide/show cycle. Skip.
         if (!modeAttribute) return;
-        // Statically `mode="visible"` = pinned visible = no cycle.
-        if (isStaticVisibleMode(modeAttribute)) return;
+        // Any statically-known mode value (`"visible"`, `"hidden"`, ...) =
+        // pinned, no toggle, no hide/show cycle. Only TOGGLEABLE modes
+        // trigger the Effect teardown / recreate cost.
+        if (isStaticallyKnownMode(modeAttribute)) return;
 
         const childComponentNames = new Set<string>();
         collectChildComponentNames(node, childComponentNames);
