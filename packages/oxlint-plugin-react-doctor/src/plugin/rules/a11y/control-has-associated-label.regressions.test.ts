@@ -60,4 +60,24 @@ describe("a11y/control-has-associated-label regressions", () => {
 
     expect(result.diagnostics).toEqual([]);
   });
+
+  it("does not treat labels inside callback props as rendered labels", () => {
+    const result = runRule(
+      controlHasAssociatedLabel,
+      `
+        const Demo = () => {
+          const fieldId = "amount";
+
+          return (
+            <div>
+              <FieldShell renderLabel={() => <label htmlFor={fieldId}>Amount</label>} />
+              <input id={fieldId} name="amount" type="number" />
+            </div>
+          );
+        };
+      `,
+    );
+
+    expect(result.diagnostics).toHaveLength(1);
+  });
 });

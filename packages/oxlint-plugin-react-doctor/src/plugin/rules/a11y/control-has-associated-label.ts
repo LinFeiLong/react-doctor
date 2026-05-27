@@ -7,7 +7,6 @@ import { getStaticTemplateLiteralValue } from "../../utils/get-static-template-l
 import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
-import { isAstNode } from "../../utils/is-ast-node.js";
 import { isHiddenFromScreenReader } from "../../utils/is-hidden-from-screen-reader.js";
 import { isInteractiveElement } from "../../utils/is-interactive-element.js";
 import { isInteractiveRole } from "../../utils/is-interactive-role.js";
@@ -132,22 +131,6 @@ const getAttributeMatchKey = (
   return null;
 };
 
-const getAstChildren = (node: EsTreeNode): ReadonlyArray<EsTreeNode> => {
-  const children: EsTreeNode[] = [];
-  const nodeRecord = node as unknown as Record<string, unknown>;
-  for (const [key, value] of Object.entries(nodeRecord)) {
-    if (key === "parent") continue;
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        if (isAstNode(item)) children.push(item);
-      }
-      continue;
-    }
-    if (isAstNode(value)) children.push(value);
-  }
-  return children;
-};
-
 interface CheckChildContext {
   depth: number;
   customAttributes: ReadonlyArray<string>;
@@ -233,6 +216,8 @@ const searchForHtmlForLabel = (
   controlIdKey: string,
   context: CheckChildContext,
 ): boolean => {
+  const children =
+    isNodeOfType(node, "JSXElement") || isNodeOfType(node, "JSXFragment") ? node.children : [];
   if (isNodeOfType(node, "JSXElement")) {
     const tagName = getElementType(node.openingElement, context.settings);
     if (tagName === LABEL_ELEMENT) {
@@ -248,8 +233,8 @@ const searchForHtmlForLabel = (
       }
     }
   }
-  for (const child of getAstChildren(node)) {
-    if (searchForHtmlForLabel(child, controlIdKey, context)) {
+  for (const child of children) {
+    if (searchForHtmlForLabel(child as EsTreeNode, controlIdKey, context)) {
       return true;
     }
   }
