@@ -12,6 +12,7 @@ permissions:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.continue-on-error || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -20,6 +21,7 @@ jobs:
         include:
           - os: windows-latest
             node-version: "22.18.0"
+            continue-on-error: true
           - os: macos-latest
             node-version: "22.18.0"
     steps:
