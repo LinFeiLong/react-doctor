@@ -13,6 +13,7 @@ import { isInteractiveRole } from "../../utils/is-interactive-role.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
+import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
@@ -182,12 +183,18 @@ const hasAccessibleLabelText = (
   return element.children.some((child) => checkChildForLabel(child as EsTreeNode, 1, context));
 };
 
+const isFunctionBoundary = (node: EsTreeNode): boolean =>
+  isNodeOfType(node, "ArrowFunctionExpression") ||
+  isNodeOfType(node, "FunctionExpression") ||
+  isNodeOfType(node, "FunctionDeclaration");
+
 const hasAncestorLabel = (
   element: EsTreeNodeOfType<"JSXElement">,
   context: CheckChildContext,
 ): boolean => {
   let current = element.parent;
   while (current) {
+    if (isFunctionBoundary(current)) break;
     if (isNodeOfType(current, "JSXElement")) {
       const tagName = getElementType(current.openingElement, context.settings);
       if (tagName === LABEL_ELEMENT && hasAccessibleLabelText(current, context)) {
@@ -203,6 +210,7 @@ const findEnclosingJsxTreeRoot = (element: EsTreeNodeOfType<"JSXElement">): EsTr
   let root: EsTreeNode = element;
   let current = element.parent;
   while (current) {
+    if (isFunctionBoundary(current)) break;
     if (isNodeOfType(current, "JSXElement") || isNodeOfType(current, "JSXFragment")) {
       root = current;
     }
@@ -211,11 +219,36 @@ const findEnclosingJsxTreeRoot = (element: EsTreeNodeOfType<"JSXElement">): EsTr
   return root;
 };
 
+const collectJsxFromExpression = (rawExpression: EsTreeNode): ReadonlyArray<EsTreeNode> => {
+  const expression = stripParenExpression(rawExpression);
+  if (isNodeOfType(expression, "JSXElement") || isNodeOfType(expression, "JSXFragment")) {
+    return [expression];
+  }
+  if (isNodeOfType(expression, "LogicalExpression")) {
+    return [
+      ...collectJsxFromExpression(expression.left as EsTreeNode),
+      ...collectJsxFromExpression(expression.right as EsTreeNode),
+    ];
+  }
+  if (isNodeOfType(expression, "ConditionalExpression")) {
+    return [
+      ...collectJsxFromExpression(expression.consequent as EsTreeNode),
+      ...collectJsxFromExpression(expression.alternate as EsTreeNode),
+    ];
+  }
+  return [];
+};
+
 const searchForHtmlForLabel = (
   node: EsTreeNode,
   controlIdKey: string,
   context: CheckChildContext,
 ): boolean => {
+  if (isNodeOfType(node, "JSXExpressionContainer")) {
+    return collectJsxFromExpression(node.expression as EsTreeNode).some((jsxNode) =>
+      searchForHtmlForLabel(jsxNode, controlIdKey, context),
+    );
+  }
   const children =
     isNodeOfType(node, "JSXElement") || isNodeOfType(node, "JSXFragment") ? node.children : [];
   if (isNodeOfType(node, "JSXElement")) {

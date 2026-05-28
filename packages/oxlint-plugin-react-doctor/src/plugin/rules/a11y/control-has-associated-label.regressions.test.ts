@@ -80,4 +80,64 @@ describe("a11y/control-has-associated-label regressions", () => {
 
     expect(result.diagnostics).toHaveLength(1);
   });
+
+  it("does not treat ancestor labels across render-prop boundaries as associations", () => {
+    const result = runRule(
+      controlHasAssociatedLabel,
+      `
+        const Demo = () => (
+          <label>
+            Some text
+            <Component render={() => <input type="text" />} />
+          </label>
+        );
+      `,
+    );
+
+    expect(result.diagnostics).toHaveLength(1);
+  });
+
+  it("accepts htmlFor/id pairs inside conditional rendering", () => {
+    const result = runRule(
+      controlHasAssociatedLabel,
+      `
+        const Demo = ({ showField }) => (
+          <div>
+            {showField && (
+              <>
+                <label htmlFor="amount">Amount</label>
+                <input id="amount" name="amount" type="number" />
+              </>
+            )}
+          </div>
+        );
+      `,
+    );
+
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("accepts htmlFor/id pairs inside ternary expressions", () => {
+    const result = runRule(
+      controlHasAssociatedLabel,
+      `
+        const Demo = ({ variant }) => (
+          <div>
+            {variant === "a"
+              ? <>
+                  <label htmlFor="fieldA">Field A</label>
+                  <input id="fieldA" type="text" />
+                </>
+              : <>
+                  <label htmlFor="fieldB">Field B</label>
+                  <input id="fieldB" type="text" />
+                </>
+            }
+          </div>
+        );
+      `,
+    );
+
+    expect(result.diagnostics).toEqual([]);
+  });
 });
