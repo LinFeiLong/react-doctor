@@ -41,4 +41,8 @@ describe("stripUnknownCliFlags", () => {
   it("keeps an optional-value flag followed by another flag", () => {
     expect(stripUserArguments(["--diff", "--json"])).toEqual(["--diff", "--json"]);
   });
+
+  it("keeps --triage so the AI triage flag reaches Commander", () => {
+    expect(stripUserArguments([".", "--triage"])).toEqual([".", "--triage"]);
+  });
 });

@@ -20,4 +20,5 @@ export interface InspectFlags {
   explain?: string;
   why?: string;
   failOn?: string;
+  triage?: boolean;
 }

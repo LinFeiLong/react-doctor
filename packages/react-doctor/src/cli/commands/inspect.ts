@@ -47,6 +47,7 @@ import { resolveEffectiveDiff } from "../utils/resolve-effective-diff.js";
 import { resolveFailOnLevel } from "../utils/resolve-fail-on-level.js";
 import { resolveProjectDiffIncludePaths } from "../utils/resolve-project-diff-include-paths.js";
 import { runExplain } from "../utils/run-explain.js";
+import { runTriage } from "../utils/run-triage.js";
 import { selectProjects } from "../utils/select-projects.js";
 import { shouldFailForDiagnostics } from "../utils/should-fail-for-diagnostics.js";
 import { shouldSkipPrompts } from "../utils/should-skip-prompts.js";
@@ -214,6 +215,19 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
           resolvedDirectory,
           startTime,
         });
+
+        if (flags.triage && !isQuiet) {
+          const triageDiagnostics = filterDiagnosticsForSurface(
+            remappedDiagnostics,
+            scanOptions.outputSurface ?? "cli",
+            userConfig,
+          );
+          await runTriage({
+            diagnostics: triageDiagnostics,
+            rootDirectory: resolvedDirectory,
+            verbose: Boolean(flags.verbose),
+          });
+        }
       } finally {
         snapshot.cleanup();
       }
@@ -312,6 +326,19 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
       resolvedDirectory,
       startTime,
     });
+
+    if (flags.triage && !isQuiet) {
+      const triageDiagnostics = filterDiagnosticsForSurface(
+        allDiagnostics,
+        scanOptions.outputSurface ?? "cli",
+        userConfig,
+      );
+      await runTriage({
+        diagnostics: triageDiagnostics,
+        rootDirectory: resolvedDirectory,
+        verbose: Boolean(flags.verbose),
+      });
+    }
 
     const setupProjectRoot = resolveInstallSetupProjectRoot({
       scanRoot: resolvedDirectory,

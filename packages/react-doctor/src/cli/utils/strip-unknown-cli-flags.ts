@@ -25,6 +25,7 @@ const ROOT_FLAG_SPEC: CliFlagSpec = {
     "--respect-inline-disables",
     "--score",
     "--staged",
+    "--triage",
     "--verbose",
     "--version",
     "--yes",

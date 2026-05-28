@@ -58,6 +58,10 @@ const program = new Command()
     "--no-respect-inline-disables",
     "audit mode: neutralize inline lint suppressions before scanning",
   )
+  .option(
+    "--triage",
+    "after the scan, hand diagnostics to Claude (Agent SDK) for false-positive filtering and P0-P3 prioritization (uses your Claude subscription if you've run `claude setup-token` or `claude /login`; otherwise set ANTHROPIC_API_KEY)",
+  )
   .addHelpText(
     "after",
     `

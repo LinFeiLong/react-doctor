@@ -38,4 +38,12 @@ export const validateModeFlags = (flags: InspectFlags): void => {
       "--explain cannot be combined with --json, --score, --annotations, or --staged.",
     );
   }
+  if (flags.triage) {
+    if (flags.json || flags.score || flags.annotations) {
+      throw new Error("--triage cannot be combined with --json, --score, or --annotations.");
+    }
+    if (explainArgument !== undefined) {
+      throw new Error("--triage cannot be combined with --explain or --why.");
+    }
+  }
 };
