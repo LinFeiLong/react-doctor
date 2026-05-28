@@ -15,10 +15,9 @@ import path from "node:path";
 // single route segment.
 //
 // https://nextjs.org/docs/app/api-reference/file-conventions/metadata
-const NEXTJS_METADATA_IMAGE_BASENAME_PATTERN =
-  /^(opengraph-image|twitter-image|icon|apple-icon)\d*\.(jsx?|tsx?)$/;
-
 export const isNextjsMetadataImageRouteFilename = (rawFilename: string | undefined): boolean => {
   if (!rawFilename) return false;
-  return NEXTJS_METADATA_IMAGE_BASENAME_PATTERN.test(path.basename(rawFilename));
+  return /^(opengraph-image|twitter-image|icon|apple-icon)\d*\.(jsx?|tsx?)$/.test(
+    path.basename(rawFilename),
+  );
 };

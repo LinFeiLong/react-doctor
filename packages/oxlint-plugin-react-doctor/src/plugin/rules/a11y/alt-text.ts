@@ -184,11 +184,6 @@ export const altText = defineRule<Rule>({
   recommendation: "Provide `alt` (or aria-label / aria-labelledby) for non-decorative images.",
   category: "Accessibility",
   create: (context): RuleVisitors => {
-    // Next.js `opengraph-image.tsx` / `twitter-image.tsx` / `icon.tsx` /
-    // `apple-icon.tsx` files (with optional numeric suffix) return an
-    // `ImageResponse` from `next/og` that rasterizes JSX into a static
-    // image. No browser DOM, no screen reader, so `alt` / `aria-*` are
-    // unactionable in this context.
     if (isNextjsMetadataImageRouteFilename(context.getFilename?.())) return {};
     const settings = resolveSettings(context.settings);
     // Settings.elements selects WHICH element classes to check.
