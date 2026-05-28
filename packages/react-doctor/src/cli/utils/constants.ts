@@ -16,10 +16,10 @@ export const INTERNAL_ERROR_JSON_FALLBACK =
   '{"schemaVersion":1,"ok":false,"error":{"message":"Internal error","name":"Error","chain":[]}}\n';
 
 // --triage caps. We hand every surviving diagnostic to Claude in a single
-// prompt; these guardrails keep prompt size and runtime bounded on very
-// noisy projects without silently dropping work mid-list.
+// prompt; this cap keeps the prompt size bounded on noisy projects without
+// silently dropping work mid-list. No wall-clock timeout — the SDK runs
+// until Claude returns a result or the user Ctrl-Cs.
 export const TRIAGE_MAX_DIAGNOSTICS_COUNT = 200;
-export const TRIAGE_TIMEOUT_MS = 300_000;
 // Auth sources, listed in preferred order. The Agent SDK accepts any of:
 // 1. CLAUDE_CODE_OAUTH_TOKEN — `claude setup-token` against a Pro/Max plan
 // 2. ANTHROPIC_API_KEY — a console API key (pay-as-you-go billing)

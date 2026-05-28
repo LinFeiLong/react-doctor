@@ -5,7 +5,6 @@ import {
   TRIAGE_DEFAULT_MODEL,
   TRIAGE_MAX_DIAGNOSTICS_COUNT,
   TRIAGE_MODEL_ENV_VARIABLE,
-  TRIAGE_TIMEOUT_MS,
 } from "./constants.js";
 import { getTriageInstructions } from "./triage-instructions.js";
 
@@ -202,51 +201,43 @@ export const triageDiagnostics = async (input: TriageRunInput): Promise<TriageOu
   const overflowed = Math.max(0, input.diagnostics.length - TRIAGE_MAX_DIAGNOSTICS_COUNT);
   const triageInput = input.diagnostics.slice(0, TRIAGE_MAX_DIAGNOSTICS_COUNT);
   const model = process.env[TRIAGE_MODEL_ENV_VARIABLE] ?? TRIAGE_DEFAULT_MODEL;
-
-  const abortController = new AbortController();
-  const timeoutHandle = setTimeout(() => abortController.abort(), TRIAGE_TIMEOUT_MS);
   const startedAtMilliseconds = Date.now();
 
   let responseText = "";
   let totalCostUsd: number | null = null;
 
-  try {
-    const queryStream = query({
-      prompt: buildUserPrompt(triageInput, input.workingDirectory),
-      options: {
-        model,
-        // `systemPrompt` is intentionally unset so the SDK keeps its default
-        // minimal system prompt for the bundled `claude` binary. Our triage
-        // rules ride in the user message (see `buildUserPrompt`).
-        cwd: input.workingDirectory,
-        permissionMode: "bypassPermissions",
-        includePartialMessages: false,
-        abortController,
-        // Coding-agent settings sources (Skills, CLAUDE.md, plugins) would
-        // pull in the user's local Claude Code config — that's irrelevant
-        // for a one-shot triage and risks bloating the context window with
-        // unrelated guidance, so we disable every filesystem source.
-        settingSources: [],
-      },
-    });
+  const queryStream = query({
+    prompt: buildUserPrompt(triageInput, input.workingDirectory),
+    options: {
+      model,
+      // `systemPrompt` is intentionally unset so the SDK keeps its default
+      // minimal system prompt for the bundled `claude` binary. Our triage
+      // rules ride in the user message (see `buildUserPrompt`).
+      cwd: input.workingDirectory,
+      permissionMode: "bypassPermissions",
+      includePartialMessages: false,
+      // Coding-agent settings sources (Skills, CLAUDE.md, plugins) would
+      // pull in the user's local Claude Code config — that's irrelevant
+      // for a one-shot triage and risks bloating the context window with
+      // unrelated guidance, so we disable every filesystem source.
+      settingSources: [],
+    },
+  });
 
-    input.onProgress?.({ kind: "started" });
+  input.onProgress?.({ kind: "started" });
 
-    for await (const message of queryStream) {
-      if (message.type === "assistant") {
-        reportAssistantProgress(message, input.onProgress);
-        continue;
-      }
-      if (message.type !== "result") continue;
-      totalCostUsd = message.total_cost_usd;
-      if (message.subtype === "success") {
-        responseText = message.result;
-      } else {
-        throw new Error(formatSdkErrorMessage(message.subtype, message.errors));
-      }
+  for await (const message of queryStream) {
+    if (message.type === "assistant") {
+      reportAssistantProgress(message, input.onProgress);
+      continue;
     }
-  } finally {
-    clearTimeout(timeoutHandle);
+    if (message.type !== "result") continue;
+    totalCostUsd = message.total_cost_usd;
+    if (message.subtype === "success") {
+      responseText = message.result;
+    } else {
+      throw new Error(formatSdkErrorMessage(message.subtype, message.errors));
+    }
   }
 
   const keptIdentities = new Set<string>();
