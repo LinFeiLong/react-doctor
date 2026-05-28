@@ -9,8 +9,6 @@ import {
   FILE_ROW_VERTICAL_PADDING_PX,
   FILE_SCAN_FONT_SIZE_PX,
   MUTED_COLOR,
-  OVERLAY_GRADIENT_BOTTOM_PADDING_PX,
-  OVERLAY_GRADIENT_HORIZONTAL_PADDING_PX,
   RULE_SCROLL_GROUPS,
   SEVERITY_BADGE_RADIUS_PX,
   SEVERITY_BADGE_SIZE_PX,
@@ -24,9 +22,21 @@ const ROW_HEIGHT_PX =
   FILE_SCAN_FONT_SIZE_PX * LINE_HEIGHT_MULTIPLIER + FILE_ROW_VERTICAL_PADDING_PX * 2;
 const CONTENT_PADDING_PX = 40;
 const RULE_REPEAT_COUNT = 6;
-const RULE_SCROLL_ROWS = Array.from({ length: RULE_REPEAT_COUNT }).flatMap(() =>
-  RULE_SCROLL_GROUPS.flatMap((ruleGroup) => ruleGroup.rows),
-);
+const getRuleScrollRows = () => {
+  const baseRuleRows: (typeof RULE_SCROLL_GROUPS)[number]["rows"][number][] = [];
+
+  for (const ruleGroup of RULE_SCROLL_GROUPS) {
+    baseRuleRows.push(...ruleGroup.rows);
+  }
+
+  const ruleRows: (typeof baseRuleRows)[number][] = [];
+  for (let repeatIndex = 0; repeatIndex < RULE_REPEAT_COUNT; repeatIndex += 1) {
+    ruleRows.push(...baseRuleRows);
+  }
+
+  return ruleRows;
+};
+const RULE_SCROLL_ROWS = getRuleScrollRows();
 const TOTAL_LIST_HEIGHT_PX = RULE_SCROLL_ROWS.length * ROW_HEIGHT_PX;
 const TYPING_SCENE_END_SCROLL_PX = Math.max(TOTAL_LIST_HEIGHT_PX - 760, 0);
 const SCROLL_PX_PER_FRAME = TYPING_SCENE_END_SCROLL_PX / 190;
@@ -172,7 +182,7 @@ export const FileScan = () => {
             }}
           >
             <Img
-              src={staticFile("preact-logo.png")}
+              src={staticFile("react-native-logo.png")}
               style={{
                 width: TITLE_LOGO_SIZE_PX,
                 height: TITLE_LOGO_SIZE_PX,
@@ -180,7 +190,7 @@ export const FileScan = () => {
                   "drop-shadow(0 6px 34px rgba(0,0,0,1)) drop-shadow(0 0 82px rgba(0,0,0,0.8))",
               }}
             />
-            <span>Preact</span>
+            <span>React Native</span>
           </div>
         </div>
       </AbsoluteFill>
