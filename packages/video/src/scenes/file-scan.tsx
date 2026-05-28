@@ -1,4 +1,4 @@
-import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import {
   BACKGROUND_COLOR,
   ERROR_BADGE_BACKGROUND_COLOR,
@@ -8,35 +8,36 @@ import {
   FILE_ROW_HORIZONTAL_PADDING_PX,
   FILE_ROW_VERTICAL_PADDING_PX,
   FILE_SCAN_FONT_SIZE_PX,
-  GREEN_COLOR,
   MUTED_COLOR,
   OVERLAY_GRADIENT_BOTTOM_PADDING_PX,
-  OVERLAY_GRADIENT_HEIGHT_PX,
   OVERLAY_GRADIENT_HORIZONTAL_PADDING_PX,
-  SCANNED_ISSUES,
-  SCENE_FILE_SCAN_DURATION_FRAMES,
+  RULE_SCROLL_GROUPS,
   SEVERITY_BADGE_RADIUS_PX,
   SEVERITY_BADGE_SIZE_PX,
   TEXT_COLOR,
   WARNING_BADGE_BACKGROUND_COLOR,
 } from "../constants";
-import { getBottomOverlayGradient } from "../utils/get-bottom-overlay-gradient";
 import { fontFamily } from "../utils/font";
 
 const LINE_HEIGHT_MULTIPLIER = 1.6;
 const ROW_HEIGHT_PX =
   FILE_SCAN_FONT_SIZE_PX * LINE_HEIGHT_MULTIPLIER + FILE_ROW_VERTICAL_PADDING_PX * 2;
 const CONTENT_PADDING_PX = 40;
-const TOTAL_LIST_HEIGHT_PX = SCANNED_ISSUES.length * ROW_HEIGHT_PX;
-const TYPING_SCENE_END_SCROLL_PX = TOTAL_LIST_HEIGHT_PX * 0.15;
-const SCROLL_PX_PER_FRAME = TYPING_SCENE_END_SCROLL_PX / 40;
+const RULE_REPEAT_COUNT = 6;
+const RULE_SCROLL_ROWS = Array.from({ length: RULE_REPEAT_COUNT }).flatMap(() =>
+  RULE_SCROLL_GROUPS.flatMap((ruleGroup) => ruleGroup.rows),
+);
+const TOTAL_LIST_HEIGHT_PX = RULE_SCROLL_ROWS.length * ROW_HEIGHT_PX;
+const TYPING_SCENE_END_SCROLL_PX = Math.max(TOTAL_LIST_HEIGHT_PX - 760, 0);
+const SCROLL_PX_PER_FRAME = TYPING_SCENE_END_SCROLL_PX / 190;
 
 const FRAMES_PER_ISSUE = 2;
 const FADE_IN_FRAMES = 6;
 
-const TITLE_FONT_SIZE_PX = 88;
+const TITLE_FONT_SIZE_PX = 201;
 const TITLE_FADE_IN_START_FRAME = 5;
 const TITLE_FADE_IN_FRAMES = 12;
+const TITLE_LOGO_SIZE_PX = 224;
 
 export const FileScan = () => {
   const frame = useCurrentFrame();
@@ -70,31 +71,31 @@ export const FileScan = () => {
         }}
       >
         <div style={{ transform: `translateY(-${scrollY}px)` }}>
-          {SCANNED_ISSUES.map((issue, issueIndex) => {
+          {RULE_SCROLL_ROWS.map((ruleRow, ruleIndex) => {
             const issueOpacity = interpolate(
               frame,
-              [issueIndex * FRAMES_PER_ISSUE, issueIndex * FRAMES_PER_ISSUE + FADE_IN_FRAMES],
+              [ruleIndex * FRAMES_PER_ISSUE, ruleIndex * FRAMES_PER_ISSUE + FADE_IN_FRAMES],
               [0, 1],
               { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
             );
-            const isError = issue.severity === "error";
-            const isWarning = issue.severity === "warning";
-            const isOk = issue.severity === "ok";
+            const isPurePreactRule = ruleRow.badgeText === "pure-preact";
+            const message = `${ruleRow.ruleId} - ${ruleRow.source} - ${ruleRow.flags}`;
+
             return (
               <div
-                key={issue.message}
+                key={`${ruleIndex}-${ruleRow.ruleId}`}
                 style={{
                   opacity: issueOpacity,
                   fontFamily,
                   fontSize: FILE_SCAN_FONT_SIZE_PX,
                   lineHeight: LINE_HEIGHT_MULTIPLIER,
-                  color: isOk ? MUTED_COLOR : TEXT_COLOR,
+                  color: TEXT_COLOR,
                   whiteSpace: "nowrap",
                   display: "flex",
                   alignItems: "center",
                   gap: FILE_ROW_GAP_PX,
                   padding: `${FILE_ROW_VERTICAL_PADDING_PX}px ${FILE_ROW_HORIZONTAL_PADDING_PX}px`,
-                  backgroundColor: isError ? ERROR_ROW_BACKGROUND_COLOR : "transparent",
+                  backgroundColor: isPurePreactRule ? ERROR_ROW_BACKGROUND_COLOR : "transparent",
                   borderRadius: 6,
                 }}
               >
@@ -107,22 +108,20 @@ export const FileScan = () => {
                     alignItems: "center",
                     justifyContent: "center",
                     borderRadius: SEVERITY_BADGE_RADIUS_PX,
-                    backgroundColor: isError
+                    backgroundColor: isPurePreactRule
                       ? ERROR_BADGE_BACKGROUND_COLOR
-                      : isWarning
-                        ? WARNING_BADGE_BACKGROUND_COLOR
-                        : "transparent",
-                    color: isOk ? GREEN_COLOR : ERROR_BADGE_TEXT_COLOR,
+                      : WARNING_BADGE_BACKGROUND_COLOR,
+                    color: ERROR_BADGE_TEXT_COLOR,
                     fontSize: FILE_SCAN_FONT_SIZE_PX * 0.7,
                     fontWeight: 700,
                     lineHeight: 1,
                   }}
                 >
-                  {isOk ? "✓" : "!"}
+                  !
                 </span>
 
                 <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {issue.message}
+                  {message}
                 </span>
 
                 <span
@@ -132,7 +131,7 @@ export const FileScan = () => {
                     fontSize: FILE_SCAN_FONT_SIZE_PX * 0.75,
                   }}
                 >
-                  {issue.file}
+                  {`${ruleRow.badgeLabel}: ${ruleRow.badgeText}`}
                 </span>
               </div>
             );
@@ -142,19 +141,21 @@ export const FileScan = () => {
 
       <AbsoluteFill
         style={{
-          justifyContent: "flex-start",
+          justifyContent: "center",
+          alignItems: "center",
           pointerEvents: "none",
         }}
       >
         <div
           style={{
-            width: "100%",
-            height: OVERLAY_GRADIENT_HEIGHT_PX,
-            background: getBottomOverlayGradient(titleOpacity).replace("to top", "to bottom"),
             display: "flex",
+            alignItems: "center",
             justifyContent: "center",
-            alignItems: "flex-start",
-            padding: `${OVERLAY_GRADIENT_BOTTOM_PADDING_PX}px ${OVERLAY_GRADIENT_HORIZONTAL_PADDING_PX}px 0`,
+            opacity: titleOpacity,
+            padding: "28px 76px",
+            borderRadius: 34,
+            background: "rgba(0,0,0,0.72)",
+            boxShadow: "0 0 120px 78px rgba(0,0,0,0.82), 0 0 220px 120px rgba(0,0,0,0.48)",
           }}
         >
           <div
@@ -163,13 +164,23 @@ export const FileScan = () => {
               fontSize: TITLE_FONT_SIZE_PX,
               fontWeight: 400,
               color: "white",
-              opacity: titleOpacity,
-              textAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              gap: 28,
               lineHeight: 1.4,
-              textShadow: "0 0 40px rgba(10,10,10,0.95), 0 0 80px rgba(10,10,10,0.9), 0 0 120px rgba(10,10,10,0.8)",
+              textShadow: "0 6px 36px rgba(0,0,0,1), 0 0 90px rgba(0,0,0,0.95)",
             }}
           >
-            Scan for React issues
+            <Img
+              src={staticFile("preact-logo.png")}
+              style={{
+                width: TITLE_LOGO_SIZE_PX,
+                height: TITLE_LOGO_SIZE_PX,
+                filter:
+                  "drop-shadow(0 6px 34px rgba(0,0,0,1)) drop-shadow(0 0 82px rgba(0,0,0,0.8))",
+              }}
+            />
+            <span>Preact</span>
           </div>
         </div>
       </AbsoluteFill>
