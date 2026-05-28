@@ -37,8 +37,12 @@ export const persistPreferences = (prefs: { theme: "light" | "dark" }) => {
   localStorage.setItem("userPreferences", JSON.stringify(prefs));
 };
 
-// react-compiler-destructure-method: router.push() directly off the
-// hook return.
+// `useRouter` / `router.push("/welcome")` below were the trigger for
+// `react-compiler-destructure-method`. That rule is currently in
+// `RULE_IDS_TO_SKIP_REGISTRATION` in `scripts/generate-rule-registry
+// .mjs`, so this block only fires `no-nested-component-definition` on
+// `LoginLink`. Router scaffolding kept so re-enabling is a one-line
+// change to the skiplist.
 declare function useRouter(): {
   push: (path: string) => void;
   replace: (path: string) => void;
@@ -47,19 +51,11 @@ declare function useRouter(): {
 export const SignupForm = () => {
   const router = useRouter();
   const buttonRef = useRef<HTMLButtonElement>(null);
-  // Regression: a concise-arrow child component declared INSIDE a
-  // block-body component (no BlockStatement body of its own) must not
-  // corrupt the per-component hook-binding stack used by
-  // `react-compiler-destructure-method`. Before the fix, the implicit
-  // `VariableDeclarator:exit` for `LoginLink` popped `SignupForm`'s
-  // frame and the `router.push("/welcome")` diagnostic below silently
-  // vanished.
-  // INTENTIONALLY fires TWO rules at once on this fixture:
-  //  - `no-nested-component-definition` (severity: error) on `LoginLink`
-  //  - `react-compiler-destructure-method` (severity: warn) on
-  //    `router.push("/welcome")` below
-  // Tests that count diagnostics for either rule must be tolerant of
-  // the other firing on this same component.
+  // Regression seed for `react-compiler-destructure-method`: a
+  // concise-arrow child component inside a block-body component used
+  // to corrupt its per-component hook-binding stack and silently drop
+  // the `router.push("/welcome")` diagnostic. Preserved in case the
+  // rule comes back.
   const LoginLink = () => <a href="/login">Log in</a>;
   const handleClick = () => {
     router.push("/welcome");
