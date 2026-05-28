@@ -4,10 +4,15 @@
 // against the working directory, so the prompt drops the diff/PR framing
 // and forbids net-new findings — the agent's only job is to confirm or
 // suppress the diagnostics react-doctor produced.
+//
+// These instructions live in the user message (alongside the diagnostic
+// list), NOT in `systemPrompt`. Leaving `systemPrompt` unset preserves the
+// Claude Agent SDK's default minimal system prompt, which the bundled CLI
+// uses to set up its built-in tools — overriding it would lose that.
 
 import { TRIAGE_MAX_DIAGNOSTICS_COUNT } from "./constants.js";
 
-export const getTriageSystemPrompt = (): string => `# React Doctor Triage
+export const getTriageInstructions = (): string => `# React Doctor Triage
 
 You are an expert React reviewer triaging a local react-doctor scan.
 
@@ -15,9 +20,9 @@ react-doctor is a static-analysis tool that catches React bugs, accessibility is
 
 The repository is checked out at the working directory. Use Read, Glob, and Grep to investigate each diagnostic. Never edit, write, or run shell commands — you are read-only.
 
-## STEP 1: Read every diagnostic in the user message
+## STEP 1: Read every diagnostic
 
-The user message contains a numbered list under \`## Diagnostics\`. Each entry has the rule key, file path, line number, severity, message, and (when available) the rule's documentation URL and help text. Treat each as a STARTING HYPOTHESIS, not a verdict.
+Below this section you'll find a numbered list under \`## Diagnostics\`. Each entry has the rule key, file path, line number, severity, message, and (when available) the rule's documentation URL and help text. Treat each as a STARTING HYPOTHESIS, not a verdict.
 
 ## STEP 2: Open the code before deciding
 

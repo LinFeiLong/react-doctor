@@ -4,11 +4,10 @@ import type { Diagnostic } from "@react-doctor/core";
 import {
   TRIAGE_DEFAULT_MODEL,
   TRIAGE_MAX_DIAGNOSTICS_COUNT,
-  TRIAGE_MAX_TURNS,
   TRIAGE_MODEL_ENV_VARIABLE,
   TRIAGE_TIMEOUT_MS,
 } from "./constants.js";
-import { getTriageSystemPrompt } from "./triage-system-prompt.js";
+import { getTriageInstructions } from "./triage-instructions.js";
 
 const TRIAGE_PRIORITIES = ["P0", "P1", "P2", "P3"] as const;
 export type TriagePriority = (typeof TRIAGE_PRIORITIES)[number];
@@ -143,7 +142,8 @@ const buildUserPrompt = (
   workingDirectory: string,
 ): string =>
   [
-    "react-doctor scanned this codebase and produced the diagnostics below. Open each one in the source, decide whether it's a real issue in this project's context, and emit a `<triage>` tag for the ones to keep (per the system prompt).",
+    getTriageInstructions(),
+    "---",
     "",
     `Working directory: ${workingDirectory}`,
     `Total diagnostics: ${String(diagnostics.length)}`,
@@ -214,12 +214,12 @@ export const triageDiagnostics = async (input: TriageRunInput): Promise<TriageOu
     const queryStream = query({
       prompt: buildUserPrompt(triageInput, input.workingDirectory),
       options: {
-        systemPrompt: getTriageSystemPrompt(),
-        cwd: input.workingDirectory,
         model,
-        allowedTools: ["Read", "Glob", "Grep"],
+        // `systemPrompt` is intentionally unset so the SDK keeps its default
+        // minimal system prompt for the bundled `claude` binary. Our triage
+        // rules ride in the user message (see `buildUserPrompt`).
+        cwd: input.workingDirectory,
         permissionMode: "bypassPermissions",
-        maxTurns: TRIAGE_MAX_TURNS,
         includePartialMessages: false,
         abortController,
         // Coding-agent settings sources (Skills, CLAUDE.md, plugins) would

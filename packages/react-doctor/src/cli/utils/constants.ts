@@ -19,7 +19,6 @@ export const INTERNAL_ERROR_JSON_FALLBACK =
 // prompt; these guardrails keep prompt size and runtime bounded on very
 // noisy projects without silently dropping work mid-list.
 export const TRIAGE_MAX_DIAGNOSTICS_COUNT = 200;
-export const TRIAGE_MAX_TURNS = 30;
 export const TRIAGE_TIMEOUT_MS = 300_000;
 // Auth sources, listed in preferred order. The Agent SDK accepts any of:
 // 1. CLAUDE_CODE_OAUTH_TOKEN — `claude setup-token` against a Pro/Max plan
@@ -30,4 +29,4 @@ export const TRIAGE_TIMEOUT_MS = 300_000;
 export const TRIAGE_OAUTH_TOKEN_ENV_VARIABLE = "CLAUDE_CODE_OAUTH_TOKEN";
 export const TRIAGE_API_KEY_ENV_VARIABLE = "ANTHROPIC_API_KEY";
 export const TRIAGE_MODEL_ENV_VARIABLE = "REACT_DOCTOR_TRIAGE_MODEL";
-export const TRIAGE_DEFAULT_MODEL = "claude-sonnet-4-5";
+export const TRIAGE_DEFAULT_MODEL = "claude-opus-4-7";
