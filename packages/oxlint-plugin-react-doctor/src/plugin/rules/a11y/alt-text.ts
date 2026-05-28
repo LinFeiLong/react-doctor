@@ -4,9 +4,11 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
+import { isNextjsMetadataImageRouteFilename } from "../../utils/is-nextjs-metadata-image-route-filename.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { objectHasAccessibleChild } from "../../utils/object-has-accessible-child.js";
 import type { Rule } from "../../utils/rule.js";
+import type { RuleVisitors } from "../../utils/rule-visitors.js";
 
 const MISSING_ALT_PROP = 'Missing `alt` attribute. Use `alt=""` for decorative images.';
 const MISSING_ALT_VALUE =
@@ -181,7 +183,13 @@ export const altText = defineRule<Rule>({
   severity: "error",
   recommendation: "Provide `alt` (or aria-label / aria-labelledby) for non-decorative images.",
   category: "Accessibility",
-  create: (context) => {
+  create: (context): RuleVisitors => {
+    // Next.js `opengraph-image.tsx` / `twitter-image.tsx` / `icon.tsx` /
+    // `apple-icon.tsx` files (with optional numeric suffix) return an
+    // `ImageResponse` from `next/og` that rasterizes JSX into a static
+    // image. No browser DOM, no screen reader, so `alt` / `aria-*` are
+    // unactionable in this context.
+    if (isNextjsMetadataImageRouteFilename(context.getFilename?.())) return {};
     const settings = resolveSettings(context.settings);
     // Settings.elements selects WHICH element classes to check.
     // Default: all four. Custom aliases are merged into each class.
