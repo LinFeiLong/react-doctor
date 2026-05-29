@@ -1,6 +1,6 @@
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
-import { highlighter, PROMPTS_RULES_BASE_URL, SHARE_BASE_URL } from "@react-doctor/core";
+import { buildRulePromptUrl, highlighter, SHARE_BASE_URL } from "@react-doctor/core";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 import { collectAffectedFiles } from "./render-diagnostics.js";
 import { printNoScoreHeader, printScoreHeader } from "./render-score-header.js";
@@ -42,14 +42,16 @@ const printCountsSummaryLine = (
     );
     yield* Console.log(`  ${issueText}`);
     if (!isVerbose && totalIssueCount > 0) {
+      const exampleDiagnostic =
+        diagnostics.find((diagnostic) => diagnostic.severity === "error") ?? diagnostics[0];
       yield* Console.log(
         highlighter.dim(
-          `  Run ${highlighter.info("npx react-doctor@latest --verbose")} to see each issue and its fix recipe`,
+          `  Run ${highlighter.info("npx react-doctor@latest --verbose")} to list every issue with its fix-recipe URL`,
         ),
       );
       yield* Console.log(
         highlighter.dim(
-          `  Every rule has a canonical fix recipe — fetch & follow ${highlighter.info(`${PROMPTS_RULES_BASE_URL}/<plugin>/<rule>.md`)} before fixing`,
+          `  Each rule links a canonical fix recipe to fetch & follow before fixing, e.g. ${highlighter.info(buildRulePromptUrl(exampleDiagnostic.plugin, exampleDiagnostic.rule))}`,
         ),
       );
     }
