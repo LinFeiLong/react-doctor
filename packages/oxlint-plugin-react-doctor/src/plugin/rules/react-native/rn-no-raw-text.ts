@@ -55,7 +55,9 @@ const isTextHandlingComponent = (elementName: string): boolean => {
   return [...REACT_NATIVE_TEXT_COMPONENT_KEYWORDS].some((keyword) => elementName.includes(keyword));
 };
 
-const isTransparentTextWrapper = (openingElement: EsTreeNodeOfType<"JSXOpeningElement">): boolean => {
+const isTransparentTextWrapper = (
+  openingElement: EsTreeNodeOfType<"JSXOpeningElement">,
+): boolean => {
   const elementName = resolveJsxElementName(openingElement);
   if (elementName && REACT_NATIVE_TEXT_TRANSPARENT_COMPONENTS.has(elementName)) return true;
   if (isNodeOfType(openingElement.name, "JSXNamespacedName")) {
@@ -112,10 +114,7 @@ export const rnNoRawText = defineRule<Rule>({
         // narrower scope.
         if (isInsidePlatformOsWebBranch(node)) return;
 
-        if (
-          isTransparentTextWrapper(node.openingElement) &&
-          isInsideTextHandlingComponent(node)
-        ) {
+        if (isTransparentTextWrapper(node.openingElement) && isInsideTextHandlingComponent(node)) {
           return;
         }
 
