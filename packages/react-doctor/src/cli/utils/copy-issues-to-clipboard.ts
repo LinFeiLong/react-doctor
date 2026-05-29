@@ -3,6 +3,7 @@ import os from "node:os";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 import { groupBy } from "@react-doctor/core";
 import { cliLogger as logger } from "./cli-logger.js";
+import { formatFixRecipeLine } from "./render-diagnostics.js";
 import { prompts } from "./prompts.js";
 import { writeDiagnosticsDirectory } from "./write-diagnostics-directory.js";
 
@@ -37,6 +38,7 @@ const buildIssuesSummary = (input: CopyIssuesInput): string => {
 
     lines.push(`${severity === "error" ? "ERROR" : "WARN"} ${rule} (×${ruleDiagnostics.length})`);
     lines.push(`  ${ruleDiagnostics[0].message}`);
+    lines.push(`  ${formatFixRecipeLine(ruleDiagnostics[0])}`);
     for (const filePath of shownFiles) {
       const firstSite = ruleDiagnostics.find(
         (diagnostic) => diagnostic.filePath === filePath && diagnostic.line > 0,
@@ -61,11 +63,12 @@ const buildIssuesSummary = (input: CopyIssuesInput): string => {
   lines.push("");
   lines.push("## How to fix");
   lines.push("1. Run `npx react-doctor@latest --verbose` to see full details");
-  lines.push("2. Fix errors first, then warnings. Start with high-count rules.");
-  lines.push("3. Read the code before acting. Treat findings as hypotheses, not commands.");
-  lines.push("4. Fix root causes, not symptoms. Don't suppress rules without evidence.");
-  lines.push("5. Run `npx react-doctor@latest --verbose --diff` after changes to verify.");
-  lines.push("6. Split unrelated fixes into separate PRs.");
+  lines.push("2. For each rule above, fetch & follow its canonical fix recipe URL before fixing.");
+  lines.push("3. Fix errors first, then warnings. Start with high-count rules.");
+  lines.push("4. Read the code before acting. Treat findings as hypotheses, not commands.");
+  lines.push("5. Fix root causes, not symptoms. Don't suppress rules without evidence.");
+  lines.push("6. Run `npx react-doctor@latest --verbose --diff` after changes to verify.");
+  lines.push("7. Split unrelated fixes into separate PRs.");
 
   return lines.join("\n");
 };

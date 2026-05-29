@@ -78,7 +78,7 @@ const grayLine = (text: string): string => highlighter.gray(text);
 const FETCH_FIX_RECIPE_LABEL =
   "Fetch & follow the canonical fix recipe before fixing";
 
-const formatFixRecipeLine = (diagnostic: Diagnostic): string =>
+export const formatFixRecipeLine = (diagnostic: Diagnostic): string =>
   `${FETCH_FIX_RECIPE_LABEL}: ${buildRulePromptUrl(diagnostic.plugin, diagnostic.rule)}`;
 
 const buildCompactRuleGroupLine = (
