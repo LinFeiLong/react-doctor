@@ -2,6 +2,7 @@ import isUnicodeSupported from "is-unicode-supported";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import {
+  buildRulePromptUrl,
   groupBy,
   highlighter,
   MILLISECONDS_PER_SECOND,
@@ -151,6 +152,11 @@ const buildVerboseRuleGroupLines = (
   if (firstDiagnostic.help) {
     lines.push(grayLine(indentMultilineText(`→ ${firstDiagnostic.help}`, "      ")));
   }
+  lines.push(
+    grayLine(
+      `      Fix recipe: ${buildRulePromptUrl(firstDiagnostic.plugin, firstDiagnostic.rule)}`,
+    ),
+  );
   const fileSites = buildVerboseSiteMap(ruleDiagnostics);
   for (const [filePath, sites] of fileSites) {
     if (sites.length > 0) {
@@ -236,6 +242,10 @@ export const formatRuleSummary = (ruleKey: string, ruleDiagnostics: Diagnostic[]
   if (firstDiagnostic.url) {
     sections.push("", `Docs: ${firstDiagnostic.url}`);
   }
+  sections.push(
+    "",
+    `Fix recipe: ${buildRulePromptUrl(firstDiagnostic.plugin, firstDiagnostic.rule)}`,
+  );
 
   sections.push("", "Files:");
   const fileSites = buildVerboseSiteMap(ruleDiagnostics);
