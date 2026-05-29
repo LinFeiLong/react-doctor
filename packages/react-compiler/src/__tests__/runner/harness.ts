@@ -73,6 +73,23 @@ const parseSourceType = (source: string): 'script' | 'module' =>
 // normalize on read to keep the comparison platform-independent.
 const normalizeLineEndings = (contents: string): string => contents.replace(/\r\n/g, '\n');
 
+// The fixture filename is a posix-style virtual path (`/foo.ts`). On Windows
+// that is NOT absolute, so babel's `path.resolve` drive-qualifies it to
+// `D:\foo.ts`, which then leaks into emitted instrumentation calls and error
+// prefixes. Map the resolved path back to the virtual path so snapshots match
+// on every platform. No-op on posix where `path.resolve` is identity here.
+const normalizeResolvedFixturePath = (text: string, virtualFilepath: string): string => {
+  const resolved = path.resolve(virtualFilepath);
+  if (resolved === virtualFilepath) {
+    return text;
+  }
+  return text
+    .split(resolved.replace(/\\/g, '\\\\'))
+    .join(virtualFilepath)
+    .split(resolved)
+    .join(virtualFilepath);
+};
+
 const stripExtension = (filename: string, extensions: Array<string>): string => {
   for (const ext of extensions) {
     if (filename.endsWith(ext)) {
@@ -326,7 +343,11 @@ export const runFixture = async (
   expected: string | null,
 ): Promise<FixtureRun> => {
   const expectError = isExpectError(basename);
-  const {compileResult, error} = compileFixture(input, basename);
+  const language = parseLanguage(input.substring(0, input.indexOf('\n')));
+  const virtualFilepath = '/' + basename + (language === 'typescript' ? '.ts' : '');
+  const {compileResult, error: rawError} = compileFixture(input, basename);
+  const error =
+    rawError != null ? normalizeResolvedFixturePath(rawError, virtualFilepath) : null;
 
   let unexpectedError: string | null = null;
   if (expectError) {
@@ -341,7 +362,6 @@ export const runFixture = async (
 
   let snapOutput: string | null = null;
   if (compileResult?.forgetOutput != null) {
-    const language = parseLanguage(input.substring(0, input.indexOf('\n')));
     try {
       snapOutput = await format(compileResult.forgetOutput, language);
     } catch (e: any) {
@@ -349,6 +369,7 @@ export const runFixture = async (
       unexpectedError += `\n\nprettier failed to format compiler output: ${e?.message ?? e}`;
       snapOutput = compileResult.forgetOutput;
     }
+    snapOutput = normalizeResolvedFixturePath(snapOutput, virtualFilepath);
   }
 
   // includeEvaluator = false: reuse the stored eval output, if any.
