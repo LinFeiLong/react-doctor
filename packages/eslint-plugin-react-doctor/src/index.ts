@@ -1,6 +1,7 @@
 import oxlintPlugin, {
   ALL_REACT_DOCTOR_RULES,
   NEXTJS_RULES,
+  PREACT_RULES,
   REACT_NATIVE_RULES,
   RECOMMENDED_RULES,
   TANSTACK_QUERY_RULES,
@@ -10,7 +11,10 @@ import type { EsTreeNode, OxlintRuleSeverity, RuleVisitors } from "oxlint-plugin
 
 interface EslintRuleContext {
   report: (descriptor: { node: EsTreeNode; message: string }) => void;
-  getFilename?: () => string;
+  // https://eslint.org/blog/2023/09/preparing-custom-rules-eslint-v9/#context-methods-becoming-properties
+  readonly filename?: string;
+  /** @deprecated Use `filename`. Kept only for host compatibility. */
+  getFilename?: () => string | undefined;
 }
 
 interface WrappedRule {
@@ -47,6 +51,7 @@ interface EslintPlugin {
     "react-native": EslintFlatConfig;
     "tanstack-start": EslintFlatConfig;
     "tanstack-query": EslintFlatConfig;
+    preact: EslintFlatConfig;
     all: EslintFlatConfig;
   };
 }
@@ -99,6 +104,7 @@ const eslintPlugin: EslintPlugin = {
     "react-native": buildFlatConfig("react-native", REACT_NATIVE_RULES),
     "tanstack-start": buildFlatConfig("tanstack-start", TANSTACK_START_RULES),
     "tanstack-query": buildFlatConfig("tanstack-query", TANSTACK_QUERY_RULES),
+    preact: buildFlatConfig("preact", PREACT_RULES),
     all: buildFlatConfig("all", ALL_REACT_DOCTOR_RULES),
   },
 };

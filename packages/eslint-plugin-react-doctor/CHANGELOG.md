@@ -1,11 +1,29 @@
 # eslint-plugin-react-doctor
 
+## 0.2.11
+
+### Patch Changes
+
+- Updated dependencies [[`6f8640f`](https://github.com/millionco/react-doctor/commit/6f8640f6d98a75db90d28b56fdaf5abc81a53163)]:
+  - oxlint-plugin-react-doctor@0.2.11
+
+## 0.2.10
+
+### Patch Changes
+
+- Inherit the latest shared rule registry from `oxlint-plugin-react-doctor@0.2.10`: Preact compatibility checks, HTML correctness and dialog accessibility rules, `hooks-no-nan-in-deps`, Jotai atom diagnostics, React Native performance rules, `js-async-reduce-without-awaited-acc`, and React 19.2 `<Activity>` effect-boundary checks.
+
+- Inherit false-positive fixes for `control-has-associated-label` and `no-giant-component`.
+
+- Dependency bump: `oxlint-plugin-react-doctor@0.2.10`.
+
 ## 0.2.9
 
 ### Patch Changes
 
-- Updated dependencies []:
-  - oxlint-plugin-react-doctor@0.2.9
+- Published with the trusted-publishing workflow update. No ESLint rule behavior changed in this package.
+
+- Dependency bump: `oxlint-plugin-react-doctor@0.2.9`.
 
 ## 0.2.8
 
@@ -69,7 +87,7 @@
 
 - Restore `eslint-plugin-react-hooks` as a hard dependency so React Compiler rules resolve without requiring users to install the peer separately.
 
-- [#273](https://github.com/millionco/react-doctor/pull/273) [`47772b7`](https://github.com/millionco/react-doctor/commit/47772b7da4f6e412b09e3a4f74d888307faf74a1) Thanks [@aidenybai](https://github.com/aidenybai)! - Natively port the 8 rules from `eslint-plugin-react-you-might-not-need-an-effect`
+- [#273](https://github.com/millionco/react-doctor/pull/273) [`47772b7`](https://github.com/millionco/react-doctor/commit/47772b7da4f6e412b09e3a4f74d888307faf74a1) - Natively port the 8 rules from `eslint-plugin-react-you-might-not-need-an-effect`
   (NickvanDyke, MIT) into `oxlint-plugin-react-doctor`. They now ship as
   `react-doctor/*` rules and no longer require the optional peer
   dependency. The optional peer-dep surface (`effect/*` rules,
@@ -78,7 +96,7 @@
   `@react-doctor/core`.
 
   The ports use a real `eslint-scope` ScopeManager (cached per Program
-  via `WeakMap`) — same `references` / `resolved.defs[].node.init` /
+  via `WeakMap`) - same `references` / `resolved.defs[].node.init` /
   `isEventualCallTo` chasing the upstream plugin uses. Diagnostic
   messages match upstream verbatim with template variables substituted
   in JS.
@@ -100,7 +118,7 @@
 
   These coexist with React Doctor's existing thematically-related rules
   (`no-derived-state-effect`, `no-effect-chain`, `no-event-trigger-state`,
-  `no-prop-callback-in-effect`) — different IDs, different shapes,
+  `no-prop-callback-in-effect`) - different IDs, different shapes,
   different messages.
 
 - Updated dependencies [[`47772b7`](https://github.com/millionco/react-doctor/commit/47772b7da4f6e412b09e3a4f74d888307faf74a1)]:
@@ -119,13 +137,13 @@
 
 ### Minor Changes
 
-- [`5be2ead`](https://github.com/millionco/react-doctor/commit/5be2eadd90b2248b28b228fad306808cec1bf758) Thanks [@aidenybai](https://github.com/aidenybai)! - Add configuration-level controls for React Doctor's rule output. Users can now set top-level `rules` and `categories` severity overrides, tune individual output surfaces (`cli`, `prComment`, `score`, and `ciFailure`) by tag/category/rule id, and rely on registered rule-family tags such as `design`, `react-native`, `server-action`, `test-noise`, and `migration-hint` for broad filtering.
+- [`5be2ead`](https://github.com/millionco/react-doctor/commit/5be2eadd90b2248b28b228fad306808cec1bf758) - Add configuration-level controls for React Doctor's rule output. Users can now set top-level `rules` and `categories` severity overrides, tune individual output surfaces (`cli`, `prComment`, `score`, and `ciFailure`) by tag/category/rule id, and rely on registered rule-family tags such as `design`, `react-native`, `server-action`, `test-noise`, and `migration-hint` for broad filtering.
 
   The scan pipeline now applies those controls both when generating the oxlint config and when post-processing diagnostics, so `"off"` can skip rules before they run while `"warn"` / `"error"` restamp emitted diagnostics consistently across the CLI, score, PR comments, and CI failure gate. The oxlint plugin also exposes shared rule-set maps that the ESLint plugin reuses for its flat configs.
 
   Expose the GitHub Action's `annotations` input so workflow users can opt into inline PR annotations without dropping down to the raw CLI.
 
-- [`809e38c`](https://github.com/millionco/react-doctor/commit/809e38cebabc15c42b3c40ee8c7a753c3d7549d0) Thanks [@aidenybai](https://github.com/aidenybai)! - Extract project / dependency / framework detection, the oxlint runner +
+- [`809e38c`](https://github.com/millionco/react-doctor/commit/809e38cebabc15c42b3c40ee8c7a753c3d7549d0) - Extract project / dependency / framework detection, the oxlint runner +
   scoring engine, and the shared TypeScript type layer out of the
   `react-doctor` monolith into three new public workspace packages:
   `@react-doctor/types`, `@react-doctor/project-info`, and
@@ -141,7 +159,7 @@
 
 ### Patch Changes
 
-- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) Thanks [@aidenybai](https://github.com/aidenybai)! - Rule-fix wave for the 0.2.0-beta.5 release:
+- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) - Rule-fix wave for the 0.2.0-beta.5 release:
 
   - Scope `no-secrets-in-client-code` to client-reachable bindings -
     skips server-only modules, public env-prefixed values, and
@@ -172,7 +190,7 @@
     from the default PR-comment surface while staying visible in the
     CLI report and at the CI failure gate ([#271](https://github.com/millionco/react-doctor/issues/271)).
 
-- [#266](https://github.com/millionco/react-doctor/pull/266) [`529015d`](https://github.com/millionco/react-doctor/commit/529015d1d89441c4708f49413ecd540db7c04255) Thanks [@aidenybai](https://github.com/aidenybai)! - Scope React Native rules to per-package boundaries. Previously every
+- [#266](https://github.com/millionco/react-doctor/pull/266) [`529015d`](https://github.com/millionco/react-doctor/commit/529015d1d89441c4708f49413ecd540db7c04255) - Scope React Native rules to per-package boundaries. Previously every
   `rn-*` rule fired on every file in a project whose top-level framework
   was detected as React Native or Expo - even on sibling workspaces that
   were clearly web targets. In a mixed RN + web monorepo (`apps/mobile`
@@ -211,7 +229,7 @@
   keep the rule active even when the surrounding package classification
   is ambiguous.
 
-- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) Thanks [@aidenybai](https://github.com/aidenybai)! - False-positive sweep across the rule plugin and the oxlint runner:
+- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) - False-positive sweep across the rule plugin and the oxlint runner:
 
   - Gate React-19-only rules on the detected React major version so they
     stay silent on React 18 projects, with hardened catalog / peer-range /

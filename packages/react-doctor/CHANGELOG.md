@@ -1,13 +1,33 @@
 # react-doctor
 
+## 0.2.11
+
+### Patch Changes
+
+- Updated dependencies [[`6f8640f`](https://github.com/millionco/react-doctor/commit/6f8640f6d98a75db90d28b56fdaf5abc81a53163)]:
+  - oxlint-plugin-react-doctor@0.2.11
+
+## 0.2.10
+
+### Patch Changes
+
+- Add Preact project detection so `react-doctor inspect` recognizes Preact workspaces, including Vite + Preact projects that still report `vite` as their framework, and enables the bundled Preact rule family.
+
+- Bundle new diagnostics across the rule set: Preact compatibility checks, HTML correctness and dialog accessibility rules, `hooks-no-nan-in-deps`, Jotai atom diagnostics, React Native performance rules, `js-async-reduce-without-awaited-acc`, and React 19.2 `<Activity>` effect-boundary checks.
+
+- Fix CLI reliability around dead-code scans and setup prompts. Dead-code analysis now runs with a bounded worker path instead of freezing the scan, monorepo scans still show the setup prompt, and repeated setup questions collapse into one install flow.
+
+- Inherit false-positive fixes for `control-has-associated-label` and `no-giant-component`.
+
+- Dependency bump: `oxlint-plugin-react-doctor@0.2.10`.
+
 ## 0.2.9
 
 ### Patch Changes
 
-- [`30afe81`](https://github.com/millionco/react-doctor/commit/30afe81c4a4b46dcafedf326f93d899ee805b6ec) Thanks [@aidenybai](https://github.com/aidenybai)! - chore: verify trusted publishing via OIDC
+- Publish workflow now uses npm trusted publishing through GitHub OIDC, including an npm version with provenance support. Releases no longer need a long-lived npm token.
 
-- Updated dependencies []:
-  - oxlint-plugin-react-doctor@0.2.9
+- Dependency bump: `oxlint-plugin-react-doctor@0.2.9`.
 
 ## 0.2.8
 
@@ -43,7 +63,7 @@
 
 ### Patch Changes
 
-- Remove `design-no-bold-heading` rule — the heuristic produced too many false positives in design systems where headings intentionally vary weight.
+- Remove `design-no-bold-heading` rule - the heuristic produced too many false positives in design systems where headings intentionally vary weight.
 
 - Updated dependencies []:
   - oxlint-plugin-react-doctor@0.2.6
@@ -71,7 +91,7 @@
 
 ### Patch Changes
 
-- **Effect v4 runtime migration.** The entire scan pipeline is rebuilt on Effect v4 — tagged errors, dependency-injected services, generator-based control flow, and `Context.Reference` ambient config replace the previous imperative architecture.
+- **Effect v4 runtime migration.** The entire scan pipeline is rebuilt on Effect v4 - tagged errors, dependency-injected services, generator-based control flow, and `Context.Reference` ambient config replace the previous imperative architecture.
 
 - **New `@react-doctor/api` package.** Programmatic `diagnose()` entry point backed by the same `runInspect` orchestrator the CLI uses, with typed `ReactDoctorError` failures and `Effect.catchReasons` dispatch.
 
@@ -87,7 +107,7 @@
 
 - Collapse `@react-doctor/types` and `@react-doctor/project-info` into `@react-doctor/core`.
 
-- Adopt `Effect.Console` throughout — drop the custom `Logger` service.
+- Adopt `Effect.Console` throughout - drop the custom `Logger` service.
 
 - Updated dependencies []:
   - oxlint-plugin-react-doctor@0.2.4
@@ -107,7 +127,7 @@
 
 - Restore `eslint-plugin-react-hooks` as a hard dependency so React Compiler rules resolve without requiring users to install the peer separately.
 
-- [#273](https://github.com/millionco/react-doctor/pull/273) [`47772b7`](https://github.com/millionco/react-doctor/commit/47772b7da4f6e412b09e3a4f74d888307faf74a1) Thanks [@aidenybai](https://github.com/aidenybai)! - Natively port the 8 rules from `eslint-plugin-react-you-might-not-need-an-effect`
+- [#273](https://github.com/millionco/react-doctor/pull/273) [`47772b7`](https://github.com/millionco/react-doctor/commit/47772b7da4f6e412b09e3a4f74d888307faf74a1) - Natively port the 8 rules from `eslint-plugin-react-you-might-not-need-an-effect`
   (NickvanDyke, MIT) into `oxlint-plugin-react-doctor`. They now ship as
   `react-doctor/*` rules and no longer require the optional peer
   dependency. The optional peer-dep surface (`effect/*` rules,
@@ -116,7 +136,7 @@
   `@react-doctor/core`.
 
   The ports use a real `eslint-scope` ScopeManager (cached per Program
-  via `WeakMap`) — same `references` / `resolved.defs[].node.init` /
+  via `WeakMap`) - same `references` / `resolved.defs[].node.init` /
   `isEventualCallTo` chasing the upstream plugin uses. Diagnostic
   messages match upstream verbatim with template variables substituted
   in JS.
@@ -138,7 +158,7 @@
 
   These coexist with React Doctor's existing thematically-related rules
   (`no-derived-state-effect`, `no-effect-chain`, `no-event-trigger-state`,
-  `no-prop-callback-in-effect`) — different IDs, different shapes,
+  `no-prop-callback-in-effect`) - different IDs, different shapes,
   different messages.
 
 - Updated dependencies [[`47772b7`](https://github.com/millionco/react-doctor/commit/47772b7da4f6e412b09e3a4f74d888307faf74a1)]:
@@ -157,13 +177,13 @@
 
 ### Minor Changes
 
-- [`5be2ead`](https://github.com/millionco/react-doctor/commit/5be2eadd90b2248b28b228fad306808cec1bf758) Thanks [@aidenybai](https://github.com/aidenybai)! - Add configuration-level controls for React Doctor's rule output. Users can now set top-level `rules` and `categories` severity overrides, tune individual output surfaces (`cli`, `prComment`, `score`, and `ciFailure`) by tag/category/rule id, and rely on registered rule-family tags such as `design`, `react-native`, `server-action`, `test-noise`, and `migration-hint` for broad filtering.
+- [`5be2ead`](https://github.com/millionco/react-doctor/commit/5be2eadd90b2248b28b228fad306808cec1bf758) - Add configuration-level controls for React Doctor's rule output. Users can now set top-level `rules` and `categories` severity overrides, tune individual output surfaces (`cli`, `prComment`, `score`, and `ciFailure`) by tag/category/rule id, and rely on registered rule-family tags such as `design`, `react-native`, `server-action`, `test-noise`, and `migration-hint` for broad filtering.
 
   The scan pipeline now applies those controls both when generating the oxlint config and when post-processing diagnostics, so `"off"` can skip rules before they run while `"warn"` / `"error"` restamp emitted diagnostics consistently across the CLI, score, PR comments, and CI failure gate. The oxlint plugin also exposes shared rule-set maps that the ESLint plugin reuses for its flat configs.
 
   Expose the GitHub Action's `annotations` input so workflow users can opt into inline PR annotations without dropping down to the raw CLI.
 
-- [`809e38c`](https://github.com/millionco/react-doctor/commit/809e38cebabc15c42b3c40ee8c7a753c3d7549d0) Thanks [@aidenybai](https://github.com/aidenybai)! - Extract project / dependency / framework detection, the oxlint runner +
+- [`809e38c`](https://github.com/millionco/react-doctor/commit/809e38cebabc15c42b3c40ee8c7a753c3d7549d0) - Extract project / dependency / framework detection, the oxlint runner +
   scoring engine, and the shared TypeScript type layer out of the
   `react-doctor` monolith into three new public workspace packages:
   `@react-doctor/types`, `@react-doctor/project-info`, and
@@ -179,12 +199,12 @@
 
 ### Patch Changes
 
-- [`29b7229`](https://github.com/millionco/react-doctor/commit/29b7229ea144cfe80c4401391eed3aa035071bcd) Thanks [@aidenybai](https://github.com/aidenybai)! - Add `oxlint-plugin-react-doctor` to `dependencies` so it is installed
+- [`29b7229`](https://github.com/millionco/react-doctor/commit/29b7229ea144cfe80c4401391eed3aa035071bcd) - Add `oxlint-plugin-react-doctor` to `dependencies` so it is installed
   alongside the CLI. The bundler correctly externalises the plugin (oxlint
   loads it by file path at runtime) but it was missing from the published
   dependency list, causing `ERR_MODULE_NOT_FOUND` on `npx react-doctor`.
 
-- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) Thanks [@aidenybai](https://github.com/aidenybai)! - Rule-fix wave for the 0.2.0-beta.5 release:
+- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) - Rule-fix wave for the 0.2.0-beta.5 release:
 
   - Scope `no-secrets-in-client-code` to client-reachable bindings -
     skips server-only modules, public env-prefixed values, and
@@ -215,18 +235,18 @@
     from the default PR-comment surface while staying visible in the
     CLI report and at the CI failure gate ([#271](https://github.com/millionco/react-doctor/issues/271)).
 
-- [`10d5de8`](https://github.com/millionco/react-doctor/commit/10d5de804fe9c03fa9f18e5350bb26965a5108ac) Thanks [@aidenybai](https://github.com/aidenybai)! - Fix workspace packages not being bundled into dist, causing
+- [`10d5de8`](https://github.com/millionco/react-doctor/commit/10d5de804fe9c03fa9f18e5350bb26965a5108ac) - Fix workspace packages not being bundled into dist, causing
   `ERR_MODULE_NOT_FOUND: Cannot find package '@react-doctor/core'`
   when running the published CLI.
 
-- [#284](https://github.com/millionco/react-doctor/pull/284) [`b34c5c4`](https://github.com/millionco/react-doctor/commit/b34c5c4db28539d9407fc08600e0e8c28dea67cd) Thanks [@aidenybai](https://github.com/aidenybai)! - Harden glob pattern compilation against ReDoS:
+- [#284](https://github.com/millionco/react-doctor/pull/284) [`b34c5c4`](https://github.com/millionco/react-doctor/commit/b34c5c4db28539d9407fc08600e0e8c28dea67cd) - Harden glob pattern compilation against ReDoS:
 
-  - Replace the hand-rolled glob-to-regex compiler with [`picomatch`](https://github.com/micromatch/picomatch), the proven matcher behind `chokidar`, `fast-glob`, and `micromatch`. The previous compiler turned patterns like `**/**/**/**/**/foo.tsx` into nested optional `(?:.+/)?` groups whose backtracking is exponential in the number of `**` segments — a 20-deep pattern hung for over 30 seconds on a 60-character non-matching input.
+  - Replace the hand-rolled glob-to-regex compiler with [`picomatch`](https://github.com/micromatch/picomatch), the proven matcher behind `chokidar`, `fast-glob`, and `micromatch`. The previous compiler turned patterns like `**/**/**/**/**/foo.tsx` into nested optional `(?:.+/)?` groups whose backtracking is exponential in the number of `**` segments - a 20-deep pattern hung for over 30 seconds on a 60-character non-matching input.
   - Reject obviously pathological patterns early with a clear `InvalidGlobPatternError` carrying the offending pattern and a human-readable reason, instead of crashing the scan. Limits live in `@react-doctor/core/constants` (`MAX_GLOB_PATTERN_LENGTH_CHARS = 1024`, `MAX_GLOB_PATTERN_WILDCARD_COUNT = 24`) and bound worst-case work regardless of the underlying engine. Real-world ignore patterns like `**/foo/**/bar/**/*.tsx` sit well under the cap.
   - Surface invalid `ignore.files` and `ignore.overrides[*].files` entries as `[react-doctor] …` warnings on stderr and skip just the bad pattern, so a single typo no longer takes the whole scan down.
   - Add regression tests covering the worst-case patterns (deeply-stacked globstars and dense `a*a*a*…` alternations) and the validation surface.
 
-- [#266](https://github.com/millionco/react-doctor/pull/266) [`529015d`](https://github.com/millionco/react-doctor/commit/529015d1d89441c4708f49413ecd540db7c04255) Thanks [@aidenybai](https://github.com/aidenybai)! - Scope React Native rules to per-package boundaries. Previously every
+- [#266](https://github.com/millionco/react-doctor/pull/266) [`529015d`](https://github.com/millionco/react-doctor/commit/529015d1d89441c4708f49413ecd540db7c04255) - Scope React Native rules to per-package boundaries. Previously every
   `rn-*` rule fired on every file in a project whose top-level framework
   was detected as React Native or Expo - even on sibling workspaces that
   were clearly web targets. In a mixed RN + web monorepo (`apps/mobile`
@@ -265,7 +285,7 @@
   keep the rule active even when the surrounding package classification
   is ambiguous.
 
-- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) Thanks [@aidenybai](https://github.com/aidenybai)! - False-positive sweep across the rule plugin and the oxlint runner:
+- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) - False-positive sweep across the rule plugin and the oxlint runner:
 
   - Gate React-19-only rules on the detected React major version so they
     stay silent on React 18 projects, with hardened catalog / peer-range /
@@ -283,7 +303,7 @@
     large monorepo projects via batched runs + a new
     `dedupe-diagnostics` helper in `@react-doctor/core` ([#262](https://github.com/millionco/react-doctor/issues/262)).
 
-- [#202](https://github.com/millionco/react-doctor/pull/202) [`53fa4df`](https://github.com/millionco/react-doctor/commit/53fa4dffe837e0157fb850fef700fccaaec191ea) Thanks [@aidenybai](https://github.com/aidenybai)! - Detect the project's Tailwind version (`tailwindcss` in `package.json`,
+- [#202](https://github.com/millionco/react-doctor/pull/202) [`53fa4df`](https://github.com/millionco/react-doctor/commit/53fa4dffe837e0157fb850fef700fccaaec191ea) - Detect the project's Tailwind version (`tailwindcss` in `package.json`,
   including pnpm and Bun catalog references) and gate Tailwind-aware
   rules on it. `design-no-redundant-size-axes` (which suggests collapsing
   `w-N h-N` → `size-N`) now stays silent on Tailwind v3.0 … v3.3 - those
@@ -310,9 +330,9 @@
 
 ### Patch Changes
 
-- [#284](https://github.com/millionco/react-doctor/pull/284) [`b34c5c4`](https://github.com/millionco/react-doctor/commit/b34c5c4db28539d9407fc08600e0e8c28dea67cd) Thanks [@aidenybai](https://github.com/aidenybai)! - Harden glob pattern compilation against ReDoS:
+- [#284](https://github.com/millionco/react-doctor/pull/284) [`b34c5c4`](https://github.com/millionco/react-doctor/commit/b34c5c4db28539d9407fc08600e0e8c28dea67cd) - Harden glob pattern compilation against ReDoS:
 
-  - Replace the hand-rolled glob-to-regex compiler with [`picomatch`](https://github.com/micromatch/picomatch), the proven matcher behind `chokidar`, `fast-glob`, and `micromatch`. The previous compiler turned patterns like `**/**/**/**/**/foo.tsx` into nested optional `(?:.+/)?` groups whose backtracking is exponential in the number of `**` segments — a 20-deep pattern hung for over 30 seconds on a 60-character non-matching input.
+  - Replace the hand-rolled glob-to-regex compiler with [`picomatch`](https://github.com/micromatch/picomatch), the proven matcher behind `chokidar`, `fast-glob`, and `micromatch`. The previous compiler turned patterns like `**/**/**/**/**/foo.tsx` into nested optional `(?:.+/)?` groups whose backtracking is exponential in the number of `**` segments - a 20-deep pattern hung for over 30 seconds on a 60-character non-matching input.
   - Reject obviously pathological patterns early with a clear `InvalidGlobPatternError` carrying the offending pattern and a human-readable reason, instead of crashing the scan. Limits live in `@react-doctor/core/constants` (`MAX_GLOB_PATTERN_LENGTH_CHARS = 1024`, `MAX_GLOB_PATTERN_WILDCARD_COUNT = 24`) and bound worst-case work regardless of the underlying engine. Real-world ignore patterns like `**/foo/**/bar/**/*.tsx` sit well under the cap.
   - Surface invalid `ignore.files` and `ignore.overrides[*].files` entries as `[react-doctor] …` warnings on stderr and skip just the bad pattern, so a single typo no longer takes the whole scan down.
   - Add regression tests covering the worst-case patterns (deeply-stacked globstars and dense `a*a*a*…` alternations) and the validation surface.

@@ -9,6 +9,8 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.j
   version: string;
 };
 
+const TEST_TIMEOUT_MS = 30_000;
+
 // HACK: agent-install's parseSkillManifest silently returns `null` when
 // frontmatter is missing or invalid `name:` / `description:` fields,
 // which caused `react-doctor install` to print success while writing
@@ -126,6 +128,18 @@ export default defineConfig({
     },
   ],
   test: {
-    testTimeout: 30_000,
+    testTimeout: TEST_TIMEOUT_MS,
+    // NOTE: do NOT pin Windows onto a single serial fork
+    // (`singleFork` / `maxWorkers: 1` / `fileParallelism: false`).
+    // This suite drives the real `oxlint` binary and per-test deslop
+    // `worker_threads` thousands of times; funneling all ~105 test
+    // files through one long-lived worker lets that process accumulate
+    // memory/handles across the whole run and crash near the end, which
+    // vitest reports as "Worker exited unexpectedly" (Worker forks
+    // emitted error) and fails the job with 0 failed assertions. The
+    // default parallel + isolated forks keep each worker short-lived so
+    // memory is reclaimed between files — Windows CI was green 16/16
+    // with this default and started crashing the moment the override
+    // landed. Keep Windows on the default pool.
   },
 });

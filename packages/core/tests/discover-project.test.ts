@@ -1077,6 +1077,86 @@ describe("discoverProject — hasReactNativeWorkspace", () => {
   });
 });
 
+describe("discoverProject — hasReanimated", () => {
+  it("is true when the entry-point Expo app declares `react-native-reanimated`", () => {
+    const projectDirectory = path.join(tempDirectory, "reanimated-self");
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "spinning-app",
+        dependencies: {
+          react: "^19.0.0",
+          expo: "^51.0.0",
+          "react-native-reanimated": "~3.16.0",
+        },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.hasReanimated).toBe(true);
+  });
+
+  it("is true when a workspace sibling declares `react-native-reanimated` (web-rooted monorepo)", () => {
+    const rootDirectory = path.join(tempDirectory, "reanimated-monorepo");
+    const mobileDirectory = path.join(rootDirectory, "apps", "mobile");
+    fs.mkdirSync(mobileDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(rootDirectory, "package.json"),
+      JSON.stringify({
+        name: "reanimated-monorepo",
+        dependencies: { next: "^14.0.0", react: "^19.0.0", "react-dom": "^19.0.0" },
+        workspaces: ["apps/*"],
+      }),
+    );
+    fs.writeFileSync(
+      path.join(mobileDirectory, "package.json"),
+      JSON.stringify({
+        name: "mobile",
+        dependencies: {
+          react: "^19.0.0",
+          "react-native": "0.76.0",
+          "react-native-reanimated": "^3.16.0",
+        },
+      }),
+    );
+
+    const projectInfo = discoverProject(rootDirectory);
+    expect(projectInfo.hasReanimated).toBe(true);
+  });
+
+  it("is false for a React Native project that does not depend on reanimated", () => {
+    const projectDirectory = path.join(tempDirectory, "rn-without-reanimated");
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "plain-rn-app",
+        dependencies: { react: "^19.0.0", "react-native": "0.76.0" },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.hasReactNativeWorkspace).toBe(true);
+    expect(projectInfo.hasReanimated).toBe(false);
+  });
+
+  it("is false for a web project (the reanimated walk is gated behind React Native)", () => {
+    const projectDirectory = path.join(tempDirectory, "web-no-reanimated");
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "web-app",
+        dependencies: { next: "^14.0.0", react: "^19.0.0", "react-dom": "^19.0.0" },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.hasReanimated).toBe(false);
+  });
+});
+
 describe("formatFrameworkName", () => {
   it("formats known frameworks", () => {
     expect(formatFrameworkName("nextjs")).toBe("Next.js");
@@ -1088,5 +1168,77 @@ describe("formatFrameworkName", () => {
 
   it("formats unknown framework as React", () => {
     expect(formatFrameworkName("unknown")).toBe("React");
+  });
+
+  it("formats Preact", () => {
+    expect(formatFrameworkName("preact")).toBe("Preact");
+  });
+});
+
+describe("discoverProject — Preact", () => {
+  it("classifies a Preact-only project as `preact` and sets `hasPreact`", () => {
+    const projectDirectory = path.join(tempDirectory, "preact-only-project");
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "preact-only-project",
+        dependencies: { preact: "^10.22.0" },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.framework).toBe("preact");
+    expect(projectInfo.reactVersion).toBe(null);
+    expect(projectInfo.hasPreact).toBe(true);
+  });
+
+  it("keeps `framework: vite` for Preact-on-Vite but still sets `hasPreact: true`", () => {
+    const projectDirectory = path.join(tempDirectory, "preact-with-vite");
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "preact-with-vite",
+        dependencies: { preact: "^10.22.0" },
+        devDependencies: { vite: "^7.0.0" },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.framework).toBe("vite");
+    expect(projectInfo.hasPreact).toBe(true);
+  });
+
+  it("stays `unknown` when both `react` and `preact` peer-deps are declared (component library shape)", () => {
+    const projectDirectory = path.join(tempDirectory, "react-and-preact-peer-deps");
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "dual-peer-component-library",
+        peerDependencies: { react: "^18.0.0 || ^19.0.0", preact: "^10.22.0" },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.framework).toBe("unknown");
+    expect(projectInfo.hasPreact).toBe(true);
+    expect(projectInfo.reactVersion).toBe("^18.0.0 || ^19.0.0");
+  });
+
+  it("`hasPreact` is false for projects with no `preact` declaration", () => {
+    const projectDirectory = path.join(tempDirectory, "no-preact-here");
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDirectory, "package.json"),
+      JSON.stringify({
+        name: "no-preact-here",
+        dependencies: { react: "^19.0.0" },
+      }),
+    );
+
+    const projectInfo = discoverProject(projectDirectory);
+    expect(projectInfo.hasPreact).toBe(false);
   });
 });

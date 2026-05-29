@@ -1,6 +1,36 @@
 # oxlint-plugin-react-doctor
 
+## 0.2.11
+
+### Patch Changes
+
+- [#546](https://github.com/millionco/react-doctor/pull/546) [`6f8640f`](https://github.com/millionco/react-doctor/commit/6f8640f6d98a75db90d28b56fdaf5abc81a53163) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Stop `js-tosorted-immutable` from firing in React Native / Expo projects. Hermes (the default RN/Expo JS engine) hasn't shipped the ES2023 change-array-by-copy methods, so the rule's recommended `array.toSorted()` rewrite of `[...array].sort()` crashed at runtime with `TypeError: undefined is not a function`. The rule now carries `disabledBy: ["react-native"]`, so it only fires on projects whose engine supports `toSorted()`.
+
+## 0.2.10
+
+### Patch Changes
+
+- Add Preact support and a dedicated Preact rule family. The new checks cover pure-Preact projects importing hooks from `react`, `children.length` usage, `render()` callback arguments, `onChange` where Preact expects `onInput`, and `onDoubleClick` where Preact expects `onDblClick`.
+
+- Add HTML and accessibility checks for invalid paragraph children, invalid table nesting, nested interactive controls, and hand-rolled modals that should use the native `<dialog>` element.
+
+- Add `hooks-no-nan-in-deps` to catch literal `NaN` and `Number.NaN` in hook dependency arrays before they wedge React or Preact dependency tracking.
+
+- Add Jotai diagnostics for fresh objects returned from derived atoms, `selectAtom` creation inside render, and raw TanStack Query atom usage.
+
+- Add React Native performance rules for `renderItem` keys, missing FlashList `estimatedItemSize`, Gesture Detector press targets that should be Pressable, and `ScrollView` content-container flex usage.
+
+- Add `js-async-reduce-without-awaited-acc` for async reducers that forget to await the accumulator.
+
+- Add `activity-wraps-effect-heavy-subtree`, gated to React 19.2+, to flag toggleable `<Activity>` boundaries wrapping same-file components with effects that will be torn down and recreated on hide/show cycles.
+
+- Fix false positives in `control-has-associated-label` and `no-giant-component`; the giant-component rule now verifies React render output instead of flagging large non-React TypeScript modules.
+
 ## 0.2.9
+
+### Patch Changes
+
+- Published with the trusted-publishing workflow update. No rule behavior changed in this package.
 
 ## 0.2.8
 
@@ -20,13 +50,13 @@
 
 ### Patch Changes
 
-- Remove `design-no-bold-heading` rule — the heuristic of flagging `font-bold` on headings produced too many false positives in design systems where headings intentionally vary weight.
+- Remove `design-no-bold-heading` rule - the heuristic of flagging `font-bold` on headings produced too many false positives in design systems where headings intentionally vary weight.
 
 ## 0.2.5
 
 ### Patch Changes
 
-- Stop `jsx-key` from flagging shorthand JSX fragments (`<>...</>`) which cannot accept a `key` prop — only `React.Fragment` with explicit syntax supports keys.
+- Stop `jsx-key` from flagging shorthand JSX fragments (`<>...</>`) which cannot accept a `key` prop - only `React.Fragment` with explicit syntax supports keys.
 
 - Normalize static template literal handling so rules that inspect string values treat `` `hello` `` the same as `"hello"` instead of skipping template literals with no expressions.
 
@@ -36,7 +66,7 @@
 
 ### Patch Changes
 
-- Adopt Effect v4 runtime throughout the core engine — tagged error classes, `Context.Service` dependency injection, and `Effect.gen` generator-based control flow replace the previous imperative error-handling approach.
+- Adopt Effect v4 runtime throughout the core engine - tagged error classes, `Context.Service` dependency injection, and `Effect.gen` generator-based control flow replace the previous imperative error-handling approach.
 
 - Collapse `@react-doctor/types` and `@react-doctor/project-info` into `@react-doctor/core`, simplifying the dependency graph from five workspace packages to three.
 
@@ -58,7 +88,7 @@
 
 - Restore `eslint-plugin-react-hooks` as a hard dependency so React Compiler rules resolve without requiring users to install the peer separately.
 
-- [#273](https://github.com/millionco/react-doctor/pull/273) [`47772b7`](https://github.com/millionco/react-doctor/commit/47772b7da4f6e412b09e3a4f74d888307faf74a1) Thanks [@aidenybai](https://github.com/aidenybai)! - Natively port the 8 rules from `eslint-plugin-react-you-might-not-need-an-effect`
+- [#273](https://github.com/millionco/react-doctor/pull/273) [`47772b7`](https://github.com/millionco/react-doctor/commit/47772b7da4f6e412b09e3a4f74d888307faf74a1) - Natively port the 8 rules from `eslint-plugin-react-you-might-not-need-an-effect`
   (NickvanDyke, MIT) into `oxlint-plugin-react-doctor`. They now ship as
   `react-doctor/*` rules and no longer require the optional peer
   dependency. The optional peer-dep surface (`effect/*` rules,
@@ -67,7 +97,7 @@
   `@react-doctor/core`.
 
   The ports use a real `eslint-scope` ScopeManager (cached per Program
-  via `WeakMap`) — same `references` / `resolved.defs[].node.init` /
+  via `WeakMap`) - same `references` / `resolved.defs[].node.init` /
   `isEventualCallTo` chasing the upstream plugin uses. Diagnostic
   messages match upstream verbatim with template variables substituted
   in JS.
@@ -89,7 +119,7 @@
 
   These coexist with React Doctor's existing thematically-related rules
   (`no-derived-state-effect`, `no-effect-chain`, `no-event-trigger-state`,
-  `no-prop-callback-in-effect`) — different IDs, different shapes,
+  `no-prop-callback-in-effect`) - different IDs, different shapes,
   different messages.
 
 ## 0.2.1
@@ -102,13 +132,13 @@
 
 ### Minor Changes
 
-- [`5be2ead`](https://github.com/millionco/react-doctor/commit/5be2eadd90b2248b28b228fad306808cec1bf758) Thanks [@aidenybai](https://github.com/aidenybai)! - Add configuration-level controls for React Doctor's rule output. Users can now set top-level `rules` and `categories` severity overrides, tune individual output surfaces (`cli`, `prComment`, `score`, and `ciFailure`) by tag/category/rule id, and rely on registered rule-family tags such as `design`, `react-native`, `server-action`, `test-noise`, and `migration-hint` for broad filtering.
+- [`5be2ead`](https://github.com/millionco/react-doctor/commit/5be2eadd90b2248b28b228fad306808cec1bf758) - Add configuration-level controls for React Doctor's rule output. Users can now set top-level `rules` and `categories` severity overrides, tune individual output surfaces (`cli`, `prComment`, `score`, and `ciFailure`) by tag/category/rule id, and rely on registered rule-family tags such as `design`, `react-native`, `server-action`, `test-noise`, and `migration-hint` for broad filtering.
 
   The scan pipeline now applies those controls both when generating the oxlint config and when post-processing diagnostics, so `"off"` can skip rules before they run while `"warn"` / `"error"` restamp emitted diagnostics consistently across the CLI, score, PR comments, and CI failure gate. The oxlint plugin also exposes shared rule-set maps that the ESLint plugin reuses for its flat configs.
 
   Expose the GitHub Action's `annotations` input so workflow users can opt into inline PR annotations without dropping down to the raw CLI.
 
-- [`809e38c`](https://github.com/millionco/react-doctor/commit/809e38cebabc15c42b3c40ee8c7a753c3d7549d0) Thanks [@aidenybai](https://github.com/aidenybai)! - Extract project / dependency / framework detection, the oxlint runner +
+- [`809e38c`](https://github.com/millionco/react-doctor/commit/809e38cebabc15c42b3c40ee8c7a753c3d7549d0) - Extract project / dependency / framework detection, the oxlint runner +
   scoring engine, and the shared TypeScript type layer out of the
   `react-doctor` monolith into three new public workspace packages:
   `@react-doctor/types`, `@react-doctor/project-info`, and
@@ -124,7 +154,7 @@
 
 ### Patch Changes
 
-- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) Thanks [@aidenybai](https://github.com/aidenybai)! - Rule-fix wave for the 0.2.0-beta.5 release:
+- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) - Rule-fix wave for the 0.2.0-beta.5 release:
 
   - Scope `no-secrets-in-client-code` to client-reachable bindings -
     skips server-only modules, public env-prefixed values, and
@@ -155,7 +185,7 @@
     from the default PR-comment surface while staying visible in the
     CLI report and at the CI failure gate ([#271](https://github.com/millionco/react-doctor/issues/271)).
 
-- [#266](https://github.com/millionco/react-doctor/pull/266) [`529015d`](https://github.com/millionco/react-doctor/commit/529015d1d89441c4708f49413ecd540db7c04255) Thanks [@aidenybai](https://github.com/aidenybai)! - Scope React Native rules to per-package boundaries. Previously every
+- [#266](https://github.com/millionco/react-doctor/pull/266) [`529015d`](https://github.com/millionco/react-doctor/commit/529015d1d89441c4708f49413ecd540db7c04255) - Scope React Native rules to per-package boundaries. Previously every
   `rn-*` rule fired on every file in a project whose top-level framework
   was detected as React Native or Expo - even on sibling workspaces that
   were clearly web targets. In a mixed RN + web monorepo (`apps/mobile`
@@ -194,7 +224,7 @@
   keep the rule active even when the surrounding package classification
   is ambiguous.
 
-- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) Thanks [@aidenybai](https://github.com/aidenybai)! - False-positive sweep across the rule plugin and the oxlint runner:
+- [`99f6a6a`](https://github.com/millionco/react-doctor/commit/99f6a6ad1cc41828172b26f17a84bcf2d66ff17c) - False-positive sweep across the rule plugin and the oxlint runner:
 
   - Gate React-19-only rules on the detected React major version so they
     stay silent on React 18 projects, with hardened catalog / peer-range /
@@ -235,7 +265,7 @@
   `is-inside-server-only-scope.ts`, and a 561-line regression suite
   covering the removed false-positive shapes.
 
-- [#260](https://github.com/millionco/react-doctor/pull/260) [`b53d873`](https://github.com/millionco/react-doctor/commit/b53d8730459d2dc469a8f9841def231048c8de7e) Thanks [@NisargIO](https://github.com/NisargIO)! - `nextjs-no-side-effect-in-get-handler` stops flagging
+- [#260](https://github.com/millionco/react-doctor/pull/260) [`b53d873`](https://github.com/millionco/react-doctor/commit/b53d8730459d2dc469a8f9841def231048c8de7e) - `nextjs-no-side-effect-in-get-handler` stops flagging
   `response.headers.set(...)` and locally-constructed `Map` / `Set` /
   `Headers` inside `GET` handlers - those are the response builder,
   not a side effect. The same locally-scoped-safe-bindings classifier

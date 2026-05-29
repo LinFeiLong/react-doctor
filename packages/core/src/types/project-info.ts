@@ -7,6 +7,7 @@ export type Framework =
   | "expo"
   | "react-native"
   | "tanstack-start"
+  | "preact"
   | "unknown";
 
 export interface ProjectInfo {
@@ -19,6 +20,16 @@ export interface ProjectInfo {
   hasTypeScript: boolean;
   hasReactCompiler: boolean;
   hasTanStackQuery: boolean;
+  /**
+   * `true` when `preact` is declared anywhere in the project's
+   * dependency manifest. Drives the `preact` capability in
+   * `buildCapabilities`, which gates every `preact-*` rule. Modeled
+   * on `hasTanStackQuery` rather than the `framework` field because
+   * the dominant Preact setup today is Preact-on-Vite — those
+   * projects classify as `framework: "vite"` for build-tool reasons
+   * but still need Preact-specific rules to fire.
+   */
+  hasPreact: boolean;
   /**
    * `true` when the project (or any of its workspace packages) declares
    * React Native or Expo as a dependency. Enables the `react-native`
@@ -33,6 +44,13 @@ export interface ProjectInfo {
    * — no `rn-*` rules load for the project at all.
    */
   hasReactNativeWorkspace: boolean;
+  /**
+   * `true` when the project (or any of its workspace packages) declares
+   * `react-native-reanimated`. Lets diagnostics surface reanimated's
+   * Compiler-compatible `.get()` / `.set()` accessors only where they
+   * apply, instead of on every React Native project.
+   */
+  hasReanimated: boolean;
   sourceFileCount: number;
 }
 
