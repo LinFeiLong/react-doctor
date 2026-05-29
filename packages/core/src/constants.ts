@@ -8,8 +8,6 @@ export {
   SOURCE_FILE_PATTERN,
 } from "./project-info/constants.js";
 
-export const JSX_FILE_PATTERN = /\.(tsx|jsx)$/;
-
 export const MILLISECONDS_PER_SECOND = 1000;
 
 export const ERROR_PREVIEW_LENGTH_CHARS = 200;

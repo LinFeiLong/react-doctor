@@ -15,7 +15,7 @@ import type {
 import { buildDiagnosticPipeline } from "./build-diagnostic-pipeline.js";
 import { checkPnpmHardening } from "./check-pnpm-hardening.js";
 import { checkReducedMotion } from "./check-reduced-motion.js";
-import { computeJsxIncludePaths } from "./jsx-include-paths.js";
+import { computeSourceIncludePaths } from "./compute-source-include-paths.js";
 import { NoReactDependency, ReactDoctorError, type ReactDoctorErrorReason } from "./errors.js";
 import { filterDiagnosticsForSurface } from "./filter-for-surface.js";
 import { resolveLintIncludePaths } from "./resolve-lint-include-paths.js";
@@ -217,9 +217,9 @@ export const runInspect = <HooksR = never>(
         : Effect.succeed(null as string | null),
     );
 
-    const jsxIncludePaths = computeJsxIncludePaths([...input.includePaths]);
+    const explicitIncludePaths = computeSourceIncludePaths([...input.includePaths]);
     const lintIncludePaths =
-      jsxIncludePaths ?? resolveLintIncludePaths(scanDirectory, resolvedConfig.config);
+      explicitIncludePaths ?? resolveLintIncludePaths(scanDirectory, resolvedConfig.config);
 
     const beforeLint = hooks.beforeLint ?? NO_HOOKS.beforeLint;
     const afterLint = hooks.afterLint ?? NO_HOOKS.afterLint;

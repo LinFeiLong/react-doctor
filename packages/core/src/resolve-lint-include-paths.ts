@@ -1,4 +1,4 @@
-import { JSX_FILE_PATTERN } from "./constants.js";
+import { SOURCE_FILE_PATTERN } from "./constants.js";
 import type { ReactDoctorConfig } from "./types/index.js";
 import { compileIgnoredFilePatterns, isFileIgnoredByPatterns } from "./is-ignored-file.js";
 import { listSourceFiles } from "./utils/list-source-files.js";
@@ -14,7 +14,7 @@ export const resolveLintIncludePaths = (
   const ignoredPatterns = compileIgnoredFilePatterns(userConfig);
 
   const includedPaths = listSourceFiles(rootDirectory).filter((filePath) => {
-    if (!JSX_FILE_PATTERN.test(filePath)) {
+    if (!SOURCE_FILE_PATTERN.test(filePath)) {
       return false;
     }
 
