@@ -6,6 +6,11 @@
  *   #93 + #100 — `textComponents` config must allowlist user-defined RN
  *                text wrappers (custom Typography component, member-
  *                expression names like `NativeTabs.Trigger.Label`)
+ *   #183     — `rawTextWrapperComponents` suppresses string-only wrapper
+ *              children
+ *   #581     — fbtee `<fbt>` / `<fbs>` translation tags stay transparent to
+ *              the `<Text>` boundary (so raw text inside them isn't flagged)
+ *   #76      — `@expo/vector-icons` is not treated as a legacy Expo package
  *   #94      — `MotionConfig reducedMotion="user"` must satisfy the
  *              reduced-motion accessibility check (so the rule doesn't
  *              false-positive when handling is delegated to the provider)
