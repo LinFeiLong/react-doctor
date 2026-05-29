@@ -75,8 +75,7 @@ const grayLine = (text: string): string => highlighter.gray(text);
 // Directive (not a bare label) so the consuming agent treats the URL as
 // a step to perform — fetch the canonical, reviewer-tested recipe and
 // apply it — rather than as optional reference docs it can skip.
-const FETCH_FIX_RECIPE_LABEL =
-  "Fetch & follow the canonical fix recipe before fixing";
+const FETCH_FIX_RECIPE_LABEL = "Fetch & follow the canonical fix recipe before fixing";
 
 export const formatFixRecipeLine = (diagnostic: Diagnostic): string =>
   `${FETCH_FIX_RECIPE_LABEL}: ${buildRulePromptUrl(diagnostic.plugin, diagnostic.rule)}`;
