@@ -27,6 +27,10 @@ export const REACT_NATIVE_TEXT_COMPONENT_KEYWORDS = new Set([
   "Body",
 ]);
 
+// fbtee's <fbt> / <fbs> compile-time translation tags should be transparent to
+// React Native text boundaries. Ref: https://github.com/millionco/react-doctor/issues/581
+export const REACT_NATIVE_TEXT_TRANSPARENT_COMPONENTS = new Set(["fbt", "fbs"]);
+
 // HACK: Maps (not plain objects) so that an unusual `import { constructor }
 // from "react-native"` (or any other Object.prototype name) doesn't fall
 // through to `Object.prototype.constructor` and falsely report. Symmetric

@@ -242,6 +242,72 @@ describe("issue #183: rawTextWrapperComponents suppresses string-only wrapper ch
   });
 });
 
+describe("issue #581: fbtee tags stay transparent inside <Text>", () => {
+  const buildFbteeProject = (projectName: string, appSource: string) =>
+    setupReactProject(tempRoot, projectName, {
+      packageJsonExtras: { dependencies: { react: "^19.0.0", "react-native": "^0.79.0" } },
+      files: { "src/App.tsx": appSource },
+    });
+
+  const getRnNoRawTextDiagnostics = async (projectDirectory: string) => {
+    const diagnostics = await runOxlint({
+      rootDirectory: projectDirectory,
+      project: buildTestProject({
+        rootDirectory: projectDirectory,
+        framework: "react-native",
+      }),
+    });
+    return diagnostics.filter((diagnostic) => diagnostic.rule === "rn-no-raw-text");
+  };
+
+  it("does not report raw text inside <Text><fbt>...</fbt></Text>", async () => {
+    const projectDirectory = buildFbteeProject(
+      "issue-581-fbt-inside-text",
+      `import { Text } from "react-native";
+
+export const App = () => (
+  <Text>
+    <fbt desc="Greeting">Welcome</fbt>
+  </Text>
+);
+`,
+    );
+
+    const diagnostics = await getRnNoRawTextDiagnostics(projectDirectory);
+    expect(diagnostics).toHaveLength(0);
+  });
+
+  it("does not report raw text inside namespaced fbtee tags within <Text>", async () => {
+    const projectDirectory = buildFbteeProject(
+      "issue-581-fbt-param-inside-text",
+      `import { Text } from "react-native";
+
+export const App = () => (
+  <Text>
+    <fbt desc="Greeting">
+      <fbt:param name="word">Welcome</fbt:param>
+    </fbt>
+  </Text>
+);
+`,
+    );
+
+    const diagnostics = await getRnNoRawTextDiagnostics(projectDirectory);
+    expect(diagnostics).toHaveLength(0);
+  });
+
+  it("still reports raw text when <fbt> is outside <Text>", async () => {
+    const projectDirectory = buildFbteeProject(
+      "issue-581-fbt-outside-text",
+      `export const App = () => <fbt desc="Greeting">Welcome</fbt>;
+`,
+    );
+
+    const diagnostics = await getRnNoRawTextDiagnostics(projectDirectory);
+    expect(diagnostics).toHaveLength(1);
+  });
+});
+
 describe("issue #76: @expo/vector-icons is not treated as a legacy Expo package", () => {
   it("does not flag @expo/vector-icons while still flagging deprecated Expo packages", async () => {
     const projectDir = setupReactProject(tempRoot, "issue-76-vector-icons", {

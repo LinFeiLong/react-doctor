@@ -2,6 +2,7 @@ import {
   RAW_TEXT_PREVIEW_MAX_CHARS,
   REACT_NATIVE_TEXT_COMPONENTS,
   REACT_NATIVE_TEXT_COMPONENT_KEYWORDS,
+  REACT_NATIVE_TEXT_TRANSPARENT_COMPONENTS,
 } from "../../constants/react-native.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { hasDirective } from "../../utils/has-directive.js";
@@ -54,6 +55,30 @@ const isTextHandlingComponent = (elementName: string): boolean => {
   return [...REACT_NATIVE_TEXT_COMPONENT_KEYWORDS].some((keyword) => elementName.includes(keyword));
 };
 
+const isTransparentTextWrapper = (openingElement: EsTreeNodeOfType<"JSXOpeningElement">): boolean => {
+  const elementName = resolveJsxElementName(openingElement);
+  if (elementName && REACT_NATIVE_TEXT_TRANSPARENT_COMPONENTS.has(elementName)) return true;
+  if (isNodeOfType(openingElement.name, "JSXNamespacedName")) {
+    return REACT_NATIVE_TEXT_TRANSPARENT_COMPONENTS.has(openingElement.name.namespace.name);
+  }
+  return false;
+};
+
+const isInsideTextHandlingComponent = (node: EsTreeNodeOfType<"JSXElement">): boolean => {
+  let parentNode = node.parent;
+  while (parentNode) {
+    if (!isNodeOfType(parentNode, "JSXElement")) {
+      parentNode = parentNode.parent;
+      continue;
+    }
+    const parentElementName = resolveJsxElementName(parentNode.openingElement);
+    if (parentElementName && isTextHandlingComponent(parentElementName)) return true;
+    if (!isTransparentTextWrapper(parentNode.openingElement)) return false;
+    parentNode = parentNode.parent;
+  }
+  return false;
+};
+
 export const rnNoRawText = defineRule<Rule>({
   id: "rn-no-raw-text",
   requires: ["react-native"],
@@ -86,6 +111,13 @@ export const rnNoRawText = defineRule<Rule>({
         // package-level boundary handled by the wrapper — same rationale,
         // narrower scope.
         if (isInsidePlatformOsWebBranch(node)) return;
+
+        if (
+          isTransparentTextWrapper(node.openingElement) &&
+          isInsideTextHandlingComponent(node)
+        ) {
+          return;
+        }
 
         for (const child of node.children ?? []) {
           if (!isRawTextContent(child)) continue;
