@@ -68,6 +68,11 @@ const parseLanguage = (source: string): 'flow' | 'typescript' =>
 const parseSourceType = (source: string): 'script' | 'module' =>
   source.indexOf('@script') !== -1 ? 'script' : 'module';
 
+// Snapshots are authored with LF; on Windows the files are checked out with
+// CRLF (core.autocrlf), but the compiler/prettier output always uses LF — so
+// normalize on read to keep the comparison platform-independent.
+const normalizeLineEndings = (contents: string): string => contents.replace(/\r\n/g, '\n');
+
 const stripExtension = (filename: string, extensions: Array<string>): string => {
   for (const ext of extensions) {
     if (filename.endsWith(ext)) {
@@ -405,9 +410,11 @@ export const getFixtures = (): Array<Fixture> => {
     fixtures.push({
       basename: path.basename(key),
       inputPath,
-      input: fs.readFileSync(inputPath, 'utf8'),
+      input: normalizeLineEndings(fs.readFileSync(inputPath, 'utf8')),
       snapshotPath,
-      expected: snapshots.has(key) ? fs.readFileSync(snapshots.get(key)!, 'utf8') : null,
+      expected: snapshots.has(key)
+        ? normalizeLineEndings(fs.readFileSync(snapshots.get(key)!, 'utf8'))
+        : null,
     });
   }
   fixtures.sort((a, b) => a.inputPath.localeCompare(b.inputPath));
