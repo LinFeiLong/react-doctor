@@ -184,7 +184,7 @@ export const altText = defineRule<Rule>({
   recommendation: "Provide `alt` (or aria-label / aria-labelledby) for non-decorative images.",
   category: "Accessibility",
   create: (context): RuleVisitors => {
-    if (isNextjsMetadataImageRouteFilename(context.getFilename?.())) return {};
+    if (isNextjsMetadataImageRouteFilename(context.filename)) return {};
     const settings = resolveSettings(context.settings);
     // Settings.elements selects WHICH element classes to check.
     // Default: all four. Custom aliases are merged into each class.
