@@ -24,19 +24,24 @@ const buildIssuesSummary = (input: CopyIssuesInput): string => {
   lines.push(`${input.diagnostics.length} issues found`);
   lines.push("");
 
-  const ruleGroups = groupBy([...input.diagnostics], (diagnostic) => diagnostic.rule);
+  const ruleGroups = groupBy(
+    [...input.diagnostics],
+    (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
+  );
   const sortedRules = [...ruleGroups.entries()].sort(
     ([, diagnosticsA], [, diagnosticsB]) => diagnosticsB.length - diagnosticsA.length,
   );
 
   const visibleRules = sortedRules.slice(0, MAX_RULES_SHOWN);
-  for (const [rule, ruleDiagnostics] of visibleRules) {
+  for (const [ruleKey, ruleDiagnostics] of visibleRules) {
     const severity = ruleDiagnostics[0].severity;
     const uniqueFiles = [...new Set(ruleDiagnostics.map((diagnostic) => diagnostic.filePath))];
     const shownFiles = uniqueFiles.slice(0, MAX_FILES_PER_RULE);
     const remainingFileCount = uniqueFiles.length - shownFiles.length;
 
-    lines.push(`${severity === "error" ? "ERROR" : "WARN"} ${rule} (×${ruleDiagnostics.length})`);
+    lines.push(
+      `${severity === "error" ? "ERROR" : "WARN"} ${ruleKey} (×${ruleDiagnostics.length})`,
+    );
     lines.push(`  ${ruleDiagnostics[0].message}`);
     lines.push(`  ${formatFixRecipeLine(ruleDiagnostics[0])}`);
     for (const filePath of shownFiles) {
