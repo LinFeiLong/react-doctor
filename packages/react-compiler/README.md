@@ -8,6 +8,52 @@ The source under `src/` is copied verbatim from `facebook/react` (`compiler/pack
 with the repo's standard `vp pack` (vite-plus / tsdown) pipeline instead of the
 upstream `tsup` config, producing a CommonJS bundle at `dist/index.js`.
 
+## Correctness verifier (`src/verify`)
+
+An experimental, soundness-tiered correctness verifier built on the compiler's
+HIR. Unlike a linter, it has **three** outcomes per property:
+
+- `safe` — proof of absence (the failure class provably can't occur),
+- `violation` — proof of presence, with a concrete counterexample **witness**,
+- `unknown` — no proof either way (an explicit open goal).
+
+Soundness contract: a `safe` aggregate means the property holds under the
+verifier's model; any loss of precision resolves to `unknown`, never `safe`.
+
+```ts
+import { verifySource } from "babel-plugin-react-compiler/src/verify";
+
+const report = verifySource(source);
+// report.verdict: "safe" | "violation" | "unknown"
+// report.findings[i].witness: the render-N → render-N+1 divergence trace
+```
+
+### CLI
+
+Point it at any React file for a yes/no answer (exit 0 = verified, 1 = findings,
+2 = could not analyze):
+
+```bash
+pnpm --filter babel-plugin-react-compiler verify ./path/to/Component.tsx
+pnpm --filter babel-plugin-react-compiler verify --json ./path/to/Component.tsx
+```
+
+Checks span six failure families (proven unless noted):
+
+- **Termination** — `no-effect-infinite-loop`, `no-set-state-in-render`
+- **Rules of Hooks** — `no-conditional-hook`
+- **Render purity** — `no-ref-read-in-render`
+- **Effect correctness** — `effect-missing-cleanup` _(structural)_
+- **Cross-component cascade** — `no-unstable-jsx-prop` _(structural)_
+- **Resource lifecycle** — `no-resource-in-render`
+
+The runner compiles the input and analyzes the HIR captured at the `InferTypes`
+stage — early enough to precede the compiler's own validations (which may
+throw), with full type info, and reflecting the program "as written"
+(pre-memoization). All checks share one substrate in `hir-access.ts` (SSA
+definition/alias resolution, fresh-allocation stability, must-execute block
+analysis), so new properties are small additions rather than bespoke passes.
+
 ## Scripts
 
 - `pnpm --filter babel-plugin-react-compiler build` — bundle `src/index.ts` to `dist/`

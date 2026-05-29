@@ -17,7 +17,8 @@
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && cross-env NODE_ENV=production vp pack",
     "test": "vp test run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "tsx src/verify/cli.ts"
   },
   "dependencies": {
     "@babel/code-frame": "^7.27.1",
@@ -42,6 +43,7 @@
     "babel-plugin-fbt": "1.0.0",
     "babel-plugin-fbt-runtime": "1.0.0",
     "babel-plugin-idx": "3.0.3",
+    "commander": "^14.0.1",
     "cross-env": "^10.1.0",
     "hermes-parser": "0.25.1",
     "invariant": "^2.2.4",
@@ -50,6 +52,7 @@
     "pretty-format": "^29.7.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "tsx": "^4.20.6",
     "typescript": "^6.0.3",
     "zod": "^4.1.12",
     "zod-validation-error": "^4.0.2"
