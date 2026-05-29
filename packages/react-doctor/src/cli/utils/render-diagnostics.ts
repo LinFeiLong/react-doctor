@@ -72,6 +72,15 @@ const padRuleNameToColumn = (ruleName: string, columnWidth: number): string => {
 
 const grayLine = (text: string): string => highlighter.gray(text);
 
+// Directive (not a bare label) so the consuming agent treats the URL as
+// a step to perform — fetch the canonical, reviewer-tested recipe and
+// apply it — rather than as optional reference docs it can skip.
+const FETCH_FIX_RECIPE_LABEL =
+  "Fetch & follow the canonical fix recipe before fixing";
+
+const formatFixRecipeLine = (diagnostic: Diagnostic): string =>
+  `${FETCH_FIX_RECIPE_LABEL}: ${buildRulePromptUrl(diagnostic.plugin, diagnostic.rule)}`;
+
 const buildCompactRuleGroupLine = (
   ruleKey: string,
   ruleDiagnostics: Diagnostic[],
@@ -152,11 +161,7 @@ const buildVerboseRuleGroupLines = (
   if (firstDiagnostic.help) {
     lines.push(grayLine(indentMultilineText(`→ ${firstDiagnostic.help}`, "      ")));
   }
-  lines.push(
-    grayLine(
-      `      Fix recipe: ${buildRulePromptUrl(firstDiagnostic.plugin, firstDiagnostic.rule)}`,
-    ),
-  );
+  lines.push(grayLine(`      ${formatFixRecipeLine(firstDiagnostic)}`));
   const fileSites = buildVerboseSiteMap(ruleDiagnostics);
   for (const [filePath, sites] of fileSites) {
     if (sites.length > 0) {
@@ -242,10 +247,7 @@ export const formatRuleSummary = (ruleKey: string, ruleDiagnostics: Diagnostic[]
   if (firstDiagnostic.url) {
     sections.push("", `Docs: ${firstDiagnostic.url}`);
   }
-  sections.push(
-    "",
-    `Fix recipe: ${buildRulePromptUrl(firstDiagnostic.plugin, firstDiagnostic.rule)}`,
-  );
+  sections.push("", formatFixRecipeLine(firstDiagnostic));
 
   sections.push("", "Files:");
   const fileSites = buildVerboseSiteMap(ruleDiagnostics);
