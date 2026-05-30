@@ -8,7 +8,7 @@ import {
   MILLISECONDS_PER_SECOND,
   RULE_NAME_COLUMN_WIDTH_CHARS,
 } from "@react-doctor/core";
-import type { Diagnostic } from "@react-doctor/core";
+import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 import { indentMultilineText } from "./indent-multiline-text.js";
 
 const POINTER = isUnicodeSupported() ? "›" : ">";
@@ -21,8 +21,45 @@ const SEVERITY_ORDER: Record<Diagnostic["severity"], number> = {
 const colorizeBySeverity = (text: string, severity: Diagnostic["severity"]): string =>
   severity === "error" ? highlighter.error(text) : highlighter.warn(text);
 
-const sortByImportance = (diagnosticGroups: [string, Diagnostic[]][]): [string, Diagnostic[]][] =>
-  diagnosticGroups.toSorted(([, diagnosticsA], [, diagnosticsB]) => {
+// Build a `<plugin>/<rule>` -> priority lookup from the score API's per-rule
+// payload (merged across scans). Rules the API didn't rank — or every rule when
+// the score is unavailable — are simply absent and fall back to severity order.
+export const buildRulePriorityMap = (
+  scores: ReadonlyArray<ScoreResult | null>,
+): ReadonlyMap<string, number> => {
+  const rulePriority = new Map<string, number>();
+  for (const score of scores) {
+    if (!score?.rules) continue;
+    for (const [ruleKey, info] of Object.entries(score.rules)) {
+      if (typeof info.priority === "number") rulePriority.set(ruleKey, info.priority);
+    }
+  }
+  return rulePriority;
+};
+
+// Effective sort weight for a rule group: its API-returned priority, or a
+// severity-based midpoint when the rule isn't ranked (or the score is offline).
+// With no priorities at all this degrades to the previous error-before-warning
+// ordering (error 55 sorts ahead of warning 35).
+const effectivePriority = (
+  ruleKey: string,
+  diagnostics: Diagnostic[],
+  rulePriority: ReadonlyMap<string, number> | undefined,
+): number => {
+  const known = rulePriority?.get(ruleKey);
+  if (known !== undefined) return known;
+  return diagnostics[0].severity === "error" ? 55 : 35;
+};
+
+const sortByImportance = (
+  diagnosticGroups: [string, Diagnostic[]][],
+  rulePriority?: ReadonlyMap<string, number>,
+): [string, Diagnostic[]][] =>
+  diagnosticGroups.toSorted(([ruleKeyA, diagnosticsA], [ruleKeyB, diagnosticsB]) => {
+    const priorityDelta =
+      effectivePriority(ruleKeyB, diagnosticsB, rulePriority) -
+      effectivePriority(ruleKeyA, diagnosticsA, rulePriority);
+    if (priorityDelta !== 0) return priorityDelta;
     const severityDelta =
       SEVERITY_ORDER[diagnosticsA[0].severity] - SEVERITY_ORDER[diagnosticsB[0].severity];
     if (severityDelta !== 0) return severityDelta;
@@ -103,7 +140,20 @@ const buildCompactRuleGroupLine = (
 const getWorstSeverity = (diagnostics: Diagnostic[]): Diagnostic["severity"] =>
   diagnostics.some((diagnostic) => diagnostic.severity === "error") ? "error" : "warning";
 
-const buildCategoryDiagnosticGroups = (diagnostics: Diagnostic[]): CategoryDiagnosticGroup[] => {
+// A category leads with its most valuable rule. `ruleGroups` are already
+// priority-sorted, so the first one is the category's top.
+const categoryTopPriority = (
+  categoryGroup: CategoryDiagnosticGroup,
+  rulePriority: ReadonlyMap<string, number> | undefined,
+): number => {
+  const [topRuleKey, topDiagnostics] = categoryGroup.ruleGroups[0];
+  return effectivePriority(topRuleKey, topDiagnostics, rulePriority);
+};
+
+const buildCategoryDiagnosticGroups = (
+  diagnostics: Diagnostic[],
+  rulePriority?: ReadonlyMap<string, number>,
+): CategoryDiagnosticGroup[] => {
   const categoryGroups = groupBy(diagnostics, (diagnostic) => diagnostic.category);
   return [...categoryGroups.entries()]
     .map(([category, categoryDiagnostics]) => {
@@ -114,10 +164,14 @@ const buildCategoryDiagnosticGroups = (diagnostics: Diagnostic[]): CategoryDiagn
       return {
         category,
         diagnostics: categoryDiagnostics,
-        ruleGroups: sortByImportance([...ruleGroups.entries()]),
+        ruleGroups: sortByImportance([...ruleGroups.entries()], rulePriority),
       };
     })
     .toSorted((categoryGroupA, categoryGroupB) => {
+      const priorityDelta =
+        categoryTopPriority(categoryGroupB, rulePriority) -
+        categoryTopPriority(categoryGroupA, rulePriority);
+      if (priorityDelta !== 0) return priorityDelta;
       const severityDelta =
         SEVERITY_ORDER[getWorstSeverity(categoryGroupA.diagnostics)] -
         SEVERITY_ORDER[getWorstSeverity(categoryGroupB.diagnostics)];
@@ -178,8 +232,11 @@ const buildVerboseRuleGroupLines = (
   return lines;
 };
 
-const buildDefaultDiagnosticsLines = (diagnostics: Diagnostic[]): ReadonlyArray<string> => {
-  const categoryGroups = buildCategoryDiagnosticGroups(diagnostics);
+const buildDefaultDiagnosticsLines = (
+  diagnostics: Diagnostic[],
+  rulePriority?: ReadonlyMap<string, number>,
+): ReadonlyArray<string> => {
+  const categoryGroups = buildCategoryDiagnosticGroups(diagnostics, rulePriority);
   const lines: string[] = [];
   for (const categoryGroup of categoryGroups) {
     lines.push(buildCompactCategoryLine(categoryGroup));
@@ -198,17 +255,18 @@ export const printDiagnostics = (
   diagnostics: Diagnostic[],
   isVerbose: boolean,
   rootDirectory: string,
+  rulePriority?: ReadonlyMap<string, number>,
 ): Effect.Effect<void> =>
   Effect.gen(function* () {
     let lines: ReadonlyArray<string>;
     if (!isVerbose) {
-      lines = buildDefaultDiagnosticsLines(diagnostics);
+      lines = buildDefaultDiagnosticsLines(diagnostics, rulePriority);
     } else {
       const ruleGroups = groupBy(
         diagnostics,
         (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
       );
-      const sortedRuleGroups = sortByImportance([...ruleGroups.entries()]);
+      const sortedRuleGroups = sortByImportance([...ruleGroups.entries()], rulePriority);
       const ruleNameColumnWidth = computeRuleNameColumnWidth(
         sortedRuleGroups.map(([ruleKey]) => ruleKey),
       );

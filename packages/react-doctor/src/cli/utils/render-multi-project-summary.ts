@@ -9,7 +9,7 @@ import {
 } from "@react-doctor/core";
 import type { Diagnostic, InspectResult, ReactDoctorConfig, ScoreResult } from "@react-doctor/core";
 import { colorizeByScore } from "./colorize-by-score.js";
-import { printDiagnostics } from "./render-diagnostics.js";
+import { buildRulePriorityMap, printDiagnostics } from "./render-diagnostics.js";
 import { printSummary } from "./render-summary.js";
 
 const SUMMARY_BAR_WIDTH_CHARS = 20;
@@ -95,7 +95,12 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
 
     if (surfaceDiagnostics.length > 0) {
       yield* Console.log("");
-      yield* printDiagnostics(surfaceDiagnostics, verbose, "");
+      yield* printDiagnostics(
+        surfaceDiagnostics,
+        verbose,
+        "",
+        buildRulePriorityMap(completedScans.map((scan) => scan.result.score)),
+      );
     }
 
     const aggregateScore = computeAggregateScore(completedScans);

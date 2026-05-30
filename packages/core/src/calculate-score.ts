@@ -1,6 +1,26 @@
 import { gzipSync } from "node:zlib";
 import { FETCH_TIMEOUT_MS, SCORE_API_URL } from "./constants.js";
-import type { Diagnostic, ProjectInfo, ScoreResult } from "./types/index.js";
+import type { Diagnostic, ProjectInfo, RulePriority, ScoreResult } from "./types/index.js";
+
+const RULE_TIERS = new Set(["P0", "P1", "P2", "P3"]);
+
+const parseRulePriorities = (value: unknown): Record<string, RulePriority> | undefined => {
+  if (typeof value !== "object" || value === null) return undefined;
+  const rules: Record<string, RulePriority> = {};
+  for (const [ruleKey, info] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof info !== "object" || info === null) continue;
+    const priority = Reflect.get(info, "priority");
+    const tier = Reflect.get(info, "tier");
+    if (
+      (typeof priority === "number" || priority === null) &&
+      typeof tier === "string" &&
+      RULE_TIERS.has(tier)
+    ) {
+      rules[ruleKey] = { priority, tier: tier as RulePriority["tier"] };
+    }
+  }
+  return Object.keys(rules).length > 0 ? rules : undefined;
+};
 
 const parseScoreResult = (value: unknown): ScoreResult | null => {
   if (typeof value !== "object" || value === null) return null;
@@ -8,7 +28,8 @@ const parseScoreResult = (value: unknown): ScoreResult | null => {
   const scoreValue = Reflect.get(value, "score");
   const labelValue = Reflect.get(value, "label");
   if (typeof scoreValue !== "number" || typeof labelValue !== "string") return null;
-  return { score: scoreValue, label: labelValue };
+  const rules = parseRulePriorities(Reflect.get(value, "rules"));
+  return { score: scoreValue, label: labelValue, ...(rules ? { rules } : {}) };
 };
 
 const stripFilePaths = (diagnostics: Diagnostic[]): Omit<Diagnostic, "filePath">[] =>

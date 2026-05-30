@@ -22,7 +22,7 @@ import type {
 import { makeNoopConsole } from "./cli/utils/noop-console.js";
 import { printAgentGuidance } from "./cli/utils/render-agent-guidance.js";
 import { isCiOrCodingAgentEnvironment } from "./cli/utils/is-ci-environment.js";
-import { printDiagnostics } from "./cli/utils/render-diagnostics.js";
+import { buildRulePriorityMap, printDiagnostics } from "./cli/utils/render-diagnostics.js";
 import { isNonInteractiveEnvironment } from "./cli/utils/is-non-interactive-environment.js";
 import { printProjectDetection } from "./cli/utils/render-project-detection.js";
 import {
@@ -418,7 +418,12 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
     }
 
     yield* Console.log("");
-    yield* printDiagnostics([...surfaceDiagnostics], options.verbose, directory);
+    yield* printDiagnostics(
+      [...surfaceDiagnostics],
+      options.verbose,
+      directory,
+      buildRulePriorityMap([score]),
+    );
     if (options.isNonInteractiveEnvironment && options.outputSurface !== "prComment") {
       yield* printAgentGuidance();
     }
