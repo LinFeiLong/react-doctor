@@ -22,14 +22,42 @@ const SEVERITY_ORDER: Record<Diagnostic["severity"], number> = {
   warning: 1,
 };
 
+// Stakes ordering for surfacing diagnostics: the categories developers
+// react to most — a breach, a slow app, a crash — float to the top;
+// taste (architecture / design) sinks. Lower rank = higher stakes =
+// shown first. Categories not listed (framework buckets like Next.js /
+// React Native / Server, or adopted-rule "Other") fall in the
+// middle "likely bug" tier so they're never buried under style notes.
+const CATEGORY_STAKES_RANK = new Map<string, number>([
+  ["Security", 0],
+  ["Performance", 1],
+  ["Correctness", 2],
+  ["State & Effects", 2],
+  ["React Compiler", 2],
+  ["Accessibility", 3],
+  ["Bundle Size", 4],
+  ["Architecture", 5],
+  ["Design", 5],
+]);
+const DEFAULT_CATEGORY_STAKES_RANK = 2;
+
+const getCategoryStakesRank = (category: string): number =>
+  CATEGORY_STAKES_RANK.get(category) ?? DEFAULT_CATEGORY_STAKES_RANK;
+
 const colorizeBySeverity = (text: string, severity: Diagnostic["severity"]): string =>
   severity === "error" ? highlighter.error(text) : highlighter.warn(text);
 
+// Errors always rank above warnings; within a severity, higher-stakes
+// categories come first, then the rules that fire most often.
 const sortByImportance = (diagnosticGroups: [string, Diagnostic[]][]): [string, Diagnostic[]][] =>
   diagnosticGroups.toSorted(([, diagnosticsA], [, diagnosticsB]) => {
     const severityDelta =
       SEVERITY_ORDER[diagnosticsA[0].severity] - SEVERITY_ORDER[diagnosticsB[0].severity];
     if (severityDelta !== 0) return severityDelta;
+    const stakesDelta =
+      getCategoryStakesRank(diagnosticsA[0].category) -
+      getCategoryStakesRank(diagnosticsB[0].category);
+    if (stakesDelta !== 0) return stakesDelta;
     return diagnosticsB.length - diagnosticsA.length;
   });
 
@@ -130,6 +158,10 @@ const buildCategoryDiagnosticGroups = (diagnostics: Diagnostic[]): CategoryDiagn
         SEVERITY_ORDER[getWorstSeverity(categoryGroupA.diagnostics)] -
         SEVERITY_ORDER[getWorstSeverity(categoryGroupB.diagnostics)];
       if (severityDelta !== 0) return severityDelta;
+      const stakesDelta =
+        getCategoryStakesRank(categoryGroupA.category) -
+        getCategoryStakesRank(categoryGroupB.category);
+      if (stakesDelta !== 0) return stakesDelta;
       if (categoryGroupA.diagnostics.length !== categoryGroupB.diagnostics.length) {
         return categoryGroupB.diagnostics.length - categoryGroupA.diagnostics.length;
       }

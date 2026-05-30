@@ -16,16 +16,6 @@ exports[`in-process render across terminal widths and render modes > matches the
         |     ^
       6 |   }, [value]);
 
-  ✗ react-doctor/no-nested-component-definition
-    Component defined inside another component remounts on
-    every render, throwing away its state and DOM.
-
-    src/text-swap.tsx:2
-      1 | import { useState, useEffect } from 'react';
-    > 2 | export const TextSwap = ({ value }) => {
-        |     ^
-      3 |   const [count, setCount] = useState(0);
-
   ✗ react-doctor/no-array-index-key
     Using the array index as a key breaks reconciliation when
     the list reorders.
@@ -36,9 +26,19 @@ exports[`in-process render across terminal widths and render modes > matches the
         |     ^
       8 | };
 
+  ✗ react-doctor/no-nested-component-definition
+    Component defined inside another component remounts on
+    every render, throwing away its state and DOM.
+
+    src/text-swap.tsx:2
+      1 | import { useState, useEffect } from 'react';
+    > 2 | export const TextSwap = ({ value }) => {
+        |     ^
+      3 |   const [count, setCount] = useState(0);
+
   State & Effects › 2 errors
-  Architecture › 1 error
   Correctness › 1 error
+  Architecture › 1 error
   Performance › 1 warning
 
   ┌─────┐  99 / 100 Great
