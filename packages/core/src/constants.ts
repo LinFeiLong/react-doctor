@@ -6,6 +6,9 @@ export {
   GENERATED_BUNDLE_FILE_PATTERN,
   GIT_LS_FILES_MAX_BUFFER_BYTES,
   IGNORED_DIRECTORIES,
+  MINIFIED_LINE_LENGTH_CHARS,
+  MINIFIED_MIN_SIZE_BYTES,
+  MINIFIED_SNIFF_BYTES,
   SOURCE_FILE_PATTERN,
 } from "./project-info/constants.js";
 
@@ -149,6 +152,15 @@ export const OXLINT_SPAWN_TIMEOUT_MS = 60_000;
 
 export const DEAD_CODE_WORKER_TIMEOUT_MS = 120_000;
 
+// deslop's semantic pass builds a full TypeScript program and walks
+// every identifier through the type checker. On type-heavy projects
+// (large tRPC routers, Effect/Zod schemas, deep generics) the checker
+// instantiates enormous types and the child can exceed Node's default
+// ~4 GB heap, dying with an uncatchable "heap out of memory" — which
+// surfaces as a silent "Scanning failed (dead-code analysis)". Raise
+// the child's heap so those projects complete instead of crashing.
+export const DEAD_CODE_WORKER_MAX_OLD_SPACE_MB = 8192;
+
 // HACK: lookahead cap for JSX opener-span scanning; bounds worst-case
 // work on pathological files. Real openers stay well under this.
 export const JSX_OPENER_SCAN_MAX_LINES = 32;
@@ -182,6 +194,12 @@ export const TOP_ERRORS_DISPLAY_COUNT = 3;
 // inline code frame (lines above / below the offending line).
 export const CODE_FRAME_LINES_ABOVE = 1;
 export const CODE_FRAME_LINES_BELOW = 1;
+
+// Skip rendering an inline code frame when the offending source line is
+// longer than this — a single huge line (minified output, a giant inline
+// data literal) only produces an unreadable wall of text in the terminal,
+// so we fall back to the bare `file:line` reference instead.
+export const CODE_FRAME_MAX_LINE_LENGTH_CHARS = 200;
 
 export const OUTPUT_DETAIL_WRAP_WIDTH_CHARS = 88;
 

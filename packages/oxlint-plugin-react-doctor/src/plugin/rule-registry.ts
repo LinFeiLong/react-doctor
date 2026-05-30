@@ -1616,7 +1616,7 @@ export const reactDoctorRules = [
     rule: {
       ...noDanger,
       framework: "global",
-      category: "Correctness",
+      category: "Security",
     },
   },
   {

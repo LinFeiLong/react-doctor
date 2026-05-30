@@ -235,9 +235,14 @@ const buildTopErrorBlock = (
   const siteCountBadge = formatSiteCountBadge(ruleDiagnostics.length);
   const trailingBadge = siteCountBadge.length > 0 ? ` ${highlighter.gray(siteCountBadge)}` : "";
 
-  // Show the rule's human title only. Falls back to the `plugin/rule`
-  // id when a diagnostic has no title (adopted third-party rules).
-  const headline = highlighter.error(representative.title ?? ruleKey);
+  // Prefix the headline with the category (e.g. "Security: Use of
+  // eval()") so it's immediately clear which kind of problem this is —
+  // a vulnerability, a perf hit, a crash — without scanning down to the
+  // category breakdown. Falls back to the `plugin/rule` id when a
+  // diagnostic has no title (adopted third-party rules).
+  const headline = highlighter.error(
+    `${representative.category}: ${representative.title ?? ruleKey}`,
+  );
 
   const lines: string[] = [`  ${highlighter.error("✗")} ${headline}${trailingBadge}`];
 

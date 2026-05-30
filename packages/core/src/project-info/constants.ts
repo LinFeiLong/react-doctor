@@ -9,6 +9,20 @@ export const SOURCE_FILE_PATTERN = /\.(tsx?|jsx?)$/;
 // browser-global bundles, and `.cjs`/`.mjs` aren't source files anyway.
 export const GENERATED_BUNDLE_FILE_PATTERN = /\.(iife|global)\.js$/i;
 
+// Minified / generated files (e.g. a one-line `public/inject.js` bundle)
+// don't carry the `.min`/`.iife` extension we can match on, so we sniff
+// content: a file with any line longer than this is treated as minified
+// & skipped. Real source lines almost never reach 1000 chars.
+export const MINIFIED_LINE_LENGTH_CHARS = 1000;
+// Only read this many bytes when sniffing for minification — a minified
+// file's huge lines show up immediately, so we never read the whole bundle.
+export const MINIFIED_SNIFF_BYTES = 65_536;
+// Skip the content sniff entirely for files smaller than this; minified
+// bundles are large, & this keeps full-tree discovery from reading every
+// small source file. Smaller minified files are still caught downstream
+// (diagnostic parsing + the code-frame guard).
+export const MINIFIED_MIN_SIZE_BYTES = 20_000;
+
 export const GIT_LS_FILES_MAX_BUFFER_BYTES = 50 * 1024 * 1024;
 
 export const IGNORED_DIRECTORIES = new Set([

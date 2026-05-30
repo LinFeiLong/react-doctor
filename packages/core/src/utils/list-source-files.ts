@@ -1,8 +1,31 @@
 import { spawnSync } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { readDirectoryEntries } from "../project-info/index.js";
-import { GIT_LS_FILES_MAX_BUFFER_BYTES, IGNORED_DIRECTORIES } from "../constants.js";
+import {
+  GIT_LS_FILES_MAX_BUFFER_BYTES,
+  IGNORED_DIRECTORIES,
+  MINIFIED_MIN_SIZE_BYTES,
+} from "../constants.js";
 import { isLintableSourceFile } from "./is-lintable-source-file.js";
+import { isMinifiedSource } from "./is-minified-source.js";
+
+// Drops minified / generated files that slipped past the extension gate
+// (e.g. a one-line `public/inject.js` bundle). The content sniff only
+// runs for files large enough to plausibly be a bundle, so whole-tree
+// discovery never reads every small source file just to check.
+const excludeMinifiedFiles = (rootDirectory: string, relativePaths: string[]): string[] =>
+  relativePaths.filter((relativePath) => {
+    const absolutePath = path.resolve(rootDirectory, relativePath);
+    let sizeBytes: number;
+    try {
+      sizeBytes = fs.statSync(absolutePath).size;
+    } catch {
+      return true;
+    }
+    if (sizeBytes < MINIFIED_MIN_SIZE_BYTES) return true;
+    return !isMinifiedSource(absolutePath);
+  });
 
 const listSourceFilesViaGit = (rootDirectory: string): string[] | null => {
   // HACK: --recurse-submodules is incompatible with --others /
@@ -61,4 +84,7 @@ const listSourceFilesViaFilesystem = (rootDirectory: string): string[] => {
 // the directory is a git repository — much faster than the fallback
 // filesystem walk and respects `.gitignore` automatically.
 export const listSourceFiles = (rootDirectory: string): string[] =>
-  listSourceFilesViaGit(rootDirectory) ?? listSourceFilesViaFilesystem(rootDirectory);
+  excludeMinifiedFiles(
+    rootDirectory,
+    listSourceFilesViaGit(rootDirectory) ?? listSourceFilesViaFilesystem(rootDirectory),
+  );

@@ -1,7 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { codeFrameColumns } from "@babel/code-frame";
-import { CODE_FRAME_LINES_ABOVE, CODE_FRAME_LINES_BELOW } from "@react-doctor/core";
+import {
+  CODE_FRAME_LINES_ABOVE,
+  CODE_FRAME_LINES_BELOW,
+  CODE_FRAME_MAX_LINE_LENGTH_CHARS,
+} from "@react-doctor/core";
 
 interface CodeFrameInput {
   readonly filePath: string;
@@ -30,6 +34,12 @@ export const buildCodeFrame = (input: CodeFrameInput): string | null => {
   } catch {
     return null;
   }
+
+  // A single huge line (minified output, a giant inline data literal)
+  // only renders an unreadable wall of text, so skip the frame and let
+  // the caller fall back to the bare `file:line` reference.
+  const offendingLine = source.split("\n", input.line)[input.line - 1] ?? "";
+  if (offendingLine.length > CODE_FRAME_MAX_LINE_LENGTH_CHARS) return null;
 
   return codeFrameColumns(
     source,

@@ -16,7 +16,7 @@ export const noEval = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Attackers can inject code through eval(), since it runs any string as code. Don't build & run code from strings.",
+            "eval() is a code-injection vulnerability: it runs any string as code, so attacker-controlled input becomes attacker-controlled code. Don't run code from strings.",
         });
         return;
       }
@@ -29,7 +29,7 @@ export const noEval = defineRule<Rule>({
       ) {
         context.report({
           node,
-          message: `Attackers can inject code through ${node.callee.name}() with a string argument, since it runs that string as code. Pass a function instead.`,
+          message: `Passing a string to ${node.callee.name}() is a code-injection vulnerability, since it runs that string as code. Pass a function instead.`,
         });
       }
     },
@@ -38,7 +38,7 @@ export const noEval = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Attackers can inject code through new Function(), since it builds & runs code from a string. Don't build code from strings.",
+            "new Function() is a code-injection vulnerability: it builds & runs code from a string, so attacker-controlled input becomes attacker-controlled code. Don't build code from strings.",
         });
       }
     },

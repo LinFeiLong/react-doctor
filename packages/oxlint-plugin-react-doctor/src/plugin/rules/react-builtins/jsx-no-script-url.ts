@@ -4,7 +4,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "A `javascript:` URL opens your users to XSS attacks & React 19 blocks it, so use an `onClick` handler instead.";
+  "A `javascript:` URL is an XSS vulnerability that runs injected input as code, & React 19 blocks it. Use an `onClick` handler instead.";
 
 // Matches `javascript:` allowing whitespace between letters and any
 // casing — exactly the regex `oxc_linter::rules::react::jsx_no_script_url`

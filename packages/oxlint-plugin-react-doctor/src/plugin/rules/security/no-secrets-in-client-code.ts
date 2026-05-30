@@ -59,7 +59,7 @@ export const noSecretsInClientCode = defineRule<Rule>({
         ) {
           context.report({
             node,
-            message: `Anyone can read "${variableName}" in the browser, since this hardcoded secret ships to the client. Move it to a server-only environment variable.`,
+            message: `Hardcoding "${variableName}" in client code is a security vulnerability: the secret ships to the browser where anyone can read it. Move it to a server-only environment variable.`,
           });
           return;
         }
@@ -68,7 +68,7 @@ export const noSecretsInClientCode = defineRule<Rule>({
           context.report({
             node,
             message:
-              "Hardcoded secret detected. Anyone can read it in the browser once it ships to the client. Use an environment variable instead.",
+              "This hardcoded secret is a security vulnerability: it ships to the browser where anyone can read it. Use a server-only environment variable instead.",
           });
         }
       },

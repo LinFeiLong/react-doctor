@@ -1,3 +1,4 @@
+import path from "node:path";
 import reactDoctorPlugin from "oxlint-plugin-react-doctor";
 import type {
   CleanedDiagnostic,
@@ -7,6 +8,7 @@ import type {
 } from "../../types/index.js";
 import { ERROR_PREVIEW_LENGTH_CHARS } from "../../constants.js";
 import { isLintableSourceFile } from "../../utils/is-lintable-source-file.js";
+import { isMinifiedSource } from "../../utils/is-minified-source.js";
 import { OxlintOutputUnparseable, ReactDoctorError } from "../../errors.js";
 import { buildNoSecretsRecommendation } from "../../utils/build-no-secrets-recommendation.js";
 import { appendReanimatedSharedValueHint } from "../../utils/append-reanimated-shared-value-hint.js";
@@ -189,11 +191,29 @@ export const parseOxlintOutput = (
   // extensions we count as source files everywhere else, and also drops
   // generated bundler output (`*.iife.js`, `*.global.js`) so a stray
   // bundle that slipped past file discovery can't pollute the report.
+  // The content sniff additionally drops minified files that carry an
+  // ordinary extension (e.g. a one-line `public/inject.js`) — these reach
+  // the parser in diff/staged mode (which scans changed files directly,
+  // bypassing whole-tree discovery) or when they're too small for the
+  // discovery-time size gate. Cached so each file is read at most once.
+  const minifiedFileCache = new Map<string, boolean>();
+  const isMinifiedDiagnosticFile = (filename: string): boolean => {
+    const absolutePath = path.isAbsolute(filename)
+      ? filename
+      : path.resolve(rootDirectory || ".", filename);
+    const cached = minifiedFileCache.get(absolutePath);
+    if (cached !== undefined) return cached;
+    const minified = isMinifiedSource(absolutePath);
+    minifiedFileCache.set(absolutePath, minified);
+    return minified;
+  };
+
   return parsed.diagnostics
     .filter(
       (diagnostic) =>
         diagnostic.code &&
         isLintableSourceFile(diagnostic.filename) &&
+        !isMinifiedDiagnosticFile(diagnostic.filename) &&
         !shouldSuppressLocalUseHookDiagnostic(diagnostic, rootDirectory),
     )
     .map((diagnostic) => {

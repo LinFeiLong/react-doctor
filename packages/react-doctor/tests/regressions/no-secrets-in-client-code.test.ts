@@ -339,7 +339,7 @@ export const token = stripeSecret;
 
     const secretIssues = await getSecretIssues(projectDir);
     expect(secretIssues).toHaveLength(1);
-    expect(secretIssues[0].message).toContain("Hardcoded secret detected");
+    expect(secretIssues[0].message).toContain("hardcoded secret is a security vulnerability");
   });
 
   it("still reports camel-case api key variables through the weak variable-name heuristic", async () => {
@@ -556,6 +556,6 @@ export default {};
 
     const secretIssues = await getSecretIssues(projectDir, { framework: "vite" });
     expect(secretIssues).toHaveLength(1);
-    expect(secretIssues[0].message).toContain("Hardcoded secret detected");
+    expect(secretIssues[0].message).toContain("hardcoded secret is a security vulnerability");
   });
 });
