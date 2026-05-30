@@ -50,10 +50,21 @@ const printCountsSummaryLine = (
     }
   });
 
+// Motivational "what's the payoff" projection: the score the user would
+// reach by fixing the top-N errors shown above. Computed by re-scoring
+// with those rules removed (see `inspect.ts`), so it's the real model's
+// number, not a local estimate.
+export interface ScoreProjection {
+  readonly fromScore: number;
+  readonly toScore: number;
+  readonly fixedRuleCount: number;
+}
+
 export interface PrintSummaryInput {
   readonly diagnostics: Diagnostic[];
   readonly elapsedMilliseconds: number;
   readonly scoreResult: ScoreResult | null;
+  readonly scoreProjection?: ScoreProjection | null;
   readonly projectName: string;
   readonly totalSourceFileCount: number;
   readonly noScoreMessage: string;
@@ -65,6 +76,14 @@ export const printSummary = (input: PrintSummaryInput): Effect.Effect<void> =>
   Effect.gen(function* () {
     if (input.scoreResult) {
       yield* printScoreHeader(input.scoreResult);
+      if (input.scoreProjection) {
+        const { fromScore, toScore, fixedRuleCount } = input.scoreProjection;
+        yield* Console.log(
+          highlighter.gray(
+            `  ${fromScore} → ${toScore} if you fix the top ${fixedRuleCount} ${fixedRuleCount === 1 ? "error" : "errors"}`,
+          ),
+        );
+      }
     } else {
       yield* printNoScoreHeader(input.noScoreMessage);
     }

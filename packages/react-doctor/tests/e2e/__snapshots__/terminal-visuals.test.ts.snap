@@ -58,5 +58,5 @@ default-errors-needs-work      wrap     ok     ok     ok     ok
 default-errors-no-score        wrap     ok     ok     ok     ok
 default-warnings-only          wrap     ok     ok     ok     ok
 default-clean-perfect          wrap     ok     ok     ok     ok
-verbose-errors-great           wrap   wrap   wrap   wrap   wrap"
+verbose-errors-great           wrap   wrap   wrap   wrap     ok"
 `;

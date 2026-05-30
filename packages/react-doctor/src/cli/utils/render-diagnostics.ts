@@ -7,7 +7,6 @@ import {
   highlighter,
   MILLISECONDS_PER_SECOND,
   OUTPUT_MEASURE_WIDTH_CHARS,
-  RULE_NAME_COLUMN_WIDTH_CHARS,
   TOP_ERRORS_DISPLAY_COUNT,
 } from "@react-doctor/core";
 import type { Diagnostic } from "@react-doctor/core";
@@ -88,21 +87,6 @@ const buildVerboseSiteMap = (diagnostics: Diagnostic[]): Map<string, VerboseSite
 
 const formatSiteCountBadge = (count: number): string => (count > 1 ? `×${count}` : "");
 
-const computeRuleNameColumnWidth = (ruleKeys: string[]): number => {
-  const longestRuleNameLength = ruleKeys.reduce(
-    (longest, ruleKey) => Math.max(longest, ruleKey.length),
-    0,
-  );
-  return Math.max(RULE_NAME_COLUMN_WIDTH_CHARS, longestRuleNameLength);
-};
-
-const padRuleNameToColumn = (ruleName: string, columnWidth: number): string => {
-  if (ruleName.length >= columnWidth) return ruleName;
-  return ruleName + " ".repeat(columnWidth - ruleName.length);
-};
-
-const grayLine = (text: string): string => highlighter.gray(text);
-
 // Directive (not a bare label) so the consuming agent treats the URL as
 // a step to perform — fetch the canonical, reviewer-tested recipe and
 // apply it — rather than as optional reference docs it can skip.
@@ -110,26 +94,6 @@ const FETCH_FIX_RECIPE_LABEL = "Fetch & follow the canonical fix recipe before f
 
 export const formatFixRecipeLine = (diagnostic: Diagnostic): string =>
   `${FETCH_FIX_RECIPE_LABEL}: ${buildRulePromptUrl(diagnostic.plugin, diagnostic.rule)}`;
-
-const buildCompactRuleGroupLine = (
-  ruleKey: string,
-  ruleDiagnostics: Diagnostic[],
-  ruleNameColumnWidth: number,
-): string => {
-  const firstDiagnostic = ruleDiagnostics[0];
-  const severitySymbol = firstDiagnostic.severity === "error" ? "✗" : "⚠";
-  const icon = colorizeBySeverity(severitySymbol, firstDiagnostic.severity);
-  const siteCountBadge = formatSiteCountBadge(ruleDiagnostics.length);
-  const ruleNameRendering =
-    siteCountBadge.length > 0
-      ? colorizeBySeverity(
-          padRuleNameToColumn(ruleKey, ruleNameColumnWidth),
-          firstDiagnostic.severity,
-        )
-      : colorizeBySeverity(ruleKey, firstDiagnostic.severity);
-  const trailingBadge = siteCountBadge.length > 0 ? ` ${highlighter.gray(siteCountBadge)}` : "";
-  return `  ${icon} ${ruleNameRendering}${trailingBadge}`;
-};
 
 const getWorstSeverity = (diagnostics: Diagnostic[]): Diagnostic["severity"] =>
   diagnostics.some((diagnostic) => diagnostic.severity === "error") ? "error" : "warning";
@@ -183,36 +147,6 @@ const buildCompactCategoryLine = (categoryGroup: CategoryDiagnosticGroup): strin
   return `  ${highlighter.bold(categoryGroup.category)} ${highlighter.dim(POINTER)} ${parts.join(highlighter.dim(", "))}`;
 };
 
-const buildVerboseRuleGroupLines = (
-  ruleKey: string,
-  ruleDiagnostics: Diagnostic[],
-  ruleNameColumnWidth: number,
-): ReadonlyArray<string> => {
-  const lines: string[] = [];
-  lines.push(buildCompactRuleGroupLine(ruleKey, ruleDiagnostics, ruleNameColumnWidth));
-  const firstDiagnostic = ruleDiagnostics[0];
-  lines.push(grayLine(indentMultilineText(firstDiagnostic.message, "      ")));
-  if (firstDiagnostic.help) {
-    lines.push(grayLine(indentMultilineText(`→ ${firstDiagnostic.help}`, "      ")));
-  }
-  lines.push(grayLine(`      ${formatFixRecipeLine(firstDiagnostic)}`));
-  const fileSites = buildVerboseSiteMap(ruleDiagnostics);
-  for (const [filePath, sites] of fileSites) {
-    if (sites.length > 0) {
-      for (const site of sites) {
-        lines.push(grayLine(`      ${filePath}:${site.line}`));
-        if (site.suppressionHint) {
-          lines.push(grayLine(`        ↳ ${site.suppressionHint}`));
-        }
-      }
-    } else {
-      lines.push(grayLine(`      ${filePath}`));
-    }
-  }
-  lines.push("");
-  return lines;
-};
-
 const TOP_ERROR_DETAIL_INDENT = "    ";
 
 const pickRepresentativeDiagnostic = (ruleDiagnostics: Diagnostic[]): Diagnostic =>
@@ -221,25 +155,55 @@ const pickRepresentativeDiagnostic = (ruleDiagnostics: Diagnostic[]): Diagnostic
 const formatDiagnosticLocation = (diagnostic: Diagnostic): string =>
   diagnostic.line > 0 ? `${diagnostic.filePath}:${diagnostic.line}` : diagnostic.filePath;
 
-const buildTopErrorBlock = (
+// The location + inline code frame for a single diagnostic site, indented
+// under its rule block. The location sits on its own line directly above
+// the frame so it's obvious which file the frame belongs to.
+const buildDiagnosticSiteLines = (
+  diagnostic: Diagnostic,
+  resolveSourceRoot: SourceRootResolver,
+): ReadonlyArray<string> => {
+  const lines: string[] = [
+    "",
+    highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${formatDiagnosticLocation(diagnostic)}`),
+  ];
+  const codeFrame = buildCodeFrame({
+    filePath: diagnostic.filePath,
+    line: diagnostic.line,
+    column: diagnostic.column,
+    rootDirectory: resolveSourceRoot(diagnostic),
+  });
+  if (codeFrame) {
+    lines.push(indentMultilineText(codeFrame, TOP_ERROR_DETAIL_INDENT));
+  }
+  if (diagnostic.suppressionHint) {
+    lines.push(highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}↳ ${diagnostic.suppressionHint}`));
+  }
+  return lines;
+};
+
+// Shared "top errors" block style, used by both the default summary
+// (representative site only) and `--verbose` (every site). The headline
+// is the category-prefixed rule title (e.g. "Security: Use of eval()")
+// so it's immediately clear which kind of problem this is — a
+// vulnerability, a perf hit, a crash. Falls back to the `plugin/rule` id
+// when a diagnostic has no title (adopted third-party rules).
+const buildRuleDetailBlock = (
   ruleKey: string,
   ruleDiagnostics: Diagnostic[],
   resolveSourceRoot: SourceRootResolver,
+  renderEverySite: boolean,
 ): ReadonlyArray<string> => {
   const representative = pickRepresentativeDiagnostic(ruleDiagnostics);
+  const { severity } = representative;
   const siteCountBadge = formatSiteCountBadge(ruleDiagnostics.length);
   const trailingBadge = siteCountBadge.length > 0 ? ` ${highlighter.gray(siteCountBadge)}` : "";
-
-  // Prefix the headline with the category (e.g. "Security: Use of
-  // eval()") so it's immediately clear which kind of problem this is —
-  // a vulnerability, a perf hit, a crash — without scanning down to the
-  // category breakdown. Falls back to the `plugin/rule` id when a
-  // diagnostic has no title (adopted third-party rules).
-  const headline = highlighter.error(
+  const headline = colorizeBySeverity(
     `${representative.category}: ${representative.title ?? ruleKey}`,
+    severity,
   );
+  const icon = colorizeBySeverity(severity === "error" ? "✗" : "⚠", severity);
 
-  const lines: string[] = [`  ${highlighter.error("✗")} ${headline}${trailingBadge}`];
+  const lines: string[] = [`  ${icon} ${headline}${trailingBadge}`];
 
   for (const explanationLine of wrapTextToWidth(
     representative.message,
@@ -251,49 +215,50 @@ const buildTopErrorBlock = (
     lines.push(highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${explanationLine}`));
   }
 
-  // File location sits on its own line directly above the code frame so
-  // it's obvious which file the frame belongs to (far easier to read
-  // than trailing it after a long rule name on the header line).
-  lines.push("");
-  lines.push(
-    highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${formatDiagnosticLocation(representative)}`),
-  );
-
-  const codeFrame = buildCodeFrame({
-    filePath: representative.filePath,
-    line: representative.line,
-    column: representative.column,
-    rootDirectory: resolveSourceRoot(representative),
-  });
-  if (codeFrame) {
-    lines.push(indentMultilineText(codeFrame, TOP_ERROR_DETAIL_INDENT));
+  const sites = renderEverySite ? ruleDiagnostics : [representative];
+  for (const site of sites) {
+    lines.push(...buildDiagnosticSiteLines(site, resolveSourceRoot));
   }
 
   return lines;
 };
 
-const buildTopErrorsLines = (
+// The highest-stakes error rule groups behind the "Top N errors you
+// should fix" block, in display order.
+const selectTopErrorRuleGroups = (
   diagnostics: Diagnostic[],
-  resolveSourceRoot: SourceRootResolver,
-): ReadonlyArray<string> => {
+  limit: number,
+): [string, Diagnostic[]][] => {
   const errorDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-  if (errorDiagnostics.length === 0) return [];
-
   const ruleGroups = groupBy(
     errorDiagnostics,
     (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
   );
-  const topRuleGroups = sortByImportance([...ruleGroups.entries()]).slice(
-    0,
-    TOP_ERRORS_DISPLAY_COUNT,
-  );
+  return sortByImportance([...ruleGroups.entries()]).slice(0, limit);
+};
+
+// The exact rule keys surfaced in the top-errors block — the set the
+// score projection assumes you fix, so "fix the top N" matches what's
+// shown.
+export const getTopErrorRuleKeys = (
+  diagnostics: Diagnostic[],
+  limit: number,
+): ReadonlySet<string> =>
+  new Set(selectTopErrorRuleGroups(diagnostics, limit).map(([ruleKey]) => ruleKey));
+
+const buildTopErrorsLines = (
+  diagnostics: Diagnostic[],
+  resolveSourceRoot: SourceRootResolver,
+): ReadonlyArray<string> => {
+  const topRuleGroups = selectTopErrorRuleGroups(diagnostics, TOP_ERRORS_DISPLAY_COUNT);
+  if (topRuleGroups.length === 0) return [];
 
   const lines: string[] = [
     `  ${highlighter.bold(`Top ${topRuleGroups.length} ${topRuleGroups.length === 1 ? "error" : "errors"} you should fix`)}`,
     "",
   ];
   for (const [ruleKey, ruleDiagnostics] of topRuleGroups) {
-    lines.push(...buildTopErrorBlock(ruleKey, ruleDiagnostics, resolveSourceRoot));
+    lines.push(...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, false));
     lines.push("");
   }
   return lines;
@@ -335,17 +300,18 @@ export const printDiagnostics = (
     if (!isVerbose) {
       lines = buildDefaultDiagnosticsLines(diagnostics, resolveSourceRoot);
     } else {
+      // Verbose reuses the default "top errors" block style, but for
+      // EVERY rule (not just the top N) and EVERY site (not just the
+      // representative) — so `--verbose` is the same readable layout,
+      // just exhaustive.
       const ruleGroups = groupBy(
         diagnostics,
         (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
       );
-      const sortedRuleGroups = sortByImportance([...ruleGroups.entries()]);
-      const ruleNameColumnWidth = computeRuleNameColumnWidth(
-        sortedRuleGroups.map(([ruleKey]) => ruleKey),
-      );
-      lines = sortedRuleGroups.flatMap(([ruleKey, ruleDiagnostics]) =>
-        buildVerboseRuleGroupLines(ruleKey, ruleDiagnostics, ruleNameColumnWidth),
-      );
+      lines = sortByImportance([...ruleGroups.entries()]).flatMap(([ruleKey, ruleDiagnostics]) => [
+        ...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, true),
+        "",
+      ]);
     }
     for (const line of lines) {
       yield* Console.log(line);
@@ -359,6 +325,9 @@ export const formatElapsedTime = (elapsedMilliseconds: number): string => {
   return `${(elapsedMilliseconds / MILLISECONDS_PER_SECOND).toFixed(1)}s`;
 };
 
+// Plain-text per-rule summary written to the diagnostics directory (one
+// `<plugin>--<rule>.txt` per rule) so the full findings are browsable on
+// disk alongside the machine-readable `diagnostics.json`.
 export const formatRuleSummary = (ruleKey: string, ruleDiagnostics: Diagnostic[]): string => {
   const firstDiagnostic = ruleDiagnostics[0];
 
