@@ -56,7 +56,7 @@ export const noLayoutPropertyAnimation = defineRule<Rule>({
         if (propertyName && LAYOUT_PROPERTIES.has(propertyName)) {
           context.report({
             node: property,
-            message: `Animating "${propertyName}" makes the browser redo the page layout on every frame, which stutters. Animate transform or scale instead, or use the layout prop`,
+            message: `This stutters because animating "${propertyName}" makes the browser redo page layout every frame, so animate transform or scale instead, or use the layout prop`,
           });
         }
       }

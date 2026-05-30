@@ -27,7 +27,7 @@ export const noPermanentWillChange = defineRule<Rule>({
         context.report({
           node: property,
           message:
-            "Leaving will-change on all the time wastes GPU memory. Add it right before the animation and remove it when the animation ends",
+            "This wastes GPU memory because will-change is left on all the time, so add it right before the animation & remove it when the animation ends",
         });
       }
     },

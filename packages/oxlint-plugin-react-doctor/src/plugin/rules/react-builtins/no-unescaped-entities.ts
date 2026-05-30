@@ -10,7 +10,7 @@ const ESCAPED_VERSIONS: Record<string, string> = {
 };
 
 const buildMessage = (character: string): string =>
-  `\`${character}\` in JSX text can look like markup. Escape it with ${ESCAPED_VERSIONS[character]}.`;
+  `\`${character}\` in JSX text can read as markup & confuse readers, so escape it with ${ESCAPED_VERSIONS[character]}.`;
 
 // Port of `oxc_linter::rules::react::no_unescaped_entities`. Walks JSX
 // text nodes and reports each `'`, `"`, `>`, and `}` character as an

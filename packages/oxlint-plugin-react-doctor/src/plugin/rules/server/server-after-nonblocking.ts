@@ -87,7 +87,7 @@ export const serverAfterNonblocking = defineRule<Rule>({
 
         context.report({
           node,
-          message: `${objectName}.${methodName}() runs before the response is sent, slowing it down. Wrap it in \`after(() => ${objectName}.${methodName}(...))\` so the response sends right away.`,
+          message: `${objectName}.${methodName}() runs before the response, so your users wait longer for it. Wrap it in \`after(() => ${objectName}.${methodName}(...))\` so the response sends right away.`,
         });
       },
     };

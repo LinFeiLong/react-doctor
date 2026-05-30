@@ -6,9 +6,9 @@ import { isReactFunctionCall } from "../../utils/is-react-function-call.js";
 import type { Rule } from "../../utils/rule.js";
 
 const REQUIRE_DESTRUCTURE_MESSAGE =
-  "Read useState as a value and setter pair: `const [x, setX] = useState(...)`.";
+  "This `useState` result is hard to follow, so destructure it into a value & setter pair, `const [x, setX] = useState(...)`.";
 const NAMING_CONVENTION_MESSAGE =
-  "Name the useState pair `[thing, setThing]` so the setter is easy to spot.";
+  "The setter here is hard to spot, so name the `useState` pair `[thing, setThing]`.";
 
 interface HookUseStateSettings {
   allowDestructuredState?: boolean;

@@ -233,7 +233,7 @@ export const jotaiDerivedAtomReturnsFreshObject = defineRule<Rule>({
       const shape = freshReturn.kind === "object" ? "object" : "array";
       context.report({
         node: freshReturn.reportNode,
-        message: `Derived atom returns a new ${shape} each time. jotai compares with Object.is, so every update re-renders every consumer. Split into one atom per field, or use \`selectAtom(source, fn, shallow)\`.`,
+        message: `This derived atom returns a new ${shape} each time, so jotai's Object.is check fails & re-renders every consumer on every update. Split into one atom per field, or use \`selectAtom(source, fn, shallow)\`.`,
       });
     },
   }),

@@ -41,7 +41,7 @@ export const tanstackStartRedirectInTryCatch = defineRule<Rule>({
 
         context.report({
           node,
-          message: `throw ${argument.callee.name}() inside a try block. The router catches this for you. Move it outside the try, or re-throw it in the catch.`,
+          message: `throw ${argument.callee.name}() inside a try block gets swallowed, so the redirect silently fails. Move it outside the try, or re-throw it in the catch.`,
         });
       },
     };

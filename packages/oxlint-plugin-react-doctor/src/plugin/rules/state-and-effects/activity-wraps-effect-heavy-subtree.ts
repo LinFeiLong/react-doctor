@@ -204,7 +204,7 @@ export const activityWrapsEffectHeavySubtree = defineRule<Rule>({
 
         context.report({
           node: openingElement,
-          message: `<Activity> wraps ${effectfulChildren.join(", ")}, which use ${totalEffects} effect hook${totalEffects === 1 ? "" : "s"}. Every hide and show rebuilds them all from scratch. Move subscriptions outside the boundary.`,
+          message: `Every hide & show rebuilds ${effectfulChildren.join(", ")} from scratch because <Activity> wraps them & they use ${totalEffects} effect hook${totalEffects === 1 ? "" : "s"}, so move subscriptions outside the boundary.`,
         });
       },
     };

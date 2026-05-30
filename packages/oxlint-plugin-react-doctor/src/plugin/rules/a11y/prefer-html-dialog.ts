@@ -8,10 +8,10 @@ import type { Rule } from "../../utils/rule.js";
 const ROLE_DIALOG_VALUES = new Set(["dialog", "alertdialog"]);
 
 const ROLE_DIALOG_MESSAGE =
-  'You built a dialog with `role="dialog"`. Use the native `<dialog>` instead. It gives you focus trapping, `Escape` to close, and the backdrop for free.';
+  'Keyboard users can tab out of this `role="dialog"` modal because it has no built-in focus trapping, so use the native `<dialog>`, which gives you focus trapping, `Escape` to close, and the backdrop for free.';
 
 const ARIA_MODAL_MESSAGE =
-  'By itself, `aria-modal="true"` does not trap focus or block the page, it only hints to screen readers. Use the native `<dialog>` with `dialog.showModal()` instead.';
+  'Keyboard users can tab out of this modal because `aria-modal="true"` only hints to screen readers without trapping focus or blocking the page, so use the native `<dialog>` with `dialog.showModal()` instead.';
 
 const isAriaModalTrue = (attribute: EsTreeNodeOfType<"JSXAttribute">): boolean => {
   const stringValue = getJsxPropStringValue(attribute);

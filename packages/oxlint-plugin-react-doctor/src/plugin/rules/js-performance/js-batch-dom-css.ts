@@ -99,7 +99,7 @@ export const jsBatchDomCss = defineRule<Rule>({
             context.report({
               node: statements[statementIndex],
               message:
-                "Setting several element.style properties in a row. Set them all at once with cssText or a CSS class so the browser only redraws once",
+                "This makes the browser recalculate layout again & again because you set several element.style properties in a row, so set them all at once with cssText or a CSS class to redraw once",
             });
           }
         }

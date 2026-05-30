@@ -33,7 +33,7 @@ export const useLazyMotion = defineRule<Rule>({
         context.report({
           node,
           message:
-            'Importing "motion" ships extra code to the browser. Use "m" with LazyMotion instead. Saves about 30kb.',
+            'Importing "motion" ships about 30 kb of extra code to your users & slows page load. Use "m" with LazyMotion instead.',
         });
       }
     },

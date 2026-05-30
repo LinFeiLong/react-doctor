@@ -87,7 +87,7 @@ export const rerenderDerivedStateFromHook = defineRule<Rule>({
       for (const binding of bindings) {
         context.report({
           node: binding.declarator,
-          message: `${binding.hookName}() changes constantly, but you only check it against a cutoff, so the screen redraws far more than needed. Use a threshold hook like \`useMediaQuery("(max-width: 767px)")\` so it only redraws when the answer changes`,
+          message: `This redraws the screen far more than needed because ${binding.hookName}() changes constantly but you only check it against a cutoff, so use a threshold hook like \`useMediaQuery("(max-width: 767px)")\` to redraw only when the answer changes`,
         });
       }
     };

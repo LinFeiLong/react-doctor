@@ -39,7 +39,7 @@ export const noGradientText = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Gradient text (background-clip: text) is hard to read and looks gimmicky. Use a solid text color instead.",
+            "Your users struggle to read gradient text (background-clip: text), so use a solid text color instead.",
         });
       }
     },
@@ -51,7 +51,7 @@ export const noGradientText = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Gradient text (bg-clip-text + bg-gradient) is hard to read and looks gimmicky. Use a solid text color instead.",
+            "Your users struggle to read gradient text (bg-clip-text + bg-gradient), so use a solid text color instead.",
         });
       }
     },

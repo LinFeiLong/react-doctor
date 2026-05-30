@@ -38,16 +38,16 @@ const SERVER_CAPABLE_FRAMEWORKS = new Set<string>(["nextjs", "tanstack-start", "
 const CLIENT_ONLY_FRAMEWORKS = new Set<string>(["vite", "cra", "gatsby", "react-native", "expo"]);
 
 const FORM_MESSAGE_SERVER_CAPABLE =
-  "Calling preventDefault() on a <form> onSubmit means the form breaks without JavaScript. Use a server action like `<form action={serverAction}>` so it works either way.";
+  "Your users can't submit this <form> without JavaScript because onSubmit calls preventDefault(), so use a server action like `<form action={serverAction}>` to make it work either way.";
 
 // Used for `framework === "unknown"` (project classification failed or
 // not yet wired). Keeps the diagnostic but drops the framework-specific
 // "server action" jargon so the advice stays honest.
 const FORM_MESSAGE_GENERIC =
-  "Calling preventDefault() on a <form> onSubmit means the form won't work without JavaScript. Consider a form action so it still works.";
+  "Your users can't submit this <form> when JavaScript is off, so the form won't work without JavaScript. Consider a form action so it still works.";
 
 const ANCHOR_MESSAGE =
-  "Calling preventDefault() on an <a> onClick fights the link. Use a <button> or a routing component instead.";
+  "Your users click this <a> & nothing navigates because onClick calls preventDefault(), so use a <button> or a routing component instead.";
 
 const containsPreventDefaultCall = (node: EsTreeNode): boolean => {
   let didFindPreventDefault = false;

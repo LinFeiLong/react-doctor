@@ -91,7 +91,7 @@ export const rnListMissingEstimatedItemSize = defineRule<Rule>({
 
       context.report({
         node,
-        message: `<${localElementName}> (from ${canonicalRecyclerName}) has no \`estimatedItemSize\`, so it guesses row height and can flash blank cells on fast scroll. Add it so it matches your rows.`,
+        message: `Your users see blank cells flash on fast scroll when <${localElementName}> (from ${canonicalRecyclerName}) has no \`estimatedItemSize\` & guesses row height, so add it to match your rows.`,
       });
     },
   }),

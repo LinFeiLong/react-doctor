@@ -76,7 +76,7 @@ const reportSchemaMigration = (context: RuleContext, node: EsTreeNode): void => 
   context.report({
     node,
     message:
-      "This Zod API is deprecated or changed in Zod 4. Switch to the recommended Zod 4 schema API.",
+      "Zod 4 deprecated or changed this API, so it breaks when you upgrade. Switch to the recommended Zod 4 schema API.",
   });
 };
 

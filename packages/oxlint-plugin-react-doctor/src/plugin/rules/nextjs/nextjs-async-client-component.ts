@@ -28,7 +28,7 @@ export const nextjsAsyncClientComponent = defineRule<Rule>({
         if (!node.id?.name || !isUppercaseName(node.id.name)) return;
         context.report({
           node,
-          message: `Client component "${node.id.name}" is async. Client components can't be async.`,
+          message: `Async client component "${node.id.name}" fails to render because client components can't be async. Fetch its data in a Server Component instead.`,
         });
       },
       VariableDeclarator(node: EsTreeNodeOfType<"VariableDeclarator">) {
@@ -39,7 +39,7 @@ export const nextjsAsyncClientComponent = defineRule<Rule>({
         if (!isNodeOfType(node.id, "Identifier")) return;
         context.report({
           node,
-          message: `Client component "${node.id.name}" is async. Client components can't be async.`,
+          message: `Async client component "${node.id.name}" fails to render because client components can't be async. Fetch its data in a Server Component instead.`,
         });
       },
     };

@@ -33,7 +33,7 @@ const isPreactOrReactComponentClass = (node: EsTreeNode): boolean => {
 };
 
 const RENDER_ARGUMENTS_MESSAGE =
-  "Reading `render(props, state)` from arguments is hard to type and breaks under `preact/compat`, which uses React's parameterless render. Read from `this.props` and `this.state` instead.";
+  "Your users hit `undefined` props under `preact/compat` when you read `render(props, state)` from arguments, since compat uses React's parameterless render, so read from `this.props` & `this.state` instead.";
 
 const isInstanceMethodNamedRender = (
   node: EsTreeNode,

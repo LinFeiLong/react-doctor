@@ -34,7 +34,7 @@ export const rnNoInlineFlatlistRenderitem = defineRule<Rule>({
 
       context.report({
         node: expression,
-        message: `renderItem on <${listComponentName}> is rebuilt every time the screen redraws. Move it to a named function or wrap it in useCallback.`,
+        message: `Your users see extra row work when renderItem on <${listComponentName}> is rebuilt every time the screen redraws, so move it to a named function or wrap it in useCallback.`,
       });
     },
   }),

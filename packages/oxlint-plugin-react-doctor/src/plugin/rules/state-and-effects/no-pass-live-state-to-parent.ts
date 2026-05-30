@@ -58,8 +58,8 @@ export const noPassLiveStateToParent = defineRule<Rule>({
         context.report({
           node: callExpr,
           message: isInCustomHook
-            ? "Don't push state up to a parent from a useEffect. Return the state from the hook instead."
-            : "Don't push state up to a parent from a useEffect. Keep the state in the parent and pass it down as a prop instead.",
+            ? "Pushing state up to a parent from a useEffect costs your users an extra render, so return the state from the hook instead."
+            : "Pushing state up to a parent from a useEffect costs your users an extra render, so keep the state in the parent & pass it down as a prop instead.",
         });
       }
     },

@@ -167,7 +167,7 @@ export const rnScrollviewFlexInContentContainer = defineRule<Rule>({
 
         context.report({
           node: flexProperty,
-          message: `<${elementName}> contentContainerStyle uses \`flex: <number>\`, which sets flexBasis: 0 and can collapse the container on small screens. Use \`flexGrow: 1\` instead.`,
+          message: `Your users see the container collapse on small screens when <${elementName}> contentContainerStyle uses \`flex: <number>\`, which sets flexBasis: 0, so use \`flexGrow: 1\` instead.`,
         });
       }
     },

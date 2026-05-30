@@ -11,7 +11,7 @@ import { parseJsxValue } from "../../utils/parse-jsx-value.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Adding `tabIndex` here lets keyboard users focus something they cannot act on, which is confusing. Remove it.";
+  "Keyboard users get stuck focusing this element they can't act on because `tabIndex` makes it tabbable, so remove it.";
 
 interface NoNoninteractiveTabindexSettings {
   tags?: ReadonlyArray<string>;

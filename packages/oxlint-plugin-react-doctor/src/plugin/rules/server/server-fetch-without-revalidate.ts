@@ -96,7 +96,7 @@ export const serverFetchWithoutRevalidate = defineRule<Rule>({
             : "url";
         context.report({
           node,
-          message: `fetch(${urlText}) here is cached forever by default and can serve old data. Pass { next: { revalidate: <seconds> } } or { cache: "no-store" } to fix it.`,
+          message: `fetch(${urlText}) is cached forever by default, so your users can see stale data. Pass { next: { revalidate: <seconds> } } or { cache: "no-store" } to fix it.`,
         });
       },
     };

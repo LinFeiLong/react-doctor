@@ -60,7 +60,7 @@ export const jsCachePropertyAccess = defineRule<Rule>({
         if (count >= PROPERTY_ACCESS_REPEAT_THRESHOLD) {
           context.report({
             node: firstNode,
-            message: `${key} is read ${count} times inside this loop. Read it once into a variable at the top of the loop`,
+            message: `This slows the loop because ${key} is read ${count} times inside it, so read it once into a variable at the top`,
           });
         }
       }

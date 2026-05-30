@@ -52,7 +52,7 @@ export const renderingScriptDeferAsync = defineRule<Rule>({
         context.report({
           node,
           message:
-            "<script src> with no defer or async stops the page from loading until the script downloads, so the page shows up later. Add defer for scripts that need the page, or async for standalone ones",
+            "This blocks the page from loading until the script downloads because <script src> has no defer or async, so add defer for scripts that need the page, or async for standalone ones",
         });
       }
     },

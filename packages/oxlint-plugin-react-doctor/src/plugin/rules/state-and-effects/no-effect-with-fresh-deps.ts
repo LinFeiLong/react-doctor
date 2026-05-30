@@ -165,8 +165,8 @@ export const noEffectWithFreshDeps = defineRule<Rule>({
         const freshness = resolveDependencyFreshness(element);
         if (!freshness) continue;
         const message = freshness.viaBindingName
-          ? `${hookName} dep \`${freshness.viaBindingName}\` is a new ${freshness.kind} built fresh on every render, so \`===\` always fails and the hook runs every time. Move it out of the component or wrap it in useMemo/useCallback.`
-          : `${hookName} deps include a new ${freshness.kind} built fresh on every render, so \`===\` always fails and the hook runs every time. Move it into the hook body or wrap it in useMemo/useCallback.`;
+          ? `Your ${hookName} runs every render because dep \`${freshness.viaBindingName}\` is a new ${freshness.kind} built fresh each time, so \`===\` always fails. Move it out of the component or wrap it in useMemo/useCallback.`
+          : `Your ${hookName} runs every render because its deps include a new ${freshness.kind} built fresh each time, so \`===\` always fails. Move it into the hook body or wrap it in useMemo/useCallback.`;
         context.report({ node: element, message });
       }
     },

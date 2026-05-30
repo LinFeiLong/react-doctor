@@ -84,7 +84,7 @@ export const preferModuleScopePureFunction = defineRule<Rule>({
     const report = (functionNode: EsTreeNode, name: string, componentName: string): void => {
       context.report({
         node: functionNode,
-        message: `\`${name}\` inside \`${componentName}\` doesn't use any local state, so it gets rebuilt every time the screen updates. Move it to the top of the file, outside the component.`,
+        message: `\`${name}\` inside \`${componentName}\` uses no local state but is rebuilt on every render, so it wastes work & breaks memoized children. Move it to the top of the file, outside the component.`,
       });
     };
 

@@ -4,7 +4,8 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE = "Don't use what `ReactDOM.render` returns. It's legacy and gone in React 19.";
+const MESSAGE =
+  "Your app breaks in React 19 because `ReactDOM.render` returns nothing there, so don't use its return value.";
 
 const isReactDomRenderCall = (node: EsTreeNodeOfType<"CallExpression">): boolean => {
   if (!isNodeOfType(node.callee, "MemberExpression")) return false;

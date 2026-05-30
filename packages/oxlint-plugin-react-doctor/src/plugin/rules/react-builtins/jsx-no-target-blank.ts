@@ -5,11 +5,11 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const NOREFERRER_MESSAGE =
-  '`target="_blank"` lets the new page access yours, which is a security risk. Add `rel="noreferrer"`.';
+  'The page you link to can hijack your tab through `target="_blank"`, so add `rel="noreferrer"`.';
 const NOOPENER_MESSAGE =
-  '`target="_blank"` lets the new page access yours, which is a security risk. Add `rel="noreferrer"` or `rel="noopener"`.';
+  'The page you link to can hijack your tab through `target="_blank"`, so add `rel="noreferrer"` or `rel="noopener"`.';
 const SPREAD_MESSAGE =
-  'A spread here might include `target="_blank"`, which is a security risk. Add `rel="noreferrer"` after the spread.';
+  'A spread here might add `target="_blank"`, which lets the linked page hijack your tab, so add `rel="noreferrer"` after the spread.';
 
 interface JsxNoTargetBlankSettings {
   enforceDynamicLinks?: "always" | "never";

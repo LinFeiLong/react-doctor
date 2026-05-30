@@ -7,9 +7,9 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MISSING_MESSAGE =
-  "A `checked` input with no `onChange` can't be toggled by the user. Add `onChange`, or `readOnly` if it's display-only.";
+  "Your users can't toggle this input because `checked` has no `onChange`, so add `onChange` (or `readOnly` if it's display-only).";
 const EXCLUSIVE_MESSAGE =
-  "Use `checked` or `defaultChecked`, not both. They set up two different control modes.";
+  "This input behaves unpredictably with both `checked` & `defaultChecked` since they set up two different modes, so keep only one.";
 
 interface CheckedRequiresSettings {
   ignoreMissingProperties?: boolean;

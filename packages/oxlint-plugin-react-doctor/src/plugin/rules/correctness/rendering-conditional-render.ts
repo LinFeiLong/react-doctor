@@ -49,7 +49,7 @@ export const renderingConditionalRender = defineRule<Rule>({
         context.report({
           node,
           message:
-            "A number before `&&` can show up as a stray '0' on screen. Use `value > 0`, `Boolean(value)`, or a ternary instead.",
+            "Your users see a stray '0' on screen when a number before `&&` is zero, so use `value > 0`, `Boolean(value)`, or a ternary instead.",
         });
       }
     },

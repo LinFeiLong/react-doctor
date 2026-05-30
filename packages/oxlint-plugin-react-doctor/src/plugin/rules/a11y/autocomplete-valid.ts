@@ -6,7 +6,7 @@ import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (value: string): string =>
-  `\`${value}\` is not a known autofill value, so browsers cannot autofill this field. Use a valid \`autoComplete\` token.`;
+  `Users who rely on autofill can't fill this field because \`${value}\` isn't a known token, so use a valid \`autoComplete\` token.`;
 
 // Subset of HTML autofill tokens (full WHATWG list is much larger).
 // See https://html.spec.whatwg.org/multipage/forms.html#autofill

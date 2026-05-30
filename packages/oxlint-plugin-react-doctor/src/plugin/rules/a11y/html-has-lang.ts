@@ -8,7 +8,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "The page does not say what language it is in, so screen readers may mispronounce it. Add a `lang` attribute like `en`.";
+  "Screen readers may mispronounce this page because it doesn't declare a language, so add a `lang` attribute like `en`.";
 
 interface HtmlHasLangSettings {
   htmlTags?: ReadonlyArray<string>;

@@ -6,7 +6,7 @@ import type { Rule } from "../../utils/rule.js";
 
 const LIFECYCLE_NAMES = new Set(["componentWillUpdate", "UNSAFE_componentWillUpdate"]);
 const MESSAGE =
-  "Calling `setState` in `componentWillUpdate` can loop forever. Move it to `componentDidUpdate` instead.";
+  "This can loop forever & freeze the component, so move `setState` out of `componentWillUpdate` into `componentDidUpdate`.";
 
 interface SettingsShape {
   mode?: "allowed" | "disallow-in-func";

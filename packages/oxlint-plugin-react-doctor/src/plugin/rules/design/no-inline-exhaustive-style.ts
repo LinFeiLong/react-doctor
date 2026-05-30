@@ -26,7 +26,7 @@ export const noInlineExhaustiveStyle = defineRule<Rule>({
       if (propertyCount >= INLINE_STYLE_PROPERTY_THRESHOLD) {
         context.report({
           node: expression,
-          message: `This inline style has ${propertyCount} properties, which is a lot to read inline. Move it to a CSS class, CSS module, or styled component.`,
+          message: `This inline style has ${propertyCount} properties, which is hard to read & rebuilds every render. Move it to a CSS class, CSS module, or styled component.`,
         });
       }
     },

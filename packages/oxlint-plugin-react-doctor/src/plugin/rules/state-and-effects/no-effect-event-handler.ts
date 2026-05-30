@@ -222,7 +222,7 @@ export const noEffectEventHandler = defineRule<Rule>({
         context.report({
           node,
           message:
-            "This useEffect is simulating an event handler. Move the logic into a real event handler like onClick or onChange instead.",
+            "This useEffect is simulating an event handler, which costs an extra render & runs late, so move the logic into a real event handler like onClick or onChange instead.",
         });
       },
     };

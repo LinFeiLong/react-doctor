@@ -6,7 +6,7 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "`React.cloneElement` is rarely needed and makes components fragile. Pass children or render props instead.";
+  "`React.cloneElement` breaks easily when the cloned element's props change, so pass children or render props instead.";
 
 // Port of `oxc_linter::rules::react::no_clone_element`. Flags
 // `cloneElement(...)` and `<NS>.cloneElement(...)` when `cloneElement`

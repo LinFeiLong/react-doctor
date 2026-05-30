@@ -15,7 +15,8 @@ export const noMoment = defineRule<Rule>({
       if (node.source?.value === "moment") {
         context.report({
           node,
-          message: 'moment.js ships 300kb+ to the browser. Use "date-fns" or "dayjs" instead.',
+          message:
+            'moment.js ships 300 kb+ to your users & slows page load. Use "date-fns" or "dayjs" instead.',
         });
       }
     },

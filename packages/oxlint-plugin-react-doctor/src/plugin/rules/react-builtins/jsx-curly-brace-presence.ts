@@ -5,8 +5,9 @@ import { getStaticTemplateLiteralValue } from "../../utils/get-static-template-l
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const UNNECESSARY_BRACES_MESSAGE = "These curly braces aren't needed. Remove them.";
-const REQUIRED_BRACES_MESSAGE = "Wrap this value in curly braces `{ }`.";
+const UNNECESSARY_BRACES_MESSAGE = "These curly braces do nothing here, so remove them.";
+const REQUIRED_BRACES_MESSAGE =
+  "This value needs curly braces `{ }` to read as an expression, so wrap it.";
 
 type AllowedMode = "always" | "never" | "ignore";
 

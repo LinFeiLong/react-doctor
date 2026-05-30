@@ -8,7 +8,7 @@ import { NON_INTERACTIVE_ELEMENTS } from "../../constants/html-tags.js";
 import { INTERACTIVE_ROLES } from "../../constants/aria-roles.js";
 
 const buildMessage = (tag: string): string =>
-  `\`<${tag}>\` is not interactive, so keyboard and screen reader users cannot use it. Use a button or link, or add an interactive role.`;
+  `Keyboard & screen reader users can't trigger this \`<${tag}>\` because it isn't interactive, so use a button or link or add an interactive role.`;
 
 // Mouse / pointer / keyboard events that imply interaction.
 const INTERACTIVE_HANDLERS: ReadonlyArray<string> = [

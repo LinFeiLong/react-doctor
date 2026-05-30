@@ -4,11 +4,11 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const NEVER_MESSAGE = (attributeName: string): string =>
-  `Just write \`${attributeName}\` instead of \`${attributeName}={true}\`.`;
+  `This prop is written inconsistently, so just write \`${attributeName}\` instead of \`${attributeName}={true}\`.`;
 const ALWAYS_MESSAGE = (attributeName: string): string =>
-  `Write \`${attributeName}={true}\` instead of just \`${attributeName}\`.`;
+  `This prop is written inconsistently, so write \`${attributeName}={true}\` instead of just \`${attributeName}\`.`;
 const FALSE_OMITTED_MESSAGE = (attributeName: string): string =>
-  `Drop \`${attributeName}={false}\`. Leaving it off has the same effect.`;
+  `\`${attributeName}={false}\` does nothing, so leave it off entirely.`;
 
 interface JsxBooleanValueSettings {
   mode?: "never" | "always";

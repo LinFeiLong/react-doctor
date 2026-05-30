@@ -32,7 +32,7 @@ export const noTransitionAll = defineRule<Rule>({
           context.report({
             node: property,
             message:
-              'transition: "all" animates every property, even slow layout ones. List only the properties you actually change',
+              'This can stutter because transition: "all" animates every property, even slow layout ones, so list only the properties you actually change',
           });
         }
       }

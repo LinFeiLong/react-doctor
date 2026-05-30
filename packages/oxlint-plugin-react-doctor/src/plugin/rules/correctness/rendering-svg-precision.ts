@@ -65,7 +65,7 @@ export const renderingSvgPrecision = defineRule<Rule>({
 
         context.report({
           node,
-          message: `The SVG ${node.name.name} value has 4+ decimal places, which just adds bytes you can't see. Round it to 1 or 2 decimals.`,
+          message: `Your users download extra bytes for SVG ${node.name.name} precision they can't see, so round it to 1 or 2 decimals.`,
         });
       },
     };

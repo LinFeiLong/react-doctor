@@ -25,14 +25,14 @@ export const rerenderDependencies = defineRule<Rule>({
           context.report({
             node: element,
             message:
-              "A new object in useEffect deps is rebuilt every render, so the effect runs again and again. Move it out or wrap it in useMemo.",
+              "Your effect re-runs every render because a new object in its useEffect deps is rebuilt each time, so move it out or wrap it in useMemo.",
           });
         }
         if (isNodeOfType(element, "ArrayExpression")) {
           context.report({
             node: element,
             message:
-              "A new array in useEffect deps is rebuilt every render, so the effect runs again and again. Move it out or wrap it in useMemo.",
+              "Your effect re-runs every render because a new array in its useEffect deps is rebuilt each time, so move it out or wrap it in useMemo.",
           });
         }
         // HACK: arrow / function expressions create a fresh function
@@ -48,7 +48,7 @@ export const rerenderDependencies = defineRule<Rule>({
           context.report({
             node: element,
             message:
-              "Inline function in useEffect deps is rebuilt every render, so the effect runs again and again. Hoist it out of the component or wrap it in useCallback.",
+              "Your effect re-runs every render because the Inline function in its useEffect deps is rebuilt each time, so hoist it out of the component or wrap it in useCallback.",
           });
         }
       }

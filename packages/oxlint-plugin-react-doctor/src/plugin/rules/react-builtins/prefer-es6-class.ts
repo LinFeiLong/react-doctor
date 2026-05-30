@@ -5,8 +5,10 @@ import { isEs5Component } from "../../utils/is-es5-component.js";
 import { isEs6Component } from "../../utils/is-es6-component.js";
 import type { Rule } from "../../utils/rule.js";
 
-const ALWAYS_MESSAGE = "Use a normal `class` for this component instead of `createReactClass`.";
-const NEVER_MESSAGE = "Use `createReactClass` for this component instead of a `class`.";
+const ALWAYS_MESSAGE =
+  "`createReactClass` is legacy & adds a dependency, so write this component as a normal `class`.";
+const NEVER_MESSAGE =
+  "This component is defined inconsistently, so write it with `createReactClass` instead of a `class`.";
 
 interface PreferEs6ClassSettings {
   mode?: "always" | "never";

@@ -26,8 +26,8 @@ export const rnPreferReanimated = defineRule<Rule>({
 
         const suggestion =
           importedName === "LayoutAnimation"
-            ? "LayoutAnimation runs on the JS thread and recalculates the whole layout, which can stutter. Use Reanimated's Layout Animations (entering/exiting/layout props) instead."
-            : "Animated from react-native runs on the JS thread, which can stutter. Use react-native-reanimated to run animations on the UI thread instead.";
+            ? "Your users see stutter when LayoutAnimation runs on the JS thread and recalculates the whole layout, so use Reanimated's Layout Animations (entering/exiting/layout props) instead."
+            : "Your users see stutter when Animated from react-native runs on the JS thread, so use react-native-reanimated to run animations on the UI thread instead.";
 
         context.report({
           node: specifier,

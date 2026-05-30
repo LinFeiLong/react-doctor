@@ -21,7 +21,7 @@ export const noThreePeriodEllipsis = defineRule<Rule>({
       context.report({
         node: jsxTextNode,
         message:
-          'Three dots ("...") in JSX text. Use the real ellipsis character "…" (or `&hellip;`) instead.',
+          'Three dots ("...") look unpolished to your users. Use the real ellipsis "…" (or `&hellip;`) instead.',
       });
     },
   }),

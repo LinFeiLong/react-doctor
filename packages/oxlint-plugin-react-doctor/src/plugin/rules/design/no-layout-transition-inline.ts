@@ -35,7 +35,7 @@ export const noLayoutTransitionInline = defineRule<Rule>({
         if (layoutMatch) {
           context.report({
             node: property,
-            message: `Animating "${layoutMatch[0]}" forces the page to relayout every frame, which is janky. Animate transform and opacity instead.`,
+            message: `Your users see janky, stuttering animation because "${layoutMatch[0]}" relayouts the page every frame, so animate transform & opacity instead.`,
           });
         }
       }

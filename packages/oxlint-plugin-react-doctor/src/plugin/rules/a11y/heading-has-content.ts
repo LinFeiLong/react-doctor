@@ -8,7 +8,7 @@ import { objectHasAccessibleChild } from "../../utils/object-has-accessible-chil
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "This heading is empty, so screen readers skip it. Add text, or an `aria-label` or `aria-labelledby`.";
+  "Blind users can't use this heading to navigate because screen readers skip it empty, so add text, `aria-label`, or `aria-labelledby`.";
 
 const DEFAULT_HEADING_TAGS: ReadonlyArray<string> = ["h1", "h2", "h3", "h4", "h5", "h6"];
 

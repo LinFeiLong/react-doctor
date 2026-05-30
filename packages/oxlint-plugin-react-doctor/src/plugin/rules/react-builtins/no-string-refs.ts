@@ -7,8 +7,9 @@ import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import type { Rule } from "../../utils/rule.js";
 
 const STRING_IN_REF_MESSAGE =
-  "String refs are deprecated and don't work in modern React. Use `useRef` or a callback ref instead.";
-const THIS_REFS_MESSAGE = "`this.refs` is deprecated. Use `useRef` or a callback ref instead.";
+  "Your component can't reach this node because string refs don't work in modern React, so use `useRef` or a callback ref instead.";
+const THIS_REFS_MESSAGE =
+  "Your component can't reach its nodes because `this.refs` is empty in modern React, so use `useRef` or a callback ref instead.";
 
 const isStringLiteralRefAttribute = (
   attribute: EsTreeNodeOfType<"JSXAttribute">,

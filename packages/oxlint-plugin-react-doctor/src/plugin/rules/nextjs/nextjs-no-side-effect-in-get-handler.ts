@@ -216,7 +216,7 @@ export const nextjsNoSideEffectInGetHandler = defineRule<Rule>({
         if (mutatingSegment) {
           context.report({
             node,
-            message: `GET handler on "/${mutatingSegment}" route. Use POST to avoid CSRF and accidental prefetch triggers.`,
+            message: `Prefetch or CSRF can trigger this GET handler on the "/${mutatingSegment}" route. Use POST instead.`,
           });
           return;
         }
@@ -232,7 +232,7 @@ export const nextjsNoSideEffectInGetHandler = defineRule<Rule>({
           if (!sideEffect) continue;
           context.report({
             node,
-            message: `GET handler has side effects (${sideEffect}). Use POST to avoid CSRF and accidental prefetch triggers.`,
+            message: `Prefetch or CSRF can trigger this GET handler's side effect (${sideEffect}). Use POST instead.`,
           });
           return;
         }

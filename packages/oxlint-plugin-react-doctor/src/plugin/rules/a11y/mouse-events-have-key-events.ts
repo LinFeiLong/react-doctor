@@ -8,9 +8,9 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMissingFocusMessage = (handler: string): string =>
-  `\`${handler}\` only works with a mouse, so keyboard users miss it. Add an \`onFocus\` handler too.`;
+  `Keyboard users miss this \`${handler}\` because it only fires with a mouse, so add an \`onFocus\` handler too.`;
 const buildMissingBlurMessage = (handler: string): string =>
-  `\`${handler}\` only works with a mouse, so keyboard users miss it. Add an \`onBlur\` handler too.`;
+  `Keyboard users miss this \`${handler}\` because it only fires with a mouse, so add an \`onBlur\` handler too.`;
 
 interface MouseEventsHaveKeyEventsSettings {
   hoverInHandlers?: ReadonlyArray<string>;

@@ -66,7 +66,7 @@ const getComponentNameFromClassProperty = (
 };
 
 const buildMessage = (componentName: string): string =>
-  `${componentName}.propTypes does nothing in React 19, so bad props slip through with no warning. Describe props with TypeScript types and check risky data yourself.`;
+  `${componentName}.propTypes does nothing in React 19, so bad props reach your users with no warning. Describe props with TypeScript types & check risky data yourself.`;
 
 export const noPropTypes = defineRule<Rule>({
   id: "no-prop-types",

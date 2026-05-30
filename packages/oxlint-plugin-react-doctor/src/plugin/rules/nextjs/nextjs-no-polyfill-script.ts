@@ -30,7 +30,7 @@ export const nextjsNoPolyfillScript = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Polyfill CDN script. Next.js already includes polyfills for fetch, Promise, Object.assign, and 50+ others.",
+            "This polyfill CDN script makes your users download polyfills Next.js already includes for fetch, Promise, Object.assign, & 50+ others.",
         });
       }
     },

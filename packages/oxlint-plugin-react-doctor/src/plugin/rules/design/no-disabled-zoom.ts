@@ -37,18 +37,18 @@ export const noDisabledZoom = defineRule<Rule>({
       if (hasUserScalableNo && hasRestrictiveMaxScale) {
         context.report({
           node,
-          message: `user-scalable=no and maximum-scale=${maxScaleMatch[1]} stop people from pinching to zoom, which fails accessibility (WCAG 1.4.4). Remove both and fix the layout if it breaks at 200%.`,
+          message: `Your users can't pinch to zoom because user-scalable=no & maximum-scale=${maxScaleMatch[1]} block it, which fails accessibility (WCAG 1.4.4). Remove both & fix the layout if it breaks at 200%.`,
         });
       } else if (hasUserScalableNo) {
         context.report({
           node,
           message:
-            "user-scalable=no stops people from pinching to zoom, which fails accessibility (WCAG 1.4.4). Remove it and fix the layout if it breaks at 200%.",
+            "Your users can't pinch to zoom because user-scalable=no blocks it, which fails accessibility (WCAG 1.4.4). Remove it & fix the layout if it breaks at 200%.",
         });
       } else if (hasRestrictiveMaxScale) {
         context.report({
           node,
-          message: `maximum-scale=${maxScaleMatch[1]} blocks zooming past 200%, which fails accessibility (WCAG 1.4.4). Use maximum-scale=5 or remove it.`,
+          message: `Your users can't zoom past 200% because maximum-scale=${maxScaleMatch[1]} blocks it, which fails accessibility (WCAG 1.4.4). Use maximum-scale=5 or remove it.`,
         });
       }
     },

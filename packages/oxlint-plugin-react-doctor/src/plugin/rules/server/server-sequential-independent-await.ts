@@ -84,7 +84,7 @@ export const serverSequentialIndependentAwait = defineRule<Rule>({
         context.report({
           node: nextStatement,
           message:
-            "This await doesn't use the previous result, so waiting for it just wastes time. Wrap both in `Promise.all([...])` to run them at the same time.",
+            "This await doesn't use the previous result, so your users wait twice as long for nothing. Wrap both in `Promise.all([...])` to run them at the same time.",
         });
         // Skip past the next so we don't double-report a chain.
         statementIndex++;

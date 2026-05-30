@@ -106,7 +106,7 @@ export const noDirectStateMutation = defineRule<Rule>({
             const setterName = stateValueToSetter.get(rootName);
             context.report({
               node: child,
-              message: `Changing "${rootName}" in place won't redraw the screen, since React only notices a brand new value. Call ${setterName} with a new value instead.`,
+              message: `Your screen won't update because changing "${rootName}" in place doesn't give React a new value to notice, so call ${setterName} with a new value instead.`,
             });
             return;
           }
@@ -123,7 +123,7 @@ export const noDirectStateMutation = defineRule<Rule>({
             const setterName = stateValueToSetter.get(rootName);
             context.report({
               node: child,
-              message: `.${methodName}() changes "${rootName}" in place, which won't redraw the screen. Call ${setterName} with a new array instead.`,
+              message: `Your screen won't update because .${methodName}() changes "${rootName}" in place, so call ${setterName} with a new array instead.`,
             });
           }
         },

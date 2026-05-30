@@ -29,7 +29,7 @@ export const noPureBlackBackground = defineRule<Rule>({
           context.report({
             node: property,
             message:
-              "A pure #000 background looks harsh on screens. Nudge it slightly toward your brand color, like #0a0a0f.",
+              "Your users see a harsh pure #000 background, so nudge it toward your brand color, like #0a0a0f.",
           });
         }
       }
@@ -42,7 +42,7 @@ export const noPureBlackBackground = defineRule<Rule>({
         context.report({
           node,
           message:
-            "A pure black background (bg-black) looks harsh on screens. Use a near-black with a hint of your brand color, like bg-gray-950.",
+            "Your users see a harsh pure black background (bg-black), so use a near-black with a hint of your brand color, like bg-gray-950.",
         });
       }
     },

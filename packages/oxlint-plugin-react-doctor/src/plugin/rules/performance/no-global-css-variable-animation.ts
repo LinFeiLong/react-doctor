@@ -34,7 +34,7 @@ export const noGlobalCssVariableAnimation = defineRule<Rule>({
 
         context.report({
           node: child,
-          message: `CSS variable "${variableName}" changes in ${calleeName} on every frame, so every element using it has to recompute its styles. Set it on just the element that needs it`,
+          message: `This forces every element using "${variableName}" to recompute its styles each frame because ${calleeName} changes it every frame, so set it on just the element that needs it`,
         });
       });
     },

@@ -22,7 +22,7 @@ export const noFullLodashImport = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Importing all of lodash ships the whole library to the browser. Import from 'lodash/functionName' instead.",
+            "Importing all of lodash ships the whole library to your users & slows page load. Import from 'lodash/functionName' instead.",
         });
       }
     },

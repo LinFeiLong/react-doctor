@@ -39,7 +39,8 @@ export const nextjsMissingMetadata = defineRule<Rule>({
       if (!hasMetadataExport) {
         context.report({
           node: programNode,
-          message: "This page exports no metadata or generateMetadata. Add one to help SEO.",
+          message:
+            "This page has no metadata, so search engines & social previews get no title or description. Export metadata or generateMetadata.",
         });
       }
     },

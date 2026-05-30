@@ -23,7 +23,7 @@ const ARRAY_READ_METHOD_NAMES = new Set([
 ]);
 
 const CHILDREN_ARRAY_MESSAGE =
-  "In Preact, `props.children` is not always an array. Use `toChildArray(children)` from `preact` before calling array methods or reading `.length`.";
+  "Your users hit a crash when `props.children` is not an array in Preact, so use `toChildArray(children)` from `preact` before calling array methods or reading `.length`.";
 
 // Walk up to the nearest enclosing function and check whether its first
 // parameter destructures a `children` property — the `({ children }) => …`

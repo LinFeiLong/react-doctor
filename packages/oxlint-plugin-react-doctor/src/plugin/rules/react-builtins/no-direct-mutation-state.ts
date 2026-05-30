@@ -9,7 +9,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Changing `this.state` by hand doesn't redraw the screen and gets overwritten. Use `setState()` instead.";
+  "Your users see stale data because mutating `this.state` by hand never redraws & gets overwritten, so use `setState()` instead.";
 
 // Ancestor walk replicates `oxc_linter::rules::react::no_direct_mutation_state`'s
 // `should_ignore_component`: walk up from the assignment until we either

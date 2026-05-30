@@ -25,7 +25,7 @@ export const noGrayOnColoredBackground = defineRule<Rule>({
       if (grayTextMatch && coloredBgMatch) {
         context.report({
           node,
-          message: `Gray text (${grayTextMatch[0]}) on a colored background (${coloredBgMatch[0]}) looks washed out. Use white or a darker shade of the background color.`,
+          message: `Your users see washed-out gray text (${grayTextMatch[0]}) on a colored background (${coloredBgMatch[0]}), so use white or a darker shade of the background color.`,
         });
       }
     },

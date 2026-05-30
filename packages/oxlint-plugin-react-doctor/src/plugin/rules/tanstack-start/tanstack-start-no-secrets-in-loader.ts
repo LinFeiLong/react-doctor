@@ -64,7 +64,7 @@ export const tanstackStartNoSecretsInLoader = defineRule<Rule>({
             const envSource = isImportMetaEnvAccess ? "import.meta.env" : "process.env";
             context.report({
               node: child,
-              message: `${envSource}.${envVarName} in ${keyName}. Loaders run on the client too and can leak secrets. Move it into a createServerFn().`,
+              message: `Anyone can read ${envSource}.${envVarName} because ${keyName} runs on the client too. Move it into a createServerFn().`,
             });
           }
         });

@@ -6,7 +6,7 @@ import { hasJsxProp } from "../../utils/has-jsx-prop.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "`scope` only does something on `<th>` cells, so screen readers ignore it here. Remove it.";
+  "Screen reader users get no help from `scope` here because it only works on `<th>` cells, so remove it.";
 
 // Port of `oxc_linter::rules::jsx_a11y::scope`. Flags `scope=` on
 // non-`<th>` elements.

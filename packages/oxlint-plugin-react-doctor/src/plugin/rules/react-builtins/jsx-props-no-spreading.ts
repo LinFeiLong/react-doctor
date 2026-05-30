@@ -7,7 +7,8 @@ import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE = "Spreading props here hides what's being passed. List each prop by name instead.";
+const MESSAGE =
+  "You can't tell what props reach this element when you spread them, so list each prop by name.";
 
 interface JsxPropsNoSpreadingSettings {
   html?: "enforce" | "ignore";

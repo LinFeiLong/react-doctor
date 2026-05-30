@@ -327,7 +327,7 @@ export const noArrayIndexAsKey = defineRule<Rule>({
 
       context.report({
         node,
-        message: `Using the array index "${indexName}" as a key causes bugs when the list is reordered or filtered. Use a stable id from the item, like \`key={item.id}\`.`,
+        message: `Your users can see & submit the wrong data when this list reorders or filters, so use a stable id like \`key={item.id}\`, not the array index "${indexName}".`,
       });
     },
   }),

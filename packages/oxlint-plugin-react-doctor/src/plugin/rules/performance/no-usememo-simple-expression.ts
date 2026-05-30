@@ -95,7 +95,7 @@ export const noUsememoSimpleExpression = defineRule<Rule>({
         context.report({
           node,
           message:
-            "useMemo is wrapping something that's already cheap, so it costs more than it saves. Remove the useMemo",
+            "This costs more than it saves because useMemo is wrapping a value that's already cheap, so remove the useMemo",
         });
       }
     },

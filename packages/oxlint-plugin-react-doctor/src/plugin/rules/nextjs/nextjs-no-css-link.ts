@@ -36,7 +36,7 @@ export const nextjsNoCssLink = defineRule<Rule>({
       context.report({
         node,
         message:
-          '<link rel="stylesheet"> tag. Import the CSS directly so it gets bundled and optimized.',
+          'This <link rel="stylesheet"> loads unbundled, unoptimized CSS, so import it directly instead.',
       });
     },
   }),

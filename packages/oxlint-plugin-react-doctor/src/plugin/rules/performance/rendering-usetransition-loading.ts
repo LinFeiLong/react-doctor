@@ -168,7 +168,7 @@ export const renderingUsetransitionLoading = defineRule<Rule>({
 
       context.report({
         node: node.init,
-        message: `useState for "${stateVariableName}" causes an extra render for the loading flag. If this is for a state change and not a data fetch, use useTransition instead`,
+        message: `This adds an extra render because useState for "${stateVariableName}" re-renders just for the loading flag, so if it's a state change & not a data fetch, use useTransition instead`,
       });
     },
   }),

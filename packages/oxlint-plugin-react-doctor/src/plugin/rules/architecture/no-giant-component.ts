@@ -30,7 +30,7 @@ export const noGiantComponent = defineRule<Rule>({
     ): void => {
       context.report({
         node: nameNode,
-        message: `Component "${componentName}" is ${lineCount} lines long. Split it into a few smaller components.`,
+        message: `Component "${componentName}" is ${lineCount} lines long, which is hard to read & change. Split it into a few smaller components.`,
       });
     };
 

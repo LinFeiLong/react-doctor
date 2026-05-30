@@ -19,7 +19,7 @@ import {
 } from "./jsx-no-new-array-as-prop-tables.js";
 
 const MESSAGE =
-  "This prop gets a brand new array every render, so the child redraws for no reason. Wrap it in `useMemo` or move it out.";
+  "This child redraws every render because the prop gets a brand new array each time, so wrap it in `useMemo` or move it out.";
 
 const isDataArrayPropName = (propName: string): boolean => {
   if (DATA_ARRAY_PROP_NAMES.has(propName)) return true;

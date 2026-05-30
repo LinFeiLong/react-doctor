@@ -21,7 +21,7 @@ export const rnNoLegacyExpoPackages = defineRule<Rule>({
         if (source === packageName || source.startsWith(`${packageName}/`)) {
           context.report({
             node,
-            message: `"${packageName}" is no longer maintained. Use ${replacement}.`,
+            message: `Your users are exposed to unfixed bugs when "${packageName}" is no longer maintained, so use ${replacement}.`,
           });
           return;
         }

@@ -183,7 +183,7 @@ export const noEventHandler = defineRule<Rule>({
           context.report({
             node: ref.identifier as unknown as EsTreeNode,
             message:
-              "Don't use state plus a useEffect to act like an event handler. Run that code directly when the event happens.",
+              "Faking an event handler with state plus a useEffect costs an extra render & runs late, so run that code directly when the event happens.",
           });
         }
       }
@@ -192,7 +192,7 @@ export const noEventHandler = defineRule<Rule>({
           context.report({
             node: ref.identifier as unknown as EsTreeNode,
             message:
-              "Don't use a prop plus a useEffect to act like an event handler. Move the handler up to the parent component instead.",
+              "Faking an event handler with a prop plus a useEffect costs an extra render & runs late, so move the handler up to the parent component instead.",
           });
         }
       }

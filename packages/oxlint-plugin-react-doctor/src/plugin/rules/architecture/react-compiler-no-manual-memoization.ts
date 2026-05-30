@@ -13,15 +13,15 @@ import type { RuleContext } from "../../utils/rule-context.js";
 const REMOVAL_MESSAGE_BY_REACT_API_NAME = new Map<string, string>([
   [
     "useMemo",
-    "You can delete this `useMemo`. React Compiler already caches every value here, so it just adds noise.",
+    "This `useMemo` is dead weight, since React Compiler already caches every value here. Delete it.",
   ],
   [
     "useCallback",
-    "You can delete this `useCallback`. React Compiler already caches every function here, so it just adds noise.",
+    "This `useCallback` is dead weight, since React Compiler already caches every function here. Delete it.",
   ],
   [
     "memo",
-    "You can delete `memo()`. React Compiler already caches the component's output, so wrapping it is redundant.",
+    "This `memo()` is dead weight, since React Compiler already caches the component's output. Delete it.",
   ],
 ]);
 

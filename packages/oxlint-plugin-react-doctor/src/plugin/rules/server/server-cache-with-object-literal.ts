@@ -44,7 +44,7 @@ export const serverCacheWithObjectLiteral = defineRule<Rule>({
 
         context.report({
           node,
-          message: `${node.callee.name} is wrapped in React.cache(), but you're passing a new object each render, so the cache never hits. Pass plain values, or reuse one object.`,
+          message: `${node.callee.name} is wrapped in React.cache(), but a new object each render never matches, so it refetches on every request. Pass plain values, or reuse one object.`,
         });
       },
     };

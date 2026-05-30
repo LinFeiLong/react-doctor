@@ -46,7 +46,7 @@ export const noRedundantPaddingAxes = defineRule<Rule>({
       for (const matchedPair of matchedPairs) {
         context.report({
           node: jsxAttribute,
-          message: `px-${matchedPair.value} and py-${matchedPair.value} are the same. Use the shorthand p-${matchedPair.value}.`,
+          message: `px-${matchedPair.value} & py-${matchedPair.value} are the same. Use the shorthand p-${matchedPair.value}.`,
         });
       }
     },

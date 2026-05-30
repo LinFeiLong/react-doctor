@@ -51,7 +51,7 @@ export const queryMutationMissingInvalidation = defineRule<Rule>({
         context.report({
           node,
           message:
-            "useMutation with no cache update, so data may be stale after it runs. Call invalidateQueries, setQueryData, resetQueries, or refetchQueries in onSuccess (or refresh the router).",
+            "useMutation with no cache update leaves your users looking at stale data after it runs. Call invalidateQueries, setQueryData, resetQueries, or refetchQueries in onSuccess (or refresh the router).",
         });
       }
     },

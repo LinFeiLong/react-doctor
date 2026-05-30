@@ -49,11 +49,11 @@ const buildReportMessage = (
 
   if (directImportSources.size === 1) {
     const [directImportSource] = directImportSources;
-    return `Importing from an index file pulls in extra code. Import directly from "${directImportSource}".`;
+    return `This ships extra code to your users & slows page load. Import directly from "${directImportSource}".`;
   }
 
   if (directImportSources.size > 1) {
-    return `Importing from an index file pulls in extra code. Import directly from: ${[...directImportSources].map((source) => `"${source}"`).join(", ")}.`;
+    return `This ships extra code to your users & slows page load. Import directly from: ${[...directImportSources].map((source) => `"${source}"`).join(", ")}.`;
   }
 
   return "Importing from an index file pulls in extra code. Import directly from the source file instead.";

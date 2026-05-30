@@ -12,10 +12,10 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessageDefault = (role: string, propName: string): string =>
-  `Role \`${role}\` ignores \`${propName}\`, so it does nothing here. Remove it, or change the role.`;
+  `Screen reader users get no help from \`${propName}\` because role \`${role}\` ignores it, so remove it or change the role.`;
 
 const buildMessageImplicit = (role: string, propName: string, elementType: string): string =>
-  `Role \`${role}\` ignores \`${propName}\`, and \`${elementType}\` already has that role. Remove \`${propName}\`, or change the element.`;
+  `Screen reader users get no help from \`${propName}\` because \`${elementType}\` has role \`${role}\`, which ignores it, so remove \`${propName}\` or change the element.`;
 
 // Port of `get_implicit_role` from OXC. Returns the implicit ARIA
 // role for an HTML element, or null if there isn't one.

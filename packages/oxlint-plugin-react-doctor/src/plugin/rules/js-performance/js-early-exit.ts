@@ -29,7 +29,7 @@ export const jsEarlyExit = defineRule<Rule>({
       if (nestingDepth >= DEEP_NESTING_THRESHOLD) {
         context.report({
           node,
-          message: `${nestingDepth + 1} levels of nested if statements make this hard to follow. Return early instead to keep it flat`,
+          message: `This is hard to follow because there are ${nestingDepth + 1} levels of nested if statements, so return early to keep it flat`,
         });
       }
     },

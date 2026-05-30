@@ -132,7 +132,7 @@ export const rnNoRawText = defineRule<Rule>({
 
           context.report({
             node: child,
-            message: `Raw ${getRawTextDescription(child)} outside a <Text> component crashes on React Native. Wrap it in <Text>.`,
+            message: `Your users hit a crash when raw ${getRawTextDescription(child)} renders outside a <Text> component on React Native, so wrap it in <Text>.`,
           });
         }
       },

@@ -27,7 +27,7 @@ export const rnBottomSheetPreferNative = defineRule<Rule>({
       if (typeof source !== "string" || !JS_BOTTOM_SHEET_PACKAGES.has(source)) return;
       context.report({
         node,
-        message: `${source} is a JS bottom sheet, which can feel less native. On RN v7+, prefer <Modal presentationStyle="formSheet"> for native gestures and snap points.`,
+        message: `Your users feel a less native bottom sheet with ${source}, so on RN v7+ prefer <Modal presentationStyle="formSheet"> for native gestures & snap points.`,
       });
     },
   }),

@@ -56,7 +56,7 @@ export const noInlineBounceEasing = defineRule<Rule>({
           context.report({
             node: property,
             message:
-              "Bouncy easing looks dated. Real things slow down smoothly, so use ease-out or cubic-bezier(0.16, 1, 0.3, 1) instead.",
+              "Your users see a dated, bouncy animation, so use ease-out or cubic-bezier(0.16, 1, 0.3, 1) for a smooth finish.",
           });
         }
 
@@ -64,7 +64,7 @@ export const noInlineBounceEasing = defineRule<Rule>({
           context.report({
             node: property,
             message:
-              "This bounce animation looks tacky. Use a smooth ease-out (like ease-out-quart or expo) for a more natural finish.",
+              "Your users see a tacky bounce animation, so use a smooth ease-out (like ease-out-quart or expo) for a natural finish.",
           });
         }
       }
@@ -77,7 +77,7 @@ export const noInlineBounceEasing = defineRule<Rule>({
         context.report({
           node,
           message:
-            "animate-bounce looks dated and tacky. Use a subtle ease-out transform for a smoother finish.",
+            "Your users see a dated, tacky animate-bounce, so use a subtle ease-out transform for a smoother finish.",
         });
       }
     },

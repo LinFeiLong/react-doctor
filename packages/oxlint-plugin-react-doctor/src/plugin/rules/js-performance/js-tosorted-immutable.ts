@@ -30,7 +30,7 @@ export const jsTosortedImmutable = defineRule<Rule>({
         context.report({
           node,
           message:
-            "[...array].sort() makes a copy just to sort it. Use array.toSorted() to sort without the extra copy (ES2023)",
+            "This wastes work because [...array].sort() copies the array just to sort it, so use array.toSorted() to sort without the extra copy (ES2023)",
         });
       }
     },

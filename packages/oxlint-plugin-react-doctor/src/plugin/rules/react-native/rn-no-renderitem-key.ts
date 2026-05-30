@@ -116,7 +116,7 @@ export const rnNoRenderitemKey = defineRule<Rule>({
           if (!hasJsxKeyAttribute(jsxElement.openingElement)) continue;
           context.report({
             node: jsxElement.openingElement,
-            message: `\`key\` on the JSX returned by ${renderPropName} on <${listComponentName}> does nothing, since lists get row keys from \`keyExtractor\` (or \`item.key\`). Remove it and set \`keyExtractor\` on the list instead.`,
+            message: `Your users get no benefit from \`key\` on the JSX returned by ${renderPropName} on <${listComponentName}>, since lists get row keys from \`keyExtractor\` (or \`item.key\`), so remove it & set \`keyExtractor\` on the list instead.`,
           });
         }
       }

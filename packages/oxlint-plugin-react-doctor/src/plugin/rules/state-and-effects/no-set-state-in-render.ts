@@ -57,7 +57,7 @@ export const noSetStateInRender = defineRule<Rule>({
         const setterIdentifierName = setterCall.callee.name;
         context.report({
           node: setterCall,
-          message: `${setterIdentifierName}() runs on every render, which starts another render that calls it again, looping forever. Move it into a useEffect or an event handler. (To set state from a prop, guard it: \`if (prev !== prop) ${setterIdentifierName}(prop)\`)`,
+          message: `${setterIdentifierName}() loops forever because it runs on every render & starts another render that calls it again, so move it into a useEffect or an event handler. (To set state from a prop, guard it: \`if (prev !== prop) ${setterIdentifierName}(prop)\`)`,
         });
       }
     };

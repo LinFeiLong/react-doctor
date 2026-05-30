@@ -76,7 +76,7 @@ export const noVagueButtonLabel = defineRule<Rule>({
       if (!VAGUE_BUTTON_LABELS.has(normalizedLabel)) return;
       context.report({
         node: jsxElementNode.openingElement ?? jsxElementNode,
-        message: `Vague button label "${labelText}". Name the action ("Save changes", "Send invite", "Delete account") so screen readers and unsure users know what it does.`,
+        message: `Screen reader & unsure users can't tell what "${labelText}" does. Name the action ("Save changes", "Send invite", "Delete account") instead.`,
       });
     },
   }),

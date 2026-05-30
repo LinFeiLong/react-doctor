@@ -71,7 +71,7 @@ export const rnAnimationReactionAsDerived = defineRule<Rule>({
       context.report({
         node,
         message:
-          "This useAnimatedReaction just copies one value to another. Use useDerivedValue instead, which is shorter and tracks changes for you.",
+          "Your users can see a stale value when this useAnimatedReaction only copies one value to another, so use useDerivedValue instead, which is shorter & tracks changes for you.",
       });
     },
   }),

@@ -25,7 +25,7 @@ export const rnNoSingleElementStyleArray = defineRule<Rule>({
 
       context.report({
         node: expression,
-        message: `"${propName}" wraps a single value in an array for nothing. Use ${propName}={value} instead of ${propName}={[value]}.`,
+        message: `Your users pay for an extra array allocation when "${propName}" wraps a single value for nothing, so use ${propName}={value} instead of ${propName}={[value]}.`,
       });
     },
   }),

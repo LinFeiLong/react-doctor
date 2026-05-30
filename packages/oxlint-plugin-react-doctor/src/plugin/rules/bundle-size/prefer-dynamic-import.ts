@@ -33,7 +33,7 @@ export const preferDynamicImport = defineRule<Rule>({
       }
       context.report({
         node,
-        message: `"${source}" is a big library that ships to the browser up front. Load it on demand with React.lazy() or next/dynamic.`,
+        message: `"${source}" ships extra code to your users up front & slows page load. Load it on demand with React.lazy() or next/dynamic.`,
       });
     },
   }),

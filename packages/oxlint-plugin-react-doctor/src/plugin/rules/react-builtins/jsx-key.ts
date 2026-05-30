@@ -8,13 +8,13 @@ import type { Rule } from "../../utils/rule.js";
 
 const ITERATOR_METHOD_NAMES = new Set(["map", "flatMap", "from"]);
 const MISSING_KEY_ARRAY =
-  "Each element in this array needs a `key` prop so React can tell them apart.";
+  "Your users can see the wrong data when this array reorders because React can't tell the elements apart, so add a `key` prop to each.";
 const MISSING_KEY_ITERATOR =
-  "Each element you return from this loop needs a `key` prop so React can tell them apart.";
+  "Your users can see the wrong data when this list reorders because React can't tell the elements apart, so add a `key` prop to each item you return.";
 const KEY_BEFORE_SPREAD =
-  "Put the `key` prop before any `{...spread}`, or the spread can overwrite it.";
+  "The `{...spread}` can overwrite this `key` & break React's tracking, so put the `key` before the spread.";
 const DUPLICATE_KEY = (keyValue: string): string =>
-  `Two elements here share the key "${keyValue}". Keys must be unique.`;
+  `Your users can see the wrong data because two elements share the key "${keyValue}", so give each a unique \`key\`.`;
 
 interface JsxKeySettings {
   checkKeyMustBeforeSpread?: boolean;

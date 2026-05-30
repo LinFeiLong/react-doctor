@@ -22,9 +22,9 @@ const LEGACY_CONTEXT_NAMES: ReadonlySet<string> = new Set([
 
 const buildLegacyContextMessage = (memberName: string): string => {
   if (memberName === "childContextTypes" || memberName === "getChildContext") {
-    return `${memberName} uses the old context API, which React 19 removes. Switch the provider to \`createContext\` with \`<MyContext.Provider value={...}>\` and read it with \`useContext()\`. Move every consumer at the same time.`;
+    return `${memberName} uses the old context API that React 19 removes, so your provider stops passing data. Switch to \`createContext\` with \`<MyContext.Provider value={...}>\` & read it with \`useContext()\`, moving every consumer together.`;
   }
-  return "contextTypes uses the old context API, which React 19 removes. Use `static contextType = MyContext` or read it with `useContext()` in a function component. Update the provider too.";
+  return "contextTypes uses the old context API that React 19 removes, so your component stops receiving context. Use `static contextType = MyContext` or `useContext()` in a function component, & update the provider too.";
 };
 
 const isInsideClassBody = (node: EsTreeNode): boolean => {

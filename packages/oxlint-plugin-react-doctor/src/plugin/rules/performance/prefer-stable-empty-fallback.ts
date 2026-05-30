@@ -77,7 +77,7 @@ const buildMessage = (emptyKind: "array" | "object"): string => {
   const literal = emptyKind === "array" ? "[]" : "{}";
   const example =
     emptyKind === "array" ? "const EMPTY_ITEMS: Item[] = []" : "const EMPTY_CONFIG: Config = {}";
-  return `Fallback \`${literal}\` builds a brand new ${emptyKind} each render when the left value is empty, so the child wrapped in memo sees a different value and redraws anyway. Hoist a constant (e.g. \`${example}\`) and use that as the fallback.`;
+  return `This redraws the memo child anyway because fallback \`${literal}\` builds a brand new ${emptyKind} each render when the left value is empty, so the child sees a different value. Hoist a constant (e.g. \`${example}\`) & use that as the fallback.`;
 };
 
 // React Compiler auto-memoises this allocation, so the rule is

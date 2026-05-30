@@ -58,7 +58,7 @@ export const noWideLetterSpacing = defineRule<Rule>({
       ) {
         context.report({
           node: letterSpacingProperty,
-          message: `Letter spacing of ${letterSpacingEm.toFixed(2)}em on body text makes words harder to read. Save wide spacing for short uppercase labels.`,
+          message: `Your users find body text harder to read at ${letterSpacingEm.toFixed(2)}em letter spacing, so save wide spacing for short uppercase labels.`,
         });
       }
     },

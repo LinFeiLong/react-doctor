@@ -7,7 +7,7 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "`React.Children` is rarely needed and makes components easy to break. Pass children as props instead.";
+  "`React.Children` breaks easily when the children change shape, so pass children as props instead.";
 
 const isChildrenIdentifier = (node: EsTreeNode, contextNode: EsTreeNode): boolean => {
   if (!isNodeOfType(node, "Identifier") || node.name !== "Children") return false;

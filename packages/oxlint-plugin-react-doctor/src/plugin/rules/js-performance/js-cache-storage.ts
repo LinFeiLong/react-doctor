@@ -35,7 +35,7 @@ export const jsCacheStorage = defineRule<Rule>({
           const storageName = node.callee.object.name;
           context.report({
             node,
-            message: `${storageName}.getItem("${storageKey}") is called several times. Read it once and save the result in a variable`,
+            message: `This is slow because ${storageName}.getItem("${storageKey}") runs several times & re-parses the data each call, so read it once & reuse the value`,
           });
         }
       },

@@ -14,7 +14,7 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import { REACT_HOC_NAMES } from "../../constants/react.js";
 
 const buildMessage = (componentName: string): string =>
-  `This file has more than one component. Move \`${componentName}\` to its own file.`;
+  `This file is harder to navigate with more than one component, so move \`${componentName}\` to its own file.`;
 
 interface NoMultiCompSettings {
   ignoreStateless?: boolean;

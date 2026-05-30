@@ -32,7 +32,7 @@ export const rerenderMemoWithDefaultValue = defineRule<Rule>({
             context.report({
               node: defaultValue,
               message:
-                "Default prop value {} makes a brand new object on every render, so children that compare props keep redrawing. Move it to a constant at the top of the file",
+                "This keeps redrawing children that compare props because default prop value {} makes a brand new object every render, so move it to a constant at the top of the file",
             });
           }
           if (
@@ -42,7 +42,7 @@ export const rerenderMemoWithDefaultValue = defineRule<Rule>({
             context.report({
               node: defaultValue,
               message:
-                "Default prop value [] makes a brand new array on every render, so children that compare props keep redrawing. Move it to a constant at the top of the file",
+                "This keeps redrawing children that compare props because default prop value [] makes a brand new array every render, so move it to a constant at the top of the file",
             });
           }
         }

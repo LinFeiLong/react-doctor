@@ -25,7 +25,7 @@ export const noGenericHandlerNames = defineRule<Rule>({
       if (isNodeOfType(expression, "Identifier") && expression.name === mirroredHandlerName) {
         context.report({
           node,
-          message: `The handler name "${expression.name}" is too vague. Name it after what it does, not when it runs.`,
+          message: `The handler name "${expression.name}" says when it runs, not what it does, so name it after the action instead.`,
         });
       }
     },

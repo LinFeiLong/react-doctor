@@ -125,8 +125,8 @@ export const noPassDataToParent = defineRule<Rule>({
         context.report({
           node: callExpr,
           message: isInCustomHook
-            ? "Don't hand data back to a parent from a useEffect. Return the data from the hook instead."
-            : "Don't hand data back to a parent from a useEffect. Fetch it in the parent and pass it down as a prop instead.",
+            ? "Handing data back to a parent from a useEffect costs your users an extra render, so return the data from the hook instead."
+            : "Handing data back to a parent from a useEffect costs your users an extra render, so fetch it in the parent & pass it down as a prop instead.",
         });
       }
     },

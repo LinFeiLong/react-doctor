@@ -35,7 +35,7 @@ export const rerenderLazyStateInit = defineRule<Rule>({
 
       context.report({
         node: initializer,
-        message: `useState(${calleeName}()) runs ${calleeName}() on every render. Wrap it as useState(() => ${calleeName}()) so it only runs once.`,
+        message: `useState(${calleeName}()) re-runs ${calleeName}() on every render & throws the result away, so wrap it as useState(() => ${calleeName}()) to run it once.`,
       });
     },
   }),

@@ -21,15 +21,15 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 const LEGACY_LIFECYCLE_REPLACEMENTS = new Map<string, string>([
   [
     "componentWillMount",
-    "Put side effects in `componentDidMount` and initial state in the `constructor`",
+    "Put side effects in `componentDidMount` & initial state in the `constructor`",
   ],
   [
     "componentWillReceiveProps",
-    "Put side effects in `componentDidUpdate` and derived state in the static `getDerivedStateFromProps`",
+    "Put side effects in `componentDidUpdate` & derived state in the static `getDerivedStateFromProps`",
   ],
   [
     "componentWillUpdate",
-    "Read the DOM in `getSnapshotBeforeUpdate` and do other work in `componentDidUpdate`",
+    "Read the DOM in `getSnapshotBeforeUpdate` & do other work in `componentDidUpdate`",
   ],
 ]);
 
@@ -50,8 +50,8 @@ const buildLegacyLifecycleMessage = (originalName: string): string | null => {
   const replacement = LEGACY_LIFECYCLE_REPLACEMENTS.get(baseName);
   if (!replacement) return null;
   const removalNote = hasUnsafePrefix
-    ? `\`${originalName}\` is gone in React 19. The UNSAFE_ prefix just hides the warning, it doesn't fix the problem.`
-    : `\`${originalName}\` is gone in React 19 and warns in React 18.`;
+    ? `\`${originalName}\` breaks under concurrent rendering & is gone in React 19, & the UNSAFE_ prefix only hides the warning.`
+    : `\`${originalName}\` breaks under concurrent rendering, warns in React 18 & is gone in React 19.`;
   return `${removalNote} ${replacement}.`;
 };
 

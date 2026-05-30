@@ -162,7 +162,7 @@ const inspectServerAction = (
 
   context.report({
     node: candidate.reportNode,
-    message: `Server action "${candidate.displayName}" runs without checking who the user is. Add an auth check (auth(), getSession(), etc.) at the top.`,
+    message: `Anyone can call server action "${candidate.displayName}" without logging in, since it has no auth check. Add one at the top (auth(), getSession(), etc.).`,
   });
 };
 

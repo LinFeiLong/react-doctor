@@ -57,7 +57,7 @@ export const clientLocalstorageNoVersion = defineRule<Rule>({
 
       context.report({
         node: keyArg,
-        message: `${node.callee.object.name}.setItem("${keyArg.value}", JSON.stringify(...)) saves data with no version. Add one to the key (e.g. "${keyArg.value}:v1") so changing the data shape later won't crash the app.`,
+        message: `${node.callee.object.name}.setItem("${keyArg.value}", JSON.stringify(...)) has no version, so changing the data shape later crashes your users' saved sessions. Add one to the key (e.g. "${keyArg.value}:v1").`,
       });
     },
   }),

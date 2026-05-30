@@ -24,19 +24,19 @@ import { getImportedName } from "../../utils/get-imported-name.js";
 const REACT_DOM_DEPRECATED_MESSAGES = new Map<string, string>([
   [
     "render",
-    "ReactDOM.render is the old way to start an app and is gone in React 19. Import `createRoot` from `react-dom/client` and call `createRoot(container).render(...)`.",
+    "ReactDOM.render crashes your app in React 19 since it's gone, so import `createRoot` from `react-dom/client` & call `createRoot(container).render(...)`.",
   ],
   [
     "hydrate",
-    "ReactDOM.hydrate is the old way to hydrate server HTML and is gone in React 19. Import `hydrateRoot` from `react-dom/client` and call `hydrateRoot(container, <App />)`.",
+    "ReactDOM.hydrate crashes hydration in React 19 since it's gone, so import `hydrateRoot` from `react-dom/client` & call `hydrateRoot(container, <App />)`.",
   ],
   [
     "unmountComponentAtNode",
-    "ReactDOM.unmountComponentAtNode no longer works with `createRoot`, and is gone in React 19. Keep the root you created and call `root.unmount()` instead.",
+    "ReactDOM.unmountComponentAtNode won't unmount your tree in React 19 since it's gone, so keep the root you created & call `root.unmount()` instead.",
   ],
   [
     "findDOMNode",
-    "ReactDOM.findDOMNode digs into the rendered tree and breaks composition, and is gone in React 19. Pass a ref and read `ref.current` instead.",
+    "ReactDOM.findDOMNode crashes in React 19 since it's gone, & it breaks composition anyway, so pass a ref & read `ref.current` instead.",
   ],
 ]);
 
@@ -54,7 +54,7 @@ const buildTestUtilsMessage = (importedName: string): string => {
   const replacementText = replacement
     ? `Use ${replacement}.`
     : "Switch to `act` from `react` or the equivalent in `@testing-library/react`.";
-  return `react-dom/test-utils is removed in React 19. ${replacementText}`;
+  return `react-dom/test-utils is removed in React 19, so your tests break. ${replacementText}`;
 };
 
 const reportTestUtilsImports = (
@@ -70,7 +70,7 @@ const reportTestUtilsImports = (
     context.report({
       node: specifier,
       message:
-        "react-dom/test-utils is removed in React 19. Use `act` from `react` and `fireEvent` / `render` from `@testing-library/react` instead",
+        "react-dom/test-utils is removed in React 19, so your tests break. Use `act` from `react` & `fireEvent` / `render` from `@testing-library/react` instead",
     });
   }
 };

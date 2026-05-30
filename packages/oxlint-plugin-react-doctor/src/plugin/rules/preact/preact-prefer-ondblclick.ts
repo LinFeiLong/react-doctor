@@ -5,7 +5,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "In Preact core, `onDoubleClick` never fires. Use `onDblClick` instead, which matches the DOM event name.";
+  "Your users get no response from `onDoubleClick` in Preact core, where it never fires, so use `onDblClick` instead, which matches the DOM event name.";
 
 // Preact registers DOM events under their browser-spec names. `dblclick` is
 // the DOM event name; React aliases it to `onDoubleClick` via its synthetic

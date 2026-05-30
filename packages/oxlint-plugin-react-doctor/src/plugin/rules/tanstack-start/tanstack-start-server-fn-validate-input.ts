@@ -53,7 +53,7 @@ export const tanstackStartServerFnValidateInput = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Server function handler reads data with no inputValidator(). Validate inputs that cross the network.",
+            "This server function reads network data with no inputValidator(), so anyone can send unvalidated input. Validate it before .handler().",
         });
       }
     },

@@ -12,7 +12,7 @@ import {
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Using the array index as a `key` can mix up items when the list changes, showing the wrong state. Use a stable id from your data.";
+  "Your users can see & submit the wrong data when this list reorders, so use a stable id as the `key`, not the array index.";
 
 const SECOND_INDEX_METHODS: ReadonlySet<string> = new Set([
   "every",

@@ -130,7 +130,7 @@ export const jsAsyncReduceWithoutAwaitedAcc = defineRule<Rule>({
       if (firstParameter.kind === "destructured") {
         context.report({
           node: reducer,
-          message: `Async \`.${reduceMatch.methodName}\` reducer destructures its accumulator, but on every run after the first it gets a Promise, so the pieces come out empty and the work is lost. Await it first: \`async (previous, item) => { const [...] = await previous; ...; return [...]; }\`, and seed with \`Promise.resolve([...])\``,
+          message: `This async \`.${reduceMatch.methodName}\` reducer destructures its accumulator, but every run after the first gets a Promise, so the pieces come out empty & the work is lost. Await it first: \`async (previous, item) => { const [...] = await previous; ...; return [...]; }\`, & seed with \`Promise.resolve([...])\``,
         });
         return;
       }
@@ -147,7 +147,7 @@ export const jsAsyncReduceWithoutAwaitedAcc = defineRule<Rule>({
         `${firstParameter.name}Prev`;
       context.report({
         node: reducer,
-        message: `Async \`.${reduceMatch.methodName}\` reducer never awaits its accumulator "${firstParameter.name}", so each run gets a Promise instead of the real value and the work is lost. Reassign it at the top (\`${firstParameter.name} = await ${firstParameter.name};\`), or rewrite as \`async (${previousParamName}, item) => { const ${firstParameter.name} = await ${previousParamName}; ...; return ${firstParameter.name}; }\`, and seed with \`Promise.resolve(...)\``,
+        message: `This async \`.${reduceMatch.methodName}\` reducer never awaits its accumulator "${firstParameter.name}", so each run gets a Promise instead of the real value & the work is lost. Reassign it at the top (\`${firstParameter.name} = await ${firstParameter.name};\`), or rewrite as \`async (${previousParamName}, item) => { const ${firstParameter.name} = await ${previousParamName}; ...; return ${firstParameter.name}; }\`, & seed with \`Promise.resolve(...)\``,
       });
     },
   }),

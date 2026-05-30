@@ -32,7 +32,7 @@ export const noIsMounted = defineRule<Rule>({
           context.report({
             node,
             message:
-              "`isMounted` doesn't work in modern React. Use a ref to track mount state, or cancel the async work.",
+              "`isMounted` is unreliable in modern React & leads to bugs, so use a ref to track mount state or cancel the async work instead.",
           });
           return;
         }

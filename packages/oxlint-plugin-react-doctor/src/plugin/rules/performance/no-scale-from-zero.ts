@@ -29,7 +29,7 @@ export const noScaleFromZero = defineRule<Rule>({
           context.report({
             node: property,
             message:
-              "scale: 0 makes the element pop in from a single point, which looks abrupt. Use scale: 0.95 with opacity: 0 for a smoother entrance",
+              "This looks abrupt to your users because scale: 0 pops the element in from a single point, so use scale: 0.95 with opacity: 0 for a smoother entrance",
           });
         }
       }

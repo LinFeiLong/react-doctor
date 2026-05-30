@@ -29,7 +29,7 @@ export const tanstackStartNoDynamicServerFnImport = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Dynamic import of a server functions file. Use a static import so the bundler can swap in RPC stubs.",
+            "Dynamically importing a server functions file leaks server code into the client bundle, because the bundler only swaps static imports for RPC stubs. Use a static import.",
         });
       }
     },

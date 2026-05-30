@@ -5,7 +5,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (componentName: string): string =>
-  `React doesn't support namespaced names like \`${componentName}\`. Use a plain component or HTML tag name.`;
+  `React can't render namespaced names like \`${componentName}\`, so use a plain component or HTML tag name.`;
 
 // Port of `oxc_linter::rules::react::no_namespace`. Flags JSX namespaced
 // names (`<ns:Foo />`) and string-literal element types passed to

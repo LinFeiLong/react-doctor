@@ -183,7 +183,7 @@ export const asyncAwaitInLoop = defineRule<Rule>({
       if (firstAwait) {
         context.report({
           node: firstAwait,
-          message: `await inside a ${label} runs the calls one at a time, which is slow. If they don't depend on each other, collect them and use \`await Promise.all(items.map(...))\` to run them together`,
+          message: `This makes the ${label} slow because each await runs one after another, so collect the independent calls & run them together with \`await Promise.all(items.map(...))\``,
         });
       }
     };
@@ -232,8 +232,8 @@ export const asyncAwaitInLoop = defineRule<Rule>({
         if (firstAwait) {
           const message =
             methodName === "forEach"
-              ? "Async callback in .forEach. forEach ignores the awaits, so the work never actually waits to finish. Use a `for…of` loop, or `await Promise.all(items.map(async (item) => {...}))`"
-              : `Async callback in .${methodName}. The waits run one after another, which is slow. Use \`await Promise.all(items.map(async (item) => {...}))\` to run them at the same time`;
+              ? "Async callback in .forEach silently drops every await, so the work never finishes before the loop moves on. Use a `for…of` loop, or `await Promise.all(items.map(async (item) => {...}))`"
+              : `Async callback in .${methodName} runs the awaits one after another, so it is slow. Use \`await Promise.all(items.map(async (item) => {...}))\` to run them at the same time`;
           context.report({ node: firstAwait, message });
         }
       },

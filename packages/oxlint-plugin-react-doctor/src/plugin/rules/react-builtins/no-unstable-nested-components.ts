@@ -14,10 +14,10 @@ const buildMessage = (
   isInProp: boolean,
   allowAsProps: boolean,
 ): string => {
-  let message = "This component is defined inside another component";
+  let message =
+    "Your users lose this component's state on every render because it's defined inside another component";
   if (parentName) message += ` (\`${parentName}\`)`;
-  message +=
-    ", so it gets rebuilt and loses its state every time the screen updates. Move it to the top of the file.";
+  message += ", so move it to the top of the file.";
   if (isInProp && !allowAsProps) {
     message += " If this is intentional, set `allowAsProps: true`.";
   }

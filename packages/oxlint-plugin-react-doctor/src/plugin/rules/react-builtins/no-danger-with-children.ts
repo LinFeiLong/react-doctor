@@ -8,7 +8,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Setting both children and `dangerouslySetInnerHTML` makes React throw an error. Use just one.";
+  "React throws an error when you set both children & `dangerouslySetInnerHTML`, so use just one.";
 
 interface PropsShape {
   hasDangerously: boolean;

@@ -44,7 +44,7 @@ export const rnNoDeprecatedModules = defineRule<Rule>({
           const replacement = getExpoAwareReplacement(importedName, baseReplacement, isExpo);
           context.report({
             node: specifier,
-            message: `"${importedName}" was removed from react-native. Use ${replacement} instead.`,
+            message: `Your users hit a crash from "${importedName}", which was removed from react-native, so use ${replacement} instead.`,
           });
         }
       },

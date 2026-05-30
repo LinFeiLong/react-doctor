@@ -121,7 +121,7 @@ export const rerenderFunctionalSetstate = defineRule<Rule>({
         if (isNodeOfType(stateIdentifier, "Identifier")) {
           context.report({
             node,
-            message: `${calleeName}(${stateIdentifier.name} ${argument.operator} ...) can read an old value. Use the functional update \`${calleeName}(prev => ...)\` to always read the latest.`,
+            message: `You can lose this update because ${calleeName}(${stateIdentifier.name} ${argument.operator} ...) reads a stale value, so use the functional update \`${calleeName}(prev => ...)\` to always read the latest.`,
           });
           return;
         }
@@ -138,7 +138,7 @@ export const rerenderFunctionalSetstate = defineRule<Rule>({
           : `${argument.argument.name}${argument.operator}`;
         context.report({
           node,
-          message: `${calleeName}(${display}) can read an old value, and ++ grabs the wrong one. Use the functional update \`${calleeName}(prev => ...)\` instead.`,
+          message: `You can lose this update because ${calleeName}(${display}) reads a stale value & ++ grabs the wrong one, so use the functional update \`${calleeName}(prev => ...)\` instead.`,
         });
         return;
       }
@@ -171,7 +171,7 @@ export const rerenderFunctionalSetstate = defineRule<Rule>({
         if (spreadsState) {
           context.report({
             node,
-            message: `${calleeName}([...${expectedStateName}, ...]) can read an old value here. Use the functional update \`${calleeName}(prev => [...prev, ...])\` instead.`,
+            message: `You can lose this update because ${calleeName}([...${expectedStateName}, ...]) reads a stale value, so use the functional update \`${calleeName}(prev => [...prev, ...])\` instead.`,
           });
           return;
         }
@@ -187,7 +187,7 @@ export const rerenderFunctionalSetstate = defineRule<Rule>({
         if (spreadsState) {
           context.report({
             node,
-            message: `${calleeName}({ ...${expectedStateName}, ... }) can read an old value here. Use the functional update \`${calleeName}(prev => ({ ...prev, ... }))\` instead.`,
+            message: `You can lose this update because ${calleeName}({ ...${expectedStateName}, ... }) reads a stale value, so use the functional update \`${calleeName}(prev => ({ ...prev, ... }))\` instead.`,
           });
           return;
         }

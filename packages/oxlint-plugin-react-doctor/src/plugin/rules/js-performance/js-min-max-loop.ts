@@ -31,7 +31,7 @@ export const jsMinMaxLoop = defineRule<Rule>({
         const targetFunction = isFirstElement ? "min" : "max";
         context.report({
           node,
-          message: `array.sort()[${isFirstElement ? "0" : "length-1"}] sorts the whole list just to grab the smallest or largest. Use Math.${targetFunction}(...array) instead, it is faster`,
+          message: `This is slow because array.sort()[${isFirstElement ? "0" : "length-1"}] sorts the whole list just to grab the smallest or largest, so use Math.${targetFunction}(...array) instead`,
         });
       }
     },

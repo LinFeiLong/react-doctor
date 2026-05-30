@@ -8,7 +8,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "This `<iframe>` has no title, so screen readers cannot say what is inside it. Add a `title` describing its content.";
+  "Blind users can't tell what this `<iframe>` holds because screen readers have no title to read, so add a `title` describing its content.";
 
 type StaticVerdict = "ok" | "empty" | "dynamic-ok";
 

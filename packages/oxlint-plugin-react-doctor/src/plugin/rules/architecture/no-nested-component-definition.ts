@@ -23,7 +23,7 @@ export const noNestedComponentDefinition = defineRule<Rule>({
         if (componentStack.length > 0) {
           context.report({
             node: node.id,
-            message: `"${node.id.name}" is defined inside "${componentStack[componentStack.length - 1]}", so it gets rebuilt and loses everything each time the screen updates. Move it out to the top of the file.`,
+            message: `Your users lose all state in "${node.id.name}" on every render because it's defined inside "${componentStack[componentStack.length - 1]}", so move it out to the top of the file.`,
           });
         }
         componentStack.push(node.id.name);
@@ -37,7 +37,7 @@ export const noNestedComponentDefinition = defineRule<Rule>({
         if (componentStack.length > 0) {
           context.report({
             node: node.id,
-            message: `"${node.id.name}" is defined inside "${componentStack[componentStack.length - 1]}", so it gets rebuilt and loses everything each time the screen updates. Move it out to the top of the file.`,
+            message: `Your users lose all state in "${node.id.name}" on every render because it's defined inside "${componentStack[componentStack.length - 1]}", so move it out to the top of the file.`,
           });
         }
         componentStack.push(node.id.name);

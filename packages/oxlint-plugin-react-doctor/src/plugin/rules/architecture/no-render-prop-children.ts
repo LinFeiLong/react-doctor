@@ -41,7 +41,7 @@ export const noRenderPropChildren = defineRule<Rule>({
         .join(", ");
       context.report({
         node: renderPropAttrs[0].node,
-        message: `This element takes ${renderPropAttrs.length} render props (${propList}…), which is a lot. Use child components or \`children\` instead so callers don't wire up every slot.`,
+        message: `This element takes ${renderPropAttrs.length} render props (${propList}…), which is hard to follow & extend. Use child components or \`children\` so callers don't wire up every slot.`,
       });
     },
   }),

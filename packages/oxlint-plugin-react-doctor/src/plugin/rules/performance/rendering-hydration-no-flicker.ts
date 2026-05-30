@@ -43,7 +43,7 @@ export const renderingHydrationNoFlicker = defineRule<Rule>({
         context.report({
           node,
           message:
-            "useEffect(setState, []) runs after the first paint, so users see a quick flash. Use useSyncExternalStore, or add suppressHydrationWarning",
+            "This flashes for your users because useEffect(setState, []) runs after the first paint, so use useSyncExternalStore, or add suppressHydrationWarning",
         });
       }
     },

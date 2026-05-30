@@ -6,7 +6,8 @@ import { isEs6Component } from "../../utils/is-es6-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE = "Write this as a function component with hooks instead. It's simpler.";
+const MESSAGE =
+  "This class component is harder to maintain than a function component, so rewrite it with hooks.";
 
 interface PreferFunctionComponentSettings {
   allowErrorBoundary?: boolean;

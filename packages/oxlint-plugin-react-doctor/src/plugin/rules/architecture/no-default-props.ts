@@ -33,7 +33,7 @@ export const noDefaultProps = defineRule<Rule>({
       if (!isUppercaseName(left.object.name)) return;
       context.report({
         node: left,
-        message: `${left.object.name}.defaultProps stops working in React 19. Set the defaults right in the destructured props parameter instead, like \`function ${left.object.name}({ size = "md" })\`.`,
+        message: `${left.object.name}.defaultProps stops applying in React 19, so your users see missing defaults. Set them in the destructured props parameter instead, like \`function ${left.object.name}({ size = "md" })\`.`,
       });
     },
   }),

@@ -5,7 +5,7 @@ import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (role: string, missingProps: ReadonlyArray<string>): string =>
-  `Role \`${role}\` needs more info for screen readers to work. Add: \`${missingProps.join("`, `")}\`.`;
+  `Screen reader users can't tell the state of this \`${role}\` without its required ARIA props, so add \`${missingProps.join("`, `")}\`.`;
 
 // Mirrors OXC's `ROLE_TO_REQUIRED_ARIA_PROPS`.
 const ROLE_REQUIRED_PROPS: ReadonlyMap<string, ReadonlyArray<string>> = new Map([

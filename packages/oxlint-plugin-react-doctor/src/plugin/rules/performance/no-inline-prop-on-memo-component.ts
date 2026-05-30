@@ -82,7 +82,7 @@ export const noInlinePropOnMemoComponent = defineRule<Rule>({
         if (propType) {
           context.report({
             node: node.value.expression,
-            message: `${elementName} uses memo() to skip redraws, but this prop is ${propType} built right here, so it is new every render and the skip never happens. Move it to a stable value with useMemo, useCallback, or module scope`,
+            message: `This redraws ${elementName} on every render because the prop is ${propType} built right here, so memo() can't skip it. Move it to a stable value with useMemo, useCallback, or module scope`,
           });
         }
       },

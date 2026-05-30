@@ -7,7 +7,7 @@ import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Function components have no `this`, so this value is undefined. Read props from the function's arguments instead.";
+  "This value is `undefined` because function components have no `this`, so read props from the function's arguments instead.";
 
 // Returns true if the enclosing scope is a class method or a custom
 // class-factory call (e.g. `React.createClass({…})` when the project's

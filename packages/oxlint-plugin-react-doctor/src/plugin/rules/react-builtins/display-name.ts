@@ -11,7 +11,7 @@ import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "This component has no `displayName`, so it shows up as Anonymous in React DevTools. Give it a name.";
+  "This component shows up as Anonymous in React DevTools because it has no `displayName`, so give it a name.";
 
 interface DisplayNameSettings {
   ignoreTranspilerName?: boolean;

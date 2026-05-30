@@ -284,7 +284,7 @@ export const jsCombineIterations = defineRule<Rule>({
 
         context.report({
           node,
-          message: `.${innerMethod}().${outerMethod}() loops over the list twice. Do it in one pass with .reduce() or a for...of loop`,
+          message: `This loops over your list twice because .${innerMethod}().${outerMethod}() makes two passes, so do it in one pass with .reduce() or a for...of loop`,
         });
       },
     };

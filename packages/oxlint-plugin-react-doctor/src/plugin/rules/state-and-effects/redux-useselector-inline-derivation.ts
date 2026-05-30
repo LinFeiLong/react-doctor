@@ -39,10 +39,10 @@ const ALLOCATING_NAMESPACE_CALLS = new Map<string, Set<string>>([
 ]);
 
 const MESSAGE_DERIVATION = (methodName: string): string =>
-  `useSelector returns a new array from \`.${methodName}(...)\` on every store update, so the default \`===\` check always fails and the component redraws on every dispatched action. Select the raw slice (\`useSelector(s => s.users)\`) and derive it with \`useMemo\`, or use \`createSelector\` from \`reselect\`.`;
+  `Your component redraws on every dispatched action because \`.${methodName}(...)\` returns a new array each store update, so the default \`===\` check always fails. Select the raw slice (\`useSelector(s => s.users)\`) & derive it with \`useMemo\`, or use \`createSelector\` from \`reselect\`.`;
 
 const MESSAGE_NAMESPACE = (namespace: string, methodName: string): string =>
-  `useSelector returns a new collection from \`${namespace}.${methodName}(...)\` on every store update, so the default \`===\` check always fails and the component redraws on every dispatched action. Select the raw slice and derive it with \`useMemo\` or \`reselect\`.`;
+  `Your component redraws on every dispatched action because \`${namespace}.${methodName}(...)\` returns a new collection each store update, so the default \`===\` check always fails. Select the raw slice & derive it with \`useMemo\` or \`reselect\`.`;
 
 interface MethodAllocatingCallSite {
   readonly kind: "method";

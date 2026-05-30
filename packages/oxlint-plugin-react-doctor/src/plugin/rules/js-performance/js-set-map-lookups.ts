@@ -301,7 +301,7 @@ export const jsSetMapLookups = defineRule<Rule>({
         }
         context.report({
           node,
-          message: `array.${methodName}() inside a loop checks the whole list every time, which gets slow. Use a Set for instant lookups`,
+          message: `This gets slow because array.${methodName}() inside a loop scans the whole list every time, so use a Set for instant lookups`,
         });
       },
     }),

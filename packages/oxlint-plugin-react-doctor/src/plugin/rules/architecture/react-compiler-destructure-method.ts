@@ -135,7 +135,7 @@ export const reactCompilerDestructureMethod = defineRule<Rule>({
 
         context.report({
           node,
-          message: `Pull the method out first: \`const { ${methodName} } = ${hookSource}()\`, then call \`${methodName}(...)\` directly. It's clearer and easier for React Compiler to optimize.`,
+          message: `React Compiler can't optimize \`${hookSource}().${methodName}(...)\` as cleanly, so pull the method out first: \`const { ${methodName} } = ${hookSource}()\`, then call \`${methodName}(...)\` directly.`,
         });
       },
     };

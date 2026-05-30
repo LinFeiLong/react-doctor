@@ -44,7 +44,7 @@ const BLOCK_LEVEL_ELEMENTS = new Set([
 ]);
 
 const buildMessage = (childTagName: string): string =>
-  `\`<${childTagName}>\` can't go inside a \`<p>\`. The browser closes the paragraph early and reshuffles your HTML. Move it out of the \`<p>\`, or use a \`<div>\` instead.`;
+  `Your users get reshuffled HTML because \`<${childTagName}>\` can't go inside a \`<p>\`, so the browser closes the paragraph early. Move it out of the \`<p>\`, or use a \`<div>\` instead.`;
 
 const isParagraphElement = (candidate: EsTreeNode): boolean => {
   if (!isNodeOfType(candidate, "JSXElement")) return false;

@@ -11,9 +11,9 @@ import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE_NO_LABEL =
-  "This label has no text, so screen readers cannot read it. Add visible text, `aria-label`, or `aria-labelledby`.";
+  "Blind users can't identify this field because screen readers find no label text, so add visible text, `aria-label`, or `aria-labelledby`.";
 const MESSAGE_NO_CONTROL =
-  "This label is not tied to any input, so clicking it does nothing. Add `htmlFor`, or wrap the input inside it.";
+  "Screen reader users can't tell which input this label names because it's tied to none, so add `htmlFor` or wrap the input inside it.";
 
 interface LabelHasAssociatedControlSettings {
   labelComponents?: ReadonlyArray<string>;

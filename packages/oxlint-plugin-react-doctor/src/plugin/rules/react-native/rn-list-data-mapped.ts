@@ -78,7 +78,7 @@ export const rnListDataMapped = defineRule<Rule>({
 
         context.report({
           node: attr,
-          message: `<${elementName} data={…${freshArrayDescription}}> builds a new array every time the parent redraws, so every row redraws too. Wrap it in useMemo to keep the same array.`,
+          message: `Your users see every row redraw when <${elementName} data={…${freshArrayDescription}}> builds a new array on each parent redraw, so wrap it in useMemo to keep the same array.`,
         });
         return;
       }

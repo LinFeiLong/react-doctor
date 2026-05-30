@@ -23,7 +23,8 @@ const VOID_DOM_ELEMENTS = new Set([
   "wbr",
 ]);
 
-const buildMessage = (tag: string): string => `\`<${tag}>\` can't have children. Remove them.`;
+const buildMessage = (tag: string): string =>
+  `React errors when \`<${tag}>\` has children because it's a void element, so remove them.`;
 
 const findChildrenLikePropName = (
   attributes: ReadonlyArray<EsTreeNodeOfType<"JSXOpeningElement">["attributes"][number]>,

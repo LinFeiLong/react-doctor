@@ -77,7 +77,7 @@ export const rerenderStateOnlyInHandlers = defineRule<Rule>({
 
         context.report({
           node: binding.declarator,
-          message: `useState "${binding.valueName}" is set but never shown on screen, so each update redraws the component for nothing. Use useRef so updates don't redraw it.`,
+          message: `Each update to "${binding.valueName}" redraws your component for nothing because this useState is set but never shown on screen, so use useRef instead.`,
         });
       }
     };

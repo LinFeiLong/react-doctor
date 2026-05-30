@@ -21,7 +21,7 @@ import {
 } from "./jsx-no-new-function-as-prop-tables.js";
 
 const MESSAGE =
-  "This prop gets a brand new function every render, so the child redraws for no reason. Wrap it in `useCallback` or move it out.";
+  "This child redraws every render because the prop gets a brand new function each time, so wrap it in `useCallback` or move it out.";
 
 const isAccessorPredicateName = (propName: string): boolean => {
   for (const prefix of ACCESSOR_PREDICATE_PREFIXES) {

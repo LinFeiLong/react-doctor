@@ -64,7 +64,7 @@ export const rnNoInlineObjectInListItem = defineRule<Rule>({
         const activeRenderProp = renderPropStack[renderPropStack.length - 1];
         context.report({
           node,
-          message: `This ${literalKind} on "${propName}" inside ${activeRenderProp} is rebuilt for every row, so memo() rows still redraw. Move it outside ${activeRenderProp} or pass primitives.`,
+          message: `Your users see memo() rows still redraw when this ${literalKind} on "${propName}" inside ${activeRenderProp} is rebuilt for every row, so move it outside ${activeRenderProp} or pass primitives.`,
         });
       },
     };

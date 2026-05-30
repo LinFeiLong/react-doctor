@@ -8,11 +8,11 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE_MISSING_HREF =
-  "This link has no `href`, so keyboard users cannot reach it. Add a real `href`, or use `<button>` for actions.";
+  "Keyboard users can't reach this link because it has no `href`, so add a real `href` (or use `<button>` for actions).";
 const MESSAGE_INCORRECT_HREF =
-  "This link's `href` does not go anywhere (`#`, `javascript:`, or empty). Point it at a real destination.";
+  "Keyboard users can't reach this link because its `href` goes nowhere (`#`, `javascript:`, or empty), so point it at a real destination.";
 const MESSAGE_CANT_BE_ANCHOR =
-  "This is a click handler dressed up as a link with no real `href`. Use `<button>` instead.";
+  "Keyboard users can't trigger this link because it's a click handler with no real `href`, so use `<button>` instead.";
 
 interface AnchorIsValidSettings {
   validHrefs?: ReadonlyArray<string>;

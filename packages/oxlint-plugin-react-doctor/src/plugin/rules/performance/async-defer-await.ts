@@ -210,7 +210,7 @@ export const asyncDeferAwait = defineRule<Rule>({
         context.report({
           node: window.firstAwaitStatement,
           message:
-            "await blocks the function before an early-return that doesn't use the awaited value, so the skip path waits for nothing. Move the await below the guard so it only runs when you need the data",
+            "This await blocks the function before an early-return that doesn't use the awaited value, so the skip path waits for nothing. Move the await below the guard so it only runs when you need the data",
         });
         statementIndex = window.guardCandidateIndex - 1;
       }

@@ -55,7 +55,7 @@ export const rnListRecyclableWithoutTypes = defineRule<Rule>({
       if (hasRecycleItemsEnabled && !hasGetItemType) {
         context.report({
           node,
-          message: `<${elementName} recycleItems> has no \`getItemType\`, so rows of different shapes reuse the wrong cells. Add \`getItemType={item => item.kind}\` to keep a separate pool per type.`,
+          message: `Your users see rows of different shapes reuse the wrong cells when <${elementName} recycleItems> has no \`getItemType\`, so add \`getItemType={item => item.kind}\` to keep a separate pool per type.`,
         });
       }
     },

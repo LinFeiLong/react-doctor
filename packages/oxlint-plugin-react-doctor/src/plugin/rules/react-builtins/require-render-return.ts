@@ -9,7 +9,7 @@ import type { Rule } from "../../utils/rule.js";
 
 const RENDER_METHOD_NAME = "render";
 const MESSAGE =
-  "This `render` method never returns anything, so nothing shows up. Return JSX from it.";
+  "Your users see nothing because this `render` method returns nothing, so return JSX from it.";
 
 const isStaticRenderKey = (key: EsTreeNode): boolean => {
   if (isNodeOfType(key, "Identifier")) return key.name === RENDER_METHOD_NAME;

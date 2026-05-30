@@ -33,7 +33,7 @@ export const clientPassiveEventListeners = defineRule<Rule>({
       if (!optionsArgument) {
         context.report({
           node,
-          message: `"${eventName}" listener without { passive: true } slows scrolling. Only add it if the handler doesn't call event.preventDefault(), since passive listeners silently ignore preventDefault().`,
+          message: `"${eventName}" listener without { passive: true } makes scrolling janky for your users. Only add it if the handler doesn't call event.preventDefault(), since passive listeners silently ignore preventDefault().`,
         });
         return;
       }
@@ -52,7 +52,7 @@ export const clientPassiveEventListeners = defineRule<Rule>({
       if (!hasPassiveTrue) {
         context.report({
           node,
-          message: `"${eventName}" listener without { passive: true } slows scrolling. Only add it if the handler doesn't call event.preventDefault(), since passive listeners silently ignore preventDefault().`,
+          message: `"${eventName}" listener without { passive: true } makes scrolling janky for your users. Only add it if the handler doesn't call event.preventDefault(), since passive listeners silently ignore preventDefault().`,
         });
       }
     },

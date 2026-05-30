@@ -4,7 +4,7 @@ import { getElementType } from "../../utils/get-element-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (tag: string): string =>
-  `\`<${tag}>\` animates on its own and distracts people, which is hard for some users. Use normal, accessible markup instead.`;
+  `Users with attention or motion sensitivity struggle because \`<${tag}>\` animates on its own, so use normal, accessible markup instead.`;
 
 interface NoDistractingElementsSettings {
   // Subset of distracting tags to enforce; defaults to all known.

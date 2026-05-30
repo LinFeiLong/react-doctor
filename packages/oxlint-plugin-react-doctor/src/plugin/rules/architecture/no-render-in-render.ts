@@ -31,7 +31,7 @@ export const noRenderInRender = defineRule<Rule>({
 
       context.report({
         node: expression,
-        message: `"${calleeName}()" builds UI by calling a function inline. Pull it out into its own component so React can track it properly.`,
+        message: `Your users lose state because "${calleeName}()" builds UI from an inline call that React remounts, so pull it into its own component instead.`,
       });
     },
   }),

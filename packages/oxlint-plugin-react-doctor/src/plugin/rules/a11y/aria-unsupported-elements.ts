@@ -7,7 +7,7 @@ import type { Rule } from "../../utils/rule.js";
 import { RESERVED_HTML_TAGS } from "../../constants/html-tags.js";
 
 const buildMessage = (tag: string, attribute: string): string =>
-  `\`<${tag}>\` does not accept \`${attribute}\`, so assistive tech ignores it here. Remove it from this element.`;
+  `Screen reader users get no help from \`${attribute}\` because \`<${tag}>\` doesn't accept it, so remove it from this element.`;
 
 // Port of `oxc_linter::rules::jsx_a11y::aria_unsupported_elements`.
 // Reports `aria-*` / `role` on reserved HTML tags (e.g. `<base>`,

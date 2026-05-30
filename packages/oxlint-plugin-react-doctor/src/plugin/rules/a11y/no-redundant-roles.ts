@@ -14,7 +14,7 @@ interface NoRedundantRolesSettings {
 }
 
 const buildMessage = (tag: string, role: string): string =>
-  `\`<${tag}>\` already acts as a \`${role}\` to screen readers, so this \`role\` adds nothing. Remove it.`;
+  `Screen reader users gain nothing from this \`role\` because \`<${tag}>\` already acts as a \`${role}\`, so remove it.`;
 
 const resolveSettings = (
   settings: Readonly<Record<string, unknown>> | undefined,

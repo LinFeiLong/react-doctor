@@ -45,7 +45,7 @@ export const jsIndexMaps = defineRule<Rule>({
         if (!looksLikeArrayCallbackCall(node)) return;
         context.report({
           node,
-          message: `array.${methodName}() runs inside a loop, so the work grows fast as the list gets bigger. Build a Map once before the loop for instant lookups`,
+          message: `This gets slow as your list grows because array.${methodName}() runs inside a loop, so build a Map once before the loop for instant lookups`,
         });
       },
     }),

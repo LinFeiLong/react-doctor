@@ -59,7 +59,8 @@ export const noChainStateUpdates = defineRule<Rule>({
         if (isSomeArgsState) continue;
         context.report({
           node: callExpr,
-          message: "Avoid chaining state updates. Set all the related state at once instead.",
+          message:
+            "Chaining state updates triggers an extra render each step, so set all the related state at once instead.",
         });
       }
     },

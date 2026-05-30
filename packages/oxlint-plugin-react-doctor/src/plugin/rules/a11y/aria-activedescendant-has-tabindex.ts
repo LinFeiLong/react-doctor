@@ -8,7 +8,7 @@ import { parseJsxValue } from "../../utils/parse-jsx-value.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "This element uses `aria-activedescendant` but keyboard users cannot tab to it. Add `tabIndex={0}` so it can receive focus.";
+  "Keyboard users can't focus this element with `aria-activedescendant` because it isn't tabbable, so add `tabIndex={0}`.";
 
 // Port of `oxc_linter::rules::jsx_a11y::aria_activedescendant_has_tabindex`.
 // Reports HTML elements with `aria-activedescendant` that are NOT

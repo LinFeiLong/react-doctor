@@ -33,7 +33,7 @@ export const tanstackStartNoDirectFetchInLoader = defineRule<Rule>({
             context.report({
               node: child,
               message:
-                "Direct fetch() in a route loader. Use createServerFn() for type-safe server logic over RPC.",
+                "Direct fetch() in a route loader runs on the client too with no type safety. Use createServerFn() for type-safe RPC.",
             });
           }
         });

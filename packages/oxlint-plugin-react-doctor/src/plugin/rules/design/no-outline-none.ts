@@ -48,7 +48,7 @@ export const noOutlineNone = defineRule<Rule>({
         context.report({
           node: outlineProperty,
           message:
-            "outline: none hides the focus ring, so keyboard users can't tell where they are. Style :focus-visible instead, or add a box-shadow focus ring.",
+            "Your keyboard users can't tell where they are because outline: none hides the focus ring, so style :focus-visible instead, or add a box-shadow focus ring.",
         });
       }
     },

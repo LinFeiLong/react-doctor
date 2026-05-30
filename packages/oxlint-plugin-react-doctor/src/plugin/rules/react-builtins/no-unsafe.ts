@@ -27,7 +27,7 @@ const SAFER_REPLACEMENT: Record<string, string> = {
 };
 
 const buildMessage = (methodName: string): string =>
-  `\`${methodName}\` is an unsafe lifecycle method React is phasing out. Use \`${
+  `\`${methodName}\` causes subtle bugs & React is removing it, so use \`${
     SAFER_REPLACEMENT[methodName] ?? "a modern lifecycle method"
   }\` instead.`;
 

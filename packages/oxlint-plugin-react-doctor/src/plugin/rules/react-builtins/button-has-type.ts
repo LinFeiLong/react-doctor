@@ -9,9 +9,9 @@ import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MISSING_MESSAGE =
-  'A `<button>` with no `type` defaults to submit and can submit a form by accident. Add `type="button"`.';
+  'Your users can submit the form by accident because a `<button>` with no `type` defaults to submit, so add `type="button"`.';
 const INVALID_MESSAGE = (allowed: string): string =>
-  `A button's \`type\` must be one of: ${allowed}.`;
+  `This button's \`type\` is invalid, so set it to one of: ${allowed}.`;
 
 interface ButtonHasTypeSettings {
   button?: boolean;

@@ -6,7 +6,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "`accessKey` clashes with screen reader and system shortcuts, so it can break them. Remove it.";
+  "Screen reader users can lose their shortcuts because `accessKey` clashes with them, so remove it.";
 
 // True iff the expression is the literal `undefined` identifier.
 const isUndefinedIdentifier = (expression: EsTreeNode): boolean =>

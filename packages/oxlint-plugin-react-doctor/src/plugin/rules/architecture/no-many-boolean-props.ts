@@ -54,7 +54,7 @@ export const noManyBooleanProps = defineRule<Rule>({
       if (booleanLikePropNames.length >= BOOLEAN_PROP_THRESHOLD) {
         context.report({
           node: reportNode,
-          message: `Component "${componentName}" takes ${booleanLikePropNames.length} on/off props (${booleanLikePropNames.slice(0, 3).join(", ")}…), which is a lot. Split it into smaller components or named variants.`,
+          message: `Component "${componentName}" takes ${booleanLikePropNames.length} on/off props (${booleanLikePropNames.slice(0, 3).join(", ")}…), which is hard to combine & test. Split it into smaller components or named variants.`,
         });
       }
     };

@@ -25,7 +25,7 @@ export const nextjsNoImgElement = defineRule<Rule>({
           context.report({
             node,
             message:
-              "Plain <img> tag. Use next/image for automatic optimization, lazy loading, and responsive images.",
+              "Plain <img> ships unoptimized, oversized images to your users. Use next/image for automatic optimization, lazy loading, & responsive images.",
           });
         }
       },

@@ -6,7 +6,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "This `forwardRef` component doesn't take a `ref`, so the wrapper does nothing. Add a `ref` parameter, or drop `forwardRef`.";
+  "The parent can't reach this component's node because the `forwardRef` wrapper ignores `ref`, so add a `ref` parameter or drop `forwardRef`.";
 
 // Port of `oxc_linter::rules::react::forward_ref_uses_ref`. Reports
 // `forwardRef((props) => …)` and `React.forwardRef((props) => …)` —

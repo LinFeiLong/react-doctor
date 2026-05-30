@@ -35,7 +35,7 @@ export const noJustifiedText = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Justified text with no hyphens leaves big uneven gaps between words. Use text-align: left, or add hyphens: auto.",
+            "Your users read big uneven gaps between words because justified text has no hyphens, so use text-align: left, or add hyphens: auto.",
         });
       }
     },

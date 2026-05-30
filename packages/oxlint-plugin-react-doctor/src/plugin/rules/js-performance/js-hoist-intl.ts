@@ -99,7 +99,7 @@ export const jsHoistIntl = defineRule<Rule>({
           : "Intl";
       context.report({
         node,
-        message: `new Intl.${className}() inside a function gets rebuilt on every call, which is slow. Move it to the top of the file, or wrap it in useMemo`,
+        message: `This is slow because new Intl.${className}() rebuilds on every call inside a function, so move it to the top of the file, or wrap it in useMemo`,
       });
     },
   }),

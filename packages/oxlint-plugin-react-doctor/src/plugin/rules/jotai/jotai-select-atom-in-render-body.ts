@@ -103,7 +103,7 @@ export const jotaiSelectAtomInRenderBody = defineRule<Rule>({
           context.report({
             node,
             message:
-              "`selectAtom(...)` runs in a component or hook without `useMemo`, so every render makes a new atom and re-subscribes forever. Lift it to module scope, or wrap it in `useMemo(() => selectAtom(...), [deps])`.",
+              "`selectAtom(...)` runs in a component or hook without `useMemo`, so every render makes a new atom & re-subscribes forever, freezing the page for your users. Lift it to module scope, or wrap it in `useMemo(() => selectAtom(...), [deps])`.",
           });
           return;
         }

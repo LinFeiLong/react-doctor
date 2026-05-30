@@ -19,7 +19,7 @@ export const jsHoistRegexp = defineRule<Rule>({
           context.report({
             node,
             message:
-              "new RegExp() inside a loop rebuilds the pattern every time. Move it to a constant outside the loop",
+              "This slows the loop because new RegExp() rebuilds the pattern every pass, so move it to a constant outside the loop",
           });
         }
       },

@@ -9,7 +9,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildBaseMessage = (suffix: string): string =>
-  `This element's \`role\` is not a valid ARIA role, so assistive tech ignores it. Use a real, non-abstract role.${suffix}`;
+  `Screen reader users get no help from this \`role\` because it isn't a valid ARIA role, so use a real, non-abstract role.${suffix}`;
 
 interface AriaRoleSettings {
   allowedInvalidRoles?: ReadonlyArray<string>;

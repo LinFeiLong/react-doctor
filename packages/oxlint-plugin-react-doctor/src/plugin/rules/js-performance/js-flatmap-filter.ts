@@ -69,7 +69,7 @@ export const jsFlatmapFilter = defineRule<Rule>({
       context.report({
         node,
         message:
-          ".map().filter(Boolean) loops over the list twice. Use .flatMap() to change and drop items in one pass",
+          "This loops over your list twice because .map().filter(Boolean) makes two passes, so use .flatMap() to change & drop items in one pass",
       });
     },
   }),

@@ -16,8 +16,8 @@ const describeClientSideNavigation = (
   isPagesRouterFile: boolean,
 ): string | null => {
   const redirectGuidance = isPagesRouterFile
-    ? "Handle it in an event handler, a getServerSideProps redirect, or middleware."
-    : "Use redirect() from next/navigation, or handle it in an event handler.";
+    ? "Use an event handler, a getServerSideProps redirect, or middleware instead."
+    : "Use redirect() from next/navigation, or an event handler instead.";
 
   if (isNodeOfType(node, "CallExpression") && isNodeOfType(node.callee, "MemberExpression")) {
     const objectName = isNodeOfType(node.callee.object, "Identifier")
@@ -27,7 +27,7 @@ const describeClientSideNavigation = (
       ? node.callee.property.name
       : null;
     if (objectName === "router" && (methodName === "push" || methodName === "replace")) {
-      return `router.${methodName}() in useEffect. ${redirectGuidance}`;
+      return `router.${methodName}() in useEffect flashes the wrong page before redirecting. ${redirectGuidance}`;
     }
   }
 
@@ -37,10 +37,10 @@ const describeClientSideNavigation = (
       ? node.left.property.name
       : null;
     if (objectName === "window" && propertyName === "location") {
-      return `window.location assignment in useEffect. ${redirectGuidance}`;
+      return `window.location assignment in useEffect flashes the wrong page before redirecting. ${redirectGuidance}`;
     }
     if (objectName === "location" && propertyName === "href") {
-      return `location.href assignment in useEffect. ${redirectGuidance}`;
+      return `location.href assignment in useEffect flashes the wrong page before redirecting. ${redirectGuidance}`;
     }
   }
 

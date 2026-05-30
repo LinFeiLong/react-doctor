@@ -112,7 +112,7 @@ export const renderingHydrationMismatchTime = defineRule<Rule>({
         if (hasSuppressHydrationWarningAttribute(openingElement)) return;
         context.report({
           node,
-          message: `${matched.display} in JSX gives a different value on the server than in the browser, which breaks hydration. Move it into useEffect+useState so it only runs in the browser, or add suppressHydrationWarning to the parent if it's on purpose`,
+          message: `This breaks hydration because ${matched.display} in JSX gives a different value on the server than in the browser, so move it into useEffect+useState to run only in the browser, or add suppressHydrationWarning to the parent if it's on purpose`,
         });
         return;
       }
@@ -125,7 +125,7 @@ export const renderingHydrationMismatchTime = defineRule<Rule>({
             if (hasSuppressHydrationWarningAttribute(openingElement)) return;
             context.report({
               node: child,
-              message: `${pattern.display} reached from JSX gives a different value on the server than in the browser, which breaks hydration. Move it into useEffect+useState so it only runs in the browser, or add suppressHydrationWarning to the parent if it's on purpose`,
+              message: `This breaks hydration because ${pattern.display} reached from JSX gives a different value on the server than in the browser, so move it into useEffect+useState to run only in the browser, or add suppressHydrationWarning to the parent if it's on purpose`,
             });
             return;
           }

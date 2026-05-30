@@ -102,7 +102,7 @@ export const zodV4NoDeprecatedErrorCustomization = defineRule<Rule>({
       context.report({
         node,
         message:
-          "Zod 4 replaced message strings, `invalid_type_error`, `required_error`, and `errorMap` with one `error` option. Use that instead.",
+          "Zod 4 replaced message strings, `invalid_type_error`, `required_error`, & `errorMap` with one `error` option, so this breaks when you upgrade. Use the `error` option instead.",
       });
     },
   }),

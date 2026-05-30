@@ -9,10 +9,10 @@ const TABLE_ELEMENTS = new Set(["table", "thead", "tbody", "tfoot", "tr", "td", 
 const ROW_GROUPS = new Set(["thead", "tbody", "tfoot"]);
 
 const buildMessage = (childTag: string, expectedParent: string, actualParent: string): string =>
-  `\`<${childTag}>\` must sit directly inside ${expectedParent}, but here it's inside \`<${actualParent}>\`. The browser will rearrange the table and your HTML won't match. Put it in the right parent.`;
+  `Your users see a rearranged table because \`<${childTag}>\` must sit directly inside ${expectedParent}, not \`<${actualParent}>\`, so the browser fixes the markup for you. Put it in the right parent.`;
 
 const buildNestedTableMessage = (): string =>
-  "A `<table>` can't sit directly inside another table element. To nest a table, put it inside a `<td>` or `<th>` cell.";
+  "Your users see a broken table because a `<table>` can't sit directly inside another table element. To nest a table, put it inside a `<td>` or `<th>` cell.";
 
 const getHostTagName = (jsxElement: EsTreeNode): string | null => {
   if (!isNodeOfType(jsxElement, "JSXElement")) return null;

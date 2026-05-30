@@ -39,7 +39,7 @@ export const nextjsNoClientFetchForServerData = defineRule<Rule>({
           context.report({
             node,
             message:
-              "useEffect + fetch in a page/layout. Fetch this data in a Server Component instead.",
+              "useEffect + fetch in a page/layout makes your users wait through an extra round trip & loading spinner. Fetch this data in a Server Component instead.",
           });
         }
       },

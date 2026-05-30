@@ -17,11 +17,11 @@ import { createDeprecatedReactImportRule } from "./utils/create-deprecated-react
 const REACT_19_DEPRECATED_MESSAGES = new Map<string, string>([
   [
     "forwardRef",
-    "forwardRef isn't needed in React 19. Ref is just a normal prop now, so drop forwardRef and pass ref straight through.",
+    "forwardRef is dead weight in React 19, since ref is a normal prop now, so drop it & pass ref straight through.",
   ],
   [
     "useContext",
-    "useContext is replaced by `use()` in React 19. `use()` can read context inside ifs and loops too, so switch to `import { use } from 'react'`.",
+    "useContext is replaced by `use()` in React 19, which reads context inside ifs & loops too, so switch to `import { use } from 'react'`.",
   ],
 ]);
 

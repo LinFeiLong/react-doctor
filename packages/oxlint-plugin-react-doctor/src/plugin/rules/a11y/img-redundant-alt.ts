@@ -8,7 +8,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  'This `alt` text includes words like "image" or "photo", which screen readers already announce. Describe what the image shows instead.';
+  'Screen reader users hear "image" or "photo" twice because they already announce it, so describe what the image shows instead.';
 
 const DEFAULT_COMPONENTS: ReadonlyArray<string> = ["img"];
 const DEFAULT_REDUNDANT_WORDS: ReadonlyArray<string> = ["image", "photo", "picture"];

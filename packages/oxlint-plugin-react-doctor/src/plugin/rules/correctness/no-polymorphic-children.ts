@@ -37,7 +37,7 @@ export const noPolymorphicChildren = defineRule<Rule>({
       context.report({
         node,
         message:
-          'Checking `typeof children === "string"` makes the component behave differently based on what is passed in. Add clear subcomponents like `<Button.Text>` instead.',
+          'Your users hit inconsistent behavior because `typeof children === "string"` makes this component switch on what callers pass, so add clear subcomponents like `<Button.Text>` instead.',
       });
     },
   }),

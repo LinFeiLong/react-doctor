@@ -27,7 +27,7 @@ export const renderingAnimateSvgWrapper = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Animating <svg> directly is slow to render. Wrap it in a <div> or <motion.div> and animate that instead",
+            "This is slow to render because you animate <svg> directly, so wrap it in a <div> or <motion.div> & animate that instead",
         });
       }
     },

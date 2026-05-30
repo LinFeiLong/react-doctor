@@ -76,7 +76,7 @@ export const renderingHoistJsx = defineRule<Rule>({
           const name = isNodeOfType(declarator.id, "Identifier") ? declarator.id.name : "<unnamed>";
           context.report({
             node: declarator,
-            message: `Static JSX "${name}" is built inside the component, so it gets rebuilt on every render. Move it to the top of the file so it's made just once`,
+            message: `This rebuilds on every render because static JSX "${name}" is built inside the component, so move it to the top of the file to make it just once`,
           });
         }
       },

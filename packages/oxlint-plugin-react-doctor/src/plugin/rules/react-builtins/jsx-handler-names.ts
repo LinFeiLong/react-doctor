@@ -7,9 +7,9 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildHandlerNameMessage = (handlerName: string, propKey: string, prefix: string): string =>
-  `The handler "${handlerName}" for "${propKey}" should start with "${prefix}", like "${prefix}Click".`;
+  `The handler "${handlerName}" for "${propKey}" is hard to recognize, so start its name with "${prefix}", like "${prefix}Click".`;
 const buildHandlerPropMessage = (propKey: string, propValue: string, prefix: string): string =>
-  `The prop "${propKey}" passes "${propValue}", so it should start with "${prefix}".`;
+  `The prop "${propKey}" passes a handler "${propValue}", so name it to start with "${prefix}".`;
 
 interface JsxHandlerNamesSettings {
   checkInlineFunction?: boolean;

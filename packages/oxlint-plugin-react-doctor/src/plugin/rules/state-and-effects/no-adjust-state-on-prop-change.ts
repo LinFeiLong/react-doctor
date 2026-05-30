@@ -59,7 +59,7 @@ export const noAdjustStateOnPropChange = defineRule<Rule>({
         context.report({
           node: callExpr,
           message:
-            "Syncing state to a prop inside useEffect makes the screen briefly show the old value. Set it while rendering, or just use the prop directly.",
+            "Your users briefly see the wrong value when the prop changes, so update it during render.",
         });
       }
     },

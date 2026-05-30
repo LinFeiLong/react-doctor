@@ -89,7 +89,7 @@ export const rerenderTransitionsScroll = defineRule<Rule>({
 
       context.report({
         node: setStateCall,
-        message: `setState in a "${eventName}" handler redraws the screen many times a second, which causes jank. Wrap it in startTransition, use useDeferredValue, or keep the value in a ref and throttle with requestAnimationFrame`,
+        message: `This causes jank because setState in a "${eventName}" handler redraws the screen many times a second, so wrap it in startTransition, use useDeferredValue, or keep the value in a ref & throttle with requestAnimationFrame`,
       });
     },
   }),

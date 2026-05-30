@@ -93,7 +93,7 @@ const reportIfIndependent = (statements: EsTreeNode[], context: RuleContext): vo
 
   context.report({
     node: statements[0],
-    message: `${statements.length} sequential await statements that look independent. Run them together with Promise.all() instead`,
+    message: `These ${statements.length} sequential await statements run one after another even though they look independent, so the page waits longer than it needs to. Run them together with Promise.all() instead`,
   });
 };
 

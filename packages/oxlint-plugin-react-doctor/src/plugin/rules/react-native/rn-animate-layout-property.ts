@@ -92,7 +92,7 @@ export const rnAnimateLayoutProperty = defineRule<Rule>({
 
         context.report({
           node: property,
-          message: `useAnimatedStyle animating "${property.key.name}" runs on the layout thread and can stutter. Animate transform: [{ translateX/Y }, { scale }] or opacity instead, which run on the GPU.`,
+          message: `Your users see stutter when useAnimatedStyle animates "${property.key.name}" on the layout thread, so animate transform: [{ translateX/Y }, { scale }] or opacity instead, which run on the GPU.`,
         });
       }
     },

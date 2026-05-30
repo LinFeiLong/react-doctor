@@ -96,7 +96,7 @@ export const jsLengthCheckFirst = defineRule<Rule>({
       context.report({
         node,
         message:
-          ".every() compares two arrays item by item. Check `a.length === b.length` first so arrays of different sizes bail out immediately",
+          "This is slow because .every() compares two arrays item by item, so check `a.length === b.length` first to bail out immediately when sizes differ",
       });
     },
   }),

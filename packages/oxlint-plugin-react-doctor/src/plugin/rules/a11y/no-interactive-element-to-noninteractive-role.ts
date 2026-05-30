@@ -10,7 +10,7 @@ import { isNonInteractiveRole } from "../../utils/is-non-interactive-role.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (tag: string, role: string): string =>
-  `\`<${tag}>\` is interactive, but role \`${role}\` tells screen readers it is not. Remove the role, or use a different element.`;
+  `Screen reader users can't operate this interactive \`<${tag}>\` because role \`${role}\` says it isn't, so remove the role or use a different element.`;
 
 const PRESENTATION_ROLES: ReadonlyArray<string> = ["presentation", "none"];
 

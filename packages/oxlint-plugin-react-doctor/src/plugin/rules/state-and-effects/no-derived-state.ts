@@ -108,12 +108,12 @@ export const noDerivedState = defineRule<Rule>({
         if (isSomeArgsInternal) {
           context.report({
             node: callExpr,
-            message: `Don't store "${stateName}" in state when you can work it out from other values. Compute it while rendering, with \`useMemo\` if it's expensive.`,
+            message: `Storing "${stateName}" in state when you can derive it from other values costs an extra render, so compute it while rendering, with \`useMemo\` if it's expensive.`,
           });
         } else if (isValueAlwaysInSync) {
           context.report({
             node: callExpr,
-            message: `"${stateName}" is only set here from other values, so you don't need state for it. Work it out while rendering instead.`,
+            message: `"${stateName}" is only set here from other values, so storing it costs an extra render. Work it out while rendering instead.`,
           });
         }
       }

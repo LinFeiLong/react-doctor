@@ -30,7 +30,7 @@ export const nextjsNoFontLink = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Loading Google Fonts with <link>. Use next/font for self-hosting, zero layout shift, and no render-blocking requests.",
+            "Loading Google Fonts with <link> blocks rendering & shifts layout. Use next/font for self-hosting & zero layout shift.",
         });
       }
     },

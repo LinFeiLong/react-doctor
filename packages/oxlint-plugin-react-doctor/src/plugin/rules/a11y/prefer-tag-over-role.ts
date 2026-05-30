@@ -7,7 +7,7 @@ import type { Rule } from "../../utils/rule.js";
 import { getTagsForRole } from "../../constants/aria-element-roles.js";
 
 const buildMessage = (role: string, tag: string): string =>
-  `A plain element with \`role="${role}"\` works, but \`<${tag}>\` does the same thing with less effort. Use \`<${tag}>\` instead.`;
+  `Screen reader users get more reliable semantics from \`<${tag}>\` than \`role="${role}"\`, so use \`<${tag}>\` instead.`;
 
 // Port of `oxc_linter::rules::jsx_a11y::prefer_tag_over_role`. When a
 // generic element (`div`/`span`) uses `role` to emulate a built-in

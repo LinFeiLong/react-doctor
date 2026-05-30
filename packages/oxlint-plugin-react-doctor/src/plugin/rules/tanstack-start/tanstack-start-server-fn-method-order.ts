@@ -60,7 +60,7 @@ export const tanstackStartServerFnMethodOrder = defineRule<Rule>({
           const expectedBefore = TANSTACK_MIDDLEWARE_METHOD_ORDER[lastIndex];
           context.report({
             node,
-            message: `Server function method .${methodName}() must come before .${expectedBefore}(). Wrong order breaks type inference.`,
+            message: `Chaining .${methodName}() after .${expectedBefore}() breaks type inference. Reorder so .${methodName}() comes first.`,
           });
           return;
         }

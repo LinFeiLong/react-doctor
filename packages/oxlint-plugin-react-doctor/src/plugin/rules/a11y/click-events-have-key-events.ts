@@ -13,7 +13,7 @@ import { HTML_TAGS } from "../../constants/html-tags.js";
 const PRESENTATION_ROLES: ReadonlySet<string> = new Set(["presentation", "none"]);
 
 const MESSAGE =
-  "This has a click handler but no keyboard one, so keyboard users cannot trigger it. Add `onKeyUp`, `onKeyDown`, or `onKeyPress`.";
+  "Keyboard users can't trigger this click handler because there's no keyboard one, so add `onKeyUp`, `onKeyDown`, or `onKeyPress`.";
 
 const KEY_HANDLERS = ["onKeyUp", "onKeyDown", "onKeyPress"] as const;
 

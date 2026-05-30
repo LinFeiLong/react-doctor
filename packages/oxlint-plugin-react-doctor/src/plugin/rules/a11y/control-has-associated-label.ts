@@ -17,7 +17,7 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "This control has no label, so screen readers cannot say what it does. Add visible text, `aria-label`, or `aria-labelledby`.";
+  "Blind users can't tell what this control does because screen readers find no label, so add visible text, `aria-label`, or `aria-labelledby`.";
 
 interface ControlHasAssociatedLabelSettings {
   depth?: number;

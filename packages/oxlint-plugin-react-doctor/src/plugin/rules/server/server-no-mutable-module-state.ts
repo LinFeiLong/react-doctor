@@ -53,7 +53,7 @@ export const serverNoMutableModuleState = defineRule<Rule>({
           if (node.kind === "let" || node.kind === "var") {
             context.report({
               node: declarator,
-              message: `Module-scoped ${node.kind} "${variableName}" is shared by every request, so users can see each other's data. Keep per-request data inside the action.`,
+              message: `Module-scoped ${node.kind} "${variableName}" leaks state between your users, since every request shares it. Keep per-request data inside the action.`,
             });
             continue;
           }
@@ -64,7 +64,7 @@ export const serverNoMutableModuleState = defineRule<Rule>({
           if (containerKind) {
             context.report({
               node: declarator,
-              message: `Module-scoped const "${variableName} = ${containerKind}" is shared by every request, so users can see each other's data. Keep per-request data inside the action.`,
+              message: `Module-scoped const "${variableName} = ${containerKind}" leaks state between your users, since every request shares it. Keep per-request data inside the action.`,
             });
           }
         }

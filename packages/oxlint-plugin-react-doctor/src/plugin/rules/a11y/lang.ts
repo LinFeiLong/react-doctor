@@ -6,7 +6,7 @@ import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "This `lang` value is not a real language code, so screen readers cannot use it. Use a valid one like `en` or `en-US`.";
+  "Screen readers can't pick the right voice because this `lang` isn't a real language code, so use a valid one like `en` or `en-US`.";
 
 // Common ISO-639 primary tags (very partial — full validation requires
 // the IANA registry). When the value isn't recognized, we still allow

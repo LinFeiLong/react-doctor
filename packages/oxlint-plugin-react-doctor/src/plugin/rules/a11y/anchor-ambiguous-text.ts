@@ -9,7 +9,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (text: string): string =>
-  `\`${text}\` does not say where the link goes. Use text that names the destination, like "View pricing details".`;
+  `Screen reader users can't tell where \`${text}\` goes, so name the destination, like "View pricing details".`;
 
 interface AnchorAmbiguousTextSettings {
   words?: ReadonlyArray<string>;

@@ -58,7 +58,7 @@ export const tanstackStartNoNavigateInRender = defineRule<Rule>({
           context.report({
             node,
             message:
-              "navigate() called during render. Use redirect() in beforeLoad or loader for route-level redirects.",
+              "navigate() during render causes hydration errors. Use redirect() in beforeLoad or loader instead.",
           });
         }
       },

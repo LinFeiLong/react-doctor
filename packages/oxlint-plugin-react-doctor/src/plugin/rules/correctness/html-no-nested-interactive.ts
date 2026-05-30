@@ -5,7 +5,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (tagName: string): string =>
-  `You can't put a \`<${tagName}>\` inside another \`<${tagName}>\`. The browser closes the outer one early, which breaks clicks, focus, and screen readers. Move the inner one out.`;
+  `Your users get broken clicks, focus & screen readers because you can't put a \`<${tagName}>\` inside another \`<${tagName}>\`, so the browser closes the outer one early. Move the inner one out.`;
 
 const isJsxElementWithTagName = (
   candidate: EsTreeNode,

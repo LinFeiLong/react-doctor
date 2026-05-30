@@ -6,7 +6,7 @@ import type { Rule } from "../../utils/rule.js";
 import { isValidAriaProperty } from "../../constants/aria-properties.js";
 
 const buildMessage = (name: string): string =>
-  `\`${name}\` is not a real ARIA attribute, so it does nothing. Check the spelling against the WAI-ARIA list.`;
+  `Screen reader users get no help from \`${name}\` because it isn't a real ARIA attribute, so fix the spelling against the WAI-ARIA list.`;
 
 // Port of `oxc_linter::rules::jsx_a11y::aria_props`. Reports any
 // attribute name starting with `aria-` that isn't a recognized WAI-ARIA

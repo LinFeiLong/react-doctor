@@ -22,7 +22,7 @@ export const noUndeferredThirdParty = defineRule<Rule>({
         context.report({
           node,
           message:
-            "This <script> blocks the page from showing until it loads. Add defer or async so it loads in the background.",
+            "This <script> blocks the page from showing to your users until it loads. Add defer or async so it loads in the background.",
         });
       }
     },

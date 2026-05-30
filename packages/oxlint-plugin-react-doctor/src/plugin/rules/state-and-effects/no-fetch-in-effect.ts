@@ -23,7 +23,7 @@ export const noFetchInEffect = defineRule<Rule>({
         context.report({
           node,
           message:
-            "fetch() inside useEffect is hard to get right. Use a data fetching library like react-query or SWR, or fetch in a server component.",
+            "fetch() inside useEffect races, double-fires & leaks for your users, so use a data fetching library like react-query or SWR, or fetch in a server component.",
         });
       }
     },

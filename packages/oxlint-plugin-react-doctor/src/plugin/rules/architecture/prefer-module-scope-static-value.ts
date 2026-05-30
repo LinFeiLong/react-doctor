@@ -217,7 +217,7 @@ export const preferModuleScopeStaticValue = defineRule<Rule>({
       const bindingName = node.id.name;
       context.report({
         node,
-        message: `\`${bindingName}\` inside \`${component.displayName}\` doesn't use any local state, so it's rebuilt every update and looks new each time. Move it to the top of the file, outside the component.`,
+        message: `\`${bindingName}\` inside \`${component.displayName}\` uses no local state but is rebuilt every render, so it looks new each time & breaks memoized children. Move it to the top of the file, outside the component.`,
       });
     },
   }),

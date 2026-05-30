@@ -92,7 +92,7 @@ export const rnListCallbackPerRow = defineRule<Rule>({
             : "<handler>";
         context.report({
           node: handler,
-          message: `${handlerName} inside ${renderPropName} is rebuilt for every row each draw, so memo() rows still redraw. Move it out with useCallback at list scope.`,
+          message: `Your users see memo() rows still redraw when ${handlerName} inside ${renderPropName} is rebuilt for every row each draw, so move it out with useCallback at list scope.`,
         });
       }
     };

@@ -6,7 +6,7 @@ import type { Rule } from "../../utils/rule.js";
 
 const LIFECYCLE_NAMES = new Set(["componentDidMount"]);
 const MESSAGE =
-  "Calling `setState` in `componentDidMount` causes an extra render right after mount. Set the value in initial state instead.";
+  "Your users see an extra render right after mount when you call `setState` in `componentDidMount`, so set the value in initial state instead.";
 
 interface NoDidMountSetStateSettings {
   mode?: "allowed" | "disallow-in-func";

@@ -6,7 +6,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const PREFER_ONINPUT_MESSAGE =
-  "In Preact core, `onChange` on text inputs only fires when the field loses focus. Use `onInput` for live updates. `preact/compat` handles this for you.";
+  "Your users see no live updates because `onChange` on text inputs in Preact core only fires on blur, so use `onInput` instead. `preact/compat` handles this for you.";
 
 // Input types where the native DOM `change` event fires on blur (not on
 // every keystroke). Matches the set exempted by preact/compat's

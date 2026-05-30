@@ -39,7 +39,7 @@ export const tanstackStartRoutePropertyOrder = defineRule<Rule>({
           const expectedBefore = TANSTACK_ROUTE_PROPERTY_ORDER[lastIndex];
           context.report({
             node: optionsObject,
-            message: `Route property "${propertyName}" must come before "${expectedBefore}". Wrong order breaks TypeScript type inference.`,
+            message: `Ordering route property "${propertyName}" after "${expectedBefore}" breaks TypeScript type inference. Move "${propertyName}" before "${expectedBefore}".`,
           });
           return;
         }

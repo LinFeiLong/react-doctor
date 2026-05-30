@@ -41,7 +41,7 @@ export const noTinyText = defineRule<Rule>({
         if (pxValue !== null && pxValue > 0 && pxValue < TINY_TEXT_THRESHOLD_PX) {
           context.report({
             node: property,
-            message: `${pxValue}px text is too small to read comfortably. Use at least ${TINY_TEXT_THRESHOLD_PX}px for body text, and 16px is best.`,
+            message: `Your users strain to read ${pxValue}px text, so use at least ${TINY_TEXT_THRESHOLD_PX}px for body text, & 16px is best.`,
           });
         }
       }

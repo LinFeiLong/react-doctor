@@ -15,9 +15,9 @@ import { isPresentationRole } from "../../utils/is-presentation-role.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildTabbableMessage = (role: string): string =>
-  `This has the '${role}' role but keyboard users cannot tab to it. Add \`tabIndex={0}\`.`;
+  `Keyboard users can't tab to this '${role}' because it isn't focusable, so add \`tabIndex={0}\`.`;
 const buildFocusableMessage = (role: string): string =>
-  `This has the '${role}' role but cannot receive focus. Add \`tabIndex={0}\` or \`tabIndex={-1}\`.`;
+  `Keyboard users can't focus this '${role}' because it can't receive focus, so add \`tabIndex={0}\` or \`tabIndex={-1}\`.`;
 
 const DEFAULT_TABBABLE_ROLES: ReadonlyArray<string> = [
   "button",

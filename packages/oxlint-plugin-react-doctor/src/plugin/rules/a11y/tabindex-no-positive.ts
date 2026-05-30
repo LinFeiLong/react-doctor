@@ -7,7 +7,7 @@ import { parseJsxValue } from "../../utils/parse-jsx-value.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "A positive `tabIndex` jumps keyboard users out of the normal order, which is confusing. Use `0` or `-1`.";
+  "Keyboard users get jumped out of the normal order by a positive `tabIndex`, so use `0` or `-1`.";
 
 // Port of `oxc_linter::rules::jsx_a11y::tabindex_no_positive`. Reports
 // `tabIndex={N}` where N > 0.

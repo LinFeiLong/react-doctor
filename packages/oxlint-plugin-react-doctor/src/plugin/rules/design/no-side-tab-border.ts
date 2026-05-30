@@ -102,7 +102,7 @@ export const noSideTabBorder = defineRule<Rule>({
           if (width >= threshold) {
             context.report({
               node: property,
-              message: `Thick border on one side (${sideLabel}: ${width}px) looks off and dated. Use a softer accent or drop it.`,
+              message: `Your users see an off, dated thick border on one side (${sideLabel}: ${width}px), so use a softer accent or drop it.`,
             });
           }
         }
@@ -125,7 +125,7 @@ export const noSideTabBorder = defineRule<Rule>({
           if (width >= threshold) {
             context.report({
               node: property,
-              message: `Thick border on one side (${width}px) looks off and dated. Use a softer accent or drop it.`,
+              message: `Your users see an off, dated thick border on one side (${width}px), so use a softer accent or drop it.`,
             });
           }
         }
@@ -154,7 +154,7 @@ export const noSideTabBorder = defineRule<Rule>({
       if (width >= tailwindThreshold) {
         context.report({
           node,
-          message: `Thick border on one side (${sideMatch[0]}) looks off and dated. Use a softer accent or drop it.`,
+          message: `Your users see an off, dated thick border on one side (${sideMatch[0]}), so use a softer accent or drop it.`,
         });
       }
     },

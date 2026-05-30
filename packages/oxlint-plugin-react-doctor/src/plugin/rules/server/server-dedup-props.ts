@@ -55,7 +55,7 @@ export const serverDedupProps = defineRule<Rule>({
         if (sourcePropName) {
           context.report({
             node: derived.node,
-            message: `"${derived.propName}" comes from "${sourcePropName}" (source: ${derived.rootName}), so passing both ships the data twice. Send the source once and build it on the client.`,
+            message: `Passing both "${derived.propName}" & "${sourcePropName}" ships the same data twice to your users (source: ${derived.rootName}). Send the source once & build the rest on the client.`,
           });
         }
       }

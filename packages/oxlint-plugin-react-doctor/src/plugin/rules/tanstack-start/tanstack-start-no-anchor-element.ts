@@ -47,7 +47,7 @@ export const tanstackStartNoAnchorElement = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Plain <a> for internal navigation. Use <Link> from @tanstack/react-router for type-safe routing and preloading.",
+            "Plain <a> reloads the whole page on internal navigation. Use <Link> from @tanstack/react-router for type-safe routing & preloading.",
         });
       }
     },

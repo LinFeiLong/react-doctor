@@ -8,8 +8,8 @@ import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (element: string, customHelp?: string): string =>
   customHelp
-    ? `<${element}> isn't allowed here. ${customHelp}`
-    : `<${element}> isn't allowed here.`;
+    ? `Your project blocks \`<${element}>\` here. ${customHelp}`
+    : `Your project blocks \`<${element}>\` here, so use an approved element instead.`;
 
 interface ForbidElementsItem {
   element: string;

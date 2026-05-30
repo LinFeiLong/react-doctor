@@ -34,7 +34,7 @@ export const nextjsNoAElement = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Plain <a> for an internal link. Use next/link for client-side navigation and prefetching.",
+            "Plain <a> reloads the whole page on internal links. Use next/link for client-side navigation & prefetching.",
         });
       }
     },

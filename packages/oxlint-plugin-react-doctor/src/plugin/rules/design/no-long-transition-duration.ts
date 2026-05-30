@@ -67,7 +67,7 @@ export const noLongTransitionDuration = defineRule<Rule>({
         if (durationMs !== null && durationMs > LONG_TRANSITION_DURATION_THRESHOLD_MS) {
           context.report({
             node: property,
-            message: `A ${durationMs}ms transition feels sluggish. Keep UI transitions under ${LONG_TRANSITION_DURATION_THRESHOLD_MS}ms, and save longer ones for big page-load animations.`,
+            message: `Your users wait through a sluggish ${durationMs}ms transition, so keep UI transitions under ${LONG_TRANSITION_DURATION_THRESHOLD_MS}ms & save longer ones for big page-load animations.`,
           });
         }
       }

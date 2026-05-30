@@ -6,9 +6,9 @@ import { isJsxFragmentElement } from "../../utils/is-jsx-fragment-element.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const NEEDS_MORE_CHILDREN = "This fragment wraps just one thing, so it does nothing. Remove it.";
+const NEEDS_MORE_CHILDREN = "This fragment wraps a single child & does nothing, so remove it.";
 const CHILD_OF_HTML_ELEMENT =
-  "This fragment sits right inside an HTML tag, which can hold the children directly. Remove it.";
+  "This fragment does nothing inside an HTML tag that can hold the children directly, so remove it.";
 
 interface JsxNoUselessFragmentSettings {
   allowExpressions?: boolean;

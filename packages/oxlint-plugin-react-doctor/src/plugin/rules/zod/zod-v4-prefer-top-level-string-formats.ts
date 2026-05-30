@@ -43,7 +43,7 @@ export const zodV4PreferTopLevelStringFormats = defineRule<Rule>({
       context.report({
         node,
         message:
-          "Zod 4 deprecated format methods on `z.string()`. Use the matching top-level check like `z.email()` instead.",
+          "Zod 4 deprecated format methods on `z.string()`, so they break when you upgrade. Use the matching top-level check like `z.email()` instead.",
       });
     },
   }),

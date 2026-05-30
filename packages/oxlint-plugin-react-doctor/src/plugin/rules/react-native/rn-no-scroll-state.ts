@@ -69,7 +69,7 @@ export const rnNoScrollState = defineRule<Rule>({
             context.report({
               node: tracked,
               message:
-                "setState in this onScroll handler redraws the screen on every scroll event. Track the position with a Reanimated shared value (useAnimatedScrollHandler) or a ref.",
+                "Your users get janky scrolling when setState in this onScroll handler redraws the screen on every scroll event, so track the position with a Reanimated shared value (useAnimatedScrollHandler) or a ref.",
             });
           }
           return;
@@ -87,7 +87,7 @@ export const rnNoScrollState = defineRule<Rule>({
           context.report({
             node: setStateCallNode,
             message:
-              "setState in onScroll redraws the screen on every scroll event. Track the position with a Reanimated shared value (useAnimatedScrollHandler) or a ref.",
+              "Your users get janky scrolling when setState in onScroll redraws the screen on every scroll event, so track the position with a Reanimated shared value (useAnimatedScrollHandler) or a ref.",
           });
         }
       },

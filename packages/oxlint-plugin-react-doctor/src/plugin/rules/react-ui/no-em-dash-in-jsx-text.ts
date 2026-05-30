@@ -22,7 +22,7 @@ export const noEmDashInJsxText = defineRule<Rule>({
       context.report({
         node: jsxTextNode,
         message:
-          "Em dash (—) in JSX text reads like AI output. Replace it with a comma, colon, semicolon, or parentheses.",
+          "Em dash (—) in UI text reads like AI output to your users. Replace it with a comma, colon, semicolon, or parentheses.",
       });
     },
   }),

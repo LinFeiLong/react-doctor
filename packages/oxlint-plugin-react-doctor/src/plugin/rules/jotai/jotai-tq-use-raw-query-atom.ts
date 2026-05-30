@@ -99,7 +99,7 @@ export const jotaiTqUseRawQueryAtom = defineRule<Rule>({
         if (!queryAtomBindingNames.has(firstArgument.name)) return;
         context.report({
           node,
-          message: `\`${node.callee.name}(${firstArgument.name})\` subscribes to the whole query atom, so it re-renders on every refetch, focus, or no-op cache hit. Derive the field first: \`const dataAtom = atom((get) => get(${firstArgument.name}).data)\`.`,
+          message: `\`${node.callee.name}(${firstArgument.name})\` subscribes to the whole query atom, so it re-renders your component on every refetch, focus, or no-op cache hit. Derive the field first: \`const dataAtom = atom((get) => get(${firstArgument.name}).data)\`.`,
         });
       },
     };

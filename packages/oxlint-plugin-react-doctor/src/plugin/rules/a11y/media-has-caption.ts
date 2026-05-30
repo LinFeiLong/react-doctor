@@ -7,7 +7,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  'People who cannot hear miss this audio when there are no captions. Add a `<track kind="captions">` inside the `<audio>` or `<video>`.';
+  'Deaf & hard-of-hearing users miss this media without captions, so add a `<track kind="captions">` inside the `<audio>` or `<video>`.';
 
 const DEFAULT_AUDIO: ReadonlyArray<string> = ["audio"];
 const DEFAULT_VIDEO: ReadonlyArray<string> = ["video"];

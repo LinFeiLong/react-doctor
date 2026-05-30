@@ -78,7 +78,7 @@ export const rerenderMemoBeforeEarlyReturn = defineRule<Rule>({
           context.report({
             node: memoNode,
             message:
-              "This useMemo builds JSX before an early return, so it still runs even when the component bails out. Move the JSX into a child wrapped in memo so it's skipped on the early return",
+              "This runs even when the component bails out because the useMemo builds JSX before an early return, so move the JSX into a child wrapped in memo to skip it on the early return",
           });
           return;
         }

@@ -7,7 +7,7 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (depth: number, max: number): string =>
-  `This JSX is nested ${depth} levels deep, past the limit of ${max}. Pull some of it into its own component.`;
+  `This JSX is hard to read at ${depth} levels deep, past the limit of ${max}, so pull some of it into its own component.`;
 
 // Default depth threshold: 14. OXC's `max: 2` default is far too strict
 // for real-world React UIs — a routine shadcn Card already exceeds it

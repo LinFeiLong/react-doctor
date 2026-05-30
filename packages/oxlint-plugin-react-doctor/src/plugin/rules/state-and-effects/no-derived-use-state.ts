@@ -31,7 +31,7 @@ export const noDerivedUseState = defineRule<Rule>({
           if (isInitialOnlyPropName(initializer.name)) return;
           context.report({
             node,
-            message: `useState starts from prop "${initializer.name}". To keep it in sync with the prop, work it out while rendering instead of storing it.`,
+            message: `Your users see a stale value when prop "${initializer.name}" changes because useState copies it once, so work it out while rendering instead of storing it.`,
           });
           return;
         }
@@ -49,7 +49,7 @@ export const noDerivedUseState = defineRule<Rule>({
             }
             context.report({
               node,
-              message: `useState starts from prop "${rootIdentifierName}". To keep it in sync with the prop, work it out while rendering instead of storing it.`,
+              message: `Your users see a stale value when prop "${rootIdentifierName}" changes because useState copies it once, so work it out while rendering instead of storing it.`,
             });
           }
         }

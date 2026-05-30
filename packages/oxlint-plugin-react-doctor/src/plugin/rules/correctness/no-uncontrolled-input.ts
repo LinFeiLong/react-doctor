@@ -119,10 +119,10 @@ export const noUncontrolledInput = defineRule<Rule>({
           const stateName = valueAttribute.value.expression.name;
           const partnerHint = hasAllowedPartner
             ? "Give useState a starting value"
-            : "Give useState a starting value and add onChange (or readOnly)";
+            : "Give useState a starting value & add onChange (or readOnly)";
           context.report({
             node: child,
-            message: `<${tagName} value={${stateName}}>: "${stateName}" starts as undefined, so the field is uncontrolled at first and React warns when it switches. ${partnerHint} (e.g. \`useState("")\`).`,
+            message: `Your users hit a console warning & a field that can reset because "${stateName}" starts undefined, so <${tagName} value={${stateName}}> flips from uncontrolled to controlled. ${partnerHint} (e.g. \`useState("")\`).`,
           });
           return;
         }
@@ -130,7 +130,7 @@ export const noUncontrolledInput = defineRule<Rule>({
         if (findJsxAttribute(attributes, "defaultValue")) {
           context.report({
             node: child,
-            message: `<${tagName}> sets both \`value\` and \`defaultValue\`. React ignores \`defaultValue\` when \`value\` is set, so remove one.`,
+            message: `Your users never see the \`defaultValue\` on this <${tagName}> because React ignores it once \`value\` is set, so remove one.`,
           });
           return;
         }
@@ -138,7 +138,7 @@ export const noUncontrolledInput = defineRule<Rule>({
         if (!hasAllowedPartner) {
           context.report({
             node: child,
-            message: `<${tagName} value={...}> has no \`onChange\` or \`readOnly\`, so the field becomes read-only and users can't type. Add \`onChange\`, or \`readOnly\` if that's intended.`,
+            message: `Your users can't type in this <${tagName} value={...}> because it has no \`onChange\` or \`readOnly\`, so add \`onChange\` (or \`readOnly\` if that's intended).`,
           });
         }
       });

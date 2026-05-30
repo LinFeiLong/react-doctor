@@ -7,7 +7,7 @@ import { objectHasAccessibleChild } from "../../utils/object-has-accessible-chil
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "This link has no text, so screen readers cannot announce it. Add visible text, `aria-label`, or `aria-labelledby`.";
+  "Blind users can't follow this link because screen readers announce nothing, so add visible text, `aria-label`, or `aria-labelledby`.";
 
 // Port of `oxc_linter::rules::jsx_a11y::anchor_has_content`.
 export const anchorHasContent = defineRule<Rule>({

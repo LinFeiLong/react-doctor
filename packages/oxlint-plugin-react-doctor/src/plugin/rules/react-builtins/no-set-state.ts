@@ -4,7 +4,8 @@ import { getParentComponent } from "../../utils/get-parent-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE = "Don't use `this.setState` here. Lift state up or use an external store instead.";
+const MESSAGE =
+  "Your project discourages `this.setState` here, so lift state up or use an external store instead.";
 
 // Port of `oxc_linter::rules::react::no_set_state`. Style rule for
 // architectures (Flux-like) that forbid local component state — flags

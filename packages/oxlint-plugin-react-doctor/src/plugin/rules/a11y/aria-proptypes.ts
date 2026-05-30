@@ -122,7 +122,7 @@ const buildExpectedDescription = (propType: AriaPropType): string => {
 };
 
 const buildMessage = (propName: string, propType: AriaPropType): string =>
-  `\`${propName}\` has a value assistive tech cannot read. It must be ${buildExpectedDescription(propType)}.`;
+  `Screen reader users get no help from \`${propName}\` because its value isn't readable, so set it to ${buildExpectedDescription(propType)}.`;
 
 // Returns true when the bare attribute (no value) is allowed for this
 // type (e.g. `<div aria-hidden />`).

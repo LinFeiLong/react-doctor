@@ -17,7 +17,7 @@ import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "This element handles clicks but has no role, so screen readers cannot tell it is interactive. Add a `role`, or use a button or link.";
+  "Screen reader users can't tell this click handler is interactive because it has no `role`, so add a `role` or use a button or link.";
 
 const DEFAULT_HANDLERS: ReadonlyArray<string> = [
   "onClick",

@@ -29,7 +29,7 @@ export const preferUseReducer = defineRule<Rule>({
       if (useStateCount >= RELATED_USE_STATE_THRESHOLD) {
         context.report({
           node: body,
-          message: `Component "${componentName}" has ${useStateCount} useState calls. If they change together, group them into one useReducer.`,
+          message: `${useStateCount} useState calls in "${componentName}" can each trigger a separate render, so if they change together, group them into one useReducer.`,
         });
       }
     };
