@@ -163,7 +163,7 @@ const defaultSelect: SetupPromptSelect = async (message) => {
       choices: [
         {
           title: "Yes (recommended)",
-          description: "Installs the skill so your AI agent fixes these for you",
+          description: "Installs the skill so your agent fixes these for you",
           value: SETUP_PROMPT_CHOICE_YES,
         },
         {
@@ -208,7 +208,7 @@ export const promptInstallSetup = async (options: PromptInstallSetupOptions): Pr
     await (options.wait ?? defaultWait)(SETUP_PROMPT_DELAY_MS);
 
     const setupReactDoctorChoice = await (options.select ?? defaultSelect)(
-      "Fix these issues with your AI agent?",
+      "Fix these issues with your agent?",
     );
     if (setupReactDoctorChoice !== SETUP_PROMPT_CHOICE_YES) {
       if (setupReactDoctorChoice === SETUP_PROMPT_CHOICE_NEVER) {
