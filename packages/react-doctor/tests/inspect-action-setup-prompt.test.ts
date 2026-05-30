@@ -91,10 +91,6 @@ vi.mock("../src/cli/utils/render-multi-project-summary.js", async () => {
   };
 });
 
-vi.mock("../src/cli/utils/copy-issues-to-clipboard.js", () => ({
-  promptCopyIssues: vi.fn(async () => {}),
-}));
-
 vi.mock("../src/cli/utils/prompt-install-setup.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/cli/utils/prompt-install-setup.js")>();
   return {
