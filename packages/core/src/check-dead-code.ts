@@ -3,7 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Diagnostic, ReactDoctorConfig } from "./types/index.js";
 import { collectIgnorePatterns } from "./collect-ignore-patterns.js";
-import { DEAD_CODE_WORKER_TIMEOUT_MS, MILLISECONDS_PER_SECOND } from "./constants.js";
+import {
+  DEAD_CODE_WORKER_MAX_OLD_SPACE_MB,
+  DEAD_CODE_WORKER_TIMEOUT_MS,
+  MILLISECONDS_PER_SECOND,
+} from "./constants.js";
 import { readIgnoreFile } from "./read-ignore-file.js";
 import { toRelativePath } from "./utils/to-relative-path.js";
 
@@ -326,10 +330,14 @@ const createDeadCodeWorker: DeadCodeWorkerFactory = (input) => {
   // on success or timeout never takes the parent down with it. Input
   // goes in as JSON on stdin; the normalized result comes back as JSON
   // on stdout.
-  const child = spawn(process.execPath, ["-e", DEAD_CODE_WORKER_SCRIPT], {
-    stdio: ["pipe", "pipe", "pipe"],
-    windowsHide: true,
-  });
+  const child = spawn(
+    process.execPath,
+    [`--max-old-space-size=${DEAD_CODE_WORKER_MAX_OLD_SPACE_MB}`, "-e", DEAD_CODE_WORKER_SCRIPT],
+    {
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true,
+    },
+  );
 
   const stdoutChunks: Buffer[] = [];
   const stderrChunks: Buffer[] = [];
