@@ -36,6 +36,12 @@ export const EARLIEST_GATED_PREACT_MAJOR = 10;
 
 export const ERROR_PREVIEW_LENGTH_CHARS = 200;
 
+// Minimum length for the generic high-entropy token sweep in
+// `redactSensitiveText`. Real API keys / tokens run 32+ chars; the
+// known-format detectors catch shorter prefixed credentials, so this
+// floor keeps the catch-all from masking ordinary long identifiers.
+export const GENERIC_SECRET_MIN_LENGTH_CHARS = 32;
+
 export const PERFECT_SCORE = 100;
 
 export const SCORE_GOOD_THRESHOLD = 75;

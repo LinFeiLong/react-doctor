@@ -9,6 +9,7 @@ import { ERROR_PREVIEW_LENGTH_CHARS, SOURCE_FILE_PATTERN } from "../../constants
 import { OxlintOutputUnparseable, ReactDoctorError } from "../../errors.js";
 import { buildNoSecretsRecommendation } from "../../utils/build-no-secrets-recommendation.js";
 import { appendReanimatedSharedValueHint } from "../../utils/append-reanimated-shared-value-hint.js";
+import { redactSensitiveText } from "../../utils/redact-sensitive-text.js";
 import { shouldSuppressLocalUseHookDiagnostic } from "./should-suppress-local-use-hook-diagnostic.js";
 
 const FILEPATH_WITH_LOCATION_PATTERN = /\S+\.\w+:\d+:\d+[\s\S]*$/;
@@ -67,6 +68,24 @@ export const getRuleCategory = (ruleName: string): string | undefined =>
   reactDoctorPlugin.rules[ruleName]?.category;
 
 const cleanDiagnosticMessage = (
+  message: string,
+  help: string,
+  plugin: string,
+  rule: string,
+  project: ProjectInfo,
+): CleanedDiagnostic => {
+  const cleaned = resolveCleanedDiagnostic(message, help, plugin, rule, project);
+  // Final guard: a rule may echo a source fragment containing a secret
+  // or PII into its message/help. Scrub it here — the single point every
+  // diagnostic flows through — so it reaches neither the terminal, the
+  // JSON report, nor the score API.
+  return {
+    message: redactSensitiveText(cleaned.message),
+    help: redactSensitiveText(cleaned.help),
+  };
+};
+
+const resolveCleanedDiagnostic = (
   message: string,
   help: string,
   plugin: string,
