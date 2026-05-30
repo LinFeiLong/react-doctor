@@ -256,10 +256,19 @@ describe("in-process render across terminal widths and render modes", () => {
       scenarios.find((scenario) => scenario.name === "default-errors-great")?.bytes ?? "";
   });
 
-  it("renders a top errors block with an inline code frame (default mode)", () => {
-    expect(defaultScenarioBytes).toContain("errors you should fix");
+  it("renders a top errors block with an inline code frame (default mode)", async () => {
+    // Assert against the emulator-rendered cell text, not the raw bytes:
+    // `@babel/code-frame` syntax-highlights the frame whenever its
+    // `supports-color` probe detects a color-capable env (it does in
+    // GitHub Actions via `GITHUB_ACTIONS`, but not under a bare local
+    // `CI=true`), which interleaves ANSI codes inside tokens like
+    // `setCount(0)` and breaks a raw substring match. The terminal
+    // emulator consumes those escapes and exposes the plain text the user
+    // actually sees.
+    const rendered = await renderInTerminal(defaultScenarioBytes, { cols: 120 });
+    expect(rendered.text).toContain("errors you should fix");
     // The code frame caret line is the load-bearing visual element.
-    expect(defaultScenarioBytes).toContain("setCount(0)");
+    expect(rendered.text).toContain("setCount(0)");
   });
 
   it("never leaks the project name into the header in any mode or width", async () => {
