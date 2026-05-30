@@ -13,7 +13,7 @@ import {
 import type { Diagnostic } from "@react-doctor/core";
 import { buildCodeFrame } from "./build-code-frame.js";
 import { indentMultilineText } from "./indent-multiline-text.js";
-import { wrapText } from "./wrap-text.js";
+import { wrapTextToWidth } from "./wrap-indented-text.js";
 
 const POINTER = isUnicodeSupported() ? "›" : ">";
 
@@ -209,7 +209,13 @@ const buildTopErrorBlock = (
 
   const lines: string[] = [`  ${highlighter.error("✗")} ${headline}${trailingBadge}`];
 
-  for (const explanationLine of wrapText(representative.message, OUTPUT_MEASURE_WIDTH_CHARS)) {
+  for (const explanationLine of wrapTextToWidth(
+    representative.message,
+    OUTPUT_MEASURE_WIDTH_CHARS,
+    {
+      breakLongWords: false,
+    },
+  )) {
     lines.push(highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${explanationLine}`));
   }
 

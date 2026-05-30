@@ -269,15 +269,16 @@ export const runInspect = <HooksR = never>(
     const lintIncludePaths =
       jsxIncludePaths ?? resolveLintIncludePaths(scanDirectory, resolvedConfig.config);
 
-    // Absolute paths of the exact file set the linter scans (an explicit
-    // include list, or the full source-file listing when none). Captured
-    // so the multi-project summary can de-duplicate across projects whose
-    // trees overlap (nested workspace packages).
-    const scannedRelativePaths =
-      lintIncludePaths ?? (yield* filesService.listSourceFiles(scanDirectory));
-    const scannedFilePaths = scannedRelativePaths.map((relativePath) =>
-      path.resolve(scanDirectory, relativePath),
-    );
+    // Absolute paths of the exact file set the linter scans, captured ONLY
+    // for the multi-project summary (the sole consumer), which signals via
+    // `suppressScanSummary`. Gating avoids a redundant full-tree walk on
+    // every single-project / `diagnose()` run — for a full scan the linter
+    // already enumerates the same files, so we'd otherwise list twice.
+    const scannedFilePaths = input.suppressScanSummary
+      ? (lintIncludePaths ?? (yield* filesService.listSourceFiles(scanDirectory))).map(
+          (relativePath) => path.resolve(scanDirectory, relativePath),
+        )
+      : [];
 
     const beforeLint = hooks.beforeLint ?? NO_HOOKS.beforeLint;
     const afterLint = hooks.afterLint ?? NO_HOOKS.afterLint;

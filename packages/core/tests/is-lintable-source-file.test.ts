@@ -14,18 +14,23 @@ describe("isLintableSourceFile", () => {
     }
   });
 
-  it("rejects non-source files", () => {
-    for (const filePath of ["styles.css", "README.md", "data.json", "logo.svg"]) {
+  it("rejects non-source files (including .cjs/.mjs, which are never linted)", () => {
+    for (const filePath of [
+      "styles.css",
+      "README.md",
+      "data.json",
+      "logo.svg",
+      "scripts/build.cjs",
+      "scripts/build.mjs",
+    ]) {
       expect(isLintableSourceFile(filePath), filePath).toBe(false);
     }
   });
 
-  it("rejects generated IIFE / UMD-global bundles (the default ignore)", () => {
+  it("rejects generated IIFE / UMD-global `.js` bundles (the default ignore)", () => {
     for (const filePath of [
       "public/budge.iife.js",
       "public/sdk.global.js",
-      "widget.iife.cjs",
-      "widget.global.mjs",
       "nested/dir/embed.IIFE.js",
     ]) {
       expect(isLintableSourceFile(filePath), filePath).toBe(false);

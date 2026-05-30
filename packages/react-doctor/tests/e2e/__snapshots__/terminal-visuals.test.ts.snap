@@ -6,8 +6,9 @@ exports[`in-process render across terminal widths and render modes > matches the
   ✗ react-doctor/no-adjust-state-on-prop-change ×2
     State adjusted in a useEffect when a prop changes — forces
     an extra render with a stale UI between the two commits.
-    Adjust the state during render with a \`prev\`-prop comparison
-    instead, or refactor to remove the duplicated state.
+    Adjust the state during render with a \`prev\`-prop
+    comparison instead, or refactor to remove the duplicated
+    state.
 
     src/text-swap.tsx:5
       4 |   useEffect(() => {
@@ -16,8 +17,8 @@ exports[`in-process render across terminal widths and render modes > matches the
       6 |   }, [value]);
 
   ✗ react-doctor/no-nested-component-definition
-    Component defined inside another component remounts on every
-    render, throwing away its state and DOM.
+    Component defined inside another component remounts on
+    every render, throwing away its state and DOM.
 
     src/text-swap.tsx:2
       1 | import { useState, useEffect } from 'react';
