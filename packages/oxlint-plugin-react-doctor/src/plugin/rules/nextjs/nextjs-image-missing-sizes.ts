@@ -7,6 +7,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const nextjsImageMissingSizes = defineRule<Rule>({
   id: "nextjs-image-missing-sizes",
+  title: "Image fill missing sizes",
   tags: ["test-noise"],
   requires: ["nextjs"],
   severity: "warn",
@@ -22,7 +23,7 @@ export const nextjsImageMissingSizes = defineRule<Rule>({
       context.report({
         node,
         message:
-          "next/image with fill but no sizes — the browser downloads the largest image. Add a sizes attribute for responsive behavior",
+          "next/image uses fill but has no sizes, so the browser downloads the largest image. Add a sizes attribute.",
       });
     },
   }),

@@ -75,9 +75,10 @@ const hasJsxSpreadAttribute = (attributes: EsTreeNode[]): boolean =>
 // analysis. False-negative > false-positive on a heavily used pattern.
 export const noUncontrolledInput = defineRule<Rule>({
   id: "no-uncontrolled-input",
+  title: "Uncontrolled input value",
   severity: "warn",
   recommendation:
-    'Pass an explicit initial value to `useState` (e.g. `useState("")` instead of `useState()`), add `onChange` (or `readOnly` to opt out) when you supply `value`, and drop `defaultValue` on controlled inputs — React ignores it',
+    'Give `useState` a starting value (e.g. `useState("")` instead of `useState()`), add `onChange` (or `readOnly`) whenever you set `value`, and drop `defaultValue` on controlled inputs since React ignores it.',
   create: (context: RuleContext) => {
     const checkComponent = (componentBody: EsTreeNode | null | undefined): void => {
       if (!componentBody) return;
@@ -117,11 +118,11 @@ export const noUncontrolledInput = defineRule<Rule>({
         ) {
           const stateName = valueAttribute.value.expression.name;
           const partnerHint = hasAllowedPartner
-            ? "Initialize useState with an explicit value"
-            : "Initialize useState with an explicit value AND add onChange (or readOnly)";
+            ? "Give useState a starting value"
+            : "Give useState a starting value and add onChange (or readOnly)";
           context.report({
             node: child,
-            message: `<${tagName} value={${stateName}}> — "${stateName}" is initialized as undefined (uncontrolled), then becomes controlled on first set; React warns about this flip. ${partnerHint} (e.g. \`useState("")\`)`,
+            message: `<${tagName} value={${stateName}}>: "${stateName}" starts as undefined, so the field is uncontrolled at first and React warns when it switches. ${partnerHint} (e.g. \`useState("")\`).`,
           });
           return;
         }
@@ -129,7 +130,7 @@ export const noUncontrolledInput = defineRule<Rule>({
         if (findJsxAttribute(attributes, "defaultValue")) {
           context.report({
             node: child,
-            message: `<${tagName}> sets both \`value\` and \`defaultValue\` — defaultValue is ignored on a controlled input; remove one`,
+            message: `<${tagName}> sets both \`value\` and \`defaultValue\`. React ignores \`defaultValue\` when \`value\` is set, so remove one.`,
           });
           return;
         }
@@ -137,7 +138,7 @@ export const noUncontrolledInput = defineRule<Rule>({
         if (!hasAllowedPartner) {
           context.report({
             node: child,
-            message: `<${tagName} value={...}> with no \`onChange\` or \`readOnly\` — React renders this as a silently read-only field`,
+            message: `<${tagName} value={...}> has no \`onChange\` or \`readOnly\`, so the field becomes read-only and users can't type. Add \`onChange\`, or \`readOnly\` if that's intended.`,
           });
         }
       });

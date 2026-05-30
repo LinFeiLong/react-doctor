@@ -74,6 +74,7 @@ const baseInput: InspectInput = {
   adoptExistingLintConfig: true,
   ignoredTags: new Set<string>(),
   runDeadCode: true,
+  warnings: true,
   isCi: false,
 };
 

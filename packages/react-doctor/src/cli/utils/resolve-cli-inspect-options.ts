@@ -22,6 +22,7 @@ export const resolveCliInspectOptions = (
   deadCode: flags.deadCode,
   verbose: flags.verbose,
   respectInlineDisables: flags.respectInlineDisables,
+  warnings: flags.warnings,
   scoreOnly: flags.score === true,
   noScore: flags.score === false || (userConfig?.noScore ?? false),
   isCi: isCiEnvironment(),

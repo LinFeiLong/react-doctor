@@ -21,7 +21,7 @@ const DEPRECATED_ZOD_ERROR_MEMBERS = new Set([
   "format",
 ]);
 const ZOD_ERROR_API_MESSAGE =
-  "Zod 4 removes or deprecates this ZodError API; use `error.issues` or the new top-level error formatting helpers.";
+  "Zod 4 dropped this ZodError method. Use `error.issues`, or the new top-level error formatting helpers.";
 
 const isZodErrorReference = (node: EsTreeNode): boolean => {
   const inner = stripParenExpression(node);
@@ -65,11 +65,12 @@ const isReceiverOfDeprecatedZodErrorMember = (
 
 export const zodV4NoDeprecatedErrorApis = defineRule<Rule>({
   id: "zod-v4-no-deprecated-error-apis",
+  title: "Deprecated Zod error API",
   requires: ["zod:4"],
   tags: ["migration-hint"],
   severity: "warn",
   recommendation:
-    "Replace deprecated ZodError helpers with the Zod 4 functions: `z.treeifyError()`, `z.flattenError()`, `z.prettifyError()`, or direct `error.issues` access.",
+    "Use the Zod 4 helpers instead: `z.treeifyError()`, `z.flattenError()`, `z.prettifyError()`, or read `error.issues` directly.",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (isZodErrorCreateCall(node) && isReceiverOfDeprecatedZodErrorMember(node)) return;

@@ -8,10 +8,11 @@ import type { RuleContext } from "../../utils/rule-context.js";
 
 export const jsFlatmapFilter = defineRule<Rule>({
   id: "js-flatmap-filter",
+  title: ".map().filter(Boolean) loops twice",
   tags: ["test-noise"],
   severity: "warn",
   recommendation:
-    "Use `.flatMap(item => condition ? [value] : [])` — transforms and filters in a single pass instead of creating an intermediate array",
+    "Use `.flatMap(item => condition ? [value] : [])` to change and drop items in one pass, instead of building a throwaway array in between",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (
@@ -68,7 +69,7 @@ export const jsFlatmapFilter = defineRule<Rule>({
       context.report({
         node,
         message:
-          ".map().filter(Boolean) iterates twice — use .flatMap() to transform and filter in a single pass",
+          ".map().filter(Boolean) loops over the list twice. Use .flatMap() to change and drop items in one pass",
       });
     },
   }),

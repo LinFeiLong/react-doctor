@@ -12,7 +12,7 @@ import {
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Array index in `key` doesn't uniquely identify the element — re-renders may use stale state.";
+  "Using the array index as a `key` can mix up items when the list changes, showing the wrong state. Use a stable id from your data.";
 
 const SECOND_INDEX_METHODS: ReadonlySet<string> = new Set([
   "every",
@@ -360,8 +360,9 @@ const isFragmentJsxName = (jsxOpeningName: EsTreeNode): boolean => {
 // Port of `oxc_linter::rules::react::no_array_index_key`.
 export const noArrayIndexKey = defineRule<Rule>({
   id: "no-array-index-key",
+  title: "Array index used as a key",
   severity: "warn",
-  recommendation: "Use a stable, data-derived `key` instead of the array index.",
+  recommendation: "Use a stable `key` from your data instead of the array index.",
   category: "Performance",
   create: (context) => ({
     JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {

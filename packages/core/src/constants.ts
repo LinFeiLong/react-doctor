@@ -3,6 +3,7 @@
 // (the project-discovery subtree). Re-exported here so core
 // consumers don't have to know which subtree owns each constant.
 export {
+  GENERATED_BUNDLE_FILE_PATTERN,
   GIT_LS_FILES_MAX_BUFFER_BYTES,
   IGNORED_DIRECTORIES,
   SOURCE_FILE_PATTERN,
@@ -173,7 +174,21 @@ export const RECOMMENDED_PNPM_MINIMUM_RELEASE_AGE_MINUTES = 10_080;
 // consistent column even when one rule has a much longer identifier.
 export const RULE_NAME_COLUMN_WIDTH_CHARS = 36;
 
+// How many of the highest-priority error rules to surface in the
+// "Top N errors you should fix" header above the category breakdown.
+export const TOP_ERRORS_DISPLAY_COUNT = 3;
+
+// Source-context window rendered around each top-error site in the
+// inline code frame (lines above / below the offending line).
+export const CODE_FRAME_LINES_ABOVE = 1;
+export const CODE_FRAME_LINES_BELOW = 1;
+
 export const OUTPUT_DETAIL_WRAP_WIDTH_CHARS = 88;
+
+// Typographic "measure" — the line length (in characters) we wrap
+// prose explanations to for comfortable reading. Kept short (well under
+// the terminal width) so multi-line blurbs stay easy to scan.
+export const OUTPUT_MEASURE_WIDTH_CHARS = 60;
 
 export const SPINNER_INDENT_CHARS = 0;
 

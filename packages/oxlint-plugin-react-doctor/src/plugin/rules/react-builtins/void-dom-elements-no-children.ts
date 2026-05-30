@@ -23,8 +23,7 @@ const VOID_DOM_ELEMENTS = new Set([
   "wbr",
 ]);
 
-const buildMessage = (tag: string): string =>
-  `Void DOM element \`<${tag}/>\` cannot receive children.`;
+const buildMessage = (tag: string): string => `\`<${tag}>\` can't have children. Remove them.`;
 
 const findChildrenLikePropName = (
   attributes: ReadonlyArray<EsTreeNodeOfType<"JSXOpeningElement">["attributes"][number]>,
@@ -44,9 +43,9 @@ const findChildrenLikePropName = (
 // passing dangerouslySetInnerHTML, and the `React.createElement` analogues.
 export const voidDomElementsNoChildren = defineRule<Rule>({
   id: "void-dom-elements-no-children",
+  title: "Children on a void element",
   severity: "warn",
-  recommendation:
-    "Remove children from the void element, or use a non-void element if children are needed.",
+  recommendation: "Remove the children, or use a tag that can hold children.",
   create: (context) => ({
     JSXElement(node: EsTreeNodeOfType<"JSXElement">) {
       const openingElement = node.openingElement;

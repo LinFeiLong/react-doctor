@@ -73,10 +73,11 @@ const isInsideLoopContext = (node: EsTreeNode): boolean => {
 
 export const jsBatchDomCss = defineRule<Rule>({
   id: "js-batch-dom-css",
+  title: "Repeated inline style writes",
   tags: ["test-noise"],
   severity: "warn",
   recommendation:
-    "Batch DOM/CSS reads and writes — interleaving them inside a loop causes layout thrashing. Read first, then write",
+    "Do all your reads first, then all your writes. Mixing them inside a loop makes the browser recalculate the layout again and again, which is slow",
   create: (context: RuleContext) => {
     const isStyleAssignment = (node: EsTreeNode): boolean =>
       isNodeOfType(node, "ExpressionStatement") &&
@@ -98,7 +99,7 @@ export const jsBatchDomCss = defineRule<Rule>({
             context.report({
               node: statements[statementIndex],
               message:
-                "Multiple sequential element.style assignments — batch with cssText or classList for fewer reflows",
+                "Setting several element.style properties in a row. Set them all at once with cssText or a CSS class so the browser only redraws once",
             });
           }
         }

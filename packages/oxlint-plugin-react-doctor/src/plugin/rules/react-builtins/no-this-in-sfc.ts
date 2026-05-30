@@ -7,7 +7,7 @@ import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Stateless functional components shouldn't use `this` — read props/context from function parameters.";
+  "Function components have no `this`, so this value is undefined. Read props from the function's arguments instead.";
 
 // Returns true if the enclosing scope is a class method or a custom
 // class-factory call (e.g. `React.createClass({…})` when the project's
@@ -125,8 +125,9 @@ const looksLikeFunctionComponent = (
 // ancestor walk.
 export const noThisInSfc = defineRule<Rule>({
   id: "no-this-in-sfc",
+  title: "this used in function component",
   severity: "warn",
-  recommendation: "Use the function's `props` parameter instead of `this.props`.",
+  recommendation: "Read from the `props` argument instead of `this.props`.",
   create: (context) => {
     // Read settings.react.createClass — a string OR array OR a single
     // bare name. Always include the standard createReactClass shape

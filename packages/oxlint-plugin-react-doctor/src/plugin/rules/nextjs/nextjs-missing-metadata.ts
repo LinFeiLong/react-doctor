@@ -8,6 +8,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const nextjsMissingMetadata = defineRule<Rule>({
   id: "nextjs-missing-metadata",
+  title: "Page missing metadata",
   tags: ["test-noise"],
   requires: ["nextjs"],
   severity: "warn",
@@ -38,7 +39,7 @@ export const nextjsMissingMetadata = defineRule<Rule>({
       if (!hasMetadataExport) {
         context.report({
           node: programNode,
-          message: "Page without metadata or generateMetadata export — hurts SEO",
+          message: "This page exports no metadata or generateMetadata. Add one to help SEO.",
         });
       }
     },

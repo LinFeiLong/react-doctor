@@ -182,7 +182,7 @@ export const App = ({ name }: { name: string }) => {
 };
 `,
     );
-    const defaultRun = await captureScanOutput(projectDir, { noScore: false });
+    const defaultRun = await captureScanOutput(projectDir, { noScore: false, warnings: true });
     expect(defaultRun.stdout).toContain("Share:");
 
     const projectDir2 = setupMinimalReactProject("issue-92-disabled");
@@ -227,6 +227,7 @@ export const Cart = () => {
       captureScanOutput(projectDir, {
         lint: true,
         noScore: true,
+        warnings: true,
       }),
     );
     const normalizedStdout = stripAnsi(localRun.stdout);
@@ -260,6 +261,7 @@ export const Cart = () => {
       captureScanOutput(projectDir, {
         lint: true,
         noScore: true,
+        warnings: true,
       }),
     );
     const normalizedStdout = stripAnsi(automatedRun.stdout);
@@ -311,6 +313,7 @@ export const Cart = () => {
       captureScanOutput(projectDir, {
         lint: true,
         noScore: true,
+        warnings: true,
         outputSurface: "prComment",
       }),
     );

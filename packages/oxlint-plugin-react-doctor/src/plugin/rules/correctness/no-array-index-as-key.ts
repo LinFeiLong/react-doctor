@@ -279,9 +279,10 @@ const isCompositeKeyWithIteratorIdentity = (
 
 export const noArrayIndexAsKey = defineRule<Rule>({
   id: "no-array-index-as-key",
+  title: "Array index used as a key",
   severity: "warn",
   recommendation:
-    "Use a stable unique identifier: `key={item.id}` or `key={item.slug}` — index keys break on reorder/filter",
+    "Use a stable id from the item, like `key={item.id}` or `key={item.slug}`. Index keys break when the list reorders or filters.",
   create: (context: RuleContext) => ({
     JSXAttribute(node: EsTreeNodeOfType<"JSXAttribute">) {
       if (!isNodeOfType(node.name, "JSXIdentifier") || node.name.name !== "key") return;
@@ -326,7 +327,7 @@ export const noArrayIndexAsKey = defineRule<Rule>({
 
       context.report({
         node,
-        message: `Array index "${indexName}" used as key — causes bugs when list is reordered or filtered`,
+        message: `Using the array index "${indexName}" as a key causes bugs when the list is reordered or filtered. Use a stable id from the item, like \`key={item.id}\`.`,
       });
     },
   }),

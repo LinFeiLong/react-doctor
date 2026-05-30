@@ -8,6 +8,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const nextjsNoCssLink = defineRule<Rule>({
   id: "nextjs-no-css-link",
+  title: "Stylesheet loaded via link",
   tags: ["test-noise"],
   requires: ["nextjs"],
   severity: "warn",
@@ -34,7 +35,8 @@ export const nextjsNoCssLink = defineRule<Rule>({
 
       context.report({
         node,
-        message: '<link rel="stylesheet"> tag — import CSS directly for bundling and optimization',
+        message:
+          '<link rel="stylesheet"> tag. Import the CSS directly so it gets bundled and optimized.',
       });
     },
   }),

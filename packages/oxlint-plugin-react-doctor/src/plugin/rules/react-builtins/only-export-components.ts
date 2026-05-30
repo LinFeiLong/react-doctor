@@ -14,16 +14,17 @@ import {
 } from "./only-export-components-tables.js";
 
 const NAMED_EXPORT_MESSAGE =
-  "Fast refresh only works when a file only exports components. Move non-component exports to a separate file.";
+  "Fast Refresh only works when a file exports only components. Move other exports to their own file.";
 const ANONYMOUS_MESSAGE =
-  "Fast refresh can't handle anonymous components — name your default export.";
-const EXPORT_ALL_MESSAGE = "`export *` makes it impossible to verify only components are exported.";
+  "Fast Refresh can't track an unnamed component. Give your default export a name.";
+const EXPORT_ALL_MESSAGE =
+  "`export *` hides what's exported, so Fast Refresh can't check it's only components.";
 const REACT_CONTEXT_MESSAGE =
-  "Fast refresh only works when a file only exports components. Move React contexts to a separate file.";
+  "Fast Refresh only works when a file exports only components. Move the context to its own file.";
 const LOCAL_COMPONENT_MESSAGE =
-  "Fast refresh requires components to be exported. Move local component(s) to a separate file.";
+  "Fast Refresh needs components to be exported. Export this one, or move it to its own file.";
 const NO_EXPORT_MESSAGE =
-  "Fast refresh requires the file to export components. Move local component(s) to a separate file.";
+  "Fast Refresh needs the file to export its components. Export this one, or move it to its own file.";
 
 interface OnlyExportComponentsSettings {
   allowExportNames?: ReadonlyArray<string>;
@@ -372,6 +373,7 @@ const isFileNameAllowed = (filename: string | undefined, checkJS: boolean): bool
 // stable constants alongside components don't break Fast Refresh.
 export const onlyExportComponents = defineRule<Rule>({
   id: "only-export-components",
+  title: "Non-component export in component file",
   severity: "warn",
   recommendation: "Move non-component exports out of files that export components.",
   category: "Architecture",

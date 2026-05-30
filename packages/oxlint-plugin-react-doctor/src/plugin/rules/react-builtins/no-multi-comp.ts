@@ -14,7 +14,7 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import { REACT_HOC_NAMES } from "../../constants/react.js";
 
 const buildMessage = (componentName: string): string =>
-  `Declare only one React component per file. Found extra component: ${componentName}.`;
+  `This file has more than one component. Move \`${componentName}\` to its own file.`;
 
 interface NoMultiCompSettings {
   ignoreStateless?: boolean;
@@ -569,6 +569,7 @@ const walkComponentSearch = (node: EsTreeNode, context: VisitContext): void => {
 // component aren't double-counted.
 export const noMultiComp = defineRule<Rule>({
   id: "no-multi-comp",
+  title: "Multiple components in one file",
   severity: "warn",
   recommendation: "Move secondary components into their own files.",
   category: "Architecture",

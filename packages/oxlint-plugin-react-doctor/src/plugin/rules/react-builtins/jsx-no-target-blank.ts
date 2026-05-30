@@ -5,11 +5,11 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const NOREFERRER_MESSAGE =
-  '`target="_blank"` without `rel="noreferrer"` is a security risk — add `rel="noreferrer"`.';
+  '`target="_blank"` lets the new page access yours, which is a security risk. Add `rel="noreferrer"`.';
 const NOOPENER_MESSAGE =
-  '`target="_blank"` without `rel="noreferrer"` / `rel="noopener"` is a security risk — add one.';
+  '`target="_blank"` lets the new page access yours, which is a security risk. Add `rel="noreferrer"` or `rel="noopener"`.';
 const SPREAD_MESSAGE =
-  'All spread attributes are treated as if they contain unsafe `target="_blank"` — add `rel="noreferrer"` after the spread.';
+  'A spread here might include `target="_blank"`, which is a security risk. Add `rel="noreferrer"` after the spread.';
 
 interface JsxNoTargetBlankSettings {
   enforceDynamicLinks?: "always" | "never";
@@ -248,6 +248,7 @@ const getOpeningElementName = (node: EsTreeNodeOfType<"JSXOpeningElement">): str
 // Port of `oxc_linter::rules::react::jsx_no_target_blank`.
 export const jsxNoTargetBlank = defineRule<Rule>({
   id: "jsx-no-target-blank",
+  title: "Unsafe target=_blank link",
   severity: "warn",
   recommendation: 'Add `rel="noreferrer"` (or `"noopener"`) when using `target="_blank"`.',
   category: "Security",

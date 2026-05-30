@@ -4,7 +4,7 @@ import { findVariableInitializer } from "../../utils/find-variable-initializer.j
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "`React` must be in scope when using JSX (the classic JSX transform expands `<a/>` to `React.createElement('a')`).";
+  "JSX needs `React` in scope here, because the old transform turns tags into `React.createElement` calls. Import `React` at the top.";
 
 // Port of `oxc_linter::rules::react::react_in_jsx_scope`. Only relevant
 // for the legacy classic JSX runtime; tsconfig `jsx: "react-jsx"` (or
@@ -18,6 +18,7 @@ const MESSAGE =
 // because module-scope bindings are visible from every nested site.
 export const reactInJsxScope = defineRule<Rule>({
   id: "react-in-jsx-scope",
+  title: "React not in scope for JSX",
   severity: "warn",
   // Default off because the rule is obsolete for any project on React 17+
   // with the automatic JSX runtime (`jsx: "react-jsx"` in tsconfig, or

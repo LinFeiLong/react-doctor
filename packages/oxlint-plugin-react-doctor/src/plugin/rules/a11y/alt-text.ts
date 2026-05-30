@@ -10,19 +10,22 @@ import { objectHasAccessibleChild } from "../../utils/object-has-accessible-chil
 import type { Rule } from "../../utils/rule.js";
 import type { RuleVisitors } from "../../utils/rule-visitors.js";
 
-const MISSING_ALT_PROP = 'Missing `alt` attribute. Use `alt=""` for decorative images.';
+const MISSING_ALT_PROP =
+  'This image has no `alt` text, so screen readers cannot describe it. Add `alt="..."`, or `alt=""` if it is decorative.';
 const MISSING_ALT_VALUE =
-  'Invalid `alt` value. Provide a meaningful description (or `alt=""` for presentational images).';
-const ARIA_LABEL_VALUE = "Missing value for `aria-label` attribute.";
-const ARIA_LABELLEDBY_VALUE = "Missing value for `aria-labelledby` attribute.";
+  'This image has an empty or invalid `alt`, so screen readers cannot describe it. Add a short description, or `alt=""` if it is decorative.';
+const ARIA_LABEL_VALUE =
+  "The `aria-label` has no value, so screen readers have nothing to read. Give it a short description.";
+const ARIA_LABELLEDBY_VALUE =
+  "The `aria-labelledby` has no value, so screen readers have nothing to read. Point it at the id of the text that labels this.";
 const PREFER_ALT =
-  'ARIA used where native HTML could suffice — prefer `alt=""` over `role="presentation"`.';
+  'You do not need `role="presentation"` to hide an image from screen readers. Use `alt=""` instead.';
 const MESSAGE_OBJECT =
-  "`<object>` must have an alternative text via `alt`, `aria-label`, `aria-labelledby`, `title`, or fallback inner content.";
+  "This `<object>` has no text alternative, so screen readers cannot describe it. Add `alt`, `aria-label`, `aria-labelledby`, `title`, or inner fallback text.";
 const MESSAGE_AREA =
-  "`<area>` must have an `alt`, `aria-label`, or `aria-labelledby` describing the image map region.";
+  "This `<area>` has no text, so screen readers cannot describe this part of the image map. Add `alt`, `aria-label`, or `aria-labelledby`.";
 const MESSAGE_INPUT_IMAGE =
-  '`<input type="image">` must have an `alt`, `aria-label`, or `aria-labelledby` for screen readers.';
+  "This image button has no text, so screen readers cannot describe it. Add `alt`, `aria-label`, or `aria-labelledby`.";
 
 interface AltTextSettings {
   elements?: ReadonlyArray<string>;
@@ -179,9 +182,10 @@ const inputTypeImageRule = (
 // Port of `oxc_linter::rules::jsx_a11y::alt_text`.
 export const altText = defineRule<Rule>({
   id: "alt-text",
+  title: "Image missing alt text",
   tags: ["react-jsx-only"],
   severity: "error",
-  recommendation: "Provide `alt` (or aria-label / aria-labelledby) for non-decorative images.",
+  recommendation: "Give every meaningful image an `alt`, `aria-label`, or `aria-labelledby`.",
   category: "Accessibility",
   create: (context): RuleVisitors => {
     if (isNextjsMetadataImageRouteFilename(context.filename)) return {};

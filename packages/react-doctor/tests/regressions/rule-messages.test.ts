@@ -66,8 +66,8 @@ export const FullName = ({ firstName, lastName }: { firstName: string; lastName:
 
     expect(messages).toEqual(
       expect.arrayContaining([
-        expect.stringContaining("State reset in useEffect — use a key prop"),
-        expect.stringContaining("Derived state in useEffect — compute during render"),
+        expect.stringContaining("key prop"),
+        expect.stringContaining("compute during render"),
       ]),
     );
   });

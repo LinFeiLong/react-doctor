@@ -8,11 +8,12 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const tanstackStartNoAnchorElement = defineRule<Rule>({
   id: "tanstack-start-no-anchor-element",
+  title: "Plain anchor for internal navigation",
   tags: ["test-noise"],
   requires: ["tanstack-start"],
   severity: "warn",
   recommendation:
-    "`import { Link } from '@tanstack/react-router'` — enables type-safe routes, preloading via `preload=\"intent\"`, and client-side navigation",
+    "`import { Link } from '@tanstack/react-router'` for type-safe routes, preloading via `preload=\"intent\"`, and client-side navigation",
   create: (context: RuleContext) => ({
     JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {
       const filename = normalizeFilename(context.filename ?? "");
@@ -46,7 +47,7 @@ export const tanstackStartNoAnchorElement = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Use <Link> from @tanstack/react-router instead of <a> for internal navigation — enables type-safe routing and preloading",
+            "Plain <a> for internal navigation. Use <Link> from @tanstack/react-router for type-safe routing and preloading.",
         });
       }
     },

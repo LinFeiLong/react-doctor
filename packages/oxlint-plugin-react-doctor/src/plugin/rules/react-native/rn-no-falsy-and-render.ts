@@ -108,10 +108,11 @@ const isLikelyNumericExpression = (node: EsTreeNode): boolean => {
 // `.length` access.
 export const rnNoFalsyAndRender = defineRule<Rule>({
   id: "rn-no-falsy-and-render",
+  title: "Numeric && renders bare zero",
   requires: ["react-native"],
   severity: "error",
   recommendation:
-    "Use `{value > 0 && <X />}`, `{Boolean(value) && <X />}`, or a ternary `{value ? <X /> : null}` — numeric falsy `0` renders as raw text and crashes on RN",
+    "When the number is 0, this shows a bare `0` as text, which crashes on RN. Use `{value > 0 && <X />}`, `{Boolean(value) && <X />}`, or `{value ? <X /> : null}`.",
   create: (context: RuleContext) => {
     let isDomComponentFile = false;
 
@@ -141,7 +142,7 @@ export const rnNoFalsyAndRender = defineRule<Rule>({
         context.report({
           node: left,
           message:
-            "Conditional rendering with a numeric value can render `0` as raw text — on React Native this crashes. Use `value > 0`, `Boolean(value)`, or a ternary",
+            "This renders a numeric value, so when it is 0 it shows a bare `0` as text, which crashes on React Native. Use `value > 0`, `Boolean(value)`, or a ternary.",
         });
       },
     };

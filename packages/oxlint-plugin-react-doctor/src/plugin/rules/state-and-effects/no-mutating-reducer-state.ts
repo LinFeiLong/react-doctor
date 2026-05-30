@@ -16,7 +16,7 @@ import { resolveReducerFunction } from "./utils/resolve-reducer-function.js";
 import { getStaticMemberPropertyName } from "./utils/static-member-property-name.js";
 
 const MESSAGE =
-  "Reducer mutates its current state and returns the same reference. Return a copied object or array so React can observe the update.";
+  "This reducer changes the current state in place and returns the same reference, so React thinks nothing changed and skips the update. Return a new object or array instead.";
 
 const SAME_REFERENCE_ARRAY_RETURN_METHODS = new Set(["copyWithin", "fill", "reverse", "sort"]);
 
@@ -805,9 +805,10 @@ const analyzeReactUseReducerFunctionForStateMutation = (
 
 export const noMutatingReducerState = defineRule<Rule>({
   id: "no-mutating-reducer-state",
+  title: "Reducer mutates its state",
   severity: "error",
   recommendation:
-    "Return a new reducer state object instead of mutating the current state and returning the same reference. React uses object identity to decide whether reducer state changed.",
+    "Return a new state object from the reducer instead of changing the old one and returning it. React only notices the change when the object is new.",
   create: (context: RuleContext) => {
     const analyzedReducers = new WeakSet<EsTreeNode>();
     const reportedNodes = new WeakSet<EsTreeNode>();

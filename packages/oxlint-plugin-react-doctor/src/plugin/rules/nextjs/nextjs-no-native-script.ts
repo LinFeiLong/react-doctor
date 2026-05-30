@@ -8,11 +8,12 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const nextjsNoNativeScript = defineRule<Rule>({
   id: "nextjs-no-native-script",
+  title: "Plain script tag",
   tags: ["test-noise"],
   requires: ["nextjs"],
   severity: "warn",
   recommendation:
-    '`import Script from "next/script"` — use `strategy="afterInteractive"` for analytics or `"lazyOnload"` for widgets',
+    '`import Script from "next/script"`. Use `strategy="afterInteractive"` for analytics or `"lazyOnload"` for widgets',
   create: (context: RuleContext) => ({
     JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {
       if (!isNodeOfType(node.name, "JSXIdentifier") || node.name.name !== "script") return;
@@ -26,7 +27,7 @@ export const nextjsNoNativeScript = defineRule<Rule>({
       context.report({
         node,
         message:
-          "Use next/script <Script> instead of <script> — provides loading strategy optimization and deferred loading",
+          "Plain <script> tag. Use next/script <Script> for loading strategies and deferred loading.",
       });
     },
   }),

@@ -15,7 +15,7 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "JSX prop receives JSX created on every render — extract it or memoize to avoid re-renders.";
+  "This prop gets brand new JSX every render, so the child redraws for no reason. Move it out or wrap it in `useMemo`.";
 
 // Prop names that conventionally receive single JSX elements (icons,
 // slot content, fallbacks, render props). For these the inline JSX
@@ -309,12 +309,13 @@ const followsRenderLocalJsxBinding = (
 // `followsRenderLocalJsxBinding` — hoisted JSX (module scope) is exempt.
 export const jsxNoJsxAsProp = defineRule<Rule>({
   id: "jsx-no-jsx-as-prop",
+  title: "JSX element passed as a prop",
   tags: ["react-jsx-only"],
   severity: "warn",
   // React Compiler auto-memoizes inline JSX. The perf footgun this rule
   // guards against doesn't exist in compiler-enabled projects.
   disabledBy: ["react-compiler"],
-  recommendation: "Hoist the inner JSX outside the render or memoize via `useMemo`.",
+  recommendation: "Move the JSX outside the component, or wrap it in `useMemo`.",
   category: "Performance",
   create: (context) => {
     const isTestlikeFile = isTestlikeFilename(context.filename);

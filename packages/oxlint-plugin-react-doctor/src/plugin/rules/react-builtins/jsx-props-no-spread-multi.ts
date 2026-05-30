@@ -6,9 +6,9 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildIdentifierMessage = (name: string): string =>
-  `Prop \`${name}\` is spread multiple times in this JSX element.`;
+  `You spread \`${name}\` more than once on this element. Remove the duplicate.`;
 const buildMemberMessage = (name: string): string =>
-  `\`${name}\` is spread multiple times in this JSX element.`;
+  `You spread \`${name}\` more than once on this element. Remove the duplicate.`;
 
 const flattenMemberExpressionName = (node: EsTreeNode): string | null => {
   // Peel parens / TS wrappers at every recursion step so that
@@ -36,8 +36,9 @@ const flattenMemberExpressionName = (node: EsTreeNode): string | null => {
 // `<C {...this.props} {...this.props} />`).
 export const jsxPropsNoSpreadMulti = defineRule<Rule>({
   id: "jsx-props-no-spread-multi",
+  title: "Same prop spread multiple times",
   severity: "warn",
-  recommendation: "Spread each unique expression at most once per JSX element.",
+  recommendation: "Spread the same value at most once per element.",
   create: (context) => ({
     JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {
       const seenNames = new Map<string, EsTreeNode>();

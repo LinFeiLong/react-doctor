@@ -10,10 +10,11 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const noGlobalCssVariableAnimation = defineRule<Rule>({
   id: "no-global-css-variable-animation",
+  title: "Animating a global CSS variable",
   tags: ["test-noise"],
   severity: "error",
   recommendation:
-    "Set the variable on the nearest element instead of a parent, or use `@property` with `inherits: false` to prevent cascade. Better yet, use targeted `element.style.transform` updates",
+    "Set the variable on the element that needs it instead of a parent, or use `@property` with `inherits: false`. Better yet, update `element.style.transform` directly",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (!isNodeOfType(node.callee, "Identifier")) return;
@@ -33,7 +34,7 @@ export const noGlobalCssVariableAnimation = defineRule<Rule>({
 
         context.report({
           node: child,
-          message: `CSS variable "${variableName}" updated in ${calleeName} — forces style recalculation on all inheriting elements every frame`,
+          message: `CSS variable "${variableName}" changes in ${calleeName} on every frame, so every element using it has to recompute its styles. Set it on just the element that needs it`,
         });
       });
     },

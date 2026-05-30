@@ -97,6 +97,19 @@ export interface ReactDoctorConfig {
    */
   deadCode?: boolean;
   verbose?: boolean;
+  /**
+   * Whether to surface `"warning"`-severity diagnostics at all. Default:
+   * `false` — every warning is dropped before it reaches any surface
+   * (CLI, PR comment, score, `--fail-on`), so an out-of-the-box scan
+   * only ever reports `"error"`-severity findings.
+   *
+   * Set to `true` to opt back into the full diagnostic stream. This is
+   * the master toggle and runs after per-rule / per-category severity
+   * overrides: a rule the user explicitly restamps to `"error"` (via
+   * `rules` / `categories`) is unaffected, but anything that resolves to
+   * `"warning"` stays hidden until `warnings` is enabled.
+   */
+  warnings?: boolean;
   diff?: boolean | string;
   failOn?: FailOnLevel;
   customRulesOnly?: boolean;

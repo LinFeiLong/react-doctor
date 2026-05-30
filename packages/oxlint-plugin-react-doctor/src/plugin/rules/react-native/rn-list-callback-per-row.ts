@@ -74,11 +74,12 @@ const resolveRenderPropName = (node: EsTreeNode): string => {
 // pass the row's id as a primitive prop.
 export const rnListCallbackPerRow = defineRule<Rule>({
   id: "rn-list-callback-per-row",
+  title: "Inline handler in list renderItem",
   tags: ["test-noise"],
   requires: ["react-native"],
   severity: "warn",
   recommendation:
-    "Hoist the handler with useCallback at list scope and pass the row id as a primitive prop, so the row's memo() shallow-compare actually hits",
+    "Move the handler out with useCallback at list scope and pass the row id as a prop. Then memo() rows skip redrawing when their data has not changed.",
   create: (context: RuleContext) => {
     const inspect = (node: EsTreeNode): void => {
       if (!isRenderItemFunction(node)) return;
@@ -91,7 +92,7 @@ export const rnListCallbackPerRow = defineRule<Rule>({
             : "<handler>";
         context.report({
           node: handler,
-          message: `Inline ${handlerName} arrow inside ${renderPropName} creates a fresh closure per render — hoist with useCallback at list scope`,
+          message: `${handlerName} inside ${renderPropName} is rebuilt for every row each draw, so memo() rows still redraw. Move it out with useCallback at list scope.`,
         });
       }
     };

@@ -169,10 +169,11 @@ const isWrappedInPromiseConcurrency = (mapCall: EsTreeNode): boolean => {
 
 export const asyncAwaitInLoop = defineRule<Rule>({
   id: "async-await-in-loop",
+  title: "await inside a loop",
   severity: "warn",
   tags: ["test-noise"],
   recommendation:
-    "Collect the items and use `await Promise.all(items.map(...))` to run independent operations concurrently",
+    "Collect the items, then use `await Promise.all(items.map(...))` so independent work runs at the same time",
   create: (context: RuleContext) => {
     const inspectLoopBody = (loopBody: EsTreeNode | null | undefined, label: string): void => {
       if (!loopBody) return;
@@ -182,7 +183,7 @@ export const asyncAwaitInLoop = defineRule<Rule>({
       if (firstAwait) {
         context.report({
           node: firstAwait,
-          message: `await inside a ${label} runs the calls sequentially — for independent operations, collect them and use \`await Promise.all(items.map(...))\` to run them concurrently`,
+          message: `await inside a ${label} runs the calls one at a time, which is slow. If they don't depend on each other, collect them and use \`await Promise.all(items.map(...))\` to run them together`,
         });
       }
     };
@@ -231,8 +232,8 @@ export const asyncAwaitInLoop = defineRule<Rule>({
         if (firstAwait) {
           const message =
             methodName === "forEach"
-              ? "Async callback in .forEach — return values are dropped, so awaits don't actually wait. Use a `for…of` loop or `await Promise.all(items.map(async (item) => {...}))`"
-              : `Async callback in .${methodName} — sequential awaits inside the callback waterfall. Use \`await Promise.all(items.map(async (item) => {...}))\` to run them concurrently`;
+              ? "Async callback in .forEach. forEach ignores the awaits, so the work never actually waits to finish. Use a `for…of` loop, or `await Promise.all(items.map(async (item) => {...}))`"
+              : `Async callback in .${methodName}. The waits run one after another, which is slow. Use \`await Promise.all(items.map(async (item) => {...}))\` to run them at the same time`;
           context.report({ node: firstAwait, message });
         }
       },

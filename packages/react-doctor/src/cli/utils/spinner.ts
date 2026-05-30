@@ -14,6 +14,7 @@ const noopHandle = Object.freeze({
   update: () => {},
   succeed: () => {},
   fail: () => {},
+  stop: () => {},
 });
 
 export const spinner = (text: string) => ({
@@ -48,6 +49,14 @@ export const spinner = (text: string) => ({
         if (didFinalize) return;
         didFinalize = true;
         instance.fail(displayText);
+      },
+      stop() {
+        if (didFinalize) return;
+        didFinalize = true;
+        // `instance.stop()` clears the in-progress line in interactive
+        // mode and is a no-op in the static (non-interactive) path, so
+        // no persistent status line is left behind either way.
+        instance.stop();
       },
     };
   },

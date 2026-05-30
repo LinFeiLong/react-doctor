@@ -10,6 +10,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const renderingHydrationNoFlicker = defineRule<Rule>({
   id: "rendering-hydration-no-flicker",
+  title: "useEffect setState flashes on mount",
   tags: ["test-noise"],
   severity: "warn",
   recommendation:
@@ -42,7 +43,7 @@ export const renderingHydrationNoFlicker = defineRule<Rule>({
         context.report({
           node,
           message:
-            "useEffect(setState, []) on mount causes a flash — consider useSyncExternalStore or suppressHydrationWarning",
+            "useEffect(setState, []) runs after the first paint, so users see a quick flash. Use useSyncExternalStore, or add suppressHydrationWarning",
         });
       }
     },

@@ -7,9 +7,9 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildHandlerNameMessage = (handlerName: string, propKey: string, prefix: string): string =>
-  `Handler "${handlerName}" for prop "${propKey}" must be a camelCase name beginning with "${prefix}".`;
+  `The handler "${handlerName}" for "${propKey}" should start with "${prefix}", like "${prefix}Click".`;
 const buildHandlerPropMessage = (propKey: string, propValue: string, prefix: string): string =>
-  `Prop "${propKey}" handling "${propValue}" must be named with the "${prefix}" prefix.`;
+  `The prop "${propKey}" passes "${propValue}", so it should start with "${prefix}".`;
 
 interface JsxHandlerNamesSettings {
   checkInlineFunction?: boolean;
@@ -165,6 +165,7 @@ const isMemberExpressionCallee = (
 // Port of `oxc_linter::rules::react::jsx_handler_names`.
 export const jsxHandlerNames = defineRule<Rule>({
   id: "jsx-handler-names",
+  title: "Inconsistent event handler names",
   severity: "warn",
   // Stylistic naming convention rule — the upstream pattern
   // (`onClick={handleClick}`) is widely-followed but not universal.

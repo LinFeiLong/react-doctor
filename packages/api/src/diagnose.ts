@@ -77,6 +77,7 @@ const buildInspectProgram = (
     customRulesOnly: effectiveConfig?.customRulesOnly ?? false,
     respectInlineDisables:
       options.respectInlineDisables ?? effectiveConfig?.respectInlineDisables ?? true,
+    warnings: options.warnings ?? effectiveConfig?.warnings ?? false,
     adoptExistingLintConfig: effectiveConfig?.adoptExistingLintConfig ?? true,
     ignoredTags: new Set(effectiveConfig?.ignore?.tags ?? []),
     runDeadCode: options.deadCode ?? effectiveConfig?.deadCode ?? true,

@@ -28,6 +28,7 @@ const resolveSettings = (
 //   - "element": prefer `<React.Fragment>`. Flags `<></>` shorthand.
 export const jsxFragments = defineRule<Rule>({
   id: "jsx-fragments",
+  title: "Inconsistent fragment syntax",
   severity: "warn",
   // Pure stylistic — `<>` vs `<Fragment>` is a formatter concern,
   // not a bug class. Default off.

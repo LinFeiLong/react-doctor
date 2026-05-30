@@ -18,6 +18,28 @@ export interface InspectResult {
   skippedCheckReasons?: Record<string, string>;
   project: ProjectInfo;
   elapsedMilliseconds: number;
+  /**
+   * Number of files the scan reported. Distinct from
+   * `project.sourceFileCount` in diff / staged mode (where only changed
+   * files are scanned). Optional so non-orchestrator constructors keep
+   * working; the multi-project summary falls back to
+   * `project.sourceFileCount` when absent.
+   */
+  scannedFileCount?: number;
+  /**
+   * Absolute paths of every file the scan considered. Lets the
+   * multi-project summary count UNIQUE files across projects instead of
+   * summing per-project counts, which double-counts shared files when one
+   * workspace package's tree is nested inside another's.
+   */
+  scannedFilePaths?: ReadonlyArray<string>;
+  /**
+   * Wall-clock duration of the scan phase, in milliseconds. Distinct
+   * from `elapsedMilliseconds` (which spans the full `inspect()` call
+   * including score fetch + rendering). Used by the multi-project
+   * summary to report combined scan time.
+   */
+  scanElapsedMilliseconds?: number;
 }
 
 /**
@@ -46,6 +68,13 @@ export interface InspectOptions {
   includePaths?: string[];
   configOverride?: ReactDoctorConfig | null;
   respectInlineDisables?: boolean;
+  /**
+   * Per-call override for `ReactDoctorConfig.warnings`. When omitted,
+   * `config.warnings` wins (defaulting to `false`), so `"warning"`-
+   * severity diagnostics stay hidden everywhere — CLI, PR comment,
+   * score, and the `--fail-on` gate — until explicitly enabled.
+   */
+  warnings?: boolean;
 
   // ── Rendering / orchestration knobs ──────────────────────────────
   verbose?: boolean;

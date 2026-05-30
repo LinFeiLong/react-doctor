@@ -6,15 +6,17 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const noEval = defineRule<Rule>({
   id: "no-eval",
+  title: "Use of eval()",
   severity: "error",
   recommendation:
-    "Use `JSON.parse` for serialized data, `Function(...)` (still careful) for trusted templates, or refactor to avoid dynamic code execution",
+    "Use `JSON.parse` for data, or rewrite the code so it doesn't build and run code from strings.",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (isNodeOfType(node.callee, "Identifier") && node.callee.name === "eval") {
         context.report({
           node,
-          message: "eval() is a code injection risk — avoid dynamic code execution",
+          message:
+            "eval() runs code from a string, which lets attackers inject code. Don't build and run code this way.",
         });
         return;
       }
@@ -27,7 +29,7 @@ export const noEval = defineRule<Rule>({
       ) {
         context.report({
           node,
-          message: `${node.callee.name}() with string argument executes code dynamically — use a function instead`,
+          message: `${node.callee.name}() with a string argument runs that string as code. Pass a function instead.`,
         });
       }
     },
@@ -35,7 +37,8 @@ export const noEval = defineRule<Rule>({
       if (isNodeOfType(node.callee, "Identifier") && node.callee.name === "Function") {
         context.report({
           node,
-          message: "new Function() is a code injection risk — avoid dynamic code execution",
+          message:
+            "new Function() builds and runs code from a string, which lets attackers inject code. Don't build code this way.",
         });
       }
     },

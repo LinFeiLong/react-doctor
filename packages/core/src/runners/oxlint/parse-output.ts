@@ -5,7 +5,8 @@ import type {
   OxlintOutput,
   ProjectInfo,
 } from "../../types/index.js";
-import { ERROR_PREVIEW_LENGTH_CHARS, SOURCE_FILE_PATTERN } from "../../constants.js";
+import { ERROR_PREVIEW_LENGTH_CHARS } from "../../constants.js";
+import { isLintableSourceFile } from "../../utils/is-lintable-source-file.js";
 import { OxlintOutputUnparseable, ReactDoctorError } from "../../errors.js";
 import { buildNoSecretsRecommendation } from "../../utils/build-no-secrets-recommendation.js";
 import { appendReanimatedSharedValueHint } from "../../utils/append-reanimated-shared-value-hint.js";
@@ -66,6 +67,12 @@ const getRuleRecommendation = (ruleName: string, project: ProjectInfo): string |
 // `validateRuleRegistration` to assert per-rule metadata coverage.
 export const getRuleCategory = (ruleName: string): string | undefined =>
   reactDoctorPlugin.rules[ruleName]?.category;
+
+// Short human headline for a rule (e.g. "Array index used as a key").
+// Only react-doctor rules carry one; adopted third-party rules return
+// undefined and renderers fall back to the `plugin/rule` id.
+const getRuleTitle = (ruleName: string): string | undefined =>
+  reactDoctorPlugin.rules[ruleName]?.title;
 
 const cleanDiagnosticMessage = (
   message: unknown,
@@ -178,13 +185,15 @@ export const parseOxlintOutput = (
   // the only sources (they're React-specific anyway), but adopted
   // user rules like `eslint/no-debugger` or `unicorn/*` typically
   // fire on plain `.ts` / `.js` files; dropping those silently
-  // erased their score impact. SOURCE_FILE_PATTERN matches the same
-  // extensions we count as source files everywhere else.
+  // erased their score impact. `isLintableSourceFile` matches the same
+  // extensions we count as source files everywhere else, and also drops
+  // generated bundler output (`*.iife.js`, `*.global.js`) so a stray
+  // bundle that slipped past file discovery can't pollute the report.
   return parsed.diagnostics
     .filter(
       (diagnostic) =>
         diagnostic.code &&
-        SOURCE_FILE_PATTERN.test(diagnostic.filename) &&
+        isLintableSourceFile(diagnostic.filename) &&
         !shouldSuppressLocalUseHookDiagnostic(diagnostic, rootDirectory),
     )
     .map((diagnostic) => {
@@ -202,6 +211,7 @@ export const parseOxlintOutput = (
         plugin,
         rule,
         severity: diagnostic.severity,
+        title: getRuleTitle(rule),
         message: cleaned.message,
         help: cleaned.help,
         url: diagnostic.url,

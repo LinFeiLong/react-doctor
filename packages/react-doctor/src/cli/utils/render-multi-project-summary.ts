@@ -9,7 +9,7 @@ import {
 } from "@react-doctor/core";
 import type { Diagnostic, InspectResult, ReactDoctorConfig, ScoreResult } from "@react-doctor/core";
 import { colorizeByScore } from "./colorize-by-score.js";
-import { printDiagnostics } from "./render-diagnostics.js";
+import { formatElapsedTime, printDiagnostics } from "./render-diagnostics.js";
 import { printSummary } from "./render-summary.js";
 
 const SUMMARY_BAR_WIDTH_CHARS = 20;
@@ -93,9 +93,55 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
     const allDiagnostics: Diagnostic[] = completedScans.flatMap((scan) => scan.result.diagnostics);
     const surfaceDiagnostics = filterDiagnosticsForSurface(allDiagnostics, "cli", userConfig);
 
+    // Each diagnostic's `filePath` is relative to its own project root,
+    // so the code-frame renderer needs to resolve per-diagnostic rather
+    // than against one shared root (there isn't one across projects).
+    const projectRootByDiagnostic = new WeakMap<Diagnostic, string>();
+    for (const scan of completedScans) {
+      for (const diagnostic of scan.result.diagnostics) {
+        projectRootByDiagnostic.set(diagnostic, scan.result.project.rootDirectory);
+      }
+    }
+    const resolveDiagnosticSourceRoot = (diagnostic: Diagnostic): string =>
+      projectRootByDiagnostic.get(diagnostic) ?? "";
+
+    // Single aggregate scan line in place of the per-project spinner
+    // success lines (suppressed via `suppressScanSummary`). Scans run
+    // sequentially, so summing each project's scan duration matches the
+    // wall-clock total.
+    //
+    // Count UNIQUE scanned files by absolute path: nested workspace
+    // packages (a parent whose tree contains a child package) scan the
+    // shared files in BOTH projects, so naively summing per-project
+    // counts overstates the real total. Fall back to summing when any
+    // scan didn't report its file paths.
+    const uniqueScannedFilePaths = new Set<string>();
+    let isMissingScannedFilePaths = false;
+    for (const scan of completedScans) {
+      if (scan.result.scannedFilePaths) {
+        for (const filePath of scan.result.scannedFilePaths) uniqueScannedFilePaths.add(filePath);
+      } else {
+        isMissingScannedFilePaths = true;
+      }
+    }
+    const totalScannedFileCount = isMissingScannedFilePaths
+      ? completedScans.reduce(
+          (sum, scan) =>
+            sum + (scan.result.scannedFileCount ?? scan.result.project.sourceFileCount),
+          0,
+        )
+      : uniqueScannedFilePaths.size;
+    const totalScanElapsedMilliseconds = completedScans.reduce(
+      (sum, scan) => sum + (scan.result.scanElapsedMilliseconds ?? scan.result.elapsedMilliseconds),
+      0,
+    );
+    yield* Console.log(
+      `${highlighter.success("✔")} Scanned ${totalScannedFileCount} ${totalScannedFileCount === 1 ? "file" : "files"} in ${formatElapsedTime(totalScanElapsedMilliseconds)}`,
+    );
+
     if (surfaceDiagnostics.length > 0) {
       yield* Console.log("");
-      yield* printDiagnostics(surfaceDiagnostics, verbose, "");
+      yield* printDiagnostics(surfaceDiagnostics, verbose, resolveDiagnosticSourceRoot);
     }
 
     const aggregateScore = computeAggregateScore(completedScans);

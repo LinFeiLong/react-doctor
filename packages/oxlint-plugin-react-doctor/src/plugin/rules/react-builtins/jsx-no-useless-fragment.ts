@@ -6,8 +6,9 @@ import { isJsxFragmentElement } from "../../utils/is-jsx-fragment-element.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const NEEDS_MORE_CHILDREN = "Fragments should contain more than one child.";
-const CHILD_OF_HTML_ELEMENT = "Passing a fragment to an HTML element is useless.";
+const NEEDS_MORE_CHILDREN = "This fragment wraps just one thing, so it does nothing. Remove it.";
+const CHILD_OF_HTML_ELEMENT =
+  "This fragment sits right inside an HTML tag, which can hold the children directly. Remove it.";
 
 interface JsxNoUselessFragmentSettings {
   allowExpressions?: boolean;
@@ -98,6 +99,7 @@ const isFragmentWithOnlyTextAndNotJsxChild = (
 // Honors `allowExpressions: true` to permit `<>{expr}</>`.
 export const jsxNoUselessFragment = defineRule<Rule>({
   id: "jsx-no-useless-fragment",
+  title: "Unnecessary React fragment",
   severity: "warn",
   // Single-child fragments are often intentional — they force the
   // return type to `ReactNode` rather than `ReactElement` (broader and

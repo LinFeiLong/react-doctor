@@ -11,9 +11,10 @@ import type { Rule } from "../../utils/rule.js";
 // module scope is left alone.
 export const noIsMounted = defineRule<Rule>({
   id: "no-is-mounted",
+  title: "Use of isMounted",
   severity: "warn",
   recommendation:
-    "`isMounted` is an anti-pattern unsupported by modern React — track mount state with a ref or cancel the async work instead",
+    "`isMounted` doesn't work in modern React. Track mount state with a ref, or cancel the async work instead.",
   create: (context) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (!isNodeOfType(node.callee, "MemberExpression")) return;
@@ -30,7 +31,8 @@ export const noIsMounted = defineRule<Rule>({
         if (ancestor.type === "MethodDefinition" || ancestor.type === "Property") {
           context.report({
             node,
-            message: "Do not use `isMounted` — not supported in modern React.",
+            message:
+              "`isMounted` doesn't work in modern React. Use a ref to track mount state, or cancel the async work.",
           });
           return;
         }

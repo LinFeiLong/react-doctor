@@ -644,10 +644,11 @@ const everySetterCallIsTopLevel = (
 
 export const noSelfUpdatingEffect = defineRule<Rule>({
   id: "no-self-updating-effect",
+  title: "Effect updates its own dependency",
   severity: "warn",
   tags: ["test-noise"],
   recommendation:
-    "Remove the feedback loop: derive the value during render, move the write into an event handler, or guard the update so it reaches a fixed point. See https://react.dev/learn/you-might-not-need-an-effect",
+    "Break the loop: work the value out while rendering, set it in an event handler, or guard the update so it stops changing. See https://react.dev/learn/you-might-not-need-an-effect",
   create: (context: RuleContext) => {
     const checkFunctionScope = (functionBody: EsTreeNode | null | undefined): void => {
       if (!functionBody || !isNodeOfType(functionBody, "BlockStatement")) return;
@@ -734,7 +735,7 @@ export const noSelfUpdatingEffect = defineRule<Rule>({
           reportedStateNames.add(stateName);
           context.report({
             node: setterCall,
-            message: `${setterCall.callee.name}() runs unconditionally inside this effect, which depends on \`${stateName}\` — setting the same state the effect reacts to re-runs the effect on every commit and causes a render loop. Derive the value during render, move the write into an event handler, or guard the update so it settles.`,
+            message: `${setterCall.callee.name}() always runs inside this effect, and the effect depends on \`${stateName}\`. Setting the same state the effect watches makes it run again every time, looping forever. Work the value out while rendering, set it in an event handler, or guard the update so it settles.`,
           });
         }
       }

@@ -8,9 +8,10 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MISSING_MESSAGE = "`<button>` elements must have an explicit `type` attribute.";
+const MISSING_MESSAGE =
+  'A `<button>` with no `type` defaults to submit and can submit a form by accident. Add `type="button"`.';
 const INVALID_MESSAGE = (allowed: string): string =>
-  `\`<button type="…">\` must be one of: ${allowed}.`;
+  `A button's \`type\` must be one of: ${allowed}.`;
 
 interface ButtonHasTypeSettings {
   button?: boolean;
@@ -118,8 +119,9 @@ const reportInvalid = (
 // values are allowed.
 export const buttonHasType = defineRule<Rule>({
   id: "button-has-type",
+  title: "Button missing explicit type",
   severity: "warn",
-  recommendation: 'Set `type="button"` (or `"submit"` / `"reset"`) explicitly on every `<button>`.',
+  recommendation: 'Always set a `type` on a `<button>`: `type="button"`, `"submit"`, or `"reset"`.',
   create: (context) => {
     const settings = resolveSettings(context.settings);
     // Storybook stories and tests routinely render bare `<button>` without

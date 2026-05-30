@@ -22,7 +22,7 @@ const REACT_HOOK_NAMES = new Set([
 ]);
 
 const buildMessage = (importedNames: ReadonlyArray<string>): string =>
-  `Import ${importedNames.map((innerName) => `\`${innerName}\``).join(", ")} from \`preact/hooks\` (or \`preact/compat\`) — importing hooks from \`react\` in a pure-Preact project loads a second copy of Preact's hook state and triggers \`__H\` undefined errors.`;
+  `Import ${importedNames.map((innerName) => `\`${innerName}\``).join(", ")} from \`preact/hooks\` (or \`preact/compat\`). In a pure-Preact project, importing hooks from \`react\` loads a second copy of the hook state and causes \`__H\` undefined errors.`;
 
 // In a pure-Preact app, hooks must come from `preact/hooks` so they share
 // the same Preact module instance the renderer uses. Importing `useState` /
@@ -40,6 +40,7 @@ const buildMessage = (importedNames: ReadonlyArray<string>): string =>
 // positive.
 export const preactNoReactHooksImport = defineRule<Rule>({
   id: "preact-no-react-hooks-import",
+  title: "Hooks imported from react",
   requires: ["pure-preact"],
   severity: "warn",
   recommendation:

@@ -6,10 +6,14 @@ import {
   groupBy,
   highlighter,
   MILLISECONDS_PER_SECOND,
+  OUTPUT_MEASURE_WIDTH_CHARS,
   RULE_NAME_COLUMN_WIDTH_CHARS,
+  TOP_ERRORS_DISPLAY_COUNT,
 } from "@react-doctor/core";
 import type { Diagnostic } from "@react-doctor/core";
+import { buildCodeFrame } from "./build-code-frame.js";
 import { indentMultilineText } from "./indent-multiline-text.js";
+import { wrapText } from "./wrap-text.js";
 
 const POINTER = isUnicodeSupported() ? "›" : ">";
 
@@ -42,6 +46,10 @@ interface CategoryDiagnosticGroup {
   diagnostics: Diagnostic[];
   ruleGroups: [string, Diagnostic[]][];
 }
+
+// Resolves the absolute project root a given diagnostic's relative
+// `filePath` should be read from when building its inline code frame.
+type SourceRootResolver = (diagnostic: Diagnostic) => string;
 
 const buildVerboseSiteMap = (diagnostics: Diagnostic[]): Map<string, VerboseSiteEntry[]> => {
   const fileSites = new Map<string, VerboseSiteEntry[]>();
@@ -178,9 +186,87 @@ const buildVerboseRuleGroupLines = (
   return lines;
 };
 
-const buildDefaultDiagnosticsLines = (diagnostics: Diagnostic[]): ReadonlyArray<string> => {
+const TOP_ERROR_DETAIL_INDENT = "    ";
+
+const pickRepresentativeDiagnostic = (ruleDiagnostics: Diagnostic[]): Diagnostic =>
+  ruleDiagnostics.find((diagnostic) => diagnostic.line > 0) ?? ruleDiagnostics[0];
+
+const formatDiagnosticLocation = (diagnostic: Diagnostic): string =>
+  diagnostic.line > 0 ? `${diagnostic.filePath}:${diagnostic.line}` : diagnostic.filePath;
+
+const buildTopErrorBlock = (
+  ruleKey: string,
+  ruleDiagnostics: Diagnostic[],
+  resolveSourceRoot: SourceRootResolver,
+): ReadonlyArray<string> => {
+  const representative = pickRepresentativeDiagnostic(ruleDiagnostics);
+  const siteCountBadge = formatSiteCountBadge(ruleDiagnostics.length);
+  const trailingBadge = siteCountBadge.length > 0 ? ` ${highlighter.gray(siteCountBadge)}` : "";
+
+  // Show the rule's human title only. Falls back to the `plugin/rule`
+  // id when a diagnostic has no title (adopted third-party rules).
+  const headline = highlighter.error(representative.title ?? ruleKey);
+
+  const lines: string[] = [`  ${highlighter.error("✗")} ${headline}${trailingBadge}`];
+
+  for (const explanationLine of wrapText(representative.message, OUTPUT_MEASURE_WIDTH_CHARS)) {
+    lines.push(highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${explanationLine}`));
+  }
+
+  // File location sits on its own line directly above the code frame so
+  // it's obvious which file the frame belongs to (far easier to read
+  // than trailing it after a long rule name on the header line).
+  lines.push("");
+  lines.push(
+    highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${formatDiagnosticLocation(representative)}`),
+  );
+
+  const codeFrame = buildCodeFrame({
+    filePath: representative.filePath,
+    line: representative.line,
+    column: representative.column,
+    rootDirectory: resolveSourceRoot(representative),
+  });
+  if (codeFrame) {
+    lines.push(indentMultilineText(codeFrame, TOP_ERROR_DETAIL_INDENT));
+  }
+
+  return lines;
+};
+
+const buildTopErrorsLines = (
+  diagnostics: Diagnostic[],
+  resolveSourceRoot: SourceRootResolver,
+): ReadonlyArray<string> => {
+  const errorDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+  if (errorDiagnostics.length === 0) return [];
+
+  const ruleGroups = groupBy(
+    errorDiagnostics,
+    (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
+  );
+  const topRuleGroups = sortByImportance([...ruleGroups.entries()]).slice(
+    0,
+    TOP_ERRORS_DISPLAY_COUNT,
+  );
+
+  const lines: string[] = [
+    `  ${highlighter.bold(`Top ${topRuleGroups.length} ${topRuleGroups.length === 1 ? "error" : "errors"} you should fix`)}`,
+    "",
+  ];
+  for (const [ruleKey, ruleDiagnostics] of topRuleGroups) {
+    lines.push(...buildTopErrorBlock(ruleKey, ruleDiagnostics, resolveSourceRoot));
+    lines.push("");
+  }
+  return lines;
+};
+
+const buildDefaultDiagnosticsLines = (
+  diagnostics: Diagnostic[],
+  resolveSourceRoot: SourceRootResolver,
+): ReadonlyArray<string> => {
   const categoryGroups = buildCategoryDiagnosticGroups(diagnostics);
-  const lines: string[] = [];
+  const lines: string[] = [...buildTopErrorsLines(diagnostics, resolveSourceRoot)];
   for (const categoryGroup of categoryGroups) {
     lines.push(buildCompactCategoryLine(categoryGroup));
   }
@@ -197,12 +283,19 @@ const buildDefaultDiagnosticsLines = (diagnostics: Diagnostic[]): ReadonlyArray<
 export const printDiagnostics = (
   diagnostics: Diagnostic[],
   isVerbose: boolean,
-  rootDirectory: string,
+  // The directory each diagnostic's relative `filePath` is resolved
+  // against for the inline code frame. A bare string works for a
+  // single-project scan; multi-project scans pass a resolver so each
+  // diagnostic reads from its own project root (their relative paths
+  // would otherwise miss against a single shared root → no frame).
+  sourceRoot: string | SourceRootResolver,
 ): Effect.Effect<void> =>
   Effect.gen(function* () {
+    const resolveSourceRoot: SourceRootResolver =
+      typeof sourceRoot === "function" ? sourceRoot : () => sourceRoot;
     let lines: ReadonlyArray<string>;
     if (!isVerbose) {
-      lines = buildDefaultDiagnosticsLines(diagnostics);
+      lines = buildDefaultDiagnosticsLines(diagnostics, resolveSourceRoot);
     } else {
       const ruleGroups = groupBy(
         diagnostics,

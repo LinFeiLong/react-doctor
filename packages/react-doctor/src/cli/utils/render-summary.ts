@@ -1,6 +1,6 @@
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
-import { buildRulePromptUrl, highlighter, SHARE_BASE_URL } from "@react-doctor/core";
+import { highlighter, SHARE_BASE_URL } from "@react-doctor/core";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 import { collectAffectedFiles } from "./render-diagnostics.js";
 import { printNoScoreHeader, printScoreHeader } from "./render-score-header.js";
@@ -42,16 +42,9 @@ const printCountsSummaryLine = (
     );
     yield* Console.log(`  ${issueText}`);
     if (!isVerbose && totalIssueCount > 0) {
-      const exampleDiagnostic =
-        diagnostics.find((diagnostic) => diagnostic.severity === "error") ?? diagnostics[0];
       yield* Console.log(
         highlighter.dim(
-          `  Run ${highlighter.info("npx react-doctor@latest --verbose")} to list every issue with its fix-recipe URL`,
-        ),
-      );
-      yield* Console.log(
-        highlighter.dim(
-          `  Each rule links a canonical fix recipe to fetch & follow before fixing, e.g. ${highlighter.info(buildRulePromptUrl(exampleDiagnostic.plugin, exampleDiagnostic.rule))}`,
+          `  Run ${highlighter.info("npx react-doctor@latest --verbose")} to list every issue`,
         ),
       );
     }
@@ -71,7 +64,7 @@ export interface PrintSummaryInput {
 export const printSummary = (input: PrintSummaryInput): Effect.Effect<void> =>
   Effect.gen(function* () {
     if (input.scoreResult) {
-      yield* printScoreHeader(input.scoreResult, input.projectName);
+      yield* printScoreHeader(input.scoreResult);
     } else {
       yield* printNoScoreHeader(input.noScoreMessage);
     }

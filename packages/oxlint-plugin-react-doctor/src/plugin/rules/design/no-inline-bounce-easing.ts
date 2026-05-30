@@ -28,11 +28,12 @@ const hasBounceAnimationName = (value: string): boolean => {
 
 export const noInlineBounceEasing = defineRule<Rule>({
   id: "no-inline-bounce-easing",
+  title: "Bouncy easing animation",
   severity: "warn",
   tags: ["test-noise"],
   category: "Performance",
   recommendation:
-    "Use `cubic-bezier(0.16, 1, 0.3, 1)` (ease-out-expo) for natural deceleration — objects in the real world don't bounce",
+    "Use `cubic-bezier(0.16, 1, 0.3, 1)` (ease-out-expo) for a natural finish. Real objects don't bounce.",
   create: (context: RuleContext) => ({
     JSXAttribute(node: EsTreeNodeOfType<"JSXAttribute">) {
       const expression = getInlineStyleExpression(node);
@@ -55,7 +56,7 @@ export const noInlineBounceEasing = defineRule<Rule>({
           context.report({
             node: property,
             message:
-              "Bounce/elastic easing feels dated — real objects decelerate smoothly. Use ease-out or cubic-bezier(0.16, 1, 0.3, 1) instead",
+              "Bouncy easing looks dated. Real things slow down smoothly, so use ease-out or cubic-bezier(0.16, 1, 0.3, 1) instead.",
           });
         }
 
@@ -63,7 +64,7 @@ export const noInlineBounceEasing = defineRule<Rule>({
           context.report({
             node: property,
             message:
-              "Bounce/elastic animation name detected — these feel tacky. Use exponential easing (ease-out-quart/expo) for natural deceleration",
+              "This bounce animation looks tacky. Use a smooth ease-out (like ease-out-quart or expo) for a more natural finish.",
           });
         }
       }
@@ -76,7 +77,7 @@ export const noInlineBounceEasing = defineRule<Rule>({
         context.report({
           node,
           message:
-            "animate-bounce feels dated and tacky — use a subtle ease-out transform for natural deceleration",
+            "animate-bounce looks dated and tacky. Use a subtle ease-out transform for a smoother finish.",
         });
       }
     },

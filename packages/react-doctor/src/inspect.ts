@@ -56,6 +56,7 @@ interface ResolvedInspectOptions {
   customRulesOnly: boolean;
   share: boolean;
   respectInlineDisables: boolean;
+  warnings: boolean;
   adoptExistingLintConfig: boolean;
   ignoredTags: ReadonlySet<string>;
   outputSurface: DiagnosticSurface;
@@ -88,6 +89,7 @@ const mergeInspectOptions = (
   share: userConfig?.share ?? true,
   respectInlineDisables:
     inputOptions.respectInlineDisables ?? userConfig?.respectInlineDisables ?? true,
+  warnings: inputOptions.warnings ?? userConfig?.warnings ?? false,
   adoptExistingLintConfig: userConfig?.adoptExistingLintConfig ?? true,
   ignoredTags: buildIgnoredTags(userConfig),
   outputSurface: inputOptions.outputSurface ?? "cli",
@@ -203,6 +205,7 @@ const runInspectWithRuntime = async (
       includePaths: options.includePaths,
       customRulesOnly: options.customRulesOnly,
       respectInlineDisables: options.respectInlineDisables,
+      warnings: options.warnings,
       adoptExistingLintConfig: options.adoptExistingLintConfig,
       ignoredTags: options.ignoredTags,
       nodeBinaryPath: resolvedNodeBinaryPath ?? undefined,
@@ -210,6 +213,7 @@ const runInspectWithRuntime = async (
       isCi: options.isCi,
       doctorVersion: VERSION,
       resolveLocalGithubViewerPermission: !options.noScore,
+      suppressScanSummary: options.suppressRendering,
     },
     {
       beforeLint: (projectInfo, lintIncludePaths) =>
@@ -298,6 +302,9 @@ const runInspectWithRuntime = async (
     didDeadCodeFail: output.didDeadCodeFail,
     deadCodeFailureReason: output.deadCodeFailureReason,
     directory: output.resolvedDirectory,
+    scannedFileCount: output.scannedFileCount,
+    scannedFilePaths: output.scannedFilePaths,
+    scanElapsedMilliseconds: output.scanElapsedMilliseconds,
   };
   const result = await Effect.runPromise(
     finalizeAndRender(finalizeInput).pipe(
@@ -320,6 +327,9 @@ interface FinalizeInput {
   didDeadCodeFail: boolean;
   deadCodeFailureReason: string | null;
   directory: string;
+  scannedFileCount: number;
+  scannedFilePaths: ReadonlyArray<string>;
+  scanElapsedMilliseconds: number;
 }
 
 const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =>
@@ -337,6 +347,9 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       didDeadCodeFail,
       deadCodeFailureReason,
       directory,
+      scannedFileCount,
+      scannedFilePaths,
+      scanElapsedMilliseconds,
     } = input;
 
     const skippedChecks: string[] = [];
@@ -363,6 +376,9 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       ...(Object.keys(skippedCheckReasons).length > 0 ? { skippedCheckReasons } : {}),
       project,
       elapsedMilliseconds,
+      scannedFileCount,
+      scannedFilePaths,
+      scanElapsedMilliseconds,
     });
 
     if (options.suppressRendering) {

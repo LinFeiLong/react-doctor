@@ -7,16 +7,17 @@ import type { Rule } from "../../utils/rule.js";
 import { RESERVED_HTML_TAGS } from "../../constants/html-tags.js";
 
 const buildMessage = (tag: string, attribute: string): string =>
-  `\`<${tag}>\` does not support \`${attribute}\` — reserved HTML elements don't accept ARIA attributes.`;
+  `\`<${tag}>\` does not accept \`${attribute}\`, so assistive tech ignores it here. Remove it from this element.`;
 
 // Port of `oxc_linter::rules::jsx_a11y::aria_unsupported_elements`.
 // Reports `aria-*` / `role` on reserved HTML tags (e.g. `<base>`,
 // `<head>`, `<meta>`).
 export const ariaUnsupportedElements = defineRule<Rule>({
   id: "aria-unsupported-elements",
+  title: "ARIA on unsupported element",
   tags: ["react-jsx-only"],
   severity: "error",
-  recommendation: "Don't use `role` / `aria-*` on reserved HTML elements.",
+  recommendation: "Do not put `role` or `aria-*` on reserved HTML elements.",
   category: "Accessibility",
   create: (context) => ({
     JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {

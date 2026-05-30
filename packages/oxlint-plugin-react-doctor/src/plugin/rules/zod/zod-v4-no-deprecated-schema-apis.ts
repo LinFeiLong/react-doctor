@@ -76,7 +76,7 @@ const reportSchemaMigration = (context: RuleContext, node: EsTreeNode): void => 
   context.report({
     node,
     message:
-      "This Zod API is deprecated or changed in Zod 4; migrate to the recommended Zod 4 schema API.",
+      "This Zod API is deprecated or changed in Zod 4. Switch to the recommended Zod 4 schema API.",
   });
 };
 
@@ -165,11 +165,12 @@ const isZodNamespaceImportMemberCreate = (
 
 export const zodV4NoDeprecatedSchemaApis = defineRule<Rule>({
   id: "zod-v4-no-deprecated-schema-apis",
+  title: "Deprecated Zod schema API",
   requires: ["zod:4"],
   tags: ["migration-hint"],
   severity: "warn",
   recommendation:
-    "Migrate Zod 4 schema APIs that were deprecated, changed, or removed: use top-level factories such as `z.enum()`, object helpers such as `z.strictObject()`, the new `z.function({ input, output })` form, and explicit key/value schemas for `z.record()`.",
+    "Switch to the Zod 4 versions: top-level factories like `z.enum()`, object helpers like `z.strictObject()`, the new `z.function({ input, output })` form, and explicit key/value schemas for `z.record()`.",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (

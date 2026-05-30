@@ -4,11 +4,11 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const NEVER_MESSAGE = (attributeName: string): string =>
-  `Value must be omitted for boolean attribute \`${attributeName}\`.`;
+  `Just write \`${attributeName}\` instead of \`${attributeName}={true}\`.`;
 const ALWAYS_MESSAGE = (attributeName: string): string =>
-  `Value must be set for boolean attribute \`${attributeName}\`.`;
+  `Write \`${attributeName}={true}\` instead of just \`${attributeName}\`.`;
 const FALSE_OMITTED_MESSAGE = (attributeName: string): string =>
-  `Value must be omitted for the \`false\` attribute \`${attributeName}\` (treat as undefined).`;
+  `Drop \`${attributeName}={false}\`. Leaving it off has the same effect.`;
 
 interface JsxBooleanValueSettings {
   mode?: "never" | "always";
@@ -41,6 +41,7 @@ const resolveSettings = (
 //     exceptions via the `never` list.
 export const jsxBooleanValue = defineRule<Rule>({
   id: "jsx-boolean-value",
+  title: "Inconsistent boolean prop notation",
   severity: "warn",
   // Pure stylistic rule — `attr={true}` vs `attr` is a formatter
   // concern, not a bug class. Default off.

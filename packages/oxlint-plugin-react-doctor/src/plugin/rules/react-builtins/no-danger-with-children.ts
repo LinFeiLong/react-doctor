@@ -8,7 +8,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Only set one of `children` or `dangerouslySetInnerHTML` — React throws a runtime warning when both are present.";
+  "Setting both children and `dangerouslySetInnerHTML` makes React throw an error. Use just one.";
 
 interface PropsShape {
   hasDangerously: boolean;
@@ -85,6 +85,7 @@ const resolveJsxSpreadPropsShape = (
 // prop / nested children AND `dangerouslySetInnerHTML`.
 export const noDangerWithChildren = defineRule<Rule>({
   id: "no-danger-with-children",
+  title: "dangerouslySetInnerHTML with children",
   severity: "error",
   recommendation: "Use either `children` or `dangerouslySetInnerHTML`, never both.",
   category: "Correctness",

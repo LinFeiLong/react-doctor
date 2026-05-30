@@ -9,6 +9,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const noFetchInEffect = defineRule<Rule>({
   id: "no-fetch-in-effect",
+  title: "Data fetching inside an effect",
   severity: "warn",
   recommendation:
     "Use `useQuery()` from @tanstack/react-query, `useSWR()`, or fetch in a Server Component instead",
@@ -22,7 +23,7 @@ export const noFetchInEffect = defineRule<Rule>({
         context.report({
           node,
           message:
-            "fetch() inside useEffect — use a data fetching library (react-query, SWR) or server component",
+            "fetch() inside useEffect is hard to get right. Use a data fetching library like react-query or SWR, or fetch in a server component.",
         });
       }
     },

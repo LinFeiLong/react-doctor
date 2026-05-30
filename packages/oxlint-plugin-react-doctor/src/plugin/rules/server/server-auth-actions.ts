@@ -162,7 +162,7 @@ const inspectServerAction = (
 
   context.report({
     node: candidate.reportNode,
-    message: `Server action "${candidate.displayName}" — add auth check (auth(), getSession(), etc.) at the top`,
+    message: `Server action "${candidate.displayName}" runs without checking who the user is. Add an auth check (auth(), getSession(), etc.) at the top.`,
   });
 };
 
@@ -204,9 +204,10 @@ const getCandidateFromDefaultDeclaration = (
 
 export const serverAuthActions = defineRule<Rule>({
   id: "server-auth-actions",
+  title: "Server action without auth check",
   severity: "error",
   recommendation:
-    "Add `const session = await auth()` at the top and throw/redirect if unauthorized before any data access",
+    "Add `const session = await auth()` at the top, and throw or redirect if the user isn't allowed before touching any data.",
   create: (context: RuleContext) => {
     let fileHasUseServerDirective = false;
     const customAuthFunctionNames = getReactDoctorStringArraySetting(

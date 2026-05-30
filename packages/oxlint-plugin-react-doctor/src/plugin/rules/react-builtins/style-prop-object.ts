@@ -7,7 +7,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE = "`style` prop value must be an object literal or a variable holding an object.";
+const MESSAGE = "The `style` prop needs an object like `{{ color: 'red' }}`, not a string.";
 
 interface StylePropObjectSettings {
   allow?: ReadonlyArray<string>;
@@ -137,6 +137,7 @@ const getJsxOpeningElementName = (node: EsTreeNodeOfType<"JSXOpeningElement">): 
 // list lets specific component names skip the check.
 export const stylePropObject = defineRule<Rule>({
   id: "style-prop-object",
+  title: "Style prop is not an object",
   severity: "warn",
   recommendation: "Pass the `style` prop as `{{ color: 'red' }}` (object literal), not a string.",
   category: "Correctness",

@@ -54,12 +54,12 @@ const normalizeAttributeCase = (name: string): string => {
 const hasUppercaseChar = (input: string): boolean => /[A-Z]/.test(input);
 
 const INVALID_PROP_ON_TAG = (propName: string, allowedTags: string): string =>
-  `Invalid property — \`${propName}\` is only allowed on: ${allowedTags}`;
+  `The \`${propName}\` prop only works on these tags: ${allowedTags}.`;
 const DATA_LOWERCASE_REQUIRED = (suggestedProp: string): string =>
-  `\`data-*\` props with uppercase characters aren't recognized — use \`${suggestedProp}\` instead.`;
+  `React ignores \`data-*\` props with capital letters. Use \`${suggestedProp}\` instead.`;
 const UNKNOWN_PROP_WITH_STANDARD_NAME = (suggested: string): string =>
-  `Unknown property — use \`${suggested}\` instead.`;
-const UNKNOWN_PROP_GENERIC = "Unknown property — remove it.";
+  `React doesn't know this prop. Use \`${suggested}\` instead.`;
+const UNKNOWN_PROP_GENERIC = "React doesn't know this prop. Remove it.";
 
 // Port of `oxc_linter::rules::react::no_unknown_property`. Validates JSX
 // attributes against React's recognized DOM/SVG attribute set:
@@ -80,9 +80,9 @@ const UNKNOWN_PROP_GENERIC = "Unknown property — remove it.";
 
 export const noUnknownProperty = defineRule<Rule>({
   id: "no-unknown-property",
+  title: "Unknown DOM property",
   severity: "warn",
-  recommendation:
-    "Use the React-cased prop name React expects (`className`, `htmlFor`, `tabIndex`, …).",
+  recommendation: "Use the prop name React expects, like `className`, `htmlFor`, or `tabIndex`.",
   create: (context) => {
     const { ignore = [], requireDataLowercase = false } = resolveSettings(context.settings);
     const ignoreSet = new Set(ignore);

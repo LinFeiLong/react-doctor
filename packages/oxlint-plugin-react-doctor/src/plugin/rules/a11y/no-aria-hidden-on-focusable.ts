@@ -8,16 +8,17 @@ import { parseJsxValue } from "../../utils/parse-jsx-value.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  'Focusable elements must not have `aria-hidden="true"` — focus would skip the hidden subtree, confusing keyboard users.';
+  "Keyboard users can still tab here, but screen readers skip it because of `aria-hidden`. Remove `aria-hidden`, or stop it being focusable.";
 
 // Port of `oxc_linter::rules::jsx_a11y::no_aria_hidden_on_focusable`.
 // Flags interactive / explicitly-tabbable elements that also set
 // `aria-hidden`.
 export const noAriaHiddenOnFocusable = defineRule<Rule>({
   id: "no-aria-hidden-on-focusable",
+  title: "aria-hidden on focusable element",
   tags: ["react-jsx-only"],
   severity: "warn",
-  recommendation: "Remove `aria-hidden` from focusable elements (or remove the focusability).",
+  recommendation: "Remove `aria-hidden` from focusable elements, or stop them being focusable.",
   category: "Accessibility",
   create: (context) => ({
     JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {

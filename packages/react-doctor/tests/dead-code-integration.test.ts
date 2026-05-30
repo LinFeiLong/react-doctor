@@ -47,7 +47,7 @@ describe("diagnose() dead-code integration", () => {
 
     // lint:false keeps the fork to a single deslop worker spawn (no
     // oxlint). deadCode is on by default; set it explicitly for intent.
-    const result = await diagnose(projectDir, { lint: false, deadCode: true });
+    const result = await diagnose(projectDir, { lint: false, deadCode: true, warnings: true });
 
     const orphan = result.diagnostics.find(
       (diagnostic) =>

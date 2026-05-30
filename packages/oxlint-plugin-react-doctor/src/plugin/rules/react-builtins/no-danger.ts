@@ -6,13 +6,14 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Do not use `dangerouslySetInnerHTML` — it injects raw HTML and is a common XSS vector.";
+  "`dangerouslySetInnerHTML` drops raw HTML into the page, a common way to get hacked (XSS). Avoid it.";
 
 // Port of `oxc_linter::rules::react::no_danger`. Flags any
 // `dangerouslySetInnerHTML` prop, both as a JSXAttribute on a JSX element
 // and as a property in the props object passed to `React.createElement`.
 export const noDanger = defineRule<Rule>({
   id: "no-danger",
+  title: "Use of dangerouslySetInnerHTML",
   severity: "warn",
   recommendation: "Render trusted content as React children rather than injecting raw HTML.",
   create: (context) => ({

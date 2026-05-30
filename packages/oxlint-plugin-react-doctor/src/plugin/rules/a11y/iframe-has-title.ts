@@ -8,7 +8,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "`<iframe>` element must have a non-empty `title` attribute for assistive technology.";
+  "This `<iframe>` has no title, so screen readers cannot say what is inside it. Add a `title` describing its content.";
 
 type StaticVerdict = "ok" | "empty" | "dynamic-ok";
 
@@ -46,9 +46,10 @@ const evaluateTitleValue = (value: EsTreeNode | null | undefined): StaticVerdict
 // Port of `oxc_linter::rules::jsx_a11y::iframe_has_title`.
 export const iframeHasTitle = defineRule<Rule>({
   id: "iframe-has-title",
+  title: "iframe missing title",
   tags: ["react-jsx-only"],
   severity: "warn",
-  recommendation: "Add a descriptive `title` attribute to every `<iframe>`.",
+  recommendation: "Add a descriptive `title` to every `<iframe>`.",
   category: "Accessibility",
   create: (context) => ({
     JSXOpeningElement(node: EsTreeNodeOfType<"JSXOpeningElement">) {

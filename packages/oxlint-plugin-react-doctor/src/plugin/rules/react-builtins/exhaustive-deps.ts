@@ -658,6 +658,7 @@ const addAggregatePropsDependency = (
 
 export const exhaustiveDeps = defineRule<Rule>({
   id: "exhaustive-deps",
+  title: "Missing effect dependencies",
   severity: "warn",
   tags: ["test-noise"],
   recommendation: `Don't blindly add missing dependencies. Read the hook callback first.

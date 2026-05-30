@@ -27,6 +27,7 @@ import { stringifyExpressionSnippet } from "./utils/effect/stringify-expression-
 
 export const noInitializeState = defineRule<Rule>({
   id: "no-initialize-state",
+  title: "State initialized from a mount effect",
   severity: "warn",
   tags: ["test-noise"],
   recommendation:
@@ -64,7 +65,7 @@ export const noInitializeState = defineRule<Rule>({
             : "undefined";
         context.report({
           node: callExpr,
-          message: `Avoid initializing state in an effect. Instead, initialize "${stateName}"'s \`useState()\` with "${argumentText}". For SSR hydration, prefer \`useSyncExternalStore()\`.`,
+          message: `Don't set "${stateName}"'s starting value from a useEffect. Pass it straight to \`useState()\` as "${argumentText}". For SSR hydration, prefer \`useSyncExternalStore()\`.`,
         });
       }
     },

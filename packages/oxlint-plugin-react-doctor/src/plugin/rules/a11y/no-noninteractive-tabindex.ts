@@ -11,7 +11,7 @@ import { parseJsxValue } from "../../utils/parse-jsx-value.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Don't add `tabIndex` to non-interactive elements — keyboard users would have no expected behavior on focus.";
+  "Adding `tabIndex` here lets keyboard users focus something they cannot act on, which is confusing. Remove it.";
 
 interface NoNoninteractiveTabindexSettings {
   tags?: ReadonlyArray<string>;
@@ -38,9 +38,10 @@ const resolveSettings = (
 // Port of `oxc_linter::rules::jsx_a11y::no_noninteractive_tabindex`.
 export const noNoninteractiveTabindex = defineRule<Rule>({
   id: "no-noninteractive-tabindex",
+  title: "Tabindex on non-interactive element",
   tags: ["react-jsx-only"],
   severity: "warn",
-  recommendation: "Reserve `tabIndex` for interactive elements / interactive roles.",
+  recommendation: "Only add `tabIndex` to interactive elements or interactive roles.",
   category: "Accessibility",
   create: (context) => {
     const settings = resolveSettings(context.settings);

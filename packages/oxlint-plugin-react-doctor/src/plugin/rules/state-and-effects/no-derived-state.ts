@@ -53,10 +53,11 @@ const getStateNameForUseStateDecl = (useStateNode: EsTreeNode | null): string | 
 
 export const noDerivedState = defineRule<Rule>({
   id: "no-derived-state",
+  title: "Derived value copied into state",
   severity: "warn",
   tags: ["test-noise"],
   recommendation:
-    "Compute derived state inline during render (or with useMemo if expensive) instead of mirroring it into useState via a useEffect. See https://react.dev/learn/you-might-not-need-an-effect#updating-state-based-on-props-or-state",
+    "Work out the value while rendering (or with useMemo if it's expensive) instead of copying it into useState through a useEffect. See https://react.dev/learn/you-might-not-need-an-effect#updating-state-based-on-props-or-state",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (!isUseEffect(node)) return;
@@ -107,12 +108,12 @@ export const noDerivedState = defineRule<Rule>({
         if (isSomeArgsInternal) {
           context.report({
             node: callExpr,
-            message: `Avoid storing derived state. Compute "${stateName}" directly during render, optionally with \`useMemo\` if it's expensive.`,
+            message: `Don't store "${stateName}" in state when you can work it out from other values. Compute it while rendering, with \`useMemo\` if it's expensive.`,
           });
         } else if (isValueAlwaysInSync) {
           context.report({
             node: callExpr,
-            message: `Avoid storing derived state. "${stateName}" is only set here, and thus could be computed directly during render.`,
+            message: `"${stateName}" is only set here from other values, so you don't need state for it. Work it out while rendering instead.`,
           });
         }
       }

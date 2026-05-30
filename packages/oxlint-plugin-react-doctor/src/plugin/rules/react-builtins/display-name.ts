@@ -10,7 +10,8 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE = "Component is missing a `displayName` — assign one for easier debugging.";
+const MESSAGE =
+  "This component has no `displayName`, so it shows up as Anonymous in React DevTools. Give it a name.";
 
 interface DisplayNameSettings {
   ignoreTranspilerName?: boolean;
@@ -376,13 +377,14 @@ const hasDisplayNameAssignmentForProperty = (
 // isn't PascalCase.
 export const displayName = defineRule<Rule>({
   id: "display-name",
+  title: "Component missing display name",
   severity: "warn",
   // Minor debug-helper rule — modern bundlers preserve function names
   // so React DevTools shows meaningful names without explicit
   // `displayName` in most cases. Off-by-default in upstream
   // `eslint-plugin-react`'s recommended config since v8.x. Default off.
   defaultEnabled: false,
-  recommendation: "Assign each component a stable `displayName` for clearer dev-tooling output.",
+  recommendation: "Give each component a `displayName` so DevTools shows a clear name.",
   category: "Architecture",
   create: (context) => {
     const settings = resolveSettings(context.settings);

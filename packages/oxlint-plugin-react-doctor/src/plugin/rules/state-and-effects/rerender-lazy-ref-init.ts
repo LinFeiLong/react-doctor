@@ -36,11 +36,12 @@ import type { RuleContext } from "../../utils/rule-context.js";
 //     free — same exemption list as `rerender-lazy-state-init`.
 export const rerenderLazyRefInit = defineRule<Rule>({
   id: "rerender-lazy-ref-init",
+  title: "Ref initializer runs on every render",
   tags: ["test-noise"],
   severity: "warn",
   category: "Performance",
   recommendation:
-    "Initialize lazily: `const ref = useRef<T | null>(null); if (ref.current === null) ref.current = expensiveCall();`",
+    "Set it up only once: `const ref = useRef<T | null>(null); if (ref.current === null) ref.current = expensiveCall();`",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (!isHookCall(node, "useRef") || !node.arguments?.length) return;
@@ -77,7 +78,7 @@ export const rerenderLazyRefInit = defineRule<Rule>({
 
       context.report({
         node: initializer,
-        message: `useRef(${callShape}) allocates a fresh value on every render — useRef has no lazy-init form, so the allocation is discarded after the first render. Use \`const ref = useRef(null); if (ref.current === null) ${lazyFix}\` or \`useMemo\` instead.`,
+        message: `useRef(${callShape}) builds a fresh value on every render, and useRef can't take a lazy initializer, so that value is thrown away after the first render. Use \`const ref = useRef(null); if (ref.current === null) ${lazyFix}\` or \`useMemo\` instead.`,
       });
     },
   }),

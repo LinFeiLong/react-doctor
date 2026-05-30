@@ -16,6 +16,7 @@ const BOOLEAN_FIELD_NAMES = [
   "lint",
   "deadCode",
   "verbose",
+  "warnings",
   "customRulesOnly",
   "share",
   "noScore",

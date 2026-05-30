@@ -6,8 +6,8 @@ import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (componentName: string, allowAllCaps: boolean): string =>
   allowAllCaps
-    ? `JSX component \`${componentName}\` must be in PascalCase or SCREAMING_SNAKE_CASE.`
-    : `JSX component \`${componentName}\` must be in PascalCase.`;
+    ? `Component names like \`${componentName}\` should be PascalCase or SCREAMING_SNAKE_CASE.`
+    : `Component names like \`${componentName}\` should be PascalCase.`;
 
 interface JsxPascalCaseSettings {
   allowAllCaps?: boolean;
@@ -150,6 +150,7 @@ const matchesIgnoreGlob = (
 // settings. HTML tags (lowercase first letter) are skipped.
 export const jsxPascalCase = defineRule<Rule>({
   id: "jsx-pascal-case",
+  title: "Component name not PascalCase",
   severity: "warn",
   tags: ["test-noise"],
   recommendation: "Rename custom JSX components to PascalCase.",

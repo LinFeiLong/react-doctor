@@ -7,10 +7,11 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const noRenderInRender = defineRule<Rule>({
   id: "no-render-in-render",
+  title: "Component rendered by inline function call",
   severity: "warn",
   tags: ["test-noise"],
   recommendation:
-    "Extract to a named component: `const ListItem = ({ item }) => <div>{item.name}</div>`",
+    "Make it a named component, like `const ListItem = ({ item }) => <div>{item.name}</div>`.",
   create: (context: RuleContext) => ({
     JSXExpressionContainer(node: EsTreeNodeOfType<"JSXExpressionContainer">) {
       const expression = node.expression;
@@ -30,7 +31,7 @@ export const noRenderInRender = defineRule<Rule>({
 
       context.report({
         node: expression,
-        message: `Inline render function "${calleeName}()" — extract to a separate component for proper reconciliation`,
+        message: `"${calleeName}()" builds UI by calling a function inline. Pull it out into its own component so React can track it properly.`,
       });
     },
   }),

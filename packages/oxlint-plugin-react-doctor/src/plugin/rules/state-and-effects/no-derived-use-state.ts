@@ -10,6 +10,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 export const noDerivedUseState = defineRule<Rule>({
   id: "no-derived-useState",
+  title: "Prop derived into useState",
   tags: ["test-noise"],
   severity: "warn",
   recommendation:
@@ -30,7 +31,7 @@ export const noDerivedUseState = defineRule<Rule>({
           if (isInitialOnlyPropName(initializer.name)) return;
           context.report({
             node,
-            message: `useState initialized from prop "${initializer.name}" — if this value should stay in sync with the prop, derive it during render instead`,
+            message: `useState starts from prop "${initializer.name}". To keep it in sync with the prop, work it out while rendering instead of storing it.`,
           });
           return;
         }
@@ -48,7 +49,7 @@ export const noDerivedUseState = defineRule<Rule>({
             }
             context.report({
               node,
-              message: `useState initialized from prop "${rootIdentifierName}" — if this value should stay in sync with the prop, derive it during render instead`,
+              message: `useState starts from prop "${rootIdentifierName}". To keep it in sync with the prop, work it out while rendering instead of storing it.`,
             });
           }
         }

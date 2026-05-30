@@ -75,10 +75,11 @@ const collectValueIdentifierNames = (node: EsTreeNode | null | undefined, into: 
 
 export const noDerivedStateEffect = defineRule<Rule>({
   id: "no-derived-state-effect",
+  title: "Derived state stored in an effect",
   severity: "warn",
   tags: ["test-noise"],
   recommendation:
-    "For derived state, compute inline: `const x = fn(dep)`. For state resets on prop change, use a key prop: `<Component key={prop} />`. See https://react.dev/learn/you-might-not-need-an-effect",
+    "Work out derived values while rendering: `const x = fn(dep)`. To reset a component's state when a prop changes, give it a key prop: `<Component key={prop} />`. See https://react.dev/learn/you-might-not-need-an-effect",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (!isHookCall(node, EFFECT_HOOK_NAMES) || (node.arguments?.length ?? 0) < 2) return;
@@ -186,12 +187,13 @@ export const noDerivedStateEffect = defineRule<Rule>({
       let message: string;
       if (!hasAnyDependencyReference) {
         message =
-          "State reset in useEffect — use a key prop to reset component state when props change";
+          "This useEffect resets state when a prop changes. Give the component a key prop instead so React rebuilds it from scratch.";
       } else if (hasExpensiveDerivation) {
         message =
-          "Derived state in useEffect — wrap the calculation in useMemo([deps]) (or compute it directly during render if it isn't expensive)";
+          "This useEffect stores a value worked out from other state. Wrap it in useMemo instead, or just work it out while rendering if it's cheap.";
       } else {
-        message = "Derived state in useEffect — compute during render instead";
+        message =
+          "This useEffect stores a value you can work out from other state. You can compute during render instead, no extra state needed.";
       }
 
       context.report({ node, message });

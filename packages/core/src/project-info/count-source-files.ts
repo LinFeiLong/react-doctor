@@ -1,10 +1,7 @@
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import {
-  GIT_LS_FILES_MAX_BUFFER_BYTES,
-  IGNORED_DIRECTORIES,
-  SOURCE_FILE_PATTERN,
-} from "./constants.js";
+import { GIT_LS_FILES_MAX_BUFFER_BYTES, IGNORED_DIRECTORIES } from "./constants.js";
+import { isLintableSourceFile } from "../utils/is-lintable-source-file.js";
 import { readDirectoryEntries } from "./utils/read-directory-entries.js";
 
 const countSourceFilesViaFilesystem = (rootDirectory: string): number => {
@@ -22,7 +19,7 @@ const countSourceFilesViaFilesystem = (rootDirectory: string): number => {
         }
         continue;
       }
-      if (entry.isFile() && SOURCE_FILE_PATTERN.test(entry.name)) {
+      if (entry.isFile() && isLintableSourceFile(entry.name)) {
         count++;
       }
     }
@@ -52,7 +49,7 @@ const countSourceFilesViaGit = (rootDirectory: string): number | null => {
 
   return result.stdout
     .split("\0")
-    .filter((filePath) => filePath.length > 0 && SOURCE_FILE_PATTERN.test(filePath)).length;
+    .filter((filePath) => filePath.length > 0 && isLintableSourceFile(filePath)).length;
 };
 
 export const countSourceFiles = (rootDirectory: string): number =>

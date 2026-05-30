@@ -7,9 +7,9 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const JSX_NOT_ALLOWED = (extension: string, allowedList: string): string =>
-  `JSX is not allowed in \`${extension}\` files — rename to one of: ${allowedList}.`;
+  `This file has JSX but a \`${extension}\` name. Rename it to one of: ${allowedList}.`;
 const EXTENSION_ONLY_FOR_JSX = (extension: string): string =>
-  `\`${extension}\` files are reserved for JSX content — this file contains none.`;
+  `\`${extension}\` files are meant for JSX, but this one has none. Rename it.`;
 
 interface JsxFilenameExtensionSettings {
   extensions?: ReadonlyArray<string>;
@@ -46,13 +46,13 @@ const normalizeExtensions = (raw: ReadonlyArray<string>): Set<string> => {
 //     JSX content (the file claims to be JSX but isn't).
 export const jsxFilenameExtension = defineRule<Rule>({
   id: "jsx-filename-extension",
+  title: "JSX in disallowed file extension",
   severity: "warn",
   // Pure file-naming convention — Next.js / Docusaurus / Vite all
   // accept JSX in `.js` files out of the box. Forcing `.jsx` /
   // `.tsx` is a project-specific style choice. Default off.
   defaultEnabled: false,
-  recommendation:
-    "Use `.jsx` / `.tsx` (or your project's chosen extension) for files containing JSX.",
+  recommendation: "Name files with JSX `.jsx` or `.tsx`, or whatever extension your project uses.",
   category: "Architecture",
   create: (context) => {
     const settings = resolveSettings(context.settings);

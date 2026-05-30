@@ -130,10 +130,11 @@ const referencesAsyncDataApi = (body: EsTreeNode | null): boolean => {
 
 export const renderingUsetransitionLoading = defineRule<Rule>({
   id: "rendering-usetransition-loading",
+  title: "Loading useState forces extra render",
   tags: ["test-noise"],
   severity: "warn",
   recommendation:
-    "Replace with `const [isPending, startTransition] = useTransition()` — avoids a re-render for the loading state",
+    "Replace with `const [isPending, startTransition] = useTransition()`, which skips the extra render for the loading flag",
   create: (context: RuleContext) => ({
     VariableDeclarator(node: EsTreeNodeOfType<"VariableDeclarator">) {
       if (!isNodeOfType(node.id, "ArrayPattern") || !node.id.elements?.length) return;
@@ -167,7 +168,7 @@ export const renderingUsetransitionLoading = defineRule<Rule>({
 
       context.report({
         node: node.init,
-        message: `useState for "${stateVariableName}" — if this guards a state transition (not an async fetch), consider useTransition instead`,
+        message: `useState for "${stateVariableName}" causes an extra render for the loading flag. If this is for a state change and not a data fetch, use useTransition instead`,
       });
     },
   }),

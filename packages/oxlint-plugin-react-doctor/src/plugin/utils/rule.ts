@@ -22,6 +22,11 @@ export interface Rule {
   // some rule-ids carry historical prefixes the file path doesn't —
   // e.g. `react-ui/no-em-dash-in-jsx-text.ts` registers as `design-no-em-dash-in-jsx-text`.
   id: string;
+  // Very short human headline for the rule (a few words, no trailing
+  // period) naming the problem it catches, e.g. "Array index used as a
+  // key". Surfaced in docs and summary UIs alongside the longer
+  // per-diagnostic `message`.
+  title?: string;
   severity: RuleSeverity;
   // Category override — when present, takes precedence over the bucket
   // default the codegen emits (most rules let the bucket choose, e.g. a

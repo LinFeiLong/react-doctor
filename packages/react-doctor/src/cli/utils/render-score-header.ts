@@ -39,7 +39,6 @@ interface RainbowFrameInput {
   displayScore: number;
   label: string;
   frame: number;
-  projectName?: string;
 }
 
 interface InitialScoreHeaderLineInput {
@@ -166,51 +165,31 @@ const writeScoreHeaderLine = (line: string): Effect.Effect<void> =>
     process.stdout.write(line);
   });
 
-const buildScoreLine = (
-  displayScore: number,
-  finalScore: number,
-  label: string,
-  projectName?: string,
-): string => {
+const buildScoreLine = (displayScore: number, finalScore: number, label: string): string => {
   const scoreNumber = colorizeByScore(`${displayScore}`, finalScore);
   const scoreLabel = colorizeByScore(label, finalScore);
-  const projectSuffix = projectName
-    ? ` ${highlighter.dim("·")} ${highlighter.dim(projectName)}`
-    : "";
-  return `${scoreNumber} ${highlighter.dim(`/ ${PERFECT_SCORE}`)} ${scoreLabel}${projectSuffix}`;
+  return `${scoreNumber} ${highlighter.dim(`/ ${PERFECT_SCORE}`)} ${scoreLabel}`;
 };
 
-const buildRawScoreLine = (displayScore: number, label: string, projectName?: string): string => {
-  const projectSuffix = projectName ? ` · ${projectName}` : "";
-  return `${displayScore} / ${PERFECT_SCORE} ${label}${projectSuffix}`;
-};
+const buildRawScoreLine = (displayScore: number, label: string): string =>
+  `${displayScore} / ${PERFECT_SCORE} ${label}`;
 
 const buildRainbowScoreHeaderFrame = ({
   score,
   displayScore,
   label,
   frame,
-  projectName,
 }: RainbowFrameInput): string => {
   const rawFaceLines = buildRawFaceLines(score);
   return joinScoreHeaderFrame([
-    buildRainbowHeaderLine(
-      rawFaceLines[0] ?? "",
-      buildRawScoreLine(displayScore, label, projectName),
-      frame,
-    ),
+    buildRainbowHeaderLine(rawFaceLines[0] ?? "", buildRawScoreLine(displayScore, label), frame),
     buildRainbowHeaderLine(rawFaceLines[1] ?? "", buildRawScoreBar(displayScore), frame),
     buildRainbowHeaderLine(rawFaceLines[2] ?? "", RAW_BRANDING_LINE, frame),
     buildRainbowHeaderLine(rawFaceLines[3] ?? "", "", frame),
   ]);
 };
 
-const buildFinalPerfectScoreHeaderFrame = (
-  score: number,
-  label: string,
-  frame: number,
-  projectName?: string,
-): string => {
+const buildFinalPerfectScoreHeaderFrame = (score: number, label: string, frame: number): string => {
   const rawFaceLines = buildRawFaceLines(score);
   const renderedFaceLines = buildFaceRenderedLines(score);
   const rainbowBarLine = colorizeRainbowText(
@@ -219,10 +198,7 @@ const buildFinalPerfectScoreHeaderFrame = (
     getRightColumnOffset(rawFaceLines[1] ?? ""),
   );
   return joinScoreHeaderFrame([
-    buildScoreHeaderLine(
-      renderedFaceLines[0] ?? "",
-      buildScoreLine(score, score, label, projectName),
-    ),
+    buildScoreHeaderLine(renderedFaceLines[0] ?? "", buildScoreLine(score, score, label)),
     buildScoreHeaderLine(renderedFaceLines[1] ?? "", rainbowBarLine),
     buildScoreHeaderLine(renderedFaceLines[2] ?? "", BRANDING_LINE),
     buildScoreHeaderLine(renderedFaceLines[3] ?? "", ""),
@@ -254,7 +230,6 @@ const printAnimatedScore = (
   barFaceLine: string,
   score: number,
   label: string,
-  projectName?: string,
 ): Effect.Effect<void> =>
   Effect.gen(function* () {
     const isPerfectScore = score === PERFECT_SCORE;
@@ -270,7 +245,6 @@ const printAnimatedScore = (
             displayScore: animatedScore,
             label,
             frame,
-            projectName,
           })}`,
         );
         if (frame < SCORE_HEADER_ANIMATION_FRAME_COUNT) {
@@ -279,7 +253,7 @@ const printAnimatedScore = (
         continue;
       }
 
-      const animatedScoreLine = buildScoreLine(animatedScore, score, label, projectName);
+      const animatedScoreLine = buildScoreLine(animatedScore, score, label);
       const animatedBarLine = buildScoreBar(animatedScore, score);
       // HACK: \x1b[2A moves cursor up 2 lines to overwrite both the
       // score number line and the bar line in place each frame.
@@ -301,21 +275,17 @@ const printAnimatedScore = (
           displayScore: score,
           label,
           frame,
-          projectName,
         })}`,
       );
       yield* sleep(PERFECT_SCORE_RAINBOW_FRAME_DELAY_MS);
     }
 
     yield* writeScoreHeaderLine(
-      `\x1b[4A\r${buildFinalPerfectScoreHeaderFrame(score, label, PERFECT_SCORE_RAINBOW_FRAME_COUNT, projectName)}\x1b[2A`,
+      `\x1b[4A\r${buildFinalPerfectScoreHeaderFrame(score, label, PERFECT_SCORE_RAINBOW_FRAME_COUNT)}\x1b[2A`,
     );
   });
 
-export const printScoreHeader = (
-  scoreResult: ScoreResult,
-  projectName?: string,
-): Effect.Effect<void> =>
+export const printScoreHeader = (scoreResult: ScoreResult): Effect.Effect<void> =>
   Effect.gen(function* () {
     const isPerfectScore = scoreResult.score === PERFECT_SCORE;
     const renderedFaceLines = buildFaceRenderedLines(scoreResult.score);
@@ -323,19 +293,14 @@ export const printScoreHeader = (
     const shouldAnimate = !isSpinnerSilent() && isSpinnerInteractive(process.stdout);
 
     const displayScore = shouldAnimate ? 0 : scoreResult.score;
-    const scoreLine = buildScoreLine(
-      displayScore,
-      scoreResult.score,
-      scoreResult.label,
-      projectName,
-    );
+    const scoreLine = buildScoreLine(displayScore, scoreResult.score, scoreResult.label);
     const scoreBarLine = shouldAnimate
       ? buildScoreBar(0, scoreResult.score)
       : buildScoreBar(scoreResult.score);
 
     const rightColumnLines = [scoreLine, scoreBarLine, BRANDING_LINE, ""];
     const rawRightColumnLines = [
-      buildRawScoreLine(displayScore, scoreResult.label, projectName),
+      buildRawScoreLine(displayScore, scoreResult.label),
       buildRawScoreBar(displayScore),
       RAW_BRANDING_LINE,
       "",
@@ -367,7 +332,6 @@ export const printScoreHeader = (
         renderedFaceLines[1],
         scoreResult.score,
         scoreResult.label,
-        projectName,
       );
       yield* writeScoreHeaderLine("\x1b[3B");
     }

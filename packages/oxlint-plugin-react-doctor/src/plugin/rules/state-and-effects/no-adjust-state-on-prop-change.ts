@@ -25,6 +25,7 @@ import {
 
 export const noAdjustStateOnPropChange = defineRule<Rule>({
   id: "no-adjust-state-on-prop-change",
+  title: "State synced to a prop inside an effect",
   severity: "error",
   tags: ["test-noise"],
   recommendation:
@@ -58,7 +59,7 @@ export const noAdjustStateOnPropChange = defineRule<Rule>({
         context.report({
           node: callExpr,
           message:
-            "State adjusted in a useEffect when a prop changes — forces an extra render with a stale UI between the two commits. Adjust the state during render with a `prev`-prop comparison instead, or refactor to remove the duplicated state.",
+            "Syncing state to a prop inside useEffect makes the screen briefly show the old value. Set it while rendering, or just use the prop directly.",
         });
       }
     },

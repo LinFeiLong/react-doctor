@@ -8,11 +8,12 @@ const EM_DASH = "—";
 
 export const noEmDashInJsxText = defineRule<Rule>({
   id: "design-no-em-dash-in-jsx-text",
+  title: "Em dash in JSX text",
   tags: ["design", "test-noise"],
   severity: "warn",
   category: "Architecture",
   recommendation:
-    "Replace em dashes in JSX prose with commas, colons, semicolons, or parentheses so UI copy reads less like generated text.",
+    "Replace em dashes in UI text with commas, colons, semicolons, or parentheses so the copy reads less like AI output.",
   create: (context: RuleContext) => ({
     JSXText(jsxTextNode: EsTreeNodeOfType<"JSXText">) {
       const textValue = typeof jsxTextNode.value === "string" ? jsxTextNode.value : "";
@@ -21,7 +22,7 @@ export const noEmDashInJsxText = defineRule<Rule>({
       context.report({
         node: jsxTextNode,
         message:
-          "Em dash (—) in JSX text reads as model output — replace with comma, colon, semicolon, or parentheses",
+          "Em dash (—) in JSX text reads like AI output. Replace it with a comma, colon, semicolon, or parentheses.",
       });
     },
   }),

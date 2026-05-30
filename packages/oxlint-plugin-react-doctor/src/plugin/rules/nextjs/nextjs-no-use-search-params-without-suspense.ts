@@ -49,6 +49,7 @@ const fileMentionsSuspense = (programNode: EsTreeNode): boolean => {
 
 export const nextjsNoUseSearchParamsWithoutSuspense = defineRule<Rule>({
   id: "nextjs-no-use-search-params-without-suspense",
+  title: "useSearchParams without Suspense",
   tags: ["test-noise"],
   requires: ["nextjs"],
   severity: "warn",
@@ -67,7 +68,7 @@ export const nextjsNoUseSearchParamsWithoutSuspense = defineRule<Rule>({
         context.report({
           node,
           message:
-            "useSearchParams() requires a <Suspense> boundary — without one, the entire page bails out to client-side rendering",
+            "useSearchParams() needs a <Suspense> boundary. Without one, the whole page falls back to client-side rendering.",
         });
       },
     };

@@ -88,6 +88,7 @@ const isInsideDeferredCallback = (node: EsTreeNode): boolean => {
 
 export const rerenderFunctionalSetstate = defineRule<Rule>({
   id: "rerender-functional-setstate",
+  title: "setState reads a stale value",
   severity: "warn",
   tags: ["test-noise"],
   category: "Performance",
@@ -120,7 +121,7 @@ export const rerenderFunctionalSetstate = defineRule<Rule>({
         if (isNodeOfType(stateIdentifier, "Identifier")) {
           context.report({
             node,
-            message: `${calleeName}(${stateIdentifier.name} ${argument.operator} ...) — use functional update to avoid stale closures`,
+            message: `${calleeName}(${stateIdentifier.name} ${argument.operator} ...) can read an old value. Use the functional update \`${calleeName}(prev => ...)\` to always read the latest.`,
           });
           return;
         }
@@ -137,7 +138,7 @@ export const rerenderFunctionalSetstate = defineRule<Rule>({
           : `${argument.argument.name}${argument.operator}`;
         context.report({
           node,
-          message: `${calleeName}(${display}) — use functional update to avoid stale closures (and reading the post-increment value bug)`,
+          message: `${calleeName}(${display}) can read an old value, and ++ grabs the wrong one. Use the functional update \`${calleeName}(prev => ...)\` instead.`,
         });
         return;
       }
@@ -170,7 +171,7 @@ export const rerenderFunctionalSetstate = defineRule<Rule>({
         if (spreadsState) {
           context.report({
             node,
-            message: `${calleeName}([...${expectedStateName}, ...]) — use functional update \`${calleeName}(prev => [...prev, ...])\` to avoid stale closures`,
+            message: `${calleeName}([...${expectedStateName}, ...]) can read an old value here. Use the functional update \`${calleeName}(prev => [...prev, ...])\` instead.`,
           });
           return;
         }
@@ -186,7 +187,7 @@ export const rerenderFunctionalSetstate = defineRule<Rule>({
         if (spreadsState) {
           context.report({
             node,
-            message: `${calleeName}({ ...${expectedStateName}, ... }) — use functional update \`${calleeName}(prev => ({ ...prev, ... }))\` to avoid stale closures`,
+            message: `${calleeName}({ ...${expectedStateName}, ... }) can read an old value here. Use the functional update \`${calleeName}(prev => ({ ...prev, ... }))\` instead.`,
           });
           return;
         }

@@ -14,11 +14,12 @@ const buildMessage = (
   isInProp: boolean,
   allowAsProps: boolean,
 ): string => {
-  let message = "Don't define components inside another component";
+  let message = "This component is defined inside another component";
   if (parentName) message += ` (\`${parentName}\`)`;
-  message += " — extract it to module scope.";
+  message +=
+    ", so it gets rebuilt and loses its state every time the screen updates. Move it to the top of the file.";
   if (isInProp && !allowAsProps) {
-    message += " If intentional, set `allowAsProps: true`.";
+    message += " If this is intentional, set `allowAsProps: true`.";
   }
   return message;
 };
@@ -334,9 +335,9 @@ const isReturnOfMapCallback = (node: EsTreeNode): boolean => {
 // Port of `oxc_linter::rules::react::no_unstable_nested_components`.
 export const noUnstableNestedComponents = defineRule<Rule>({
   id: "no-unstable-nested-components",
+  title: "Component defined inside a component",
   severity: "warn",
-  recommendation:
-    "Hoist nested components to module scope or memoize them — never define one inside another.",
+  recommendation: "Move nested components to the top of the file. Never define one inside another.",
   category: "Performance",
   create: (context) => {
     const settings = resolveSettings(context.settings);

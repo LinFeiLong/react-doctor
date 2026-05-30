@@ -1,11 +1,8 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { readDirectoryEntries } from "../project-info/index.js";
-import {
-  GIT_LS_FILES_MAX_BUFFER_BYTES,
-  IGNORED_DIRECTORIES,
-  SOURCE_FILE_PATTERN,
-} from "../constants.js";
+import { GIT_LS_FILES_MAX_BUFFER_BYTES, IGNORED_DIRECTORIES } from "../constants.js";
+import { isLintableSourceFile } from "./is-lintable-source-file.js";
 
 const listSourceFilesViaGit = (rootDirectory: string): string[] | null => {
   // HACK: --recurse-submodules is incompatible with --others /
@@ -29,7 +26,7 @@ const listSourceFilesViaGit = (rootDirectory: string): string[] | null => {
 
   return result.stdout
     .split("\0")
-    .filter((filePath) => filePath.length > 0 && SOURCE_FILE_PATTERN.test(filePath));
+    .filter((filePath) => filePath.length > 0 && isLintableSourceFile(filePath));
 };
 
 const listSourceFilesViaFilesystem = (rootDirectory: string): string[] => {
@@ -50,7 +47,7 @@ const listSourceFilesViaFilesystem = (rootDirectory: string): string[] => {
         continue;
       }
 
-      if (entry.isFile() && SOURCE_FILE_PATTERN.test(entry.name)) {
+      if (entry.isFile() && isLintableSourceFile(entry.name)) {
         filePaths.push(path.relative(rootDirectory, absolutePath).replace(/\\/g, "/"));
       }
     }

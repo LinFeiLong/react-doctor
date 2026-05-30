@@ -27,8 +27,8 @@ const SAFER_REPLACEMENT: Record<string, string> = {
 };
 
 const buildMessage = (methodName: string): string =>
-  `Unsafe lifecycle method \`${methodName}\` — use \`${
-    SAFER_REPLACEMENT[methodName] ?? "an alternative lifecycle method"
+  `\`${methodName}\` is an unsafe lifecycle method React is phasing out. Use \`${
+    SAFER_REPLACEMENT[methodName] ?? "a modern lifecycle method"
   }\` instead.`;
 
 interface NoUnsafeSettings {
@@ -87,6 +87,7 @@ const getStaticKeyName = (key: EsTreeNode): string | null => {
 // are valid).
 export const noUnsafe = defineRule<Rule>({
   id: "no-unsafe",
+  title: "Unsafe legacy lifecycle method",
   severity: "warn",
   recommendation:
     "Replace `UNSAFE_componentWillMount` / `…WillReceiveProps` / `…WillUpdate` with the modern equivalents.",

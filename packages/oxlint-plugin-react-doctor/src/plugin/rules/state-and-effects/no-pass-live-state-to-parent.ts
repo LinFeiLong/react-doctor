@@ -20,10 +20,11 @@ import {
 
 export const noPassLiveStateToParent = defineRule<Rule>({
   id: "no-pass-live-state-to-parent",
+  title: "Live state pushed to parent via effect",
   severity: "warn",
   tags: ["test-noise"],
   recommendation:
-    "Lift the state to the parent (or return it from the hook) instead of pushing it back up via a prop callback inside a useEffect. See https://react.dev/learn/you-might-not-need-an-effect#notifying-parent-components-about-state-changes",
+    "Move the state up to the parent (or return it from the hook), instead of handing it back up through a prop callback in a useEffect. See https://react.dev/learn/you-might-not-need-an-effect#notifying-parent-components-about-state-changes",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (!isUseEffect(node)) return;
@@ -57,8 +58,8 @@ export const noPassLiveStateToParent = defineRule<Rule>({
         context.report({
           node: callExpr,
           message: isInCustomHook
-            ? "Avoid passing live state to parents in an effect. Instead, return the state from the hook."
-            : "Avoid passing live state to parents in an effect. Instead, lift the state to the parent and pass it down to the child as a prop.",
+            ? "Don't push state up to a parent from a useEffect. Return the state from the hook instead."
+            : "Don't push state up to a parent from a useEffect. Keep the state in the parent and pass it down as a prop instead.",
         });
       }
     },

@@ -16,8 +16,8 @@ const describeClientSideNavigation = (
   isPagesRouterFile: boolean,
 ): string | null => {
   const redirectGuidance = isPagesRouterFile
-    ? "handle navigation in an event handler, getServerSideProps redirect, or middleware"
-    : "use redirect() from next/navigation or handle navigation in an event handler";
+    ? "Handle it in an event handler, a getServerSideProps redirect, or middleware."
+    : "Use redirect() from next/navigation, or handle it in an event handler.";
 
   if (isNodeOfType(node, "CallExpression") && isNodeOfType(node.callee, "MemberExpression")) {
     const objectName = isNodeOfType(node.callee.object, "Identifier")
@@ -27,7 +27,7 @@ const describeClientSideNavigation = (
       ? node.callee.property.name
       : null;
     if (objectName === "router" && (methodName === "push" || methodName === "replace")) {
-      return `router.${methodName}() in useEffect — ${redirectGuidance}`;
+      return `router.${methodName}() in useEffect. ${redirectGuidance}`;
     }
   }
 
@@ -37,10 +37,10 @@ const describeClientSideNavigation = (
       ? node.left.property.name
       : null;
     if (objectName === "window" && propertyName === "location") {
-      return `window.location assignment in useEffect — ${redirectGuidance}`;
+      return `window.location assignment in useEffect. ${redirectGuidance}`;
     }
     if (objectName === "location" && propertyName === "href") {
-      return `location.href assignment in useEffect — ${redirectGuidance}`;
+      return `location.href assignment in useEffect. ${redirectGuidance}`;
     }
   }
 
@@ -49,6 +49,7 @@ const describeClientSideNavigation = (
 
 export const nextjsNoClientSideRedirect = defineRule<Rule>({
   id: "nextjs-no-client-side-redirect",
+  title: "Client-side redirect for navigation",
   tags: ["test-noise"],
   requires: ["nextjs"],
   severity: "warn",

@@ -20,11 +20,12 @@ const getExpoAwareReplacement = (
 
 export const rnNoDeprecatedModules = defineRule<Rule>({
   id: "rn-no-deprecated-modules",
+  title: "Module removed from react-native core",
   tags: ["test-noise"],
   requires: ["react-native"],
   severity: "error",
   recommendation:
-    "Import from the community package instead — deprecated modules were removed from the react-native core",
+    "These modules were removed from react-native core. Import them from the community package instead.",
   create: (context: RuleContext) => {
     const isExpo = isExpoManagedFileActive(context);
 
@@ -43,7 +44,7 @@ export const rnNoDeprecatedModules = defineRule<Rule>({
           const replacement = getExpoAwareReplacement(importedName, baseReplacement, isExpo);
           context.report({
             node: specifier,
-            message: `"${importedName}" was removed from react-native — use ${replacement} instead`,
+            message: `"${importedName}" was removed from react-native. Use ${replacement} instead.`,
           });
         }
       },

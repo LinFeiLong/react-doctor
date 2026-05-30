@@ -181,10 +181,11 @@ const effectHasCleanupRelease = (callback: EsTreeNode): boolean => {
 
 export const effectNeedsCleanup = defineRule<Rule>({
   id: "effect-needs-cleanup",
+  title: "Effect subscription or timer never cleaned up",
   severity: "error",
   tags: ["test-noise"],
   recommendation:
-    "Return a cleanup function that releases the subscription / timer: `return () => target.removeEventListener(name, handler)` for listeners, `return () => clearInterval(id)` / `clearTimeout(id)` for timers, or `return unsubscribe` if the subscribe call already returned one",
+    "Return a cleanup function that stops the subscription or timer: `return () => target.removeEventListener(name, handler)` for listeners, `return () => clearInterval(id)` or `clearTimeout(id)` for timers, or `return unsubscribe` if the subscribe call already gave you one.",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       if (!isHookCall(node, EFFECT_HOOK_NAMES)) return;
@@ -204,7 +205,7 @@ export const effectNeedsCleanup = defineRule<Rule>({
           : "the matching remove/unsubscribe call";
       context.report({
         node,
-        message: `useEffect ${verb} \`${firstUsage.resourceName}(...)\` but never returns a cleanup — leaks the registration on every re-run and on unmount. Return a cleanup function that calls ${release}`,
+        message: `useEffect ${verb} \`${firstUsage.resourceName}(...)\` but never cleans it up, so it piles up every time the effect runs again and when the component goes away. Return a cleanup function that calls ${release}.`,
       });
     },
   }),
