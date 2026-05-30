@@ -40,7 +40,7 @@ describe("checkDeadCode", () => {
     expect(await checkDeadCode({ rootDirectory: directory })).toEqual([]);
   });
 
-  it("flags an orphan file with POSIX-separated paths under the Dead Code category", async () => {
+  it("flags an orphan file with POSIX-separated paths under the Maintainability category", async () => {
     const directory = setupProject("unused-file", {
       "src/index.ts": "export const used = 1;\n",
       "src/orphan.ts": "export const orphan = 1;\n",
@@ -52,7 +52,7 @@ describe("checkDeadCode", () => {
     );
     expect(orphan).toBeDefined();
     expect(orphan?.plugin).toBe("deslop");
-    expect(orphan?.category).toBe("Dead Code");
+    expect(orphan?.category).toBe("Maintainability");
     expect(orphan?.filePath.includes("\\")).toBe(false);
   });
 

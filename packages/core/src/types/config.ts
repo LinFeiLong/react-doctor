@@ -71,9 +71,9 @@ export interface SurfaceControls {
    * `["test-noise"]`) for a single channel without touching others.
    */
   excludeTags?: string[];
-  /** Category names (e.g. `"Architecture"`) to force-include. */
+  /** Category names (e.g. `"Maintainability"`) to force-include. */
   includeCategories?: string[];
-  /** Category names (e.g. `"Architecture"`) to exclude. */
+  /** Category names (e.g. `"Maintainability"`) to exclude. */
   excludeCategories?: string[];
   /**
    * Fully-qualified rule keys (`"<plugin>/<rule>"`, e.g.
@@ -91,7 +91,7 @@ export interface ReactDoctorConfig {
   /**
    * Whether to run dead-code analysis (via `deslop-js`) alongside lint.
    * Reports unused files, unused exports, unused dependencies, and
-   * circular imports under the "Dead Code" category. Default: `true`.
+   * circular imports under the "Maintainability" category. Default: `true`.
    * Always skipped in `--diff` / `--staged` modes because reachability
    * is a whole-project property.
    */

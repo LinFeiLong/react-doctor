@@ -22,12 +22,11 @@ const SEVERITY_ORDER: Record<Diagnostic["severity"], number> = {
   warning: 1,
 };
 
-// Stakes ordering for surfacing diagnostics: the categories developers
+// Stakes ordering for surfacing diagnostics: the buckets developers
 // react to most — a breach, a slow app, a crash — float to the top;
-// taste (architecture / design) sinks. Lower rank = higher stakes =
-// shown first. Categories not listed (framework buckets like Next.js /
-// React Native / Server, or adopted-rule "Other") fall in the
-// middle "likely bug" tier so they're never buried under style notes.
+// maintainability (taste / structure) sinks. Lower rank = higher stakes
+// = shown first. Any unrecognized category falls in the middle "likely
+// bug" tier so it's never buried under maintainability notes.
 const CATEGORY_STAKES_RANK = new Map<string, number>([
   ["Security", 0],
   ["Performance", 1],

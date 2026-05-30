@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+import { DIAGNOSTIC_CATEGORY_BUCKETS } from "@react-doctor/core";
 import reactDoctorPlugin from "oxlint-plugin-react-doctor";
 
 // Executable spec for the rule-copy conventions introduced when every
@@ -35,6 +36,17 @@ describe("rule metadata conventions", () => {
         `title for "${id}" exceeds ${TITLE_MAX_LENGTH_CHARS} chars: "${title}"`,
       ).toBeLessThanOrEqual(TITLE_MAX_LENGTH_CHARS);
     }
+  });
+
+  it("buckets every rule into one of the five user-facing categories", () => {
+    const allowed = new Set<string>(DIAGNOSTIC_CATEGORY_BUCKETS);
+    const offenders = ruleEntries
+      .filter(([, rule]) => !rule.category || !allowed.has(rule.category))
+      .map(([id, rule]) => `${id} → ${rule.category ?? "(none)"}`);
+    expect(
+      offenders,
+      `rules outside ${DIAGNOSTIC_CATEGORY_BUCKETS.join(" / ")}: ${offenders.join(", ")}`,
+    ).toEqual([]);
   });
 
   it("uses no em/en dashes in titles or recommendations", () => {

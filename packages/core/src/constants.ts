@@ -6,7 +6,8 @@ export {
   GENERATED_BUNDLE_FILE_PATTERN,
   GIT_LS_FILES_MAX_BUFFER_BYTES,
   IGNORED_DIRECTORIES,
-  MINIFIED_LINE_LENGTH_CHARS,
+  MINIFIED_AVG_LINE_LENGTH_CHARS,
+  MINIFIED_MAX_LINE_LENGTH_CHARS,
   MINIFIED_MIN_SIZE_BYTES,
   MINIFIED_SNIFF_BYTES,
   SOURCE_FILE_PATTERN,
@@ -185,6 +186,21 @@ export const RECOMMENDED_PNPM_MINIMUM_RELEASE_AGE_MINUTES = 10_080;
 // shorter rule names so the right-aligned `N sites` count stays in a
 // consistent column even when one rule has a much longer identifier.
 export const RULE_NAME_COLUMN_WIDTH_CHARS = 36;
+
+// The closed set of user-facing diagnostic categories. Every rule
+// (collapsed at codegen via `CATEGORY_BUCKET` in
+// `generate-rule-registry.mjs`) and every directly-constructed
+// diagnostic (dead-code, reduced-motion, pnpm-hardening) must report one
+// of these — the renderer, JSON output, and `categories` severity
+// overrides all assume this set is exhaustive. `rule-metadata.test.ts`
+// asserts the registry never drifts outside it.
+export const DIAGNOSTIC_CATEGORY_BUCKETS = [
+  "Security",
+  "Bugs",
+  "Performance",
+  "Accessibility",
+  "Maintainability",
+] as const;
 
 // How many of the highest-priority error rules to surface in the
 // "Top N errors you should fix" header above the category breakdown.

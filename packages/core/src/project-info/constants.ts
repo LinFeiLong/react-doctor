@@ -11,9 +11,17 @@ export const GENERATED_BUNDLE_FILE_PATTERN = /\.(iife|global)\.js$/i;
 
 // Minified / generated files (e.g. a one-line `public/inject.js` bundle)
 // don't carry the `.min`/`.iife` extension we can match on, so we sniff
-// content: a file with any line longer than this is treated as minified
-// & skipped. Real source lines almost never reach 1000 chars.
-export const MINIFIED_LINE_LENGTH_CHARS = 1000;
+// content. A file is treated as minified only when BOTH hold: it has a
+// line longer than this AND its average line is long (see below). The
+// two-signal test avoids false-flagging a real source file that merely
+// contains one long line (an inline SVG `<path d="…">`, a base64 data
+// URI, a generated single-line GraphQL document) among many short ones.
+export const MINIFIED_MAX_LINE_LENGTH_CHARS = 1000;
+// Companion to the max-line check: genuine minified output packs almost
+// everything onto a few enormous lines, so its average line length is
+// huge, whereas hand-written source with one stray long line averages
+// well under this. Both thresholds must trip to flag a file as minified.
+export const MINIFIED_AVG_LINE_LENGTH_CHARS = 200;
 // Only read this many bytes when sniffing for minification — a minified
 // file's huge lines show up immediately, so we never read the whole bundle.
 export const MINIFIED_SNIFF_BYTES = 65_536;

@@ -461,7 +461,7 @@ export const checkDeadCode = async (options: CheckDeadCodeOptions): Promise<Diag
       help: "Delete the file if it is truly unreachable, or import it from an entry point.",
       line: 0,
       column: 0,
-      category: "Dead Code",
+      category: "Maintainability",
     });
   }
 
@@ -476,7 +476,7 @@ export const checkDeadCode = async (options: CheckDeadCodeOptions): Promise<Diag
       help: "Drop the `export` keyword (or remove the declaration) if no other module uses this symbol.",
       line: unusedExport.line,
       column: unusedExport.column,
-      category: "Dead Code",
+      category: "Maintainability",
     });
   }
 
@@ -491,7 +491,7 @@ export const checkDeadCode = async (options: CheckDeadCodeOptions): Promise<Diag
       help: "Remove the dependency from package.json if it is genuinely unused.",
       line: 0,
       column: 0,
-      category: "Dead Code",
+      category: "Maintainability",
     });
   }
 
@@ -506,7 +506,7 @@ export const checkDeadCode = async (options: CheckDeadCodeOptions): Promise<Diag
       help: "Break the cycle by extracting the shared code into a third module that both files import.",
       line: 0,
       column: 0,
-      category: "Dead Code",
+      category: "Maintainability",
     });
   }
 

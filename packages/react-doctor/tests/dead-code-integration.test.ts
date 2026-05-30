@@ -55,7 +55,7 @@ describe("diagnose() dead-code integration", () => {
     );
     expect(orphan).toBeDefined();
     expect(orphan?.plugin).toBe("deslop");
-    expect(orphan?.category).toBe("Dead Code");
+    expect(orphan?.category).toBe("Maintainability");
     // Proves the worker actually ran rather than being skipped or crashing.
     expect(result.skippedChecks).not.toContain("dead-code");
   });
