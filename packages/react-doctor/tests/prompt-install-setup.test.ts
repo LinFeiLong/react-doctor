@@ -380,7 +380,7 @@ describe("shouldPromptInstallSetup", () => {
     });
 
     expect(waitedMilliseconds).toBe(SETUP_PROMPT_DELAY_MS);
-    expect(selectMessage).toBe("Set up React Doctor for this project?");
+    expect(selectMessage).toBe("Fix these issues with your AI agent?");
     expect(didInstall).toBe(true);
   });
 

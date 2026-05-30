@@ -163,12 +163,12 @@ const defaultSelect: SetupPromptSelect = async (message) => {
       choices: [
         {
           title: "Yes (recommended)",
-          description: "Use agents to automatically fix issues",
+          description: "Installs the skill so your AI agent fixes these for you",
           value: SETUP_PROMPT_CHOICE_YES,
         },
         {
           title: "Skip",
-          description: "Not recommended. Issues may go unfixed.",
+          description: "Run `npx react-doctor install` anytime to set this up",
           value: SETUP_PROMPT_CHOICE_NEVER,
         },
       ],
@@ -208,7 +208,7 @@ export const promptInstallSetup = async (options: PromptInstallSetupOptions): Pr
     await (options.wait ?? defaultWait)(SETUP_PROMPT_DELAY_MS);
 
     const setupReactDoctorChoice = await (options.select ?? defaultSelect)(
-      "Set up React Doctor for this project?",
+      "Fix these issues with your AI agent?",
     );
     if (setupReactDoctorChoice !== SETUP_PROMPT_CHOICE_YES) {
       if (setupReactDoctorChoice === SETUP_PROMPT_CHOICE_NEVER) {
