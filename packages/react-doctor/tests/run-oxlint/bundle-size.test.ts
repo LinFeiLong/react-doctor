@@ -28,7 +28,7 @@ describe("runOxlint", () => {
       "no-full-lodash-import": {
         fixture: "bundle-issues.tsx",
         ruleSource: "rules/bundle-size.ts",
-        category: "Bundle Size",
+        category: "Performance",
       },
       "no-barrel-import": {
         fixture: "bundle-issues.tsx",

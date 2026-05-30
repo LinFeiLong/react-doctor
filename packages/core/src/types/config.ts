@@ -248,15 +248,12 @@ export interface ReactDoctorConfig {
   rules?: Record<string, RuleSeverityOverride>;
   /**
    * Per-category severity map. Mirrors oxlint's top-level
-   * `categories` field, but keyed by React Doctor's display
-   * categories (`"Server"`, `"React Native"`, `"Architecture"`,
-   * `"Bundle Size"`, `"State & Effects"`, `"Security"`,
-   * `"Accessibility"`, `"Performance"`, `"Correctness"`,
-   * `"Next.js"`, `"Preact"`, `"TanStack Query"`,
-   * `"TanStack Start"`, …).
+   * `categories` field, but keyed by React Doctor's five user-facing
+   * buckets: `"Security"`, `"Bugs"`, `"Performance"`,
+   * `"Accessibility"`, `"Maintainability"`.
    *
    * ```json
-   * { "categories": { "React Native": "warn", "Server": "off" } }
+   * { "categories": { "Maintainability": "off", "Performance": "warn" } }
    * ```
    *
    * To silence a whole tag-defined rule family (e.g. `"design"`,

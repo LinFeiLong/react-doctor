@@ -232,7 +232,7 @@ export const Cart = () => {
     );
     const normalizedStdout = stripAnsi(localRun.stdout);
 
-    expect(normalizedStdout).toContain("State & Effects");
+    expect(normalizedStdout).toContain("Bugs");
     expect(normalizedStdout).toMatch(/\d+ warnings?/);
     expect(normalizedStdout).toContain("--verbose");
     expect(normalizedStdout).not.toContain("Agent guidance");

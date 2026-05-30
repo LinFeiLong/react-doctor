@@ -125,28 +125,28 @@ describe("in-process render across terminal widths and render modes", () => {
     const mixedDiagnostics: Diagnostic[] = [
       makeDiagnostic(
         "no-adjust-state-on-prop-change",
-        "State & Effects",
+        "Bugs",
         "error",
         5,
         "State adjusted in a useEffect when a prop changes — forces an extra render with a stale UI between the two commits. Adjust the state during render with a `prev`-prop comparison instead, or refactor to remove the duplicated state.",
       ),
       makeDiagnostic(
         "no-adjust-state-on-prop-change",
-        "State & Effects",
+        "Bugs",
         "error",
         5,
         "State adjusted in a useEffect when a prop changes.",
       ),
       makeDiagnostic(
         "no-nested-component-definition",
-        "Architecture",
+        "Maintainability",
         "error",
         2,
         "Component defined inside another component remounts on every render, throwing away its state and DOM.",
       ),
       makeDiagnostic(
         "no-array-index-key",
-        "Correctness",
+        "Bugs",
         "error",
         7,
         "Using the array index as a key breaks reconciliation when the list reorders.",
@@ -320,7 +320,12 @@ describe("in-process render across terminal widths and render modes", () => {
 
   it("matches the rendered 100-column layout snapshot", async () => {
     const rendered = await renderInTerminal(defaultScenarioBytes, { cols: 100 });
-    expect(rendered.logicalLines.join("\n")).toMatchSnapshot();
+    // Normalize the category pointer: the renderer uses `›` on
+    // unicode-capable terminals and falls back to `>` where unicode
+    // isn't supported (Windows CI), so the raw glyph is platform-variable
+    // and not what this layout snapshot is asserting.
+    const platformStableLayout = rendered.logicalLines.join("\n").replaceAll("›", ">");
+    expect(platformStableLayout).toMatchSnapshot();
   });
 });
 
@@ -350,13 +355,13 @@ describe("multi-project code frames resolve against each project root", () => {
       help: "",
       line: 2,
       column: 7,
-      category: "State & Effects",
+      category: "Bugs",
     } as Diagnostic;
     const diagnosticB = {
       ...diagnosticA,
       rule: "no-nested-component-definition",
       message: "Issue in project B.",
-      category: "Architecture",
+      category: "Maintainability",
     } as Diagnostic;
 
     const rootByDiagnostic = new WeakMap<Diagnostic, string>([

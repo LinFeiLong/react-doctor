@@ -31,13 +31,9 @@ const SEVERITY_ORDER: Record<Diagnostic["severity"], number> = {
 const CATEGORY_STAKES_RANK = new Map<string, number>([
   ["Security", 0],
   ["Performance", 1],
-  ["Correctness", 2],
-  ["State & Effects", 2],
-  ["React Compiler", 2],
+  ["Bugs", 2],
   ["Accessibility", 3],
-  ["Bundle Size", 4],
-  ["Architecture", 5],
-  ["Design", 5],
+  ["Maintainability", 4],
 ]);
 const DEFAULT_CATEGORY_STAKES_RANK = 2;
 

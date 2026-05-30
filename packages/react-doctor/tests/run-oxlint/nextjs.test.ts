@@ -99,7 +99,7 @@ describe("runOxlint", () => {
       "nextjs-no-img-element": {
         fixture: "app/page.tsx",
         ruleSource: "rules/nextjs.ts",
-        category: "Next.js",
+        category: "Bugs",
       },
       "nextjs-async-client-component": {
         fixture: "app/page.tsx",
@@ -168,7 +168,7 @@ describe("runOxlint", () => {
         fixture: "app/actions.tsx",
         ruleSource: "rules/server.ts",
         severity: "error",
-        category: "Server",
+        category: "Bugs",
       },
       "server-after-nonblocking": {
         fixture: "app/actions.tsx",
@@ -178,32 +178,32 @@ describe("runOxlint", () => {
         fixture: "app/actions.tsx",
         ruleSource: "rules/server.ts",
         severity: "error",
-        category: "Server",
+        category: "Bugs",
       },
       "server-cache-with-object-literal": {
         fixture: "app/actions.tsx",
         ruleSource: "rules/server.ts",
-        category: "Server",
+        category: "Bugs",
       },
       "server-hoist-static-io": {
         fixture: "app/og/route.tsx",
         ruleSource: "rules/server.ts",
-        category: "Server",
+        category: "Bugs",
       },
       "server-dedup-props": {
         fixture: "app/users/page.tsx",
         ruleSource: "rules/server.ts",
-        category: "Server",
+        category: "Bugs",
       },
       "server-sequential-independent-await": {
         fixture: "app/dashboard/route.tsx",
         ruleSource: "rules/server.ts",
-        category: "Server",
+        category: "Bugs",
       },
       "server-fetch-without-revalidate": {
         fixture: "app/dashboard/route.tsx",
         ruleSource: "rules/server.ts",
-        category: "Server",
+        category: "Bugs",
       },
     },
     () => nextjsDiagnostics,

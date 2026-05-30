@@ -19,28 +19,29 @@ const FILEPATH_WITH_LOCATION_PATTERN = /\S+\.\w+:\d+:\d+[\s\S]*$/;
 
 const REACT_COMPILER_MESSAGE = "React Compiler can't optimize this code";
 
+// Adopted third-party plugins (not in the react-doctor registry) → the
+// clear user-facing bucket their diagnostics roll up under. Mirrors the
+// five buckets the codegen collapses react-doctor rules into (see
+// `CATEGORY_BUCKET` in `generate-rule-registry.mjs`): Security, Bugs,
+// Performance, Accessibility, Maintainability.
 const PLUGIN_CATEGORY_MAP: Record<string, string> = {
-  react: "Correctness",
-  "react-hooks": "Correctness",
-  "react-hooks-js": "React Compiler",
-  "react-doctor": "Other",
+  react: "Bugs",
+  "react-hooks": "Bugs",
+  "react-hooks-js": "Bugs",
+  "react-doctor": "Bugs",
   "jsx-a11y": "Accessibility",
-  effect: "State & Effects",
-  // Plugins users commonly enable in their own oxlint / eslint config
-  // and that react-doctor folds into the scan via `extends`. Sensible
-  // defaults so adopted-rule diagnostics don't all collapse into the
-  // generic "Other" bucket in the output grouping.
-  eslint: "Correctness",
-  oxc: "Correctness",
-  typescript: "Correctness",
-  unicorn: "Correctness",
-  import: "Bundle Size",
-  promise: "Correctness",
-  n: "Correctness",
-  node: "Correctness",
-  vitest: "Correctness",
-  jest: "Correctness",
-  nextjs: "Next.js",
+  effect: "Bugs",
+  eslint: "Bugs",
+  oxc: "Bugs",
+  typescript: "Bugs",
+  unicorn: "Bugs",
+  import: "Performance",
+  promise: "Bugs",
+  n: "Bugs",
+  node: "Bugs",
+  vitest: "Bugs",
+  jest: "Bugs",
+  nextjs: "Bugs",
 };
 
 // HACK: `Object.hasOwn` guards against falling through to
@@ -133,7 +134,7 @@ const parseRuleCode = (code: string): { plugin: string; rule: string } => {
 };
 
 const resolveDiagnosticCategory = (plugin: string, rule: string): string =>
-  getRuleCategory(rule) ?? lookupOwnString(PLUGIN_CATEGORY_MAP, plugin) ?? "Other";
+  getRuleCategory(rule) ?? lookupOwnString(PLUGIN_CATEGORY_MAP, plugin) ?? "Bugs";
 
 const isOxlintOutput = (value: unknown): value is OxlintOutput => {
   if (typeof value !== "object" || value === null) return false;
