@@ -218,6 +218,23 @@ export const createServer = (connection: Connection): void => {
   };
 
   /**
+   * Full reset used by config changes and the restart command: cancel
+   * in-flight scans, drop caches + project state, then re-scan from
+   * scratch. Open buffers are re-scanned interactively (the workspace
+   * scan skips them), so unsaved edits aren't left with stale diagnostics.
+   */
+  const rescanWorkspaceFromScratch = (reason: string): void => {
+    cancelAllProjectScans();
+    scanRunner?.invalidateCaches();
+    projectGraph?.invalidate();
+    projectGraph?.refresh();
+    for (const document of documents.all()) {
+      scheduleFileScan(uriToFsPath(document.uri), "interactive", true, reason);
+    }
+    scanWorkspaceLint();
+  };
+
+  /**
    * rust-analyzer-style persistent status (`experimental/serverStatus`):
    * `quiescent: false` while scans are running, `health: "warning"` when
    * lint is degraded. Companion editor clients render this in a status
@@ -465,17 +482,9 @@ export const createServer = (connection: Connection): void => {
       if (configRescanTimer) clearTimeout(configRescanTimer);
       configRescanTimer = setTimeout(() => {
         configRescanTimer = null;
-        // Config changed → in-flight scans + cached results are stale.
-        // Cancel queued / running scans, drop caches, then re-scan with
-        // the fresh config (cache reloads under a new fingerprint).
-        cancelAllProjectScans();
-        scanRunner?.invalidateCaches();
-        projectGraph?.invalidate();
-        projectGraph?.refresh();
-        for (const document of documents.all()) {
-          scheduleFileScan(uriToFsPath(document.uri), "interactive", true, "config change");
-        }
-        scanWorkspaceLint();
+        // Config changed → in-flight scans + cached results are stale; the
+        // cache reloads under a fresh fingerprint on the next scan.
+        rescanWorkspaceFromScratch("config change");
       }, CONFIG_CHANGE_DEBOUNCE_MS);
       if (typeof configRescanTimer.unref === "function") configRescanTimer.unref();
     }
@@ -573,12 +582,8 @@ export const createServer = (connection: Connection): void => {
         return;
       }
       case COMMAND_RESTART: {
-        cancelAllProjectScans();
-        scanRunner?.invalidateCaches();
-        projectGraph?.invalidate();
-        projectGraph?.refresh();
         lintWarningShown = false;
-        scanWorkspaceLint();
+        rescanWorkspaceFromScratch("restart");
         connection.window.showInformationMessage(`${SERVER_DISPLAY_NAME}: re-scanning workspace.`);
         return;
       }
