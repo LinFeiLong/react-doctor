@@ -1,0 +1,246 @@
+import fs from "node:fs";
+import path from "node:path";
+import { runEditorScan, type Diagnostic as CoreDiagnostic } from "@react-doctor/core";
+import {
+  SILENT_LOGGER,
+  type CancellationToken,
+  type Logger,
+  type PerformScan,
+  type ScanOutcome,
+  type ScanRequest,
+  type TextProvider,
+} from "../types.js";
+import { normalizeFsPath } from "../text/uri.js";
+import { computeConfigFingerprint } from "../utils/compute-config-fingerprint.js";
+import { createLintCache, type FileStat, type LintCache } from "./lint-cache.js";
+import { materializeOverlay, type OverlaySnapshot } from "./overlay.js";
+
+export interface ScanRunnerOptions {
+  /** Node binary able to load the oxlint native binding, or `null`. */
+  readonly nodeBinaryPath: string | null;
+  /** Reads live file text (open buffer first, then disk) for overlays. */
+  readonly readText: TextProvider;
+  /** React Doctor version, part of the lint-cache config fingerprint. */
+  readonly version: string;
+  /** Disable the persistent lint cache (kill switch). Defaults to enabled. */
+  readonly enableCache?: boolean;
+  readonly logger?: Logger;
+}
+
+export interface ScanRunner {
+  readonly performScan: PerformScan;
+  /** Drop in-memory caches after a config change (next scan reloads fresh). */
+  readonly invalidateCaches: () => void;
+  /** Flush all caches to disk (on shutdown). */
+  readonly dispose: () => void;
+}
+
+const toProjectRelative = (projectDirectory: string, filePath: string): string | null => {
+  const relative = path.relative(projectDirectory, filePath).replace(/\\/g, "/");
+  if (relative.length === 0 || relative.startsWith("../") || path.isAbsolute(relative)) return null;
+  return relative;
+};
+
+/**
+ * Resolves a diagnostic's (possibly relative, possibly overlay-temp)
+ * file path back to the canonical absolute path inside the real project.
+ */
+const resolveDiagnosticFsPath = (
+  rawFilePath: string,
+  scanDirectory: string,
+  projectDirectory: string,
+  overlay: OverlaySnapshot | null,
+): string => {
+  const normalized = rawFilePath.replace(/\\/g, "/");
+  const absolute = path.isAbsolute(normalized)
+    ? normalized
+    : path.posix.join(scanDirectory.replace(/\\/g, "/"), normalized);
+
+  if (overlay !== null) {
+    for (const prefix of [overlay.tempDirectory, overlay.realTempDirectory]) {
+      const normalizedPrefix = prefix.replace(/\\/g, "/");
+      if (absolute === normalizedPrefix || absolute.startsWith(`${normalizedPrefix}/`)) {
+        const rest = absolute.slice(normalizedPrefix.length);
+        return normalizeFsPath(`${projectDirectory}${rest}`);
+      }
+    }
+  }
+
+  return normalizeFsPath(absolute);
+};
+
+const statSafe = (fsPath: string): FileStat | null => {
+  try {
+    const stat = fs.statSync(fsPath);
+    return { mtimeMs: stat.mtimeMs, size: stat.size };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Creates the scan runner used by the scheduler. Each scan runs
+ * `runEditorScan` (offline, no score, no git) against either the live
+ * overlay tree (unsaved buffers) or disk, groups diagnostics by canonical
+ * absolute path, and reports stale-detection metadata.
+ *
+ * A persistent per-file lint cache (keyed by mtime + size, namespaced by a
+ * config fingerprint) short-circuits unchanged files so a re-opened editor
+ * or repeated workspace scan skips the oxlint subprocess for everything it
+ * hasn't edited. The cache applies only to disk-based, lint-only, per-file
+ * scans — overlay scans carry unsaved content, and whole-project /
+ * dead-code scans aren't per-file cacheable.
+ */
+export const createScanRunner = (options: ScanRunnerOptions): ScanRunner => {
+  const logger = options.logger ?? SILENT_LOGGER;
+  const cacheEnabled = options.enableCache ?? true;
+  const caches = new Map<string, LintCache>();
+
+  const getCache = (projectDirectory: string): LintCache => {
+    const existing = caches.get(projectDirectory);
+    if (existing) return existing;
+    const fingerprint = computeConfigFingerprint(projectDirectory, options.version);
+    const cache = createLintCache({ projectDirectory, fingerprint, logger });
+    caches.set(projectDirectory, cache);
+    return cache;
+  };
+
+  const performScan = async (
+    request: ScanRequest,
+    token: CancellationToken,
+  ): Promise<ScanOutcome | null> => {
+    if (token.isCancelled) return null;
+
+    const projectDirectory = normalizeFsPath(request.projectDirectory);
+    const requestedPaths = request.files.map(normalizeFsPath);
+    const isWholeProject = requestedPaths.length === 0;
+
+    const cache =
+      cacheEnabled && !isWholeProject && !request.useOverlay && !request.runDeadCode
+        ? getCache(projectDirectory)
+        : null;
+
+    // Partition into cache hits (skip oxlint) and files that need scanning.
+    // Fresh results are merged into `byFile` after the scan below.
+    const byFile = new Map<string, CoreDiagnostic[]>();
+    const statByPath = new Map<string, FileStat>();
+    let filesToScan = requestedPaths;
+    if (cache) {
+      const uncached: string[] = [];
+      for (const fsPath of requestedPaths) {
+        const stat = statSafe(fsPath);
+        if (stat) {
+          statByPath.set(fsPath, stat);
+          const hit = cache.lookup(fsPath, stat);
+          if (hit !== null) {
+            if (hit.length > 0) byFile.set(fsPath, hit);
+            continue;
+          }
+        }
+        uncached.push(fsPath);
+      }
+      filesToScan = uncached;
+    }
+
+    // Whole batch served from cache → no subprocess needed.
+    if (cache && filesToScan.length === 0) {
+      return {
+        request,
+        ok: true,
+        skipped: false,
+        byFile,
+        coversProject: false,
+        requestedPaths,
+        project: null,
+        didLintFail: false,
+        lintFailureReason: null,
+        error: null,
+      };
+    }
+
+    let scanDirectory = projectDirectory;
+    let includePaths: string[] | undefined;
+    let overlay: OverlaySnapshot | null = null;
+
+    try {
+      if (!isWholeProject) {
+        if (request.useOverlay) {
+          overlay = materializeOverlay({
+            projectDirectory,
+            files: filesToScan,
+            readText: options.readText,
+          });
+        }
+        if (overlay !== null) {
+          scanDirectory = overlay.tempDirectory;
+          includePaths = overlay.relativePaths;
+        } else {
+          includePaths = filesToScan
+            .map((filePath) => toProjectRelative(projectDirectory, filePath))
+            .filter((relative): relative is string => relative !== null);
+        }
+      }
+
+      const result = await runEditorScan({
+        directory: scanDirectory,
+        ...(includePaths !== undefined ? { includePaths } : {}),
+        runDeadCode: request.runDeadCode,
+        lint: true,
+        ...(options.nodeBinaryPath !== null ? { nodeBinaryPath: options.nodeBinaryPath } : {}),
+      });
+
+      if (token.isCancelled) return null;
+
+      for (const diagnostic of result.diagnostics) {
+        const fsPath = resolveDiagnosticFsPath(
+          diagnostic.filePath,
+          scanDirectory,
+          projectDirectory,
+          overlay,
+        );
+        const existing = byFile.get(fsPath);
+        if (existing) existing.push(diagnostic);
+        else byFile.set(fsPath, [diagnostic]);
+      }
+
+      // Cache fresh results — but only when the scan fully succeeded, so a
+      // file that failed to lint is never recorded as clean.
+      if (cache && result.ok && !result.didLintFail && result.lintPartialFailures.length === 0) {
+        for (const fsPath of filesToScan) {
+          const stat = statByPath.get(fsPath);
+          if (!stat) continue;
+          cache.store(fsPath, stat, byFile.get(fsPath) ?? []);
+        }
+        cache.schedulePersist();
+      }
+
+      if (result.error !== null) {
+        logger.warn(`Scan error in ${projectDirectory}: ${result.error}`);
+      }
+
+      return {
+        request,
+        ok: result.ok,
+        skipped: result.skipped,
+        byFile,
+        coversProject: isWholeProject,
+        requestedPaths,
+        project: result.project,
+        didLintFail: result.didLintFail,
+        lintFailureReason: result.lintFailureReason,
+        error: result.error,
+      };
+    } finally {
+      overlay?.cleanup();
+    }
+  };
+
+  return {
+    performScan,
+    invalidateCaches: () => caches.clear(),
+    dispose: () => {
+      for (const cache of caches.values()) cache.flush();
+      caches.clear();
+    },
+  };
+};

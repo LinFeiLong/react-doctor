@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "turbo run dev --filter=react-doctor",
     "build": "turbo run build",
-    "test": "turbo run test --filter=react-doctor --filter=@react-doctor/core --filter=@react-doctor/api",
+    "test": "turbo run test --filter=react-doctor --filter=@react-doctor/core --filter=@react-doctor/api --filter=@react-doctor/language-server",
     "test:public-react-repos": "REACT_DOCTOR_PUBLIC_REPOS=1 vp test run packages/react-doctor/tests/public-react-repos.test.ts",
     "typecheck": "turbo run typecheck",
     "lint": "vp lint",
@@ -27,6 +27,10 @@
     "smoke:json-report": "node --experimental-strip-types --no-warnings scripts/smoke-json-report.ts",
     "smoke:tty-prompt": "python3 scripts/smoke-tty-prompt.py",
     "build:schema": "node --experimental-strip-types --no-warnings scripts/generate-config-schema.ts"
+  },
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.7.0",
