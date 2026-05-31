@@ -105,24 +105,22 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
     // Count UNIQUE scanned files by absolute path: nested workspace
     // packages (a parent whose tree contains a child package) scan the
     // shared files in BOTH projects, so naively summing per-project
-    // counts overstates the real total. Fall back to summing when any
-    // scan didn't report its file paths.
+    // counts overstates the real total. A scan that reported no file
+    // paths can't be deduped, so it contributes its own reported count
+    // (this fallback is per-scan, not all-or-nothing — the other
+    // projects still dedupe against each other).
     const uniqueScannedFilePaths = new Set<string>();
-    let isMissingScannedFilePaths = false;
+    let fileCountFromScansWithoutPaths = 0;
     for (const scan of completedScans) {
-      if (scan.result.scannedFilePaths) {
-        for (const filePath of scan.result.scannedFilePaths) uniqueScannedFilePaths.add(filePath);
+      const scannedFilePaths = scan.result.scannedFilePaths;
+      if (scannedFilePaths && scannedFilePaths.length > 0) {
+        for (const filePath of scannedFilePaths) uniqueScannedFilePaths.add(filePath);
       } else {
-        isMissingScannedFilePaths = true;
+        fileCountFromScansWithoutPaths +=
+          scan.result.scannedFileCount ?? scan.result.project.sourceFileCount;
       }
     }
-    const totalScannedFileCount = isMissingScannedFilePaths
-      ? completedScans.reduce(
-          (sum, scan) =>
-            sum + (scan.result.scannedFileCount ?? scan.result.project.sourceFileCount),
-          0,
-        )
-      : uniqueScannedFilePaths.size;
+    const totalScannedFileCount = uniqueScannedFilePaths.size + fileCountFromScansWithoutPaths;
     const totalScanElapsedMilliseconds = completedScans.reduce(
       (sum, scan) => sum + (scan.result.scanElapsedMilliseconds ?? scan.result.elapsedMilliseconds),
       0,

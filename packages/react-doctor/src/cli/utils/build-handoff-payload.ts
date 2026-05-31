@@ -1,7 +1,7 @@
 import { groupBy, TOP_ERRORS_DISPLAY_COUNT } from "@react-doctor/core";
 import type { Diagnostic } from "@react-doctor/core";
 import { HANDOFF_MAX_FILES_PER_RULE } from "./constants.js";
-import { formatFixRecipeLine, sortRuleGroupsByImportance } from "./render-diagnostics.js";
+import { formatFixRecipeLine, sortRuleGroupsByImportance } from "./diagnostic-grouping.js";
 import { writeDiagnosticsDirectory } from "./write-diagnostics-directory.js";
 
 export interface HandoffPayloadInput {

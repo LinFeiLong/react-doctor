@@ -120,14 +120,16 @@ const CANDIDATE_TOKEN_PATTERN = /[A-Za-z0-9_][A-Za-z0-9_-]*/g;
 
 // Structured non-secret identifiers that clear the length/composition
 // gates but are not credentials, so they're spared to keep diagnostics
-// readable: canonical git object ids (SHA-1 / SHA-256, lowercase hex)
-// and UUIDs. `-` stays in the token class so base64url secrets aren't
-// fragmented, which means a UUID arrives here as one token rather than
-// dash-split pieces — hence the explicit exclusion. The trade-off is
-// that a bare secret of exactly these shapes slips the generic net,
-// acceptable for a best-effort backstop (real provider secrets carry a
-// prefix caught above).
-const GIT_OBJECT_ID_PATTERN = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
+// readable: canonical lowercase-hex digests at the three standard lengths
+// (MD5 32, SHA-1 40, SHA-256 64 — git object ids, npm integrity hashes,
+// and content-hashed asset filenames like `main.<32-hex>.js`) and UUIDs.
+// `-` stays in the token class so base64url secrets aren't fragmented,
+// which means a UUID arrives here as one token rather than dash-split
+// pieces — hence the explicit exclusion. The trade-off is that a bare
+// secret of exactly these shapes slips the generic net, acceptable for a
+// best-effort backstop (real provider secrets carry a prefix caught above
+// and are base64url, not bare fixed-length hex).
+const HEX_DIGEST_PATTERN = /^(?:[0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{64})$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const HAS_LETTER_PATTERN = /[A-Za-z]/;
@@ -152,7 +154,7 @@ const shannonEntropyBits = (value: string): number => {
 const looksLikeHighEntropySecret = (token: string): boolean => {
   if (token.length < GENERIC_SECRET_MIN_LENGTH_CHARS) return false;
   if (!HAS_LETTER_PATTERN.test(token) || !HAS_DIGIT_PATTERN.test(token)) return false;
-  if (GIT_OBJECT_ID_PATTERN.test(token) || UUID_PATTERN.test(token)) return false;
+  if (HEX_DIGEST_PATTERN.test(token) || UUID_PATTERN.test(token)) return false;
   return shannonEntropyBits(token) >= GENERIC_SECRET_MIN_ENTROPY_BITS;
 };
 

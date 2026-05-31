@@ -18,10 +18,14 @@ export const GENERATED_BUNDLE_FILE_PATTERN = /\.(iife|global)\.js$/i;
 // URI, a generated single-line GraphQL document) among many short ones.
 export const MINIFIED_MAX_LINE_LENGTH_CHARS = 1000;
 // Companion to the max-line check: genuine minified output packs almost
-// everything onto a few enormous lines, so its average line length is
-// huge, whereas hand-written source with one stray long line averages
-// well under this. Both thresholds must trip to flag a file as minified.
-export const MINIFIED_AVG_LINE_LENGTH_CHARS = 200;
+// everything onto a few enormous lines, so its average line length runs
+// into the thousands, whereas hand-written source with one stray long line
+// averages well under this. Both thresholds must trip to flag a file as
+// minified. The floor is deliberately well above the average of dense-but-
+// real source (i18n catalogs, generated route/data tables, files of long
+// string-literal rows top out in the low hundreds) so those aren't silently
+// dropped from the scan, while true minified bundles still clear it easily.
+export const MINIFIED_AVG_LINE_LENGTH_CHARS = 500;
 // Only read this many bytes when sniffing for minification — a minified
 // file's huge lines show up immediately, so we never read the whole bundle.
 export const MINIFIED_SNIFF_BYTES = 65_536;

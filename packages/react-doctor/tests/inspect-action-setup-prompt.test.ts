@@ -94,7 +94,6 @@ vi.mock("../src/cli/utils/prompt-install-setup.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/cli/utils/prompt-install-setup.js")>();
   return {
     ...actual,
-    promptInstallSetup: vi.fn(async () => {}),
     shouldShowAgentInstallHint: vi.fn(() => false),
   };
 });

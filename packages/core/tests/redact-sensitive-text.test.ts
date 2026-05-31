@@ -194,6 +194,11 @@ describe("redactSensitiveText", () => {
     expect(redactSensitiveText(`integrity ${sha256}`)).toBe(`integrity ${sha256}`);
   });
 
+  it("does not redact an MD5-length content hash in an asset filename", () => {
+    const contentHashedFile = "main.5d41402abc4b2a76b9719d911017c592.js";
+    expect(redactSensitiveText(`bundle ${contentHashedFile}`)).toBe(`bundle ${contentHashedFile}`);
+  });
+
   it("does not redact a UUID (split into short tokens by dashes)", () => {
     const uuid = "123e4567-e89b-12d3-a456-426614174000";
     expect(redactSensitiveText(`id ${uuid}`)).toBe(`id ${uuid}`);

@@ -46,6 +46,20 @@ describe("isMinifiedSource", () => {
     expect(isMinifiedSource(writeFile("Icon.tsx", contents))).toBe(false);
   });
 
+  it("does NOT flag a dense data file of long rows with a single very long row", () => {
+    // e.g. an i18n catalog or a generated route/data table: every line is a
+    // few hundred chars (so the average clears the old 200 floor) and one row
+    // tops 1000 chars — but the average stays well under genuine minified
+    // output, which packs everything into the thousands.
+    const denseRows = Array.from(
+      { length: 200 },
+      (_, index) => `  "translation.key.${index}": "${"word ".repeat(40)}",`,
+    );
+    const oneVeryLongRow = `  "translation.long": "${"word ".repeat(220)}",`;
+    const contents = [...denseRows, oneVeryLongRow].join("\n");
+    expect(isMinifiedSource(writeFile("messages.ts", contents))).toBe(false);
+  });
+
   it("accepts ordinary multi-line source", () => {
     const contents = Array.from(
       { length: 200 },

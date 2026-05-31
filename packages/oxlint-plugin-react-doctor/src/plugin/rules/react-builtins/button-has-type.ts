@@ -10,7 +10,7 @@ import type { Rule } from "../../utils/rule.js";
 
 const MISSING_MESSAGE =
   "Your users can submit the form by accident because a `<button>` with no `type` defaults to submit.";
-const INVALID_MESSAGE = (): string => `This button's \`type\` is invalid.`;
+const INVALID_MESSAGE = "This button's `type` is invalid.";
 
 interface ButtonHasTypeSettings {
   button?: boolean;
@@ -95,7 +95,7 @@ const isConsumerPropForward = (expression: EsTreeNode): boolean => {
 };
 
 const reportInvalid = (context: Parameters<Rule["create"]>[0], reportNode: EsTreeNode): void => {
-  context.report({ node: reportNode, message: INVALID_MESSAGE() });
+  context.report({ node: reportNode, message: INVALID_MESSAGE });
 };
 
 // Port of `oxc_linter::rules::react::button_has_type`. Flags
