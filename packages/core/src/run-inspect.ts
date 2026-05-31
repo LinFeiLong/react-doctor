@@ -288,12 +288,14 @@ export const runInspect = <HooksR = never>(
 
     const isDiffMode = input.includePaths.length > 0;
 
+    const showWarnings = input.warnings ?? resolvedConfig.config?.warnings ?? DEFAULT_SHOW_WARNINGS;
+
     const transform = buildDiagnosticPipeline({
       rootDirectory: scanDirectory,
       userConfig: resolvedConfig.config,
       readFileLinesSync: fileReader(filesService, scanDirectory),
       respectInlineDisables: input.respectInlineDisables,
-      showWarnings: input.warnings ?? resolvedConfig.config?.warnings ?? DEFAULT_SHOW_WARNINGS,
+      showWarnings,
     });
 
     const applyPerElementPipeline = <ToEnv>(rawStream: Stream.Stream<Diagnostic, never, ToEnv>) =>
@@ -368,7 +370,14 @@ export const runInspect = <HooksR = never>(
       yield* scanProgress.fail(formatLintFailText(lintFailureState.reasonTag, process.version));
     }
 
-    const shouldRunDeadCode = input.runDeadCode && !isDiffMode;
+    // Dead-code analysis only ever emits `"warning"`-severity diagnostics
+    // (the `deslop` plugin, all `Maintainability`). When warnings are
+    // hidden that output is filtered out before it reaches any surface or
+    // the score, so the expensive pass (separate worker, large heap, long
+    // timeout) would be pure wasted work — skip it. `--warnings` /
+    // `warnings: true` (and `--fail-on warning`, which forces warnings on)
+    // re-enable it.
+    const shouldRunDeadCode = input.runDeadCode && !isDiffMode && showWarnings;
     const deadCodeCollected =
       lintFailureState.didFail || !shouldRunDeadCode
         ? []
