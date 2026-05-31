@@ -589,6 +589,6 @@ export const Payments = () => <div>{revenueCatApiKey}{stripeKey}</div>;
 
     const secretIssues = await getSecretIssues(projectDir);
     expect(secretIssues).toHaveLength(1);
-    expect(secretIssues[0].message).toContain("Hardcoded secret detected");
+    expect(secretIssues[0].message).toContain("hardcoded secret is a security vulnerability");
   });
 });
