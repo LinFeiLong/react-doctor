@@ -18,6 +18,7 @@ import { checkPnpmHardening } from "./check-pnpm-hardening.js";
 import { checkReducedMotion } from "./check-reduced-motion.js";
 import { DEFAULT_SHOW_WARNINGS } from "./constants.js";
 import { computeJsxIncludePaths } from "./jsx-include-paths.js";
+import { deadCodeMaySurfaceWhenWarningsHidden } from "./utils/dead-code-may-surface.js";
 import {
   NoReactDependency,
   type OxlintUnavailable,
@@ -376,8 +377,12 @@ export const runInspect = <HooksR = never>(
     // the score, so the expensive pass (separate worker, large heap, long
     // timeout) would be pure wasted work — skip it. `--warnings` /
     // `warnings: true` (and `--fail-on warning`, which forces warnings on)
-    // re-enable it.
-    const shouldRunDeadCode = input.runDeadCode && !isDiffMode && showWarnings;
+    // re-enable it, as does a severity override that restamps dead-code
+    // findings to `"warn"`/`"error"` so they survive the global hide.
+    const shouldRunDeadCode =
+      input.runDeadCode &&
+      !isDiffMode &&
+      (showWarnings || deadCodeMaySurfaceWhenWarningsHidden(resolvedConfig.config));
     const deadCodeCollected =
       lintFailureState.didFail || !shouldRunDeadCode
         ? []

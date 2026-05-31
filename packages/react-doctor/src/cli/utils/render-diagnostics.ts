@@ -43,7 +43,9 @@ interface CategoryDiagnosticGroup {
 
 // Resolves the absolute project root a given diagnostic's relative
 // `filePath` should be read from when building its inline code frame.
-type SourceRootResolver = (diagnostic: Diagnostic) => string;
+interface SourceRootResolver {
+  (diagnostic: Diagnostic): string;
+}
 
 const buildVerboseSiteMap = (diagnostics: Diagnostic[]): Map<string, VerboseSiteEntry[]> => {
   const fileSites = new Map<string, VerboseSiteEntry[]>();
