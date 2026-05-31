@@ -57,8 +57,20 @@ const captureConsoleBytes = async (run: () => Promise<void>): Promise<string> =>
   } finally {
     for (const [key, original] of originals) consoleObject[key] = original;
   }
+  // Normalize the verbose "Full diagnostics written to <dir>" temp path:
+  // it's an absolute `os.tmpdir()` + UUID path whose LENGTH varies by OS
+  // (macOS `/var/folders/…` ≈128 chars vs Linux `/tmp/…` ≈84), which would
+  // make the overflow matrix env-dependent. Collapse it to a fixed token so
+  // the snapshot reflects the real structural layout, not the runner's temp
+  // dir.
+  const normalized = chunks
+    .join("")
+    .replace(
+      /\S*react-doctor-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,
+      "/tmp/react-doctor-TEST",
+    );
   // xterm needs CRLF to return the cursor to column 0; bare LF only moves down.
-  return chunks.join("").replace(/\n/g, "\r\n");
+  return normalized.replace(/\n/g, "\r\n");
 };
 
 const SHARE_ONLY_PROJECT_NAME = "acme-super-long-workspace-package-name";
