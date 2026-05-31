@@ -15,10 +15,8 @@ import type { Diagnostic } from "@react-doctor/core";
 import { boxText } from "./box-text.js";
 import { buildCodeFrame } from "./build-code-frame.js";
 import {
-  effectivePriority,
+  compareByRulePriority,
   formatFixRecipeLine,
-  getCategoryStakesRank,
-  SEVERITY_ORDER,
   sortRuleGroupsByImportance,
 } from "./diagnostic-grouping.js";
 import { indentMultilineText } from "./indent-multiline-text.js";
@@ -61,18 +59,10 @@ const buildVerboseSiteMap = (diagnostics: Diagnostic[]): Map<string, VerboseSite
 
 const formatSiteCountBadge = (count: number): string => (count > 1 ? `×${count}` : "");
 
-const getWorstSeverity = (diagnostics: Diagnostic[]): Diagnostic["severity"] =>
-  diagnostics.some((diagnostic) => diagnostic.severity === "error") ? "error" : "warning";
-
 // A category leads with its most valuable rule. `ruleGroups` are already
 // priority-sorted, so the first one is the category's top.
-const categoryTopPriority = (
-  categoryGroup: CategoryDiagnosticGroup,
-  rulePriority: ReadonlyMap<string, number> | undefined,
-): number => {
-  const [topRuleKey, topDiagnostics] = categoryGroup.ruleGroups[0];
-  return effectivePriority(topRuleKey, topDiagnostics, rulePriority);
-};
+const categoryTopRuleKey = (categoryGroup: CategoryDiagnosticGroup): string =>
+  categoryGroup.ruleGroups[0][0];
 
 const buildCategoryDiagnosticGroups = (
   diagnostics: Diagnostic[],
@@ -92,21 +82,15 @@ const buildCategoryDiagnosticGroups = (
       };
     })
     .toSorted((categoryGroupA, categoryGroupB) => {
-      const priorityDelta =
-        categoryTopPriority(categoryGroupB, rulePriority) -
-        categoryTopPriority(categoryGroupA, rulePriority);
+      // Categories rank by their top rule's API priority. With no API
+      // priority (offline / `--no-score`) every category compares equal,
+      // so fall back to a deterministic alphabetical order.
+      const priorityDelta = compareByRulePriority(
+        categoryTopRuleKey(categoryGroupA),
+        categoryTopRuleKey(categoryGroupB),
+        rulePriority,
+      );
       if (priorityDelta !== 0) return priorityDelta;
-      const severityDelta =
-        SEVERITY_ORDER[getWorstSeverity(categoryGroupA.diagnostics)] -
-        SEVERITY_ORDER[getWorstSeverity(categoryGroupB.diagnostics)];
-      if (severityDelta !== 0) return severityDelta;
-      const stakesDelta =
-        getCategoryStakesRank(categoryGroupA.category) -
-        getCategoryStakesRank(categoryGroupB.category);
-      if (stakesDelta !== 0) return stakesDelta;
-      if (categoryGroupA.diagnostics.length !== categoryGroupB.diagnostics.length) {
-        return categoryGroupB.diagnostics.length - categoryGroupA.diagnostics.length;
-      }
       return categoryGroupA.category.localeCompare(categoryGroupB.category);
     });
 };
