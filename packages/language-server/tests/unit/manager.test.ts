@@ -111,6 +111,41 @@ describe("DiagnosticsManager.applyOutcome", () => {
   });
 });
 
+describe("DiagnosticsManager open-buffer protection", () => {
+  it("a background disk scan does not overwrite an open file's diagnostics", () => {
+    const published: Array<{ uri: string; count: number }> = [];
+    const manager = new DiagnosticsManager({
+      publish: (uri, diagnostics) => published.push({ uri, count: diagnostics.length }),
+      textProvider: () => "const App = () => null\n",
+      isOpen: (fsPath) => fsPath === FS_PATH, // App.tsx is open in the editor
+    });
+
+    // Interactive (overlay) scan publishes the open buffer's diagnostics.
+    manager.applyOutcome(
+      outcome({
+        request: { ...request, priority: "interactive" },
+        byFile: new Map([[FS_PATH, [diagnostic()]]]),
+      }),
+    );
+    const uri = toUri(FS_PATH);
+    expect(manager.get(uri).length).toBe(1);
+    published.length = 0;
+
+    // A background whole-project audit reports the file clean from disk —
+    // it must NOT clear the open buffer's diagnostics.
+    manager.applyOutcome(
+      outcome({
+        request: { ...request, priority: "background" },
+        byFile: new Map(),
+        coversProject: true,
+        requestedPaths: [],
+      }),
+    );
+    expect(manager.get(uri).length).toBe(1);
+    expect(published.some((entry) => entry.uri === uri && entry.count === 0)).toBe(false);
+  });
+});
+
 describe("DiagnosticsManager.retainProjectFiles", () => {
   it("clears tracked files that left the live set but keeps live ones", () => {
     const { manager, cleared } = createManager();

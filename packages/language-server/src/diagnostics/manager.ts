@@ -1,7 +1,7 @@
 import type { Diagnostic as LspDiagnostic, Position } from "vscode-languageserver";
 import { SILENT_LOGGER, type Logger, type ScanOutcome, type TextProvider } from "../types.js";
 import { isPositionInRange } from "../text/positions.js";
-import { fsPathToUri } from "../text/uri.js";
+import { fsPathToUri, uriToFsPath } from "../text/uri.js";
 import { toLspDiagnostic } from "./mapper.js";
 
 export interface DiagnosticsManagerOptions {
@@ -9,6 +9,13 @@ export interface DiagnosticsManagerOptions {
   readonly publish: (uri: string, diagnostics: LspDiagnostic[]) => void;
   /** Resolves current file text (open buffer or disk) for precise ranges. */
   readonly textProvider: TextProvider;
+  /**
+   * Whether a file is open in the editor. Background (disk) scans —
+   * including the whole-project `scanWorkspace` audit — must not overwrite
+   * or clear the live diagnostics of an open buffer; those belong to
+   * interactive overlay scans.
+   */
+  readonly isOpen?: (fsPath: string) => boolean;
   readonly logger?: Logger;
 }
 
@@ -26,11 +33,13 @@ export class DiagnosticsManager {
   private readonly projectUris = new Map<string, Set<string>>();
   private readonly publish: DiagnosticsManagerOptions["publish"];
   private readonly textProvider: TextProvider;
+  private readonly isOpen: (fsPath: string) => boolean;
   private readonly logger: Logger;
 
   constructor(options: DiagnosticsManagerOptions) {
     this.publish = options.publish;
     this.textProvider = options.textProvider;
+    this.isOpen = options.isOpen ?? (() => false);
     this.logger = options.logger ?? SILENT_LOGGER;
   }
 
@@ -44,8 +53,14 @@ export class DiagnosticsManager {
 
     const project = outcome.request.projectDirectory;
     const liveUris = new Set<string>();
+    // A background disk scan (workspace chunk or whole-project audit) must
+    // not touch a file open in the editor — its live diagnostics come from
+    // interactive overlay scans of the unsaved buffer.
+    const protectOpen = outcome.request.priority === "background";
+    const isProtectedPath = (fsPath: string): boolean => protectOpen && this.isOpen(fsPath);
 
     for (const [fsPath, coreDiagnostics] of outcome.byFile) {
+      if (isProtectedPath(fsPath)) continue;
       const uri = toUri(fsPath);
       const text = this.textProvider(fsPath);
       const lspDiagnostics = coreDiagnostics.map((diagnostic) =>
@@ -74,24 +89,37 @@ export class DiagnosticsManager {
     // Files explicitly requested but absent from byFile were scanned
     // clean — clear any diagnostics previously shown for them.
     for (const fsPath of outcome.requestedPaths) {
+      if (isProtectedPath(fsPath)) continue;
       if (outcome.byFile.has(fsPath)) continue;
       const uri = toUri(fsPath);
       if (this.byUri.has(uri)) this.byUri.delete(uri);
       this.publish(uri, []);
     }
 
-    this.reconcileProjectUris(project, liveUris, outcome);
+    this.reconcileProjectUris(project, liveUris, outcome, protectOpen);
   }
 
-  private reconcileProjectUris(project: string, liveUris: Set<string>, outcome: ScanOutcome): void {
+  private reconcileProjectUris(
+    project: string,
+    liveUris: Set<string>,
+    outcome: ScanOutcome,
+    protectOpen: boolean,
+  ): void {
     if (outcome.coversProject) {
       const previous = this.projectUris.get(project) ?? new Set<string>();
+      const next = new Set(liveUris);
       for (const uri of previous) {
         if (liveUris.has(uri)) continue;
+        // Keep an open file's diagnostics (and tracking) — a whole-project
+        // disk audit must not clear what an interactive scan owns.
+        if (protectOpen && this.isOpen(uriToFsPath(uri))) {
+          next.add(uri);
+          continue;
+        }
         this.byUri.delete(uri);
         this.publish(uri, []);
       }
-      this.projectUris.set(project, liveUris);
+      this.projectUris.set(project, next);
       return;
     }
 

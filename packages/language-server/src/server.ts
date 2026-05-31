@@ -347,6 +347,7 @@ export const createServer = (connection: Connection): void => {
     manager = new DiagnosticsManager({
       publish: (uri, diagnostics) => connection.sendDiagnostics({ uri, diagnostics }),
       textProvider: readText,
+      isOpen,
       logger,
     });
 
@@ -508,7 +509,12 @@ export const createServer = (connection: Connection): void => {
   });
 
   documents.onDidClose((event) => {
-    openDocumentUriByPath.delete(normalizeFsPath(uriToFsPath(event.document.uri)));
+    const fsPath = uriToFsPath(event.document.uri);
+    openDocumentUriByPath.delete(normalizeFsPath(fsPath));
+    // Overlay scans may have published buffer-based diagnostics; once the
+    // (possibly unsaved) buffer is gone, re-scan from disk so diagnostics
+    // reflect the on-disk file. It's no longer open, so this reads disk.
+    scheduleFileScan(fsPath, "background", false, "close");
   });
 
   documents.onDidChangeContent((event) => {
