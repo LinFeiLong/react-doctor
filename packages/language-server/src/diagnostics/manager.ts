@@ -60,11 +60,11 @@ export class DiagnosticsManager {
       this.publish(uri, lspDiagnostics);
     }
 
-    // A failed, lint-degraded, or partially-failed scan didn't reliably
-    // assess every requested file. Record what it found, but never clear
-    // existing diagnostics — a transient or partial `runEditorScan` failure
-    // must not strip squiggles that a later successful scan would reproduce.
-    if (!outcome.ok || outcome.didLintFail || outcome.lintIncomplete) {
+    // A failed, lint-degraded, partially-failed, or skipped scan didn't
+    // reliably assess every requested file. Record what it found, but never
+    // clear existing diagnostics — a transient/partial failure or a graceful
+    // skip must not strip squiggles a later successful scan would reproduce.
+    if (!outcome.ok || outcome.skipped || outcome.didLintFail || outcome.lintIncomplete) {
       const tracked = this.projectUris.get(project) ?? new Set<string>();
       for (const uri of liveUris) tracked.add(uri);
       this.projectUris.set(project, tracked);

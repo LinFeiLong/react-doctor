@@ -7,6 +7,7 @@ import {
 import { COMMAND_EXPLAIN, COMMAND_OPEN_DOCS, COMMAND_REPORT_FALSE_POSITIVE } from "../constants.js";
 import type { ReactDoctorDiagnosticData } from "../types.js";
 import { readDiagnosticData } from "../utils/read-diagnostic-data.js";
+import { severityLabel } from "../utils/severity-label.js";
 import {
   buildSuppressAllTextEdits,
   buildSuppressionTextEdit,
@@ -101,7 +102,7 @@ export const buildCodeActions = (input: BuildCodeActionsInput): CodeAction[] => 
         arguments: [
           {
             ruleId: data.ruleId,
-            severity: diagnostic.severity === 1 ? "error" : "warning",
+            severity: severityLabel(diagnostic.severity),
             category: data.category,
             message: diagnostic.message,
             relativeFilePath: input.relativeFilePath,

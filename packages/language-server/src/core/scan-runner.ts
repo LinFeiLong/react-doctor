@@ -238,9 +238,16 @@ export const createScanRunner = (options: ScanRunnerOptions): ScanRunner => {
         else byFile.set(fsPath, [diagnostic]);
       }
 
-      // Cache fresh results — but only when the scan fully succeeded, so a
-      // file that failed to lint is never recorded as clean.
-      if (cache && result.ok && !result.didLintFail && result.lintPartialFailures.length === 0) {
+      // Cache fresh results — but only when the scan fully succeeded (not a
+      // graceful skip or a partial failure), so a file that wasn't actually
+      // linted is never recorded as clean.
+      if (
+        cache &&
+        result.ok &&
+        !result.skipped &&
+        !result.didLintFail &&
+        result.lintPartialFailures.length === 0
+      ) {
         for (const fsPath of filesToScan) {
           const stat = statByPath.get(fsPath);
           if (!stat) continue;

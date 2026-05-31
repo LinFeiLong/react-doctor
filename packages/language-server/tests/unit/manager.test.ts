@@ -98,6 +98,17 @@ describe("DiagnosticsManager.applyOutcome", () => {
     expect(manager.get(uri).length).toBe(1);
     expect(cleared).not.toContain(uri);
   });
+
+  it("preserves diagnostics on a graceful skip (not an analyzable project)", () => {
+    const { manager, cleared } = createManager();
+    manager.applyOutcome(outcome({ byFile: new Map([[FS_PATH, [diagnostic()]]]) }));
+    const [uri] = manager.trackedUris();
+    cleared.length = 0;
+
+    manager.applyOutcome(outcome({ skipped: true }));
+    expect(manager.get(uri).length).toBe(1);
+    expect(cleared).not.toContain(uri);
+  });
 });
 
 describe("DiagnosticsManager.retainProjectFiles", () => {

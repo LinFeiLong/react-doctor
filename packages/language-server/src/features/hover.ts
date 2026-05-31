@@ -2,9 +2,7 @@ import { getRuleMetadata } from "@react-doctor/core";
 import { MarkupKind, type Diagnostic as LspDiagnostic, type Hover } from "vscode-languageserver";
 import type { ReactDoctorDiagnosticData } from "../types.js";
 import { readDiagnosticData } from "../utils/read-diagnostic-data.js";
-
-const severityLabel = (diagnostic: LspDiagnostic): string =>
-  diagnostic.severity === 1 ? "error" : "warning";
+import { severityLabel } from "../utils/severity-label.js";
 
 const buildSection = (diagnostic: LspDiagnostic, data: ReactDoctorDiagnosticData): string => {
   const metadata = getRuleMetadata(data.plugin, data.rule);
@@ -12,7 +10,7 @@ const buildSection = (diagnostic: LspDiagnostic, data: ReactDoctorDiagnosticData
   const subtitleParts = [data.category, ...(tags.length > 0 ? [tags.join(", ")] : [])];
 
   const lines = [
-    `**${data.ruleId}** — ${severityLabel(diagnostic)}`,
+    `**${data.ruleId}** — ${severityLabel(diagnostic.severity)}`,
     `_${subtitleParts.join(" · ")}_`,
   ];
 
