@@ -16,6 +16,7 @@ import type {
 import { buildDiagnosticPipeline } from "./build-diagnostic-pipeline.js";
 import { checkPnpmHardening } from "./check-pnpm-hardening.js";
 import { checkReducedMotion } from "./check-reduced-motion.js";
+import { DEFAULT_SHOW_WARNINGS } from "./constants.js";
 import { computeJsxIncludePaths } from "./jsx-include-paths.js";
 import {
   NoReactDependency,
@@ -45,9 +46,9 @@ export interface InspectInput {
   readonly respectInlineDisables: boolean;
   /**
    * Per-call override for `ReactDoctorConfig.warnings`. When omitted,
-   * the loaded config's `warnings` value wins (defaulting to `true`),
-   * so warnings show unless the user opts out via `--no-warnings` or
-   * `warnings: false`.
+   * the loaded config's `warnings` value wins (defaulting to `false`),
+   * so warnings stay hidden unless the user opts in via `--warnings` or
+   * `warnings: true`.
    */
   readonly warnings?: boolean;
   readonly adoptExistingLintConfig: boolean;
@@ -292,7 +293,7 @@ export const runInspect = <HooksR = never>(
       userConfig: resolvedConfig.config,
       readFileLinesSync: fileReader(filesService, scanDirectory),
       respectInlineDisables: input.respectInlineDisables,
-      showWarnings: input.warnings ?? resolvedConfig.config?.warnings ?? true,
+      showWarnings: input.warnings ?? resolvedConfig.config?.warnings ?? DEFAULT_SHOW_WARNINGS,
     });
 
     const applyPerElementPipeline = <ToEnv>(rawStream: Stream.Stream<Diagnostic, never, ToEnv>) =>

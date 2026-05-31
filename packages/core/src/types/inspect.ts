@@ -70,10 +70,10 @@ export interface InspectOptions {
   respectInlineDisables?: boolean;
   /**
    * Per-call override for `ReactDoctorConfig.warnings`. When omitted,
-   * `config.warnings` wins (defaulting to `true`), so `"warning"`-
-   * severity diagnostics show on every surface — CLI, PR comment,
-   * score, and the `--fail-on` gate — until explicitly disabled via
-   * `--no-warnings` or `warnings: false`.
+   * `config.warnings` wins (defaulting to `false`), so `"warning"`-
+   * severity diagnostics stay hidden on every surface — CLI, PR comment,
+   * score, and the `--fail-on` gate — until explicitly enabled via
+   * `--warnings` or `warnings: true`.
    */
   warnings?: boolean;
 

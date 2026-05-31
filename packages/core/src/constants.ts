@@ -15,6 +15,13 @@ export {
 
 export const JSX_FILE_PATTERN = /\.(tsx|jsx)$/;
 
+// Whether `"warning"`-severity diagnostics surface when neither the
+// caller (`--warnings` / `warnings:`) nor `config.warnings` decide.
+// Warnings are hidden by default so a clean scan reports only
+// `"error"`-severity findings; users opt them in with `--warnings`
+// or `"warnings": true`.
+export const DEFAULT_SHOW_WARNINGS = false;
+
 export const MILLISECONDS_PER_SECOND = 1000;
 
 // Upper bound for the `react:<major>` capability loop in

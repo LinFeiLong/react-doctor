@@ -25,11 +25,11 @@ interface BuildDiagnosticPipelineInput {
   readonly respectInlineDisables: boolean;
   /**
    * Whether `"warning"`-severity diagnostics are allowed through. When
-   * `true` (the default), warnings show; when `false`, every warning is
-   * dropped UNLESS the user explicitly opted that specific rule / category
-   * into `"warn"` via the severity-override config (an individual opt-in).
-   * Resolved by the caller from the `--no-warnings` flag → `config.warnings`
-   * → `true`.
+   * `false` (the default), every warning is dropped UNLESS the user
+   * explicitly opted that specific rule / category into `"warn"` via the
+   * severity-override config (an individual opt-in); when `true`, warnings
+   * show. Resolved by the caller from the `--warnings` flag →
+   * `config.warnings` → `false`.
    */
   readonly showWarnings: boolean;
 }

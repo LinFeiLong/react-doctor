@@ -98,14 +98,14 @@ export interface ReactDoctorConfig {
   deadCode?: boolean;
   verbose?: boolean;
   /**
-   * Whether to surface `"warning"`-severity diagnostics. Default: `true`
-   * — warnings show on every surface (CLI, PR comment, score, `--fail-on`).
+   * Whether to surface `"warning"`-severity diagnostics. Default: `false`
+   * — only `"error"`-severity findings reach any surface (CLI, PR comment,
+   * score, `--fail-on`).
    *
-   * Set to `false` to drop every warning before it reaches any surface, so
-   * the scan only reports `"error"`-severity findings. This is the master
-   * toggle and runs after per-rule / per-category severity overrides: a
-   * rule the user explicitly restamps to `"warn"` (via `rules` /
-   * `categories`) still shows even when `warnings` is `false`.
+   * Set to `true` to surface every warning on every surface. This is the
+   * master toggle and runs after per-rule / per-category severity
+   * overrides: a rule the user explicitly restamps to `"warn"` (via
+   * `rules` / `categories`) still shows even when `warnings` is `false`.
    */
   warnings?: boolean;
   diff?: boolean | string;

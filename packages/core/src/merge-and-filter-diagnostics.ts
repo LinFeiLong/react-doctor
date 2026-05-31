@@ -1,9 +1,10 @@
 import type { Diagnostic, ReactDoctorConfig } from "./types/index.js";
 import { buildDiagnosticPipeline } from "./build-diagnostic-pipeline.js";
+import { DEFAULT_SHOW_WARNINGS } from "./constants.js";
 
 interface MergeAndFilterOptions {
   respectInlineDisables?: boolean;
-  /** See `ReactDoctorConfig.warnings`. Falls back to `userConfig.warnings ?? true`. */
+  /** See `ReactDoctorConfig.warnings`. Falls back to `userConfig.warnings ?? false`. */
   warnings?: boolean;
 }
 
@@ -34,7 +35,7 @@ export const mergeAndFilterDiagnostics = (
     userConfig,
     readFileLinesSync,
     respectInlineDisables: options.respectInlineDisables ?? true,
-    showWarnings: options.warnings ?? userConfig?.warnings ?? true,
+    showWarnings: options.warnings ?? userConfig?.warnings ?? DEFAULT_SHOW_WARNINGS,
   });
   const result: Diagnostic[] = [];
   for (const diagnostic of mergedDiagnostics) {
