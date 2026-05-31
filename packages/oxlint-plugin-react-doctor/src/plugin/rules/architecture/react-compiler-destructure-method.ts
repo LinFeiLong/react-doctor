@@ -66,7 +66,6 @@ const buildHookBindingMap = (componentBody: EsTreeNode | null | undefined): Map<
 //
 // Heuristic: `router.push(...)` (or any of the canonical hook objects)
 // where `router` is bound to a `useRouter()` call in the same component.
-// We don't fire when the binding is destructured already.
 export const reactCompilerDestructureMethod = defineRule<Rule>({
   id: "react-compiler-destructure-method",
   title: "Hook method called without destructuring",

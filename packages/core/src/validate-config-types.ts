@@ -121,18 +121,18 @@ const validateSurfaceControls = (
     );
     return undefined;
   }
-  const validated: SurfaceControls = {};
+  const validatedSurfaceControls: SurfaceControls = {};
   for (const fieldName of SURFACE_CONTROL_FIELD_NAMES) {
     if (rawControls[fieldName] === undefined) continue;
     const qualifiedName = `surfaces.${surface}.${fieldName}`;
     const result = validateStringArrayField(qualifiedName, rawControls[fieldName]);
     if (result === undefined) continue;
-    validated[fieldName] =
+    validatedSurfaceControls[fieldName] =
       fieldName === "includeCategories" || fieldName === "excludeCategories"
         ? filterKnownCategories(qualifiedName, result)
         : result;
   }
-  return validated;
+  return validatedSurfaceControls;
 };
 
 const validateSurfacesField = (

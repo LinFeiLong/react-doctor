@@ -27,21 +27,26 @@ describe("isLintableSourceFile", () => {
     }
   });
 
-  it("rejects generated IIFE / UMD-global `.js` bundles (the default ignore)", () => {
+  it("rejects generated IIFE / UMD / global / minified `.js` bundles (the default ignore)", () => {
     for (const filePath of [
       "public/budge.iife.js",
       "public/sdk.global.js",
+      "public/sdk.umd.js",
+      "public/vendor.min.js",
       "nested/dir/embed.IIFE.js",
     ]) {
       expect(isLintableSourceFile(filePath), filePath).toBe(false);
     }
   });
 
-  it("does not over-match files that merely contain 'iife' or 'global' in the name", () => {
+  it("does not over-match files that merely contain a bundle keyword in the name", () => {
     for (const filePath of [
       "src/iife-helpers.ts",
       "src/global-state.ts",
       "src/useGlobalStore.tsx",
+      "src/admin.js",
+      "src/medium-editor.tsx",
+      "src/format.minified.js",
     ]) {
       expect(isLintableSourceFile(filePath), filePath).toBe(true);
     }

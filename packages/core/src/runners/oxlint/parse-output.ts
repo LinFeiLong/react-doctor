@@ -203,8 +203,9 @@ export const parseOxlintOutput = (
   // fire on plain `.ts` / `.js` files; dropping those silently
   // erased their score impact. `isLintableSourceFile` matches the same
   // extensions we count as source files everywhere else, and also drops
-  // generated bundler output (`*.iife.js`, `*.global.js`) so a stray
-  // bundle that slipped past file discovery can't pollute the report.
+  // generated bundler output (`*.iife.js`, `*.umd.js`, `*.global.js`,
+  // `*.min.js`) so a stray bundle that slipped past file discovery can't
+  // pollute the report.
   // The content sniff additionally drops minified files that carry an
   // ordinary extension (e.g. a one-line `public/inject.js`) — these reach
   // the parser in diff/staged mode (which scans changed files directly,
