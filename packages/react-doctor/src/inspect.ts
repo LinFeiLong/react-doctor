@@ -24,6 +24,7 @@ import { buildNoScoreMessage } from "./cli/utils/build-no-score-message.js";
 import { printAgentGuidance } from "./cli/utils/render-agent-guidance.js";
 import { isCiOrCodingAgentEnvironment } from "./cli/utils/is-ci-environment.js";
 import { computeProjectedScore } from "./cli/utils/compute-score-projection.js";
+import { buildRulePriorityMap } from "./cli/utils/diagnostic-grouping.js";
 import { printDiagnostics } from "./cli/utils/render-diagnostics.js";
 import { isNonInteractiveEnvironment } from "./cli/utils/is-non-interactive-environment.js";
 import { printProjectDetection } from "./cli/utils/render-project-detection.js";
@@ -434,7 +435,12 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
     }
 
     yield* Console.log("");
-    yield* printDiagnostics([...surfaceDiagnostics], options.verbose, directory);
+    yield* printDiagnostics(
+      [...surfaceDiagnostics],
+      options.verbose,
+      directory,
+      buildRulePriorityMap([score]),
+    );
     if (options.isNonInteractiveEnvironment && options.outputSurface !== "prComment") {
       yield* printAgentGuidance();
     }

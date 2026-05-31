@@ -1,5 +1,6 @@
 import { calculateScore, TOP_ERRORS_DISPLAY_COUNT } from "@react-doctor/core";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
+import { buildRulePriorityMap } from "./diagnostic-grouping.js";
 import { getTopErrorRuleKeys } from "./render-diagnostics.js";
 
 // The score reachable by fixing the top-N errors shown to the user,
@@ -20,7 +21,13 @@ export const computeProjectedScore = async (
   rescoreSource: Diagnostic[],
   currentScore: ScoreResult,
 ): Promise<number | null> => {
-  const topErrorRuleKeys = getTopErrorRuleKeys(topErrorSource, TOP_ERRORS_DISPLAY_COUNT);
+  // Use the same score-API priority the renderer uses so the projected
+  // "top N" rules match the ones actually displayed.
+  const topErrorRuleKeys = getTopErrorRuleKeys(
+    topErrorSource,
+    TOP_ERRORS_DISPLAY_COUNT,
+    buildRulePriorityMap([currentScore]),
+  );
   if (topErrorRuleKeys.size === 0) return null;
 
   const remainingDiagnostics = rescoreSource.filter(

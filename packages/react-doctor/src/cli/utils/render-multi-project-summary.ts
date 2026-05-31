@@ -9,6 +9,7 @@ import {
 import type { Diagnostic, InspectResult, ReactDoctorConfig, ScoreResult } from "@react-doctor/core";
 import { colorizeByScore } from "./colorize-by-score.js";
 import { computeProjectedScore } from "./compute-score-projection.js";
+import { buildRulePriorityMap } from "./diagnostic-grouping.js";
 import { formatElapsedTime, printDiagnostics } from "./render-diagnostics.js";
 import { printSummary, printVerboseTip } from "./render-summary.js";
 
@@ -131,7 +132,12 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
 
     if (surfaceDiagnostics.length > 0) {
       yield* Console.log("");
-      yield* printDiagnostics(surfaceDiagnostics, verbose, resolveDiagnosticSourceRoot);
+      yield* printDiagnostics(
+        surfaceDiagnostics,
+        verbose,
+        resolveDiagnosticSourceRoot,
+        buildRulePriorityMap(completedScans.map((scan) => scan.result.score)),
+      );
     }
 
     const lowestScoredScan = findLowestScoredScan(completedScans);

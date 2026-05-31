@@ -15,6 +15,7 @@ import type { Diagnostic } from "@react-doctor/core";
 import { boxText } from "./box-text.js";
 import { buildCodeFrame } from "./build-code-frame.js";
 import {
+  effectivePriority,
   formatFixRecipeLine,
   getCategoryStakesRank,
   SEVERITY_ORDER,
@@ -63,7 +64,20 @@ const formatSiteCountBadge = (count: number): string => (count > 1 ? `×${count}
 const getWorstSeverity = (diagnostics: Diagnostic[]): Diagnostic["severity"] =>
   diagnostics.some((diagnostic) => diagnostic.severity === "error") ? "error" : "warning";
 
-const buildCategoryDiagnosticGroups = (diagnostics: Diagnostic[]): CategoryDiagnosticGroup[] => {
+// A category leads with its most valuable rule. `ruleGroups` are already
+// priority-sorted, so the first one is the category's top.
+const categoryTopPriority = (
+  categoryGroup: CategoryDiagnosticGroup,
+  rulePriority: ReadonlyMap<string, number> | undefined,
+): number => {
+  const [topRuleKey, topDiagnostics] = categoryGroup.ruleGroups[0];
+  return effectivePriority(topRuleKey, topDiagnostics, rulePriority);
+};
+
+const buildCategoryDiagnosticGroups = (
+  diagnostics: Diagnostic[],
+  rulePriority?: ReadonlyMap<string, number>,
+): CategoryDiagnosticGroup[] => {
   const categoryGroups = groupBy(diagnostics, (diagnostic) => diagnostic.category);
   return [...categoryGroups.entries()]
     .map(([category, categoryDiagnostics]) => {
@@ -74,10 +88,14 @@ const buildCategoryDiagnosticGroups = (diagnostics: Diagnostic[]): CategoryDiagn
       return {
         category,
         diagnostics: categoryDiagnostics,
-        ruleGroups: sortRuleGroupsByImportance([...ruleGroups.entries()]),
+        ruleGroups: sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority),
       };
     })
     .toSorted((categoryGroupA, categoryGroupB) => {
+      const priorityDelta =
+        categoryTopPriority(categoryGroupB, rulePriority) -
+        categoryTopPriority(categoryGroupA, rulePriority);
+      if (priorityDelta !== 0) return priorityDelta;
       const severityDelta =
         SEVERITY_ORDER[getWorstSeverity(categoryGroupA.diagnostics)] -
         SEVERITY_ORDER[getWorstSeverity(categoryGroupB.diagnostics)];
@@ -273,34 +291,43 @@ const buildRuleDetailBlock = (
   return lines;
 };
 
-// The highest-stakes error rule groups behind the "Top N errors you
-// should fix" block, in display order.
+// The highest-priority error rule groups behind the "Top N errors you
+// should fix" block, in display order (score-API priority first, then
+// severity + stakes).
 const selectTopErrorRuleGroups = (
   diagnostics: Diagnostic[],
   limit: number,
+  rulePriority?: ReadonlyMap<string, number>,
 ): [string, Diagnostic[]][] => {
   const errorDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
   const ruleGroups = groupBy(
     errorDiagnostics,
     (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
   );
-  return sortRuleGroupsByImportance([...ruleGroups.entries()]).slice(0, limit);
+  return sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority).slice(0, limit);
 };
 
 // The exact rule keys surfaced in the top-errors block — the set the
 // score projection assumes you fix, so "fix the top N" matches what's
-// shown.
+// shown. Pass the same `rulePriority` the renderer uses so the projected
+// rules match the displayed ones.
 export const getTopErrorRuleKeys = (
   diagnostics: Diagnostic[],
   limit: number,
+  rulePriority?: ReadonlyMap<string, number>,
 ): ReadonlySet<string> =>
-  new Set(selectTopErrorRuleGroups(diagnostics, limit).map(([ruleKey]) => ruleKey));
+  new Set(selectTopErrorRuleGroups(diagnostics, limit, rulePriority).map(([ruleKey]) => ruleKey));
 
 const buildTopErrorsLines = (
   diagnostics: Diagnostic[],
   resolveSourceRoot: SourceRootResolver,
+  rulePriority?: ReadonlyMap<string, number>,
 ): ReadonlyArray<string> => {
-  const topRuleGroups = selectTopErrorRuleGroups(diagnostics, TOP_ERRORS_DISPLAY_COUNT);
+  const topRuleGroups = selectTopErrorRuleGroups(
+    diagnostics,
+    TOP_ERRORS_DISPLAY_COUNT,
+    rulePriority,
+  );
   if (topRuleGroups.length === 0) return [];
 
   const lines: string[] = [
@@ -319,8 +346,11 @@ const buildTopErrorsLines = (
 // The compact "Security › 6 errors" category tally, shown ABOVE the
 // detailed blocks so the reader gets the at-a-glance breakdown first,
 // then drills into specifics.
-const buildCategoryBreakdownLines = (diagnostics: Diagnostic[]): string[] =>
-  buildCategoryDiagnosticGroups(diagnostics).map(buildCompactCategoryLine);
+const buildCategoryBreakdownLines = (
+  diagnostics: Diagnostic[],
+  rulePriority?: ReadonlyMap<string, number>,
+): string[] =>
+  buildCategoryDiagnosticGroups(diagnostics, rulePriority).map(buildCompactCategoryLine);
 
 const joinSections = (...sections: ReadonlyArray<string>[]): string[] => {
   const lines: string[] = [];
@@ -363,6 +393,11 @@ export const printDiagnostics = (
   // diagnostic reads from its own project root (their relative paths
   // would otherwise miss against a single shared root → no frame).
   sourceRoot: string | SourceRootResolver,
+  // Score-API rule priorities (see `buildRulePriorityMap`). When present,
+  // rule groups, categories, and the top-errors selection order
+  // most-valuable-first; absent (offline / `--no-score`) ordering falls
+  // back to severity + stakes.
+  rulePriority?: ReadonlyMap<string, number>,
 ): Effect.Effect<void> =>
   Effect.gen(function* () {
     const resolveSourceRoot: SourceRootResolver =
@@ -373,13 +408,13 @@ export const printDiagnostics = (
     // top N representative) — same readable block layout, just exhaustive.
     let detailLines: ReadonlyArray<string>;
     if (!isVerbose) {
-      detailLines = buildTopErrorsLines(diagnostics, resolveSourceRoot);
+      detailLines = buildTopErrorsLines(diagnostics, resolveSourceRoot, rulePriority);
     } else {
       const ruleGroups = groupBy(
         diagnostics,
         (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
       );
-      detailLines = sortRuleGroupsByImportance([...ruleGroups.entries()]).flatMap(
+      detailLines = sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority).flatMap(
         ([ruleKey, ruleDiagnostics]) => [
           ...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, true),
           "",
@@ -388,7 +423,7 @@ export const printDiagnostics = (
     }
 
     const lines = joinSections(
-      buildCategoryBreakdownLines(diagnostics),
+      buildCategoryBreakdownLines(diagnostics, rulePriority),
       buildCountsSummaryLines(diagnostics),
       detailLines,
     );
