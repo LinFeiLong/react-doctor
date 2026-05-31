@@ -5,6 +5,14 @@ import type { ScanOutcome, ScanRequest, ScanRequestInput } from "../../src/types
 const delay = (milliseconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
+/** Polls until `predicate` holds (or times out) — avoids fixed-delay flakes on slow CI. */
+const waitFor = async (predicate: () => boolean, timeoutMs = 2000): Promise<void> => {
+  const start = Date.now();
+  while (!predicate() && Date.now() - start < timeoutMs) {
+    await delay(5);
+  }
+};
+
 const makeOutcome = (request: ScanRequest): ScanOutcome => ({
   request,
   ok: true,
@@ -127,7 +135,9 @@ describe("createScheduler", () => {
       interactiveInput({ priority: "interactive", files: ["/repo/int.ts"], reason: "int" }),
     );
 
-    await delay(160);
+    // Wait until all four scans have started (deterministic) rather than a
+    // fixed delay, which raced the trailing background scan on slow CI.
+    await waitFor(() => runOrder.length === 4);
 
     expect(runOrder).toEqual(["blocker", "int", "save2", "bg"]);
     scheduler.dispose();
