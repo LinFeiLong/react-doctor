@@ -25,10 +25,11 @@ interface BuildDiagnosticPipelineInput {
   readonly respectInlineDisables: boolean;
   /**
    * Whether `"warning"`-severity diagnostics are allowed through. When
-   * `false` (the default), every warning is dropped UNLESS the user
-   * explicitly opted that specific rule / category into `"warn"` via
-   * the severity-override config (an individual opt-in). Resolved by
-   * the caller from the `--warnings` flag → `config.warnings` → `false`.
+   * `true` (the default), warnings show; when `false`, every warning is
+   * dropped UNLESS the user explicitly opted that specific rule / category
+   * into `"warn"` via the severity-override config (an individual opt-in).
+   * Resolved by the caller from the `--no-warnings` flag → `config.warnings`
+   * → `true`.
    */
   readonly showWarnings: boolean;
 }
@@ -50,8 +51,9 @@ const collectStringSet = (values: unknown): ReadonlySet<string> => {
  *    wins over `test-noise`)
  * 2. severity overrides (top-level `rules` / `categories`, with
  *    `"off"` dropping)
- * 3. warning suppression (drops every `"warning"`-severity diagnostic
- *    unless the config opts in with `warnings: true`)
+ * 3. warning suppression (only when `showWarnings` is false: drops every
+ *    `"warning"`-severity diagnostic unless a severity override opts a
+ *    specific rule / category back in)
  * 4. ignore filters (rules / file patterns / per-file overrides)
  * 5. `rn-no-raw-text` suppression via configured `textComponents` and
  *    `rawTextWrapperComponents` (config-driven JSX enclosure checks)

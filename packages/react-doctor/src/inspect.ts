@@ -90,7 +90,7 @@ const mergeInspectOptions = (
   share: userConfig?.share ?? true,
   respectInlineDisables:
     inputOptions.respectInlineDisables ?? userConfig?.respectInlineDisables ?? true,
-  warnings: inputOptions.warnings ?? userConfig?.warnings ?? false,
+  warnings: inputOptions.warnings ?? userConfig?.warnings ?? true,
   adoptExistingLintConfig: userConfig?.adoptExistingLintConfig ?? true,
   ignoredTags: buildIgnoredTags(userConfig),
   outputSurface: inputOptions.outputSurface ?? "cli",

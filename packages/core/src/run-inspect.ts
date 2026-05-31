@@ -45,8 +45,9 @@ export interface InspectInput {
   readonly respectInlineDisables: boolean;
   /**
    * Per-call override for `ReactDoctorConfig.warnings`. When omitted,
-   * the loaded config's `warnings` value wins (defaulting to `false`),
-   * so warnings stay hidden unless the user opts in via flag or config.
+   * the loaded config's `warnings` value wins (defaulting to `true`),
+   * so warnings show unless the user opts out via `--no-warnings` or
+   * `warnings: false`.
    */
   readonly warnings?: boolean;
   readonly adoptExistingLintConfig: boolean;
@@ -291,7 +292,7 @@ export const runInspect = <HooksR = never>(
       userConfig: resolvedConfig.config,
       readFileLinesSync: fileReader(filesService, scanDirectory),
       respectInlineDisables: input.respectInlineDisables,
-      showWarnings: input.warnings ?? resolvedConfig.config?.warnings ?? false,
+      showWarnings: input.warnings ?? resolvedConfig.config?.warnings ?? true,
     });
 
     const applyPerElementPipeline = <ToEnv>(rawStream: Stream.Stream<Diagnostic, never, ToEnv>) =>

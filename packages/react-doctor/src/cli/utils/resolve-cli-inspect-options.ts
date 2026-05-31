@@ -18,19 +18,14 @@ export const resolveCliInspectOptions = (
   flags: InspectFlags,
   userConfig: ReactDoctorConfig | null,
 ): InspectOptions => {
-  // Warnings are hidden by default, but a `--fail-on warning` (or
-  // `failOn: "warning"` config) is an explicit "warnings must matter"
-  // signal: without surfacing them, the CI gate sees an empty list and
-  // silently behaves like `--fail-on error`. So imply warnings on when
-  // failing on warnings, unless the user explicitly set the flag.
-  const failsOnWarning = (flags.failOn ?? userConfig?.failOn) === "warning";
-
   return {
     lint: flags.lint,
     deadCode: flags.deadCode,
     verbose: flags.verbose,
     respectInlineDisables: flags.respectInlineDisables,
-    warnings: flags.warnings ?? (failsOnWarning ? true : undefined),
+    // Warnings show by default; `--no-warnings` (flags.warnings === false)
+    // is the explicit opt-out, otherwise `inspect()` applies the default.
+    warnings: flags.warnings,
     scoreOnly: flags.score === true,
     noScore: flags.score === false || (userConfig?.noScore ?? false),
     isCi: isCiEnvironment(),

@@ -55,16 +55,16 @@ describe("resolveCliInspectOptions: CI behavior (issue #302)", () => {
 });
 
 describe("resolveCliInspectOptions: warnings vs --fail-on", () => {
-  it("leaves warnings unset by default (hidden)", () => {
+  it("leaves warnings unset by default (shown via the inspect() default)", () => {
     expect(resolveCliInspectOptions({}, null).warnings).toBeUndefined();
   });
 
-  it("implies warnings when --fail-on warning so the CI gate actually sees them", () => {
-    expect(resolveCliInspectOptions({ failOn: "warning" }, null).warnings).toBe(true);
-    expect(resolveCliInspectOptions({}, { failOn: "warning" }).warnings).toBe(true);
+  it("does not force warnings for --fail-on warning (they are on by default anyway)", () => {
+    expect(resolveCliInspectOptions({ failOn: "warning" }, null).warnings).toBeUndefined();
+    expect(resolveCliInspectOptions({}, { failOn: "warning" }).warnings).toBeUndefined();
   });
 
-  it("does not imply warnings when failing on errors", () => {
+  it("does not set warnings when failing on errors", () => {
     expect(resolveCliInspectOptions({ failOn: "error" }, null).warnings).toBeUndefined();
   });
 

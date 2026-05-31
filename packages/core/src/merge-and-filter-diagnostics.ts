@@ -3,7 +3,7 @@ import { buildDiagnosticPipeline } from "./build-diagnostic-pipeline.js";
 
 interface MergeAndFilterOptions {
   respectInlineDisables?: boolean;
-  /** See `ReactDoctorConfig.warnings`. Falls back to `userConfig.warnings ?? false`. */
+  /** See `ReactDoctorConfig.warnings`. Falls back to `userConfig.warnings ?? true`. */
   warnings?: boolean;
 }
 
@@ -34,7 +34,7 @@ export const mergeAndFilterDiagnostics = (
     userConfig,
     readFileLinesSync,
     respectInlineDisables: options.respectInlineDisables ?? true,
-    showWarnings: options.warnings ?? userConfig?.warnings ?? false,
+    showWarnings: options.warnings ?? userConfig?.warnings ?? true,
   });
   const result: Diagnostic[] = [];
   for (const diagnostic of mergedDiagnostics) {
