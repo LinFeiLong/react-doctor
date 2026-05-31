@@ -36,7 +36,7 @@ export const rnPreferExpoImage = defineRule<Rule>({
           if (importedName !== "Image" && importedName !== "ImageBackground") continue;
           context.report({
             node: specifier,
-            message: `Your users watch images reload often because ${importedName} from react-native has no caching, so use expo-image for caching, placeholders, & smoother loading.`,
+            message: `Your users watch images reload often because ${importedName} from react-native has no caching.`,
           });
         }
       },

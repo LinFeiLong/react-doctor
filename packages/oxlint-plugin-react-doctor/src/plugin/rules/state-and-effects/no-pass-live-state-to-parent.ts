@@ -9,10 +9,8 @@ import type { RuleContext } from "../../utils/rule-context.js";
 import { getArgsUpstreamRefs, getCallExpr, isSynchronous } from "./utils/effect/ast.js";
 import { getProgramAnalysis } from "./utils/effect/get-program-analysis.js";
 import {
-  findContainingNode,
   getEffectFn,
   getEffectFnRefs,
-  isCustomHook,
   isPropCall,
   isState,
   isUseEffect,
@@ -53,13 +51,10 @@ export const noPassLiveStateToParent = defineRule<Rule>({
         );
         if (!isStateInArgs) continue;
 
-        const containing = findContainingNode(analysis, node);
-        const isInCustomHook = containing != null && isCustomHook(containing);
         context.report({
           node: callExpr,
-          message: isInCustomHook
-            ? "Pushing state up to a parent from a useEffect costs your users an extra render, so return the state from the hook instead."
-            : "Pushing state up to a parent from a useEffect costs your users an extra render, so keep the state in the parent & pass it down as a prop instead.",
+          message:
+            "Pushing state up to a parent from a useEffect costs your users an extra render.",
         });
       }
     },

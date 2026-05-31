@@ -46,8 +46,7 @@ export const tanstackStartNoAnchorElement = defineRule<Rule>({
       if (typeof hrefValue === "string" && hrefValue.startsWith("/")) {
         context.report({
           node,
-          message:
-            "Plain <a> reloads the whole page on internal navigation. Use <Link> from @tanstack/react-router for type-safe routing & preloading.",
+          message: "Plain <a> reloads the whole page on internal navigation.",
         });
       }
     },

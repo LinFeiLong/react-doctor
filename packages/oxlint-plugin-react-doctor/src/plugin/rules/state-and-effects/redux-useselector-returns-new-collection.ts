@@ -9,7 +9,7 @@ import type { RuleContext } from "../../utils/rule-context.js";
 import { inlineUseSelectorFunction } from "./utils/inline-use-selector-function.js";
 
 const MESSAGE =
-  "Your component re-renders on every dispatched action when useSelector returns a new object or array, because the default `===` check always sees a fresh value. Return a primitive, split into several useSelector calls, or pass `shallowEqual` as the second argument.";
+  "Your component re-renders on every dispatched action when useSelector returns a new object or array, because the default `===` check always sees a fresh value.";
 
 const isConciseBodyReturningCollection = (functionNode: EsTreeNode): boolean => {
   if (

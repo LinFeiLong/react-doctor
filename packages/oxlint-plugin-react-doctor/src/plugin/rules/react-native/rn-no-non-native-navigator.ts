@@ -35,7 +35,7 @@ export const rnNoNonNativeNavigator = defineRule<Rule>({
       if (!replacement) return;
       context.report({
         node,
-        message: `Your users feel less native transitions when ${source} uses a JS navigator, so use ${replacement} for real native iOS & Android transitions & gestures.`,
+        message: `Your users feel less native transitions when ${source} uses a JS navigator.`,
       });
     },
   }),

@@ -7,7 +7,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (name: string): string =>
-  `\`${name}\` crashes at runtime because it isn't defined here, so import it or fix the spelling.`;
+  `\`${name}\` crashes at runtime because it isn't defined here.`;
 
 const KNOWN_GLOBALS = new Set([
   "globalThis",

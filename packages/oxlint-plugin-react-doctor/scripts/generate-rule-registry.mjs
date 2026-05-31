@@ -98,7 +98,7 @@ const CATEGORY_BUCKET = {
   Accessibility: "Accessibility",
   Correctness: "Bugs",
   "State & Effects": "Bugs",
-  "React Compiler": "Bugs",
+  "React Compiler": "Performance",
   "Next.js": "Bugs",
   "React Native": "Bugs",
   Server: "Bugs",

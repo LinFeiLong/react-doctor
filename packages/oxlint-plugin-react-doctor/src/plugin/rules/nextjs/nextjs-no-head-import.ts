@@ -23,7 +23,7 @@ export const nextjsNoHeadImport = defineRule<Rule>({
       context.report({
         node,
         message:
-          "next/head silently does nothing in the App Router, so your meta tags never render. Use the Metadata API instead.",
+          "next/head silently does nothing in the App Router, so your meta tags never render.",
       });
     },
   }),

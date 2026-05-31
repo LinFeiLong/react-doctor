@@ -45,7 +45,7 @@ export const tanstackStartNoUseEffectFetch = defineRule<Rule>({
         context.report({
           node,
           message:
-            "fetch() inside useEffect makes your users wait through a loading spinner after render. Use the route loader or createServerFn() instead.",
+            "fetch() inside useEffect makes your users wait through a loading spinner after render.",
         });
       }
     },

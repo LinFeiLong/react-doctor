@@ -25,7 +25,7 @@ const reportLegacyShadowProperties = (
   const quotedPropertyNames = legacyShadowPropertyNames.map((name) => `"${name}"`).join(", ");
   context.report({
     node: objectExpression,
-    message: `Your users on the other platform see no shadow because old shadow style${legacyShadowPropertyNames.length > 1 ? "s" : ""} ${quotedPropertyNames} only work on one platform, so use boxShadow for shadows that work on both on the new architecture.`,
+    message: `Your users on the other platform see no shadow because old shadow style${legacyShadowPropertyNames.length > 1 ? "s" : ""} ${quotedPropertyNames} only work on one platform.`,
   });
 };
 

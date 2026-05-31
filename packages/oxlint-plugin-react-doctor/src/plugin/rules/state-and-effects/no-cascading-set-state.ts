@@ -155,7 +155,7 @@ export const noCascadingSetState = defineRule<Rule>({
       if (setStateCallCount >= CASCADING_SET_STATE_THRESHOLD) {
         context.report({
           node,
-          message: `${setStateCallCount} setState calls in one useEffect redraw your screen each time they run together, so use one useReducer, or work some values out while rendering.`,
+          message: `${setStateCallCount} setState calls in one useEffect redraw your screen each time they run together.`,
         });
       }
     },

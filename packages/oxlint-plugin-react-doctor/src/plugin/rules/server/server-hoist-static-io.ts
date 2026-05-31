@@ -108,7 +108,7 @@ const inspectHandlerBody = (
           : "io";
     context.report({
       node: staticCall,
-      message: `${calleeText}() runs on every request in ${handlerLabel}, re-reading the same file each time. Move it to module scope so it runs once at load.`,
+      message: `${calleeText}() runs on every request in ${handlerLabel}, re-reading the same file each time.`,
     });
   });
 };

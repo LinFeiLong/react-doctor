@@ -4,8 +4,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const ALLOWED_NAMESPACES = new Set(["React", "ReactDOM", "ReactDom"]);
-const MESSAGE =
-  "`findDOMNode` crashes your app in React 19 because it was removed, so use a ref (`useRef` or `createRef`) to reach the element.";
+const MESSAGE = "`findDOMNode` crashes your app in React 19 because it was removed.";
 
 // Port of `oxc_linter::rules::react::no_find_dom_node`. Flags
 // `findDOMNode(...)` and `<NS>.findDOMNode(...)` where `<NS>` is one of

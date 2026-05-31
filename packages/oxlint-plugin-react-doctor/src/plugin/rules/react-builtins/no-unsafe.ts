@@ -27,9 +27,7 @@ const SAFER_REPLACEMENT: Record<string, string> = {
 };
 
 const buildMessage = (methodName: string): string =>
-  `\`${methodName}\` causes subtle bugs & React is removing it, so use \`${
-    SAFER_REPLACEMENT[methodName] ?? "a modern lifecycle method"
-  }\` instead.`;
+  `\`${methodName}\` causes subtle bugs & React is removing it.`;
 
 interface NoUnsafeSettings {
   checkAliases?: boolean;

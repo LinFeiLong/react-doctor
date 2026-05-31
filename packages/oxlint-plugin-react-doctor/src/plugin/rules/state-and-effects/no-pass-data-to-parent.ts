@@ -14,12 +14,10 @@ import {
 } from "./utils/effect/ast.js";
 import { getProgramAnalysis } from "./utils/effect/get-program-analysis.js";
 import {
-  findContainingNode,
   getEffectFn,
   getEffectFnRefs,
   hasCleanup,
   isConstant,
-  isCustomHook,
   isProp,
   isPropCall,
   isRefCall,
@@ -120,13 +118,10 @@ export const noPassDataToParent = defineRule<Rule>({
         });
         if (!isSomeArgsData) continue;
 
-        const containing = findContainingNode(analysis, node);
-        const isInCustomHook = containing != null && isCustomHook(containing);
         context.report({
           node: callExpr,
-          message: isInCustomHook
-            ? "Handing data back to a parent from a useEffect costs your users an extra render, so return the data from the hook instead."
-            : "Handing data back to a parent from a useEffect costs your users an extra render, so fetch it in the parent & pass it down as a prop instead.",
+          message:
+            "Handing data back to a parent from a useEffect costs your users an extra render.",
         });
       }
     },

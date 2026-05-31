@@ -26,8 +26,7 @@ export const nextjsNoNativeScript = defineRule<Rule>({
 
       context.report({
         node,
-        message:
-          "Plain <script> blocks rendering with no loading strategy. Use next/script <Script> for deferred loading.",
+        message: "Plain <script> blocks rendering with no loading strategy.",
       });
     },
   }),

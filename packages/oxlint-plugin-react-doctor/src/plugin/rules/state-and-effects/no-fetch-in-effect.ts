@@ -22,8 +22,7 @@ export const noFetchInEffect = defineRule<Rule>({
       if (containsFetchCall(callback)) {
         context.report({
           node,
-          message:
-            "fetch() inside useEffect races, double-fires & leaks for your users, so use a data fetching library like react-query or SWR, or fetch in a server component.",
+          message: "fetch() inside useEffect races, double-fires & leaks for your users.",
         });
       }
     },

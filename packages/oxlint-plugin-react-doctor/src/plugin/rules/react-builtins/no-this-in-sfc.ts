@@ -6,8 +6,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE =
-  "This value is `undefined` because function components have no `this`, so read props from the function's arguments instead.";
+const MESSAGE = "This value is `undefined` because function components have no `this`.";
 
 // Returns true if the enclosing scope is a class method or a custom
 // class-factory call (e.g. `React.createClass({…})` when the project's

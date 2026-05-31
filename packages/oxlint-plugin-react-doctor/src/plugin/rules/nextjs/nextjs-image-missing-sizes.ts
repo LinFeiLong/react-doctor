@@ -22,8 +22,7 @@ export const nextjsImageMissingSizes = defineRule<Rule>({
 
       context.report({
         node,
-        message:
-          "next/image uses fill without sizes, so your users download the largest image. Add a sizes attribute.",
+        message: "next/image uses fill without sizes, so your users download the largest image.",
       });
     },
   }),

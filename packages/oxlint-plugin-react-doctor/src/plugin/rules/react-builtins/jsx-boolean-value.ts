@@ -3,12 +3,10 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const NEVER_MESSAGE = (attributeName: string): string =>
-  `This prop is written inconsistently, so just write \`${attributeName}\` instead of \`${attributeName}={true}\`.`;
-const ALWAYS_MESSAGE = (attributeName: string): string =>
-  `This prop is written inconsistently, so write \`${attributeName}={true}\` instead of just \`${attributeName}\`.`;
+const NEVER_MESSAGE = (attributeName: string): string => `This prop is written inconsistently.`;
+const ALWAYS_MESSAGE = (attributeName: string): string => `This prop is written inconsistently.`;
 const FALSE_OMITTED_MESSAGE = (attributeName: string): string =>
-  `\`${attributeName}={false}\` does nothing, so leave it off entirely.`;
+  `\`${attributeName}={false}\` does nothing.`;
 
 interface JsxBooleanValueSettings {
   mode?: "never" | "always";

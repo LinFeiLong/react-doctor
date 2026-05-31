@@ -3,6 +3,9 @@ import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import {
   buildRulePromptUrl,
+  CODE_FRAME_BATCH_MAX_SPAN_LINES,
+  CODE_FRAME_LINES_ABOVE,
+  CODE_FRAME_LINES_BELOW,
   groupBy,
   highlighter,
   MILLISECONDS_PER_SECOND,
@@ -10,6 +13,7 @@ import {
   TOP_ERRORS_DISPLAY_COUNT,
 } from "@react-doctor/core";
 import type { Diagnostic } from "@react-doctor/core";
+import { boxText } from "./box-text.js";
 import { buildCodeFrame } from "./build-code-frame.js";
 import { indentMultilineText } from "./indent-multiline-text.js";
 import { wrapTextToWidth } from "./wrap-indented-text.js";
@@ -152,31 +156,99 @@ const TOP_ERROR_DETAIL_INDENT = "    ";
 const pickRepresentativeDiagnostic = (ruleDiagnostics: Diagnostic[]): Diagnostic =>
   ruleDiagnostics.find((diagnostic) => diagnostic.line > 0) ?? ruleDiagnostics[0];
 
-const formatDiagnosticLocation = (diagnostic: Diagnostic): string =>
-  diagnostic.line > 0 ? `${diagnostic.filePath}:${diagnostic.line}` : diagnostic.filePath;
+// A run of same-file sites of one rule whose individual frames would
+// overlap, rendered as a single spanning frame instead of N near-identical
+// boxes. `lead` is the first (lowest-line) site, used for the file path and
+// the single-site caret column.
+interface DiagnosticCluster {
+  readonly diagnostics: Diagnostic[];
+  readonly startLine: number;
+  readonly endLine: number;
+}
 
-// The location + inline code frame for a single diagnostic site, indented
-// under its rule block. The location sits on its own line directly above
-// the frame so it's obvious which file the frame belongs to.
-const buildDiagnosticSiteLines = (
-  diagnostic: Diagnostic,
+// Two same-file sites' frames touch (and so should share one frame) when
+// the gap between their lines fits inside the frame's own context window.
+const FRAME_CONTEXT_REACH_LINES = CODE_FRAME_LINES_ABOVE + CODE_FRAME_LINES_BELOW + 1;
+
+// Groups a rule's sites into spanning clusters: same file, lines close
+// enough that their frames overlap, capped so one long contiguous run
+// splits into a few bounded frames rather than a single wall of code.
+// File grouping preserves first-seen order; sites already arrive sorted by
+// stakes, so clusters surface in a stable, sensible order.
+const clusterNearbyDiagnostics = (diagnostics: Diagnostic[]): DiagnosticCluster[] => {
+  const byFile = groupBy(diagnostics, (diagnostic) => diagnostic.filePath);
+  const clusters: DiagnosticCluster[] = [];
+
+  for (const fileDiagnostics of byFile.values()) {
+    const sorted = [...fileDiagnostics].sort((left, right) => left.line - right.line);
+    let current: Diagnostic[] = [];
+
+    const flush = (): void => {
+      if (current.length === 0) return;
+      clusters.push({
+        diagnostics: current,
+        startLine: current[0]!.line,
+        endLine: current[current.length - 1]!.line,
+      });
+      current = [];
+    };
+
+    for (const diagnostic of sorted) {
+      const previous = current[current.length - 1];
+      const breaksCluster =
+        previous != null &&
+        (diagnostic.line - previous.line > FRAME_CONTEXT_REACH_LINES ||
+          diagnostic.line - current[0]!.line > CODE_FRAME_BATCH_MAX_SPAN_LINES);
+      if (breaksCluster) flush();
+      current.push(diagnostic);
+    }
+    flush();
+  }
+
+  return clusters;
+};
+
+const formatClusterLocation = (cluster: DiagnosticCluster): string => {
+  const { filePath } = cluster.diagnostics[0]!;
+  if (cluster.startLine <= 0) return filePath;
+  if (cluster.endLine > cluster.startLine)
+    return `${filePath}:${cluster.startLine}-${cluster.endLine}`;
+  return `${filePath}:${cluster.startLine}`;
+};
+
+// The location + inline code frame for a cluster of nearby same-file
+// sites, indented under its rule block. The location sits on its own line
+// directly above the frame so it's obvious which file the frame belongs to.
+// A multi-site cluster marks the whole line span; a single site keeps its
+// precise caret column.
+const buildDiagnosticClusterLines = (
+  cluster: DiagnosticCluster,
   resolveSourceRoot: SourceRootResolver,
 ): ReadonlyArray<string> => {
+  const lead = cluster.diagnostics[0]!;
+  const isMultiSite = cluster.diagnostics.length > 1;
   const lines: string[] = [
     "",
-    highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${formatDiagnosticLocation(diagnostic)}`),
+    highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${formatClusterLocation(cluster)}`),
   ];
   const codeFrame = buildCodeFrame({
-    filePath: diagnostic.filePath,
-    line: diagnostic.line,
-    column: diagnostic.column,
-    rootDirectory: resolveSourceRoot(diagnostic),
+    filePath: lead.filePath,
+    line: cluster.startLine,
+    column: isMultiSite ? 0 : lead.column,
+    endLine: isMultiSite ? cluster.endLine : undefined,
+    rootDirectory: resolveSourceRoot(lead),
   });
   if (codeFrame) {
-    lines.push(indentMultilineText(codeFrame, TOP_ERROR_DETAIL_INDENT));
+    lines.push(
+      indentMultilineText(boxText(codeFrame, OUTPUT_MEASURE_WIDTH_CHARS), TOP_ERROR_DETAIL_INDENT),
+    );
   }
-  if (diagnostic.suppressionHint) {
-    lines.push(highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}↳ ${diagnostic.suppressionHint}`));
+  const seenHints = new Set<string>();
+  for (const diagnostic of cluster.diagnostics) {
+    if (diagnostic.suppressionHint && !seenHints.has(diagnostic.suppressionHint)) {
+      seenHints.add(diagnostic.suppressionHint);
+      lines.push(highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}↳ ${diagnostic.suppressionHint}`));
+    }
   }
   return lines;
 };
@@ -205,19 +277,36 @@ const buildRuleDetailBlock = (
 
   const lines: string[] = [`  ${icon} ${headline}${trailingBadge}`];
 
-  for (const explanationLine of wrapTextToWidth(
-    representative.message,
-    OUTPUT_MEASURE_WIDTH_CHARS,
-    {
+  // Verbose lists every rule & site, so the per-rule impact prose would
+  // just repeat down the whole report — skip it there and let the boxed
+  // frames carry the detail.
+  if (!renderEverySite) {
+    for (const explanationLine of wrapTextToWidth(
+      representative.message,
+      OUTPUT_MEASURE_WIDTH_CHARS,
+      { breakLongWords: false },
+    )) {
+      // The description stays the terminal's default color (not dimmed) —
+      // it's the load-bearing "what & why", so it shouldn't read as muted
+      // secondary text like the file location / code frame below it.
+      lines.push(`${TOP_ERROR_DETAIL_INDENT}${explanationLine}`);
+    }
+  }
+
+  // The fix/recommendation, wrapped under the impact (a full sentence is
+  // too long to sit at the code-frame caret). Dim `→` lead-in marks it as
+  // the suggested action.
+  if (representative.help) {
+    for (const fixLine of wrapTextToWidth(`→ ${representative.help}`, OUTPUT_MEASURE_WIDTH_CHARS, {
       breakLongWords: false,
-    },
-  )) {
-    lines.push(highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${explanationLine}`));
+    })) {
+      lines.push(highlighter.dim(`${TOP_ERROR_DETAIL_INDENT}${fixLine}`));
+    }
   }
 
   const sites = renderEverySite ? ruleDiagnostics : [representative];
-  for (const site of sites) {
-    lines.push(...buildDiagnosticSiteLines(site, resolveSourceRoot));
+  for (const cluster of clusterNearbyDiagnostics(sites)) {
+    lines.push(...buildDiagnosticClusterLines(cluster, resolveSourceRoot));
   }
 
   return lines;
@@ -254,6 +343,8 @@ const buildTopErrorsLines = (
   if (topRuleGroups.length === 0) return [];
 
   const lines: string[] = [
+    // Dim rule separating the overview tally from the detailed fixes.
+    highlighter.dim(`  ${"─".repeat(OUTPUT_MEASURE_WIDTH_CHARS)}`),
     `  ${highlighter.bold(`Top ${topRuleGroups.length} ${topRuleGroups.length === 1 ? "error" : "errors"} you should fix`)}`,
     "",
   ];
@@ -264,17 +355,36 @@ const buildTopErrorsLines = (
   return lines;
 };
 
-const buildDefaultDiagnosticsLines = (
-  diagnostics: Diagnostic[],
-  resolveSourceRoot: SourceRootResolver,
-): ReadonlyArray<string> => {
-  const categoryGroups = buildCategoryDiagnosticGroups(diagnostics);
-  const lines: string[] = [...buildTopErrorsLines(diagnostics, resolveSourceRoot)];
-  for (const categoryGroup of categoryGroups) {
-    lines.push(buildCompactCategoryLine(categoryGroup));
+// The compact "Security › 6 errors" category tally, shown ABOVE the
+// detailed blocks so the reader gets the at-a-glance breakdown first,
+// then drills into specifics.
+const buildCategoryBreakdownLines = (diagnostics: Diagnostic[]): string[] =>
+  buildCategoryDiagnosticGroups(diagnostics).map(buildCompactCategoryLine);
+
+const joinSections = (...sections: ReadonlyArray<string>[]): string[] => {
+  const lines: string[] = [];
+  for (const section of sections) {
+    if (section.length === 0) continue;
+    if (lines.length > 0) lines.push("");
+    lines.push(...section);
   }
-  lines.push("");
+  if (lines.length > 0 && lines[lines.length - 1] !== "") lines.push("");
   return lines;
+};
+
+// The total-issue tally (e.g. "600 issues"), shown right under the
+// category breakdown as part of the overview. The "list every issue"
+// hint lives at the very bottom of the run instead (see `printVerboseTip`).
+const buildCountsSummaryLines = (diagnostics: Diagnostic[]): ReadonlyArray<string> => {
+  const totalIssueCount = diagnostics.length;
+  if (totalIssueCount === 0) return [];
+  const errorCount = diagnostics.filter((diagnostic) => diagnostic.severity === "error").length;
+  const warningCount = totalIssueCount - errorCount;
+  const issueCountColor =
+    errorCount > 0 ? highlighter.error : warningCount > 0 ? highlighter.warn : highlighter.dim;
+  return [
+    `  ${issueCountColor(`${totalIssueCount} ${totalIssueCount === 1 ? "issue" : "issues"}`)}`,
+  ];
 };
 
 /**
@@ -296,23 +406,31 @@ export const printDiagnostics = (
   Effect.gen(function* () {
     const resolveSourceRoot: SourceRootResolver =
       typeof sourceRoot === "function" ? sourceRoot : () => sourceRoot;
-    let lines: ReadonlyArray<string>;
+
+    // Overview first (category breakdown + total count), then the detail.
+    // In verbose the detail is EVERY rule and EVERY site (not just the
+    // top N representative) — same readable block layout, just exhaustive.
+    let detailLines: ReadonlyArray<string>;
     if (!isVerbose) {
-      lines = buildDefaultDiagnosticsLines(diagnostics, resolveSourceRoot);
+      detailLines = buildTopErrorsLines(diagnostics, resolveSourceRoot);
     } else {
-      // Verbose reuses the default "top errors" block style, but for
-      // EVERY rule (not just the top N) and EVERY site (not just the
-      // representative) — so `--verbose` is the same readable layout,
-      // just exhaustive.
       const ruleGroups = groupBy(
         diagnostics,
         (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
       );
-      lines = sortByImportance([...ruleGroups.entries()]).flatMap(([ruleKey, ruleDiagnostics]) => [
-        ...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, true),
-        "",
-      ]);
+      detailLines = sortByImportance([...ruleGroups.entries()]).flatMap(
+        ([ruleKey, ruleDiagnostics]) => [
+          ...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, true),
+          "",
+        ],
+      );
     }
+
+    const lines = joinSections(
+      buildCategoryBreakdownLines(diagnostics),
+      buildCountsSummaryLines(diagnostics),
+      detailLines,
+    );
     for (const line of lines) {
       yield* Console.log(line);
     }

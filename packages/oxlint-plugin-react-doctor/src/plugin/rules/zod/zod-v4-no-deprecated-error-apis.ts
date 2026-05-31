@@ -20,8 +20,7 @@ const DEPRECATED_ZOD_ERROR_MEMBERS = new Set([
   "formErrors",
   "format",
 ]);
-const ZOD_ERROR_API_MESSAGE =
-  "Zod 4 dropped this ZodError method, so it breaks when you upgrade. Use `error.issues`, or the new top-level error formatting helpers.";
+const ZOD_ERROR_API_MESSAGE = "Zod 4 dropped this ZodError method, so it breaks when you upgrade.";
 
 const isZodErrorReference = (node: EsTreeNode): boolean => {
   const inner = stripParenExpression(node);

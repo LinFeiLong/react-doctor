@@ -17,7 +17,13 @@ import { shouldSuppressLocalUseHookDiagnostic } from "./should-suppress-local-us
 
 const FILEPATH_WITH_LOCATION_PATTERN = /\S+\.\w+:\d+:\d+[\s\S]*$/;
 
-const REACT_COMPILER_MESSAGE = "React Compiler can't optimize this code";
+// Adopted `react-hooks-js` (React Compiler) diagnostics have no
+// react-doctor `title`, so they'd otherwise render their bare
+// `react-hooks-js/todo` id. Give them a human headline & an impact-first
+// message; the specific bail-out reason stays in `help`.
+const REACT_COMPILER_TITLE = "React Compiler can't optimize this";
+const REACT_COMPILER_MESSAGE =
+  "This component misses React Compiler's automatic memoization & re-renders more than it should. Rewrite the flagged code so the compiler can optimize it.";
 
 // Adopted third-party plugins (not in the react-doctor registry) → the
 // clear user-facing bucket their diagnostics roll up under. Mirrors the
@@ -27,7 +33,9 @@ const REACT_COMPILER_MESSAGE = "React Compiler can't optimize this code";
 const PLUGIN_CATEGORY_MAP: Record<string, string> = {
   react: "Bugs",
   "react-hooks": "Bugs",
-  "react-hooks-js": "Bugs",
+  // React Compiler "can't optimize" diagnostics are an optimization miss,
+  // not a correctness bug.
+  "react-hooks-js": "Performance",
   "react-doctor": "Bugs",
   "jsx-a11y": "Accessibility",
   effect: "Bugs",
@@ -76,6 +84,11 @@ export const getRuleCategory = (ruleName: string): string | undefined =>
 // undefined and renderers fall back to the `plugin/rule` id.
 const getRuleTitle = (ruleName: string): string | undefined =>
   reactDoctorPlugin.rules[ruleName]?.title;
+
+// react-doctor rules carry their own `title`; adopted React Compiler
+// diagnostics get a fixed human headline instead of their bare id.
+const resolveDiagnosticTitle = (plugin: string, rule: string): string | undefined =>
+  plugin === "react-hooks-js" ? REACT_COMPILER_TITLE : getRuleTitle(rule);
 
 const cleanDiagnosticMessage = (
   message: unknown,
@@ -232,7 +245,7 @@ export const parseOxlintOutput = (
         plugin,
         rule,
         severity: diagnostic.severity,
-        title: getRuleTitle(rule),
+        title: resolveDiagnosticTitle(plugin, rule),
         message: cleaned.message,
         help: cleaned.help,
         url: diagnostic.url,

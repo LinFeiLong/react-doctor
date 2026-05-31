@@ -217,6 +217,15 @@ export const CODE_FRAME_LINES_BELOW = 1;
 // so we fall back to the bare `file:line` reference instead.
 export const CODE_FRAME_MAX_LINE_LENGTH_CHARS = 200;
 
+// When one rule hits several sites in the same file, sites whose frames
+// would overlap are merged into a single spanning frame instead of
+// rendering near-duplicate boxes. Two sites merge when the gap between
+// their lines is within this window (the frame's own context reach), and
+// a merged frame never spans more offending lines than the max below — a
+// long contiguous run is split into a few bounded frames rather than one
+// giant wall.
+export const CODE_FRAME_BATCH_MAX_SPAN_LINES = 20;
+
 export const OUTPUT_DETAIL_WRAP_WIDTH_CHARS = 88;
 
 // Typographic "measure" — the line length (in characters) we wrap

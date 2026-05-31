@@ -43,7 +43,7 @@ export const noRedundantSizeAxes = defineRule<Rule>({
       for (const matchedPair of matchedPairs) {
         context.report({
           node: jsxAttribute,
-          message: `w-${matchedPair.value} & h-${matchedPair.value} are the same. Use the shorthand size-${matchedPair.value} (Tailwind v3.4+).`,
+          message: `w-${matchedPair.value} & h-${matchedPair.value} are the same.`,
         });
       }
     },

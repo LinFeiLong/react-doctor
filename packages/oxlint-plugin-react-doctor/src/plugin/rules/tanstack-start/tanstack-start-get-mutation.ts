@@ -59,7 +59,7 @@ export const tanstackStartGetMutation = defineRule<Rule>({
       if (sideEffect) {
         context.report({
           node,
-          message: `This GET server function's side effect (${sideEffect}) is a CSRF vulnerability, since prefetching or a forged request can trigger it. Use createServerFn({ method: 'POST' }) for mutations.`,
+          message: `This GET server function's side effect (${sideEffect}) is prone to CSRF vulnerabilities, since prefetching or a forged request can trigger it.`,
         });
       }
     },

@@ -16,7 +16,7 @@ import { resolveReducerFunction } from "./utils/resolve-reducer-function.js";
 import { getStaticMemberPropertyName } from "./utils/static-member-property-name.js";
 
 const MESSAGE =
-  "Your update is skipped because this reducer changes state in place & returns the same reference, so React thinks nothing changed. Return a new object or array instead.";
+  "Your update is skipped because this reducer changes state in place & returns the same reference, so React thinks nothing changed.";
 
 const SAME_REFERENCE_ARRAY_RETURN_METHODS = new Set(["copyWithin", "fill", "reverse", "sort"]);
 

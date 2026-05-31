@@ -93,12 +93,12 @@ export const noMutableInDeps = defineRule<Rule>({
           if (issue.kind === "ref-current") {
             context.report({
               node: element,
-              message: `Your effect silently never re-runs on "${issue.rootName}.current" because changing a ref doesn't redraw the screen, so read the ref inside the effect body instead.`,
+              message: `Your effect silently never re-runs on "${issue.rootName}.current" because changing a ref doesn't redraw the screen.`,
             });
           } else {
             context.report({
               node: element,
-              message: `Your effect silently never re-runs on "${issue.rootName}.*" because values like \`location.pathname\` can change without redrawing the screen, so subscribe with useSyncExternalStore or read inside the effect.`,
+              message: `Your effect silently never re-runs on "${issue.rootName}.*" because values like \`location.pathname\` can change without redrawing the screen.`,
             });
           }
         }

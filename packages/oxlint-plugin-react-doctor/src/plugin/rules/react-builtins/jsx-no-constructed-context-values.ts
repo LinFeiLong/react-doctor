@@ -12,7 +12,7 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Every reader of this context redraws on each render because you build its `value` inline, so wrap it in `useMemo` or move a constant out of the component.";
+  "Every reader of this context redraws on each render because you build its `value` inline.";
 
 // Modules whose `createContext` export has the same identity
 // semantics as React's. Kept in sync with the list in

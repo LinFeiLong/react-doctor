@@ -6,8 +6,8 @@ import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (componentName: string, allowAllCaps: boolean): string =>
   allowAllCaps
-    ? `React can mistake \`${componentName}\` for an HTML tag unless it's PascalCase or SCREAMING_SNAKE_CASE, so rename it.`
-    : `React can mistake \`${componentName}\` for an HTML tag unless it's PascalCase, so rename it.`;
+    ? `React can mistake \`${componentName}\` for an HTML tag unless it's PascalCase or SCREAMING_SNAKE_CASE.`
+    : `React can mistake \`${componentName}\` for an HTML tag unless it's PascalCase.`;
 
 interface JsxPascalCaseSettings {
   allowAllCaps?: boolean;

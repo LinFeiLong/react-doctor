@@ -9,18 +9,11 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import type { Rule } from "../../utils/rule.js";
 
-const buildMessage = (
-  parentName: string | null,
-  isInProp: boolean,
-  allowAsProps: boolean,
-): string => {
+const buildMessage = (parentName: string | null): string => {
   let message =
     "Your users lose this component's state on every render because it's defined inside another component";
   if (parentName) message += ` (\`${parentName}\`)`;
-  message += ", so move it to the top of the file.";
-  if (isInProp && !allowAsProps) {
-    message += " If this is intentional, set `allowAsProps: true`.";
-  }
+  message += ".";
   return message;
 };
 
@@ -362,7 +355,7 @@ export const noUnstableNestedComponents = defineRule<Rule>({
       // its body to contain JSX).
       context.report({
         node: reportNode,
-        message: buildMessage(enclosing.name, propInfo !== null, settings.allowAsProps),
+        message: buildMessage(enclosing.name),
       });
       void candidateName;
     };

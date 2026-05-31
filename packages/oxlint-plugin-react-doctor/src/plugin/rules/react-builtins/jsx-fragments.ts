@@ -4,10 +4,8 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isJsxFragmentElement } from "../../utils/is-jsx-fragment-element.js";
 import type { Rule } from "../../utils/rule.js";
 
-const SYNTAX_MESSAGE =
-  "This fragment is written inconsistently, so use the `<></>` shorthand instead of `<React.Fragment>`.";
-const ELEMENT_MESSAGE =
-  "This fragment is written inconsistently, so use `<React.Fragment>` instead of the `<></>` shorthand.";
+const SYNTAX_MESSAGE = "This fragment is written inconsistently.";
+const ELEMENT_MESSAGE = "This fragment is written inconsistently.";
 
 interface JsxFragmentsSettings {
   mode?: "syntax" | "element";

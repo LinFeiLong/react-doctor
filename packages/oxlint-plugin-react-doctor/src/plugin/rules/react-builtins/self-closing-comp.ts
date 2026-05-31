@@ -4,8 +4,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE =
-  "This tag has no children, so close it as `<X />` instead of writing a separate closing tag.";
+const MESSAGE = "This tag has no children.";
 
 interface SelfClosingCompSettings {
   component?: boolean;

@@ -205,7 +205,7 @@ export const effectNeedsCleanup = defineRule<Rule>({
           : "the matching remove/unsubscribe call";
       context.report({
         node,
-        message: `\`${firstUsage.resourceName}(...)\` leaks memory by stacking up on every rerun & after unmount because useEffect ${verb} it but never cleans up, so return a cleanup function that calls ${release}.`,
+        message: `\`${firstUsage.resourceName}(...)\` leaks memory by stacking up on every rerun & after unmount because useEffect ${verb} it but never cleans up.`,
       });
     },
   }),

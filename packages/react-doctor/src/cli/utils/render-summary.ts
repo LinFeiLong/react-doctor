@@ -1,7 +1,8 @@
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
-import { highlighter, SHARE_BASE_URL } from "@react-doctor/core";
+import { highlighter, SHARE_BASE_URL, TOP_ERRORS_DISPLAY_COUNT } from "@react-doctor/core";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
+import { colorizeByScore } from "./colorize-by-score.js";
 import { collectAffectedFiles } from "./render-diagnostics.js";
 import { printNoScoreHeader, printScoreHeader } from "./render-score-header.js";
 import { writeDiagnosticsDirectory } from "./write-diagnostics-directory.js";
@@ -25,46 +26,30 @@ const buildShareUrl = (
   return `${SHARE_BASE_URL}?${params.toString()}`;
 };
 
-const printCountsSummaryLine = (
+// The "list every issue" hint, printed as the very last line of a run
+// (below the per-project summaries in a monorepo) so it reads as a
+// closing tip rather than crowding the overview. No-op when already
+// verbose or when there's nothing to list.
+export const printVerboseTip = (
   diagnostics: Diagnostic[],
   isVerbose: boolean,
 ): Effect.Effect<void> =>
   Effect.gen(function* () {
-    const totalIssueCount = diagnostics.length;
-    const errorCount = diagnostics.filter((diagnostic) => diagnostic.severity === "error").length;
-    const warningCount = diagnostics.filter(
-      (diagnostic) => diagnostic.severity === "warning",
-    ).length;
-    const issueCountColor =
-      errorCount > 0 ? highlighter.error : warningCount > 0 ? highlighter.warn : highlighter.dim;
-    const issueText = issueCountColor(
-      `${totalIssueCount} ${totalIssueCount === 1 ? "issue" : "issues"}`,
+    if (isVerbose || diagnostics.length === 0) return;
+    yield* Console.log(
+      highlighter.dim(
+        `  Tip: Run ${highlighter.info("npx react-doctor@latest --verbose")} to list every issue`,
+      ),
     );
-    yield* Console.log(`  ${issueText}`);
-    if (!isVerbose && totalIssueCount > 0) {
-      yield* Console.log(
-        highlighter.dim(
-          `  Run ${highlighter.info("npx react-doctor@latest --verbose")} to list every issue`,
-        ),
-      );
-    }
   });
-
-// Motivational "what's the payoff" projection: the score the user would
-// reach by fixing the top-N errors shown above. Computed by re-scoring
-// with those rules removed (see `inspect.ts`), so it's the real model's
-// number, not a local estimate.
-export interface ScoreProjection {
-  readonly fromScore: number;
-  readonly toScore: number;
-  readonly fixedRuleCount: number;
-}
 
 export interface PrintSummaryInput {
   readonly diagnostics: Diagnostic[];
   readonly elapsedMilliseconds: number;
   readonly scoreResult: ScoreResult | null;
-  readonly scoreProjection?: ScoreProjection | null;
+  // Score reachable by fixing the top errors, rendered as the bar's ghost
+  // gain segment. Omitted when there's nothing to project.
+  readonly potentialScore?: number | null;
   readonly projectName: string;
   readonly totalSourceFileCount: number;
   readonly noScoreMessage: string;
@@ -75,20 +60,18 @@ export interface PrintSummaryInput {
 export const printSummary = (input: PrintSummaryInput): Effect.Effect<void> =>
   Effect.gen(function* () {
     if (input.scoreResult) {
-      yield* printScoreHeader(input.scoreResult);
-      if (input.scoreProjection) {
-        const { fromScore, toScore, fixedRuleCount } = input.scoreProjection;
+      yield* printScoreHeader(input.scoreResult, input.potentialScore ?? undefined);
+      if (input.potentialScore != null) {
+        const improvement = input.potentialScore - input.scoreResult.score;
         yield* Console.log(
-          highlighter.gray(
-            `  ${fromScore} → ${toScore} if you fix the top ${fixedRuleCount} ${fixedRuleCount === 1 ? "error" : "errors"}`,
-          ),
+          highlighter.gray("  You could improve ") +
+            colorizeByScore(`+${improvement}%`, input.potentialScore) +
+            highlighter.gray(` by fixing the top ${TOP_ERRORS_DISPLAY_COUNT} issues`),
         );
       }
     } else {
       yield* printNoScoreHeader(input.noScoreMessage);
     }
-
-    yield* printCountsSummaryLine(input.diagnostics, input.verbose ?? false);
 
     // v4 forbids try/catch inside Effect.gen — wrap the sync write
     // in `Effect.try` (always-tagged form: `{ try, catch }`) and
@@ -106,7 +89,7 @@ export const printSummary = (input: PrintSummaryInput): Effect.Effect<void> =>
     if (!input.isOffline) {
       yield* Console.log("");
       const shareUrl = buildShareUrl(input.diagnostics, input.scoreResult, input.projectName);
-      yield* Console.log(`  ${highlighter.bold("→ Share:")} ${highlighter.info(shareUrl)}`);
+      yield* Console.log(`  ${highlighter.bold("Share:")} ${highlighter.info(shareUrl)}`);
       yield* Console.log("");
     }
   });

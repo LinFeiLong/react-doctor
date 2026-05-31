@@ -33,8 +33,7 @@ export const nextjsNoAElement = defineRule<Rule>({
       if (typeof hrefValue === "string" && hrefValue.startsWith("/")) {
         context.report({
           node,
-          message:
-            "Plain <a> reloads the whole page on internal links. Use next/link for client-side navigation & prefetching.",
+          message: "Plain <a> reloads the whole page on internal links.",
         });
       }
     },

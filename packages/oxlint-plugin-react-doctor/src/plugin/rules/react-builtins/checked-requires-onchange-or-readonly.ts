@@ -6,10 +6,9 @@ import { isCreateElementCall } from "../../utils/is-create-element-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MISSING_MESSAGE =
-  "Your users can't toggle this input because `checked` has no `onChange`, so add `onChange` (or `readOnly` if it's display-only).";
+const MISSING_MESSAGE = "Your users can't toggle this input because `checked` has no `onChange`.";
 const EXCLUSIVE_MESSAGE =
-  "This input behaves unpredictably with both `checked` & `defaultChecked` since they set up two different modes, so keep only one.";
+  "This input behaves unpredictably with both `checked` & `defaultChecked` since they set up two different modes.";
 
 interface CheckedRequiresSettings {
   ignoreMissingProperties?: boolean;

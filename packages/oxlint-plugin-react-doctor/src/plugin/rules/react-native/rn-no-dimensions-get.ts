@@ -26,7 +26,7 @@ export const rnNoDimensionsGet = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Your users see a stale layout on rotation or resize because Dimensions.get() does not update, so use useWindowDimensions() instead, which updates automatically.",
+            "Your users see a stale layout on rotation or resize because Dimensions.get() does not update.",
         });
       }
 
@@ -34,7 +34,7 @@ export const rnNoDimensionsGet = defineRule<Rule>({
         context.report({
           node,
           message:
-            "Your users hit a crash from Dimensions.addEventListener(), which was removed in React Native 0.72, so use useWindowDimensions() instead.",
+            "Your users hit a crash from Dimensions.addEventListener(), which was removed in React Native 0.72.",
         });
       }
     },

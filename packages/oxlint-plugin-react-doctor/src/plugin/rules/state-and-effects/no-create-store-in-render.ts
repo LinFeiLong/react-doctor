@@ -140,7 +140,7 @@ export const noCreateStoreInRender = defineRule<Rule>({
       if (!componentOrHookName) return;
       context.report({
         node,
-        message: `\`${factory.humanLabel}(...)\` builds a brand new store on every render of "${componentOrHookName}", so subscribers get cut off & saved state resets. Move the call to the top level of the file.`,
+        message: `\`${factory.humanLabel}(...)\` builds a brand new store on every render of "${componentOrHookName}", so subscribers get cut off & saved state resets.`,
       });
     },
   }),

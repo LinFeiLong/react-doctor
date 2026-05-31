@@ -142,7 +142,7 @@ export const rnNoFalsyAndRender = defineRule<Rule>({
         context.report({
           node: left,
           message:
-            "Your users hit a crash when this numeric value is 0 and shows a bare `0` as text on React Native, so use `value > 0`, `Boolean(value)`, or a ternary.",
+            "Your users hit a crash when this numeric value is 0 and shows a bare `0` as text on React Native.",
         });
       },
     };

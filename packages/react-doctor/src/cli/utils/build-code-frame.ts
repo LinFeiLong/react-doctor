@@ -12,6 +12,13 @@ interface CodeFrameInput {
   readonly line: number;
   readonly column: number;
   readonly rootDirectory: string;
+  // When set (and greater than `line`), the frame marks the whole
+  // `line`..`endLine` range — used to batch several same-file sites of one
+  // rule into a single spanning frame instead of near-duplicate boxes.
+  readonly endLine?: number;
+  // Short label rendered inline at the caret (e.g. the rule title). Keep
+  // it brief — babel prints it right after the `^`.
+  readonly message?: string;
 }
 
 /**
@@ -41,13 +48,17 @@ export const buildCodeFrame = (input: CodeFrameInput): string | null => {
   const offendingLine = source.split("\n", input.line)[input.line - 1] ?? "";
   if (offendingLine.length > CODE_FRAME_MAX_LINE_LENGTH_CHARS) return null;
 
-  return codeFrameColumns(
-    source,
-    { start: { line: input.line, column: input.column > 0 ? input.column : undefined } },
-    {
-      highlightCode: true,
-      linesAbove: CODE_FRAME_LINES_ABOVE,
-      linesBelow: CODE_FRAME_LINES_BELOW,
-    },
-  );
+  // A spanning frame marks every line in the range and has no single
+  // caret column; a single-site frame points the caret at the column.
+  const isRange = input.endLine != null && input.endLine > input.line;
+  const location = isRange
+    ? { start: { line: input.line }, end: { line: input.endLine! } }
+    : { start: { line: input.line, column: input.column > 0 ? input.column : undefined } };
+
+  return codeFrameColumns(source, location, {
+    highlightCode: true,
+    linesAbove: CODE_FRAME_LINES_ABOVE,
+    linesBelow: CODE_FRAME_LINES_BELOW,
+    ...(input.message ? { message: input.message } : {}),
+  });
 };

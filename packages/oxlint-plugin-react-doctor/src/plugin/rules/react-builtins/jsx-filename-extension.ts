@@ -7,9 +7,9 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const JSX_NOT_ALLOWED = (extension: string, allowedList: string): string =>
-  `This file has JSX but a \`${extension}\` name, so rename it to one of: ${allowedList}.`;
+  `This file has JSX but a \`${extension}\` name.`;
 const EXTENSION_ONLY_FOR_JSX = (extension: string): string =>
-  `\`${extension}\` files are meant for JSX, but this one has none, so rename it.`;
+  `\`${extension}\` files are meant for JSX, but this one has none.`;
 
 interface JsxFilenameExtensionSettings {
   extensions?: ReadonlyArray<string>;

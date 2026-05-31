@@ -23,7 +23,7 @@ export const jsxNoDuplicateProps = defineRule<Rule>({
         if (seenPropNames.has(propName)) {
           context.report({
             node: attribute,
-            message: `Your users can get the wrong value because React keeps only the last "${propName}" & drops the first, so remove the duplicate.`,
+            message: `Your users can get the wrong value because React keeps only the last "${propName}" & drops the first.`,
           });
         }
         seenPropNames.add(propName);

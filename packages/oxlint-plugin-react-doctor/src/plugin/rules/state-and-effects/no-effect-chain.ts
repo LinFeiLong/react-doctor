@@ -276,7 +276,7 @@ export const noEffectChain = defineRule<Rule>({
 
           context.report({
             node: readerEffect.node,
-            message: `Your screen redraws several times from a single action because one useEffect changes "${chainedStateName}", which sets off this one, so do the work where the action starts instead.`,
+            message: `Your screen redraws several times from a single action because one useEffect changes "${chainedStateName}", which sets off this one.`,
           });
         }
       }

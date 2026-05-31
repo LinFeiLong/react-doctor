@@ -77,8 +77,7 @@ export const queryStableQueryClient = defineRule<Rule>({
 
         context.report({
           node,
-          message:
-            "new QueryClient() inside a component wipes your cache on every render. Move it to module scope or wrap it in useState(() => new QueryClient()).",
+          message: "new QueryClient() inside a component wipes your cache on every render.",
         });
       },
     };

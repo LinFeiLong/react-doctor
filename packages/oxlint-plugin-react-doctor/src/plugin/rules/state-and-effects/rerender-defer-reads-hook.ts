@@ -86,7 +86,7 @@ export const rerenderDeferReadsHook = defineRule<Rule>({
 
         context.report({
           node: binding.declarator,
-          message: `${binding.hookName}() redraws your component on every URL change even though it's only read inside event handlers, so read the URL inside the handler instead (e.g. \`new URL(window.location.href).searchParams\`).`,
+          message: `${binding.hookName}() redraws your component on every URL change even though it's only read inside event handlers.`,
         });
       }
     };

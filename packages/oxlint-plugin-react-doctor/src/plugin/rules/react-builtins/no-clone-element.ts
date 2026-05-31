@@ -5,8 +5,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE =
-  "`React.cloneElement` breaks easily when the cloned element's props change, so pass children or render props instead.";
+const MESSAGE = "`React.cloneElement` breaks easily when the cloned element's props change.";
 
 // Port of `oxc_linter::rules::react::no_clone_element`. Flags
 // `cloneElement(...)` and `<NS>.cloneElement(...)` when `cloneElement`

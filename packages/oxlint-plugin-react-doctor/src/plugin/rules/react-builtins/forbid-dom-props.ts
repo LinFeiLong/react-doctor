@@ -21,7 +21,7 @@ interface ForbidDomPropsSettings {
 }
 
 const buildMessage = (propName: string, customMessage?: string): string =>
-  customMessage ?? `Your project blocks the \`${propName}\` prop on plain HTML tags, so remove it.`;
+  customMessage ?? `Your project blocks the \`${propName}\` prop on plain HTML tags.`;
 
 const resolveSettings = (
   settings: Readonly<Record<string, unknown>> | undefined,

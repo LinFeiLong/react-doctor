@@ -217,7 +217,7 @@ export const tanstackStartMissingHeadContent = defineRule<Rule>({
           context.report({
             node: programNode,
             message:
-              "Without <HeadContent /> in the __root route, your route head() meta tags never render. Add <HeadContent /> inside <head>.",
+              "Without <HeadContent /> in the __root route, your route head() meta tags never render.",
           });
         }
       },

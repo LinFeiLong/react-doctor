@@ -33,7 +33,7 @@ export const queryNoQueryInEffect = defineRule<Rule>({
           context.report({
             node: child,
             message:
-              "refetch() inside useEffect duplicates work React Query already does, causing extra fetches. Use queryKey dependencies or the enabled option instead.",
+              "refetch() inside useEffect duplicates work React Query already does, causing extra fetches.",
           });
         }
       });

@@ -149,7 +149,7 @@ export const noMirrorPropEffect = defineRule<Rule>({
 
         context.report({
           node: effectCall,
-          message: `Your screen shows the old value first because useState "${matchedBinding.valueName}" copies prop "${matchedBinding.propRootName}" through this effect, so delete both & read the prop directly while rendering.`,
+          message: `Your screen shows the old value first because useState "${matchedBinding.valueName}" copies prop "${matchedBinding.propRootName}" through this effect.`,
         });
       }
     };

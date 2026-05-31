@@ -5,7 +5,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Your component can render the wrong children when you pass them through a `children` prop, so nest them between the tags instead.";
+  "Your component can render the wrong children when you pass them through a `children` prop.";
 
 // Port of `oxc_linter::rules::react::no_children_prop`. Reports two
 // shapes:

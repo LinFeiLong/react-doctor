@@ -107,7 +107,7 @@ export const noResetAllStateOnPropChange = defineRule<Rule>({
       if (!propUsedToReset) return;
       context.report({
         node,
-        message: `Your users briefly see stale state when a prop changes because this useEffect clears all state, so if "${propUsedToReset.identifier.name}" identifies the item, pass it as \`key\` and let React rebuild the component for you.`,
+        message: `Your users briefly see stale state when a prop changes because this useEffect clears all state.`,
       });
     },
   }),

@@ -1,7 +1,14 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`in-process render across terminal widths and render modes > matches the rendered 100-column layout snapshot 1`] = `
-"  Top 3 errors you should fix
+"  Bugs > 3 errors
+  Maintainability > 1 error
+  Performance > 1 warning
+
+  5 issues
+
+  ────────────────────────────────────────────────────────────
+  Top 3 errors you should fix
 
   ✗ Bugs: react-doctor/no-adjust-state-on-prop-change ×2
     State adjusted in a useEffect when a prop changes — forces
@@ -11,42 +18,43 @@ exports[`in-process render across terminal widths and render modes > matches the
     state.
 
     src/text-swap.tsx:5
-      4 |   useEffect(() => {
-    > 5 |     setCount(0);
-        |     ^
-      6 |   }, [value]);
+    ┌──────────────────────────────────────────────────────────────┐
+    │   4 |   useEffect(() => {                                    │
+    │ > 5 |     setCount(0);                                       │
+    │     |     ^                                                  │
+    │   6 |   }, [value]);                                         │
+    └──────────────────────────────────────────────────────────────┘
 
   ✗ Bugs: react-doctor/no-array-index-key
     Using the array index as a key breaks reconciliation when
     the list reorders.
 
     src/text-swap.tsx:7
-      6 |   }, [value]);
-    > 7 |   return count;
-        |     ^
-      8 | };
+    ┌──────────────────────────────────────────────────────────────┐
+    │   6 |   }, [value]);                                         │
+    │ > 7 |   return count;                                        │
+    │     |     ^                                                  │
+    │   8 | };                                                     │
+    └──────────────────────────────────────────────────────────────┘
 
   ✗ Maintainability: react-doctor/no-nested-component-definition
     Component defined inside another component remounts on
     every render, throwing away its state and DOM.
 
     src/text-swap.tsx:2
-      1 | import { useState, useEffect } from 'react';
-    > 2 | export const TextSwap = ({ value }) => {
-        |     ^
-      3 |   const [count, setCount] = useState(0);
-
-  Bugs > 3 errors
-  Maintainability > 1 error
-  Performance > 1 warning
+    ┌──────────────────────────────────────────────────────────────┐
+    │   1 | import { useState, useEffect } from 'react';           │
+    │ > 2 | export const TextSwap = ({ value }) => {               │
+    │     |     ^                                                  │
+    │   3 |   const [count, setCount] = useState(0);               │
+    └──────────────────────────────────────────────────────────────┘
 
   ┌─────┐  99 / 100 Great
   │ ◠ ◠ │  ██████████████████████████████████████████████████
   │  ▽  │  React Doctor (https://react.doctor)
   └─────┘
 
-  5 issues
-  Run npx react-doctor@latest --verbose to list every issue"
+  Tip: Run npx react-doctor@latest --verbose to list every issue"
 `;
 
 exports[`in-process render across terminal widths and render modes > matches the terminal-width × mode overflow matrix 1`] = `

@@ -14,8 +14,7 @@ import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE =
-  "This child redraws every render because the prop gets brand new JSX each time, so move it out or wrap it in `useMemo`.";
+const MESSAGE = "This child redraws every render because the prop gets brand new JSX each time.";
 
 // Prop names that conventionally receive single JSX elements (icons,
 // slot content, fallbacks, render props). For these the inline JSX

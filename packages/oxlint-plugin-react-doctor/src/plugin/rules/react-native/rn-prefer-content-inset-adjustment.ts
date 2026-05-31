@@ -33,7 +33,7 @@ export const rnPreferContentInsetAdjustment = defineRule<Rule>({
 
         context.report({
           node,
-          message: `Your users render an extra wrapper view from <SafeAreaView> around <${childName}>, so set \`contentInsetAdjustmentBehavior="automatic"\` on the ${childName} & drop the wrapper instead.`,
+          message: `Your users render an extra wrapper view from <SafeAreaView> around <${childName}>.`,
         });
         return;
       }

@@ -6,7 +6,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "`dangerouslySetInnerHTML` is an XSS vulnerability: injecting raw HTML lets attacker-controlled markup run in your users' browsers. Avoid it or sanitize the HTML first.";
+  "`dangerouslySetInnerHTML` is an XSS vulnerability: injecting raw HTML lets attacker-controlled markup run in your users' browsers.";
 
 // Port of `oxc_linter::rules::react::no_danger`. Flags any
 // `dangerouslySetInnerHTML` prop, both as a JSXAttribute on a JSX element

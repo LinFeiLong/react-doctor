@@ -75,8 +75,7 @@ const LITERAL_FACTORY = new Set(["literal"]);
 const reportSchemaMigration = (context: RuleContext, node: EsTreeNode): void => {
   context.report({
     node,
-    message:
-      "Zod 4 deprecated or changed this API, so it breaks when you upgrade. Switch to the recommended Zod 4 schema API.",
+    message: "Zod 4 deprecated or changed this API, so it breaks when you upgrade.",
   });
 };
 

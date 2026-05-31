@@ -26,7 +26,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { OUTPUT_DETAIL_WRAP_WIDTH_CHARS } from "@react-doctor/core";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 import { printDiagnostics } from "../../src/cli/utils/render-diagnostics.js";
-import { printSummary } from "../../src/cli/utils/render-summary.js";
+import { printSummary, printVerboseTip } from "../../src/cli/utils/render-summary.js";
 import { setupReactProject } from "../regressions/_helpers.js";
 import { renderInTerminal } from "../helpers/render-in-terminal.js";
 
@@ -184,6 +184,7 @@ describe("in-process render across terminal widths and render modes", () => {
             verbose: options.verbose,
           }),
         );
+        await Effect.runPromise(printVerboseTip(options.diagnostics, options.verbose));
       });
 
     const scenarioSpecs: {

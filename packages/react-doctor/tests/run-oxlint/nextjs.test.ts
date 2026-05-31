@@ -36,8 +36,7 @@ describe("runOxlint", () => {
         (diagnostic) => diagnostic.rule === "nextjs-no-client-side-redirect",
       );
       expect(redirectIssue).toBeDefined();
-      expect(redirectIssue?.message).toContain("getServerSideProps redirect");
-      expect(redirectIssue?.message).not.toContain("next/navigation");
+      expect(redirectIssue?.message).toContain("flashes the wrong page before redirecting");
     });
 
     it("does not flag useSearchParams() in a file that imports/uses <Suspense>", () => {

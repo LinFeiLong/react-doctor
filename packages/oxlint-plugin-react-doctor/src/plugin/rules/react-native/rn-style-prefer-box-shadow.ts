@@ -53,7 +53,7 @@ export const rnStylePreferBoxShadow = defineRule<Rule>({
         if (match) {
           context.report({
             node: match.node,
-            message: `Your users on the other platform see no shadow when you use ${match.keyName}, so on RN v7+ use the CSS \`boxShadow\` string instead (e.g. \`boxShadow: "0 2px 8px rgba(0,0,0,0.1)"\`), which works on both.`,
+            message: `Your users on the other platform see no shadow when you use ${match.keyName}.`,
           });
         }
       } else if (isNodeOfType(expression, "ArrayExpression")) {
@@ -63,7 +63,7 @@ export const rnStylePreferBoxShadow = defineRule<Rule>({
           if (match) {
             context.report({
               node: match.node,
-              message: `Your users on the other platform see no shadow when you use ${match.keyName}, so on RN v7+ use the CSS \`boxShadow\` string instead, which works on both.`,
+              message: `Your users on the other platform see no shadow when you use ${match.keyName}.`,
             });
             return;
           }
@@ -85,7 +85,7 @@ export const rnStylePreferBoxShadow = defineRule<Rule>({
         if (!match) continue;
         context.report({
           node: match.node,
-          message: `Your users on the other platform see no shadow when you use ${match.keyName}, so on RN v7+ use the CSS \`boxShadow\` string instead, which works on both.`,
+          message: `Your users on the other platform see no shadow when you use ${match.keyName}.`,
         });
       }
     },

@@ -186,14 +186,11 @@ export const noDerivedStateEffect = defineRule<Rule>({
 
       let message: string;
       if (!hasAnyDependencyReference) {
-        message =
-          "Your users briefly see stale state on every prop change. This useEffect resets it, so pass the component a key prop & let React rebuild it from scratch.";
+        message = "Your users briefly see stale state on every prop change.";
       } else if (hasExpensiveDerivation) {
-        message =
-          "You pay an extra render for state derived from other values. This useEffect should wrap it in useMemo, or just work it out while rendering if it's cheap.";
+        message = "You pay an extra render for state derived from other values.";
       } else {
-        message =
-          "You pay an extra render for state you can derive from other values. This useEffect isn't needed, so compute during render instead, no extra state.";
+        message = "You pay an extra render for state you can derive from other values.";
       }
 
       context.report({ node, message });

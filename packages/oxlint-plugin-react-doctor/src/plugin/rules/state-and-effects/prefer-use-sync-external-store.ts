@@ -254,7 +254,7 @@ export const preferUseSyncExternalStore = defineRule<Rule>({
         const matchingBinding = useStateBindings.find((binding) => binding.valueName === valueName);
         context.report({
           node: matchingBinding?.declarator ?? effectCall,
-          message: `Your users can see stale or torn values because useState "${valueName}" syncs an outside store through a useEffect, so replace the useState plus useEffect with useSyncExternalStore(subscribe, getSnapshot), which React handles correctly.`,
+          message: `Your users can see stale or torn values because useState "${valueName}" syncs an outside store through a useEffect.`,
         });
       }
     };

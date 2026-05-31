@@ -20,7 +20,7 @@ import {
 } from "./jsx-no-new-object-as-prop-tables.js";
 
 const MESSAGE =
-  "This child redraws every render because the prop gets a brand new object each time, so wrap it in `useMemo` or move it out.";
+  "This child redraws every render because the prop gets a brand new object each time.";
 
 const isConfigObjectPropName = (propName: string): boolean => {
   if (CONFIG_OBJECT_PROP_NAMES.has(propName)) return true;

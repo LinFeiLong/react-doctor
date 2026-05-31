@@ -11,8 +11,7 @@ import {
 } from "../../utils/jsx-stateless-leaf.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE =
-  "Your users can see & submit the wrong data when this list reorders, so use a stable id as the `key`, not the array index.";
+const MESSAGE = "Your users can see & submit the wrong data when this list reorders.";
 
 const SECOND_INDEX_METHODS: ReadonlySet<string> = new Set([
   "every",

@@ -6,9 +6,9 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildIdentifierMessage = (name: string): string =>
-  `The later spread of \`${name}\` silently overrides the earlier one, so remove the duplicate.`;
+  `The later spread of \`${name}\` silently overrides the earlier one.`;
 const buildMemberMessage = (name: string): string =>
-  `The later spread of \`${name}\` silently overrides the earlier one, so remove the duplicate.`;
+  `The later spread of \`${name}\` silently overrides the earlier one.`;
 
 const flattenMemberExpressionName = (node: EsTreeNode): string | null => {
   // Peel parens / TS wrappers at every recursion step so that

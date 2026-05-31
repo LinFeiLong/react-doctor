@@ -2,7 +2,6 @@ import { performance } from "node:perf_hooks";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import {
-  calculateScore,
   filterDiagnosticsForSurface,
   highlighter,
   layerOtlp,
@@ -10,7 +9,6 @@ import {
   resolveScanTarget,
   restoreLegacyThrow,
   runInspect as runInspectEffect,
-  TOP_ERRORS_DISPLAY_COUNT,
 } from "@react-doctor/core";
 import { buildRuntimeLayers } from "./cli/utils/build-runtime-layers.js";
 import type {
@@ -25,7 +23,8 @@ import { makeNoopConsole } from "./cli/utils/noop-console.js";
 import { buildNoScoreMessage } from "./cli/utils/build-no-score-message.js";
 import { printAgentGuidance } from "./cli/utils/render-agent-guidance.js";
 import { isCiOrCodingAgentEnvironment } from "./cli/utils/is-ci-environment.js";
-import { getTopErrorRuleKeys, printDiagnostics } from "./cli/utils/render-diagnostics.js";
+import { computeProjectedScore } from "./cli/utils/compute-score-projection.js";
+import { printDiagnostics } from "./cli/utils/render-diagnostics.js";
 import { isNonInteractiveEnvironment } from "./cli/utils/is-non-interactive-environment.js";
 import { printProjectDetection } from "./cli/utils/render-project-detection.js";
 import {
@@ -33,8 +32,7 @@ import {
   printNoScoreHeader,
   printScoreHeader,
 } from "./cli/utils/render-score-header.js";
-import { printSummary } from "./cli/utils/render-summary.js";
-import type { ScoreProjection } from "./cli/utils/render-summary.js";
+import { printSummary, printVerboseTip } from "./cli/utils/render-summary.js";
 import { resolveOxlintNode } from "./cli/utils/resolve-oxlint-node.js";
 import { isSpinnerSilent, setSpinnerSilent } from "./cli/utils/spinner.js";
 import { VERSION } from "./cli/utils/version.js";
@@ -450,33 +448,20 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       yield* Console.log("");
     }
 
-    // Re-score with the displayed top errors removed so the summary can
-    // show the payoff (e.g. "79 → 85 if you fix the top 3 errors"). A
-    // second best-effort fetch (no metadata, so it's never recorded) —
-    // we never recompute the model locally; on any failure it's null and
-    // the projection line is simply omitted.
-    const topErrorRuleKeys = getTopErrorRuleKeys([...surfaceDiagnostics], TOP_ERRORS_DISPLAY_COUNT);
-    let scoreProjection: ScoreProjection | null = null;
-    if (score && topErrorRuleKeys.size > 0) {
-      const remainingDiagnostics = surfaceDiagnostics.filter(
-        (diagnostic) => !topErrorRuleKeys.has(`${diagnostic.plugin}/${diagnostic.rule}`),
-      );
-      const potentialScore = yield* Effect.promise(() => calculateScore(remainingDiagnostics));
-      if (potentialScore && potentialScore.score > score.score) {
-        scoreProjection = {
-          fromScore: score.score,
-          toScore: potentialScore.score,
-          fixedRuleCount: topErrorRuleKeys.size,
-        };
-      }
-    }
+    // Re-score with the displayed top errors removed so the score bar can
+    // show the payoff as a ghost gain segment.
+    const potentialScore = score
+      ? yield* Effect.promise(() =>
+          computeProjectedScore([...surfaceDiagnostics], [...surfaceDiagnostics], score),
+        )
+      : null;
 
     const shouldShowShareLink = !options.noScore && options.share && !options.isCi;
     yield* printSummary({
       diagnostics: [...surfaceDiagnostics],
       elapsedMilliseconds,
       scoreResult: score,
-      scoreProjection,
+      potentialScore,
       projectName: project.projectName,
       totalSourceFileCount: lintSourceFileCount,
       noScoreMessage,
@@ -491,6 +476,8 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
         highlighter.warn(`  Note: ${skippedLabel} checks failed — score may be incomplete.`),
       );
     }
+
+    yield* printVerboseTip([...surfaceDiagnostics], options.verbose);
 
     return buildResult();
   });

@@ -60,7 +60,7 @@ export const queryNoUseQueryForMutation = defineRule<Rule>({
       if (hasMutatingFetch) {
         context.report({
           node,
-          message: `${calleeName}() auto-refetches, so this mutating fetch (POST/PUT/DELETE) can fire repeatedly. Use useMutation() instead for onSuccess/onError without auto-refetch.`,
+          message: `${calleeName}() auto-refetches, so this mutating fetch (POST/PUT/DELETE) can fire repeatedly.`,
         });
       }
     },

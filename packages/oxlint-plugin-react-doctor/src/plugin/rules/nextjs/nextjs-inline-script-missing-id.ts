@@ -23,8 +23,7 @@ export const nextjsInlineScriptMissingId = defineRule<Rule>({
 
       context.report({
         node,
-        message:
-          "Without an id, Next.js can't track this inline <Script> & may execute it twice. Add a descriptive id.",
+        message: "Without an id, Next.js can't track this inline <Script> & may execute it twice.",
       });
     },
   }),

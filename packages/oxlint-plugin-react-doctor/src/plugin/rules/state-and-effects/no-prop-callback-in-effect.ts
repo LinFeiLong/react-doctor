@@ -66,7 +66,7 @@ export const noPropCallbackInEffect = defineRule<Rule>({
           reportedNodes.add(child);
           context.report({
             node: child,
-            message: `Your parent re-renders on every local state change because this useEffect calls the prop "${calleeName}" just to stay in sync, so move the shared state into a Provider both sides read instead.`,
+            message: `Your parent re-renders on every local state change because this useEffect calls the prop "${calleeName}" just to stay in sync.`,
           });
         });
       },

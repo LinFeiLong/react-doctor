@@ -8,8 +8,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const RENDER_METHOD_NAME = "render";
-const MESSAGE =
-  "Your users see nothing because this `render` method returns nothing, so return JSX from it.";
+const MESSAGE = "Your users see nothing because this `render` method returns nothing.";
 
 const isStaticRenderKey = (key: EsTreeNode): boolean => {
   if (isNodeOfType(key, "Identifier")) return key.name === RENDER_METHOD_NAME;

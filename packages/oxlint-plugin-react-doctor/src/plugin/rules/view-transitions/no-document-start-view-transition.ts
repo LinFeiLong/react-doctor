@@ -30,7 +30,7 @@ export const noDocumentStartViewTransition = defineRule<Rule>({
       context.report({
         node,
         message:
-          "Your users lose React's <ViewTransition> animations when document.startViewTransition() runs directly, so render a <ViewTransition> component & let React drive it (around startTransition, useDeferredValue, or Suspense).",
+          "Your users lose React's <ViewTransition> animations when document.startViewTransition() runs directly.",
       });
     },
   }),

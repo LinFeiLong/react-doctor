@@ -5,7 +5,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (className: string): string =>
-  `\`shouldComponentUpdate\` fights PureComponent's built-in check in \`${className}\` & can skip needed updates, so remove it.`;
+  `\`shouldComponentUpdate\` fights PureComponent's built-in check in \`${className}\` & can skip needed updates.`;
 
 const isPureComponentSuper = (superClass: EsTreeNode | null): boolean => {
   if (!superClass) return false;

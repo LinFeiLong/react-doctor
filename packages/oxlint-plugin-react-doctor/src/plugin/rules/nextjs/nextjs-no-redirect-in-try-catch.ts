@@ -30,7 +30,7 @@ export const nextjsNoRedirectInTryCatch = defineRule<Rule>({
 
         context.report({
           node,
-          message: `${node.callee.name}() inside try-catch gets swallowed, so the redirect silently fails. Move it outside the try, or call unstable_rethrow() in the catch.`,
+          message: `${node.callee.name}() inside try-catch gets swallowed, so the redirect silently fails.`,
         });
       },
     };

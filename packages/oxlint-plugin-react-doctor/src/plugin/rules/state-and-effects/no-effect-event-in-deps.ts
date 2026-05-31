@@ -121,7 +121,7 @@ export const noEffectEventInDeps = defineRule<Rule>({
           if (componentBindings.isBoundName(element.name)) {
             context.report({
               node: element,
-              message: `Listing "${element.name}" in the deps array defeats useEffectEvent, which changes on every render on purpose, so drop it from the deps & just call it inside the effect.`,
+              message: `Listing "${element.name}" in the deps array defeats useEffectEvent, which changes on every render on purpose.`,
             });
           }
         }

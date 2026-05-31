@@ -52,7 +52,7 @@ export const rnNoScrollviewMappedList = defineRule<Rule>({
         if (isArrayIterationExpression(expression)) {
           context.report({
             node: child,
-            message: `Your users get slow scrolling when <${elementName}> with items.map(...) builds every row at once, so use FlashList, LegendList, or FlatList so only visible rows are built.`,
+            message: `Your users get slow scrolling when <${elementName}> with items.map(...) builds every row at once.`,
           });
           return;
         }

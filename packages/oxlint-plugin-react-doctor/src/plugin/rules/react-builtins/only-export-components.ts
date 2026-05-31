@@ -13,18 +13,14 @@ import {
   UTILITY_FILE_BASENAMES,
 } from "./only-export-components-tables.js";
 
-const NAMED_EXPORT_MESSAGE =
-  "Fast Refresh stops working when a file exports non-components, so move the other exports to their own file.";
-const ANONYMOUS_MESSAGE =
-  "Fast Refresh can't track an unnamed component & full-reloads instead, so give your default export a name.";
+const NAMED_EXPORT_MESSAGE = "Fast Refresh stops working when a file exports non-components.";
+const ANONYMOUS_MESSAGE = "Fast Refresh can't track an unnamed component & full-reloads instead.";
 const EXPORT_ALL_MESSAGE =
-  "`export *` hides what's exported, so Fast Refresh can't verify the file is only components; list the exports instead.";
-const REACT_CONTEXT_MESSAGE =
-  "Fast Refresh stops working when a file exports a context too, so move the context to its own file.";
-const LOCAL_COMPONENT_MESSAGE =
-  "Fast Refresh skips this component because it isn't exported, so export it or move it to its own file.";
+  "`export *` hides what's exported, so Fast Refresh can't verify the file is only components.";
+const REACT_CONTEXT_MESSAGE = "Fast Refresh stops working when a file exports a context too.";
+const LOCAL_COMPONENT_MESSAGE = "Fast Refresh skips this component because it isn't exported.";
 const NO_EXPORT_MESSAGE =
-  "Fast Refresh can't track this component because the file exports nothing, so export it or move it to its own file.";
+  "Fast Refresh can't track this component because the file exports nothing.";
 
 interface OnlyExportComponentsSettings {
   allowExportNames?: ReadonlyArray<string>;

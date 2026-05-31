@@ -78,7 +78,7 @@ export const rerenderLazyRefInit = defineRule<Rule>({
 
       context.report({
         node: initializer,
-        message: `useRef(${callShape}) wastes a fresh value on every render because useRef can't take a lazy initializer, so it's thrown away after the first render. Use \`const ref = useRef(null); if (ref.current === null) ${lazyFix}\` or \`useMemo\` instead.`,
+        message: `useRef(${callShape}) wastes a fresh value on every render because useRef can't take a lazy initializer, so it's thrown away after the first render.`,
       });
     },
   }),

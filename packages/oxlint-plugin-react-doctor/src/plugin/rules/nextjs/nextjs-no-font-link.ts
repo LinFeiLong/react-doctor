@@ -29,8 +29,7 @@ export const nextjsNoFontLink = defineRule<Rule>({
       if (typeof hrefValue === "string" && GOOGLE_FONTS_PATTERN.test(hrefValue)) {
         context.report({
           node,
-          message:
-            "Loading Google Fonts with <link> blocks rendering & shifts layout. Use next/font for self-hosting & zero layout shift.",
+          message: "Loading Google Fonts with <link> blocks rendering & shifts layout.",
         });
       }
     },

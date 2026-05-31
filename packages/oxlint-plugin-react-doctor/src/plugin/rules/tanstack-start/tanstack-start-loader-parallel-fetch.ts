@@ -71,7 +71,7 @@ export const tanstackStartLoaderParallelFetch = defineRule<Rule>({
             context.report({
               node: property,
               message:
-                "Sequential awaits in this loader create a request waterfall that slows the route. Use Promise.all() to fetch in parallel.",
+                "Sequential awaits in this loader create a request waterfall that slows the route.",
             });
             break;
           }

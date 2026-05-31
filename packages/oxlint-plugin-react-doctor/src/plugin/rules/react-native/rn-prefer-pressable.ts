@@ -36,7 +36,7 @@ export const rnPreferPressable = defineRule<Rule>({
         if (!importedName || !TOUCHABLE_COMPONENTS.has(importedName)) continue;
         context.report({
           node: specifier,
-          message: `Your users miss <Pressable>'s flexible press feedback when you use ${importedName}, which is old & frozen, so use <Pressable> from react-native (or react-native-gesture-handler) instead.`,
+          message: `Your users miss <Pressable>'s flexible press feedback when you use ${importedName}, which is old & frozen.`,
         });
       }
     },

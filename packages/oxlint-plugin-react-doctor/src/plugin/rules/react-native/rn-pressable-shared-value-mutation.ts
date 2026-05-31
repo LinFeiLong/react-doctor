@@ -123,7 +123,7 @@ export const rnPressableSharedValueMutation = defineRule<Rule>({
 
           context.report({
             node: attr,
-            message: `Your users feel a choppy press when <${name}> ${attr.name.name} animates on the JS thread, so use Gesture.Tap() inside <GestureDetector> to keep it on the UI thread.`,
+            message: `Your users feel a choppy press when <${name}> ${attr.name.name} animates on the JS thread.`,
           });
         }
       },

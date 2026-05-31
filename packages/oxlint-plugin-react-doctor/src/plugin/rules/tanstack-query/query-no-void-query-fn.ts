@@ -53,8 +53,7 @@ export const queryNoVoidQueryFn = defineRule<Rule>({
         if (statements.length === 0) {
           context.report({
             node: queryFnProperty,
-            message:
-              "This empty queryFn caches undefined, so the component never gets data. Return a value, or use the enabled option to disable the query.",
+            message: "This empty queryFn caches undefined, so the component never gets data.",
           });
         }
       }

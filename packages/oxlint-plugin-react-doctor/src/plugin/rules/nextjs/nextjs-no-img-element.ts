@@ -24,8 +24,7 @@ export const nextjsNoImgElement = defineRule<Rule>({
         if (isNodeOfType(node.name, "JSXIdentifier") && node.name.name === "img") {
           context.report({
             node,
-            message:
-              "Plain <img> ships unoptimized, oversized images to your users. Use next/image for automatic optimization, lazy loading, & responsive images.",
+            message: "Plain <img> ships unoptimized, oversized images to your users.",
           });
         }
       },

@@ -65,7 +65,7 @@ export const noInitializeState = defineRule<Rule>({
             : "undefined";
         context.report({
           node: callExpr,
-          message: `Your users see an extra render with empty "${stateName}" because a useEffect sets its starting value, so pass it straight to \`useState()\` as "${argumentText}". For SSR hydration, prefer \`useSyncExternalStore()\`.`,
+          message: `Your users see an extra render with empty "${stateName}" because a useEffect sets its starting value.`,
         });
       }
     },

@@ -3,16 +3,14 @@ import * as Effect from "effect/Effect";
 import {
   filterDiagnosticsForSurface,
   highlighter,
-  PERFECT_SCORE,
   SCORE_GOOD_THRESHOLD,
   SCORE_OK_THRESHOLD,
 } from "@react-doctor/core";
 import type { Diagnostic, InspectResult, ReactDoctorConfig, ScoreResult } from "@react-doctor/core";
 import { colorizeByScore } from "./colorize-by-score.js";
+import { computeProjectedScore } from "./compute-score-projection.js";
 import { formatElapsedTime, printDiagnostics } from "./render-diagnostics.js";
-import { printSummary } from "./render-summary.js";
-
-const SUMMARY_BAR_WIDTH_CHARS = 20;
+import { printSummary, printVerboseTip } from "./render-summary.js";
 
 interface ProjectScanEntry {
   readonly projectName: string;
@@ -20,12 +18,6 @@ interface ProjectScanEntry {
   readonly issueCount: number;
   readonly errorCount: number;
 }
-
-const buildMiniBar = (score: number): string => {
-  const filledCount = Math.round((score / PERFECT_SCORE) * SUMMARY_BAR_WIDTH_CHARS);
-  const emptyCount = SUMMARY_BAR_WIDTH_CHARS - filledCount;
-  return colorizeByScore("█".repeat(filledCount), score) + highlighter.dim("░".repeat(emptyCount));
-};
 
 const getScoreLabel = (score: number): string => {
   if (score >= SCORE_GOOD_THRESHOLD) return "Great";
@@ -40,11 +32,10 @@ const buildSummaryLine = (entry: ProjectScanEntry, longestProjectNameLength: num
 
   if (entry.score === null) {
     const issueLabel = `${entry.issueCount} ${entry.issueCount === 1 ? "issue" : "issues"}`;
-    return `  ${nameRendering}  ${highlighter.dim("—".repeat(SUMMARY_BAR_WIDTH_CHARS))}  ${highlighter.dim("no score")}  ${highlighter.dim(issueLabel)}`;
+    return `  ${nameRendering}  ${highlighter.dim("no score")}  ${highlighter.dim(issueLabel)}`;
   }
 
   const scoreRendering = colorizeByScore(String(entry.score).padStart(3), entry.score);
-  const bar = buildMiniBar(entry.score);
   const label = colorizeByScore(getScoreLabel(entry.score), entry.score);
 
   const issuesParts: string[] = [];
@@ -61,23 +52,24 @@ const buildSummaryLine = (entry: ProjectScanEntry, longestProjectNameLength: num
   }
   const issuesRendering = issuesParts.length > 0 ? issuesParts.join(highlighter.dim(", ")) : "";
 
-  return `  ${nameRendering}  ${scoreRendering}  ${bar}  ${label}  ${issuesRendering}`;
+  return `  ${nameRendering}  ${scoreRendering}  ${label}  ${issuesRendering}`;
 };
 
-const computeAggregateScore = (
+// The aggregate score shown for a monorepo is its WORST project's score
+// (a chain is only as strong as its weakest link), so the score
+// projection is computed against that same project.
+const findLowestScoredScan = (
   completedScans: ReadonlyArray<{ readonly result: InspectResult }>,
-): ScoreResult | null => {
+): { readonly result: InspectResult & { score: ScoreResult } } | null => {
   const scoredScans = completedScans.filter(
     (scan): scan is { readonly result: InspectResult & { score: ScoreResult } } =>
       scan.result.score !== null,
   );
   if (scoredScans.length === 0) return null;
 
-  const lowestScoredScan = scoredScans.reduce((worst, scan) =>
+  return scoredScans.reduce((worst, scan) =>
     scan.result.score.score < worst.result.score.score ? scan : worst,
   );
-
-  return lowestScoredScan.result.score;
 };
 
 export interface MultiProjectSummaryInput {
@@ -144,7 +136,8 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
       yield* printDiagnostics(surfaceDiagnostics, verbose, resolveDiagnosticSourceRoot);
     }
 
-    const aggregateScore = computeAggregateScore(completedScans);
+    const lowestScoredScan = findLowestScoredScan(completedScans);
+    const aggregateScore = lowestScoredScan?.result.score ?? null;
     const totalSourceFileCount = completedScans.reduce(
       (sum, scan) => sum + scan.result.project.sourceFileCount,
       0,
@@ -154,10 +147,24 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
       0,
     );
 
+    // Project the worst project's score: the displayed top errors are
+    // picked across all projects, but only removing them from the worst
+    // project's diagnostics moves the aggregate (its score IS the total).
+    const potentialScore = lowestScoredScan
+      ? yield* Effect.promise(() =>
+          computeProjectedScore(
+            surfaceDiagnostics,
+            lowestScoredScan.result.diagnostics,
+            lowestScoredScan.result.score,
+          ),
+        )
+      : null;
+
     yield* printSummary({
       diagnostics: surfaceDiagnostics,
       elapsedMilliseconds: totalElapsedMilliseconds,
       scoreResult: aggregateScore,
+      potentialScore,
       projectName: completedScans.map((scan) => scan.result.project.projectName).join(", "),
       totalSourceFileCount,
       noScoreMessage: "Score unavailable.",
@@ -185,4 +192,5 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
     }
 
     yield* Console.log("");
+    yield* printVerboseTip(surfaceDiagnostics, verbose);
   });

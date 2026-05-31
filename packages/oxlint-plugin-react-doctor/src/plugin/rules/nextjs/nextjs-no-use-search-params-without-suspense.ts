@@ -68,7 +68,7 @@ export const nextjsNoUseSearchParamsWithoutSuspense = defineRule<Rule>({
         context.report({
           node,
           message:
-            "useSearchParams() without a <Suspense> boundary forces the whole page into client-side rendering. Wrap the consumer in <Suspense>.",
+            "useSearchParams() without a <Suspense> boundary forces the whole page into client-side rendering.",
         });
       },
     };

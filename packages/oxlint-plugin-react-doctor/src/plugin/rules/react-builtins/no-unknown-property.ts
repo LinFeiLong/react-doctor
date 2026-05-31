@@ -54,13 +54,12 @@ const normalizeAttributeCase = (name: string): string => {
 const hasUppercaseChar = (input: string): boolean => /[A-Z]/.test(input);
 
 const INVALID_PROP_ON_TAG = (propName: string, allowedTags: string): string =>
-  `React ignores \`${propName}\` here because it only works on these tags: ${allowedTags}, so remove it or move it.`;
+  `React ignores \`${propName}\` here because it only works on these tags: ${allowedTags}.`;
 const DATA_LOWERCASE_REQUIRED = (suggestedProp: string): string =>
-  `React drops this \`data-*\` prop because of its capital letters, so use \`${suggestedProp}\` instead.`;
+  `React drops this \`data-*\` prop because of its capital letters.`;
 const UNKNOWN_PROP_WITH_STANDARD_NAME = (suggested: string): string =>
-  `React ignores this prop because it doesn't recognize the name, so use \`${suggested}\` instead.`;
-const UNKNOWN_PROP_GENERIC =
-  "React ignores this prop because it doesn't recognize the name, so remove it.";
+  `React ignores this prop because it doesn't recognize the name.`;
+const UNKNOWN_PROP_GENERIC = "React ignores this prop because it doesn't recognize the name.";
 
 // Port of `oxc_linter::rules::react::no_unknown_property`. Validates JSX
 // attributes against React's recognized DOM/SVG attribute set:

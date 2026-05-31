@@ -5,10 +5,8 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactFunctionCall } from "../../utils/is-react-function-call.js";
 import type { Rule } from "../../utils/rule.js";
 
-const REQUIRE_DESTRUCTURE_MESSAGE =
-  "This `useState` result is hard to follow, so destructure it into a value & setter pair, `const [x, setX] = useState(...)`.";
-const NAMING_CONVENTION_MESSAGE =
-  "The setter here is hard to spot, so name the `useState` pair `[thing, setThing]`.";
+const REQUIRE_DESTRUCTURE_MESSAGE = "This `useState` result is hard to follow.";
+const NAMING_CONVENTION_MESSAGE = "The setter here is hard to spot.";
 
 interface HookUseStateSettings {
   allowDestructuredState?: boolean;

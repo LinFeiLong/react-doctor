@@ -183,7 +183,7 @@ export const noEventTriggerState = defineRule<Rule>({
 
         context.report({
           node: effectCall,
-          message: `useState "${depElement.name}" forces an extra render just to fire "${sideEffectCalleeName}(...)" from a useEffect, so call "${sideEffectCalleeName}(...)" directly in the event handler that sets it & delete the state.`,
+          message: `useState "${depElement.name}" forces an extra render just to fire "${sideEffectCalleeName}(...)" from a useEffect.`,
         });
       });
     };

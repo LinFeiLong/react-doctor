@@ -5,7 +5,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Your users see this comment as text on the page because `//` & `/*` aren't hidden in JSX, so wrap it in `{/* ... */}`.";
+  "Your users see this comment as text on the page because `//` & `/*` aren't hidden in JSX.";
 
 // HTML elements that intentionally render their text content
 // verbatim — `<code>//# chunkId=</code>`, `<pre>// build output</pre>`,

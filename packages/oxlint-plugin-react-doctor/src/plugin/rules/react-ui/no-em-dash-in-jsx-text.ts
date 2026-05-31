@@ -21,8 +21,7 @@ export const noEmDashInJsxText = defineRule<Rule>({
       if (isInsideExcludedTypographyAncestor(jsxTextNode)) return;
       context.report({
         node: jsxTextNode,
-        message:
-          "Em dash (—) in UI text reads like AI output to your users. Replace it with a comma, colon, semicolon, or parentheses.",
+        message: "Em dash (—) in UI text reads like AI output to your users.",
       });
     },
   }),

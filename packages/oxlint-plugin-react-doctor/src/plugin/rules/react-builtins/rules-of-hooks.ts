@@ -23,25 +23,25 @@ import type { Rule } from "../../utils/rule.js";
 // "unconditional" check and walks the AST parent chain for the rest.
 
 const buildTopLevelMessage = (hookName: string): string =>
-  `\`${hookName}\` crashes at the top level of a file, so call it inside a React component or a custom hook.`;
+  `\`${hookName}\` crashes at the top level of a file.`;
 const buildNonComponentMessage = (hookName: string, functionName: string): string =>
-  `\`${hookName}\` crashes inside \`${functionName}\` because it isn't a component or a hook, so name components with a capital letter & hooks starting with "use".`;
+  `\`${hookName}\` crashes inside \`${functionName}\` because it isn't a component or a hook.`;
 const buildConditionalMessage = (hookName: string): string =>
-  `\`${hookName}\` crashes when called conditionally because hooks must run in the same order every render, so call it at the top every time.`;
+  `\`${hookName}\` crashes when called conditionally because hooks must run in the same order every render.`;
 const buildLoopMessage = (hookName: string): string =>
-  `\`${hookName}\` crashes inside a loop because it can run a different number of times each render, so move it out of the loop.`;
+  `\`${hookName}\` crashes inside a loop because it can run a different number of times each render.`;
 const buildAsyncMessage = (hookName: string): string =>
-  `\`${hookName}\` crashes inside an async function, so call it in the component body instead.`;
+  `\`${hookName}\` crashes inside an async function.`;
 const buildClassComponentMessage = (hookName: string): string =>
-  `\`${hookName}\` crashes in a class component, so rewrite the component as a function.`;
+  `\`${hookName}\` crashes in a class component.`;
 const buildTryMessage = (hookName: string): string =>
-  `\`${hookName}\` crashes inside a try/catch/finally block, so move it outside.`;
+  `\`${hookName}\` crashes inside a try/catch/finally block.`;
 const buildEffectEventCallMessage = (bindingName: string): string =>
   `\`${bindingName}\` comes from useEffectEvent, so it only works when called from Effects in the same component.`;
 const buildEffectEventAssignmentMessage = (bindingName: string): string =>
   `${buildEffectEventCallMessage(bindingName)} It also breaks if saved in a variable or passed around.`;
 const buildEffectEventPassedDownMessage = (): string =>
-  `A function from useEffectEvent breaks when passed around, so only call it at the top level of your component.`;
+  `A function from useEffectEvent breaks when passed around.`;
 
 // ASCII range used for the PascalCase namespace heuristic in member
 // hook calls (`Hook.useFoo` flagged, `jest.useFoo` not).
