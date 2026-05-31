@@ -16,13 +16,29 @@ export const CLI_AGENT_BINARIES = {
 
 export type CliAgentId = keyof typeof CLI_AGENT_BINARIES;
 
+// Each agent's "auto-run / skip-approval" flag. We hand off so the agent can
+// FIX the issues end-to-end; stopping to confirm every edit & command would
+// defeat the point, so we launch in each agent's bypass-approvals mode:
+//   claude  → --dangerously-skip-permissions
+//   codex   → --yolo (bypass approvals + sandbox)
+//   cursor  → --force (auto-approve commands; `--yolo` is its alias)
+// The user already opted in by picking the agent from the handoff menu.
+export const CLI_AGENT_AUTO_FLAGS = {
+  "claude-code": ["--dangerously-skip-permissions"],
+  codex: ["--yolo"],
+  cursor: ["--force"],
+} as const satisfies Record<CliAgentId, ReadonlyArray<string>>;
+
 // Hands the current terminal to the agent CLI with the prompt as its first
-// argument, resolving with the agent's exit code once it quits. Uses
-// `spawn` (no shell) so the multi-line prompt needs no escaping and can't
-// be interpreted by a shell.
+// positional argument (after the auto-approval flag), resolving with the
+// agent's exit code once it quits. Uses `spawn` (no shell) so the multi-line
+// prompt needs no escaping and can't be interpreted by a shell.
 export const launchCliAgent = (agentId: CliAgentId, prompt: string, cwd: string): Promise<number> =>
   new Promise<number>((resolve, reject) => {
-    const child = spawn(CLI_AGENT_BINARIES[agentId], [prompt], { cwd, stdio: "inherit" });
+    const child = spawn(CLI_AGENT_BINARIES[agentId], [...CLI_AGENT_AUTO_FLAGS[agentId], prompt], {
+      cwd,
+      stdio: "inherit",
+    });
     child.on("error", reject);
     child.on("close", (code) => resolve(code ?? 0));
   });
