@@ -86,6 +86,18 @@ describe("DiagnosticsManager.applyOutcome", () => {
     expect(manager.get(uri).length).toBe(1);
     expect(cleared).not.toContain(uri);
   });
+
+  it("preserves diagnostics on a partial lint failure (lintIncomplete)", () => {
+    const { manager, cleared } = createManager();
+    manager.applyOutcome(outcome({ byFile: new Map([[FS_PATH, [diagnostic()]]]) }));
+    const [uri] = manager.trackedUris();
+    cleared.length = 0;
+
+    // ok + !didLintFail but some files failed within the batch.
+    manager.applyOutcome(outcome({ lintIncomplete: true }));
+    expect(manager.get(uri).length).toBe(1);
+    expect(cleared).not.toContain(uri);
+  });
 });
 
 describe("DiagnosticsManager.retainProjectFiles", () => {

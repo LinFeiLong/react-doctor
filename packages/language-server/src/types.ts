@@ -99,6 +99,12 @@ export interface ScanOutcome {
   readonly project: ProjectInfo | null;
   readonly didLintFail: boolean;
   readonly lintFailureReason: string | null;
+  /**
+   * `true` when lint ran but some files failed within the batch (partial
+   * failure). Like `didLintFail`, it marks the result unreliable so the
+   * publisher won't clear diagnostics for files that weren't linted.
+   */
+  readonly lintIncomplete?: boolean;
   readonly error: string | null;
 }
 

@@ -348,6 +348,7 @@ export const createServer = (connection: Connection): void => {
     scanRunner = createScanRunner({
       nodeBinaryPath,
       readText,
+      isOpen,
       version: SERVER_VERSION,
       enableCache: !["1", "true"].includes(process.env.REACT_DOCTOR_LSP_NO_CACHE ?? ""),
       logger,
@@ -602,6 +603,9 @@ export const createServer = (connection: Connection): void => {
     const [firstArgument] = params.arguments ?? [];
     switch (params.command) {
       case COMMAND_SCAN_WORKSPACE: {
+        // Drop in-flight background lint chunks so they can't apply stale
+        // results after the full audit reconciles each project.
+        cancelAllProjectScans();
         projectGraph?.refresh();
         scanWorkspaceFull();
         return;

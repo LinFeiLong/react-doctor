@@ -20,6 +20,12 @@ export interface ScanRunnerOptions {
   readonly nodeBinaryPath: string | null;
   /** Reads live file text (open buffer first, then disk) for overlays. */
   readonly readText: TextProvider;
+  /**
+   * Whether a file is currently open in the editor. Background disk scans
+   * re-check this at scan time (not just enqueue time) so a file opened
+   * mid-scan isn't overwritten by an already-queued chunk.
+   */
+  readonly isOpen?: (fsPath: string) => boolean;
   /** React Doctor version, part of the lint-cache config fingerprint. */
   readonly version: string;
   /** Disable the persistent lint cache (kill switch). Defaults to enabled. */
@@ -97,6 +103,7 @@ const outcomeWithoutScan = (
   project: null,
   didLintFail: false,
   lintFailureReason: null,
+  lintIncomplete: false,
   error: null,
 });
 
@@ -134,8 +141,15 @@ export const createScanRunner = (options: ScanRunnerOptions): ScanRunner => {
     if (token.isCancelled) return null;
 
     const projectDirectory = normalizeFsPath(request.projectDirectory);
-    const requestedPaths = request.files.map(normalizeFsPath);
-    const isWholeProject = requestedPaths.length === 0;
+    const allRequested = request.files.map(normalizeFsPath);
+    const isWholeProject = allRequested.length === 0;
+    // Background disk chunks skip files open in the editor — re-checked here
+    // (not just at enqueue time) so a file opened mid-scan keeps its live
+    // overlay diagnostics instead of being clobbered by a queued chunk.
+    const requestedPaths =
+      request.priority === "background" && !request.useOverlay && options.isOpen
+        ? allRequested.filter((fsPath) => !options.isOpen?.(fsPath))
+        : allRequested;
 
     const cache =
       cacheEnabled && !isWholeProject && !request.useOverlay && !request.runDeadCode
@@ -249,6 +263,7 @@ export const createScanRunner = (options: ScanRunnerOptions): ScanRunner => {
         project: result.project,
         didLintFail: result.didLintFail,
         lintFailureReason: result.lintFailureReason,
+        lintIncomplete: result.lintPartialFailures.length > 0,
         error: result.error,
       };
     } finally {
