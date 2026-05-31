@@ -6,7 +6,7 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const JSX_NOT_ALLOWED = (extension: string, allowedList: string): string =>
+const JSX_NOT_ALLOWED = (extension: string): string =>
   `This file has JSX but a \`${extension}\` name.`;
 const EXTENSION_ONLY_FOR_JSX = (extension: string): string =>
   `\`${extension}\` files are meant for JSX, but this one has none.`;
@@ -57,7 +57,6 @@ export const jsxFilenameExtension = defineRule<Rule>({
   create: (context) => {
     const settings = resolveSettings(context.settings);
     const allowedExtensions = normalizeExtensions(settings.extensions);
-    const allowedList = [...allowedExtensions].map((extension) => `.${extension}`).join(", ");
     const filename = normalizeFilename(context.filename ?? "fixture.tsx");
     const extensionOnly = path.extname(filename).slice(1);
     const fileHasAllowedExtension = allowedExtensions.has(extensionOnly);
@@ -82,7 +81,7 @@ export const jsxFilenameExtension = defineRule<Rule>({
         didReportMismatch = true;
         context.report({
           node,
-          message: JSX_NOT_ALLOWED(`.${extensionOnly}`, allowedList),
+          message: JSX_NOT_ALLOWED(`.${extensionOnly}`),
         });
       },
       JSXFragment(node: EsTreeNodeOfType<"JSXFragment">) {
@@ -90,7 +89,7 @@ export const jsxFilenameExtension = defineRule<Rule>({
         didReportMismatch = true;
         context.report({
           node,
-          message: JSX_NOT_ALLOWED(`.${extensionOnly}`, allowedList),
+          message: JSX_NOT_ALLOWED(`.${extensionOnly}`),
         });
       },
     };

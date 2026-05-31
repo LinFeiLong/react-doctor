@@ -74,7 +74,7 @@ export const advancedEventHandlerRefs = defineRule<Rule>({
       if (registeredHandlerName) {
         context.report({
           node,
-          message: `useEffect re-adds the "${registeredHandlerName}" listener every time the handler changes, churning subscriptions.`,
+          message: `useEffect re-adds the "${registeredHandlerName}" listener every time the handler changes.`,
         });
       }
     },

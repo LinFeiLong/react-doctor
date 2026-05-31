@@ -17,7 +17,7 @@ export const rnNoLegacyExpoPackages = defineRule<Rule>({
       const source = node.source?.value;
       if (typeof source !== "string") return;
 
-      for (const [packageName, replacement] of LEGACY_EXPO_PACKAGE_REPLACEMENTS) {
+      for (const [packageName] of LEGACY_EXPO_PACKAGE_REPLACEMENTS) {
         if (source === packageName || source.startsWith(`${packageName}/`)) {
           context.report({
             node,

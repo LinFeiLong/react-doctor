@@ -64,7 +64,7 @@ export const tanstackStartNoSecretsInLoader = defineRule<Rule>({
             const envSource = isImportMetaEnvAccess ? "import.meta.env" : "process.env";
             context.report({
               node: child,
-              message: `Reading ${envSource}.${envVarName} in ${keyName} is a secret-exposure vulnerability, since loaders also run on the client where anyone can read it.`,
+              message: `Reading ${envSource}.${envVarName} in ${keyName} leaks this secret to the client, where anyone can read it.`,
             });
           }
         });

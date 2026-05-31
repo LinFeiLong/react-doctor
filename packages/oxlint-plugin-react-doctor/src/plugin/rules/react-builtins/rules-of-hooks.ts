@@ -27,9 +27,9 @@ const buildTopLevelMessage = (hookName: string): string =>
 const buildNonComponentMessage = (hookName: string, functionName: string): string =>
   `\`${hookName}\` crashes inside \`${functionName}\` because it isn't a component or a hook.`;
 const buildConditionalMessage = (hookName: string): string =>
-  `\`${hookName}\` crashes when called conditionally because hooks must run in the same order every render.`;
+  `\`${hookName}\` crashes when you call it conditionally.`;
 const buildLoopMessage = (hookName: string): string =>
-  `\`${hookName}\` crashes inside a loop because it can run a different number of times each render.`;
+  `\`${hookName}\` crashes when you call it inside a loop.`;
 const buildAsyncMessage = (hookName: string): string =>
   `\`${hookName}\` crashes inside an async function.`;
 const buildClassComponentMessage = (hookName: string): string =>

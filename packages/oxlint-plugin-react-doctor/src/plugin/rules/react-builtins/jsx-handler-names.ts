@@ -6,9 +6,9 @@ import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const buildHandlerNameMessage = (handlerName: string, propKey: string, prefix: string): string =>
+const buildHandlerNameMessage = (handlerName: string, propKey: string): string =>
   `The handler "${handlerName}" for "${propKey}" is hard to recognize.`;
-const buildHandlerPropMessage = (propKey: string, propValue: string, prefix: string): string =>
+const buildHandlerPropMessage = (propKey: string, propValue: string): string =>
   `The prop "${propKey}" passes a handler "${propValue}".`;
 
 interface JsxHandlerNamesSettings {
@@ -243,22 +243,14 @@ export const jsxHandlerNames = defineRule<Rule>({
         if (propIsEventHandler === true && handlerNameIsCorrect === false) {
           context.report({
             node,
-            message: buildHandlerNameMessage(
-              handlerName ?? "",
-              propName,
-              settings.eventHandlerPrefix,
-            ),
+            message: buildHandlerNameMessage(handlerName ?? "", propName),
           });
           return;
         }
         if (propIsEventHandler === false && handlerNameIsCorrect === true) {
           context.report({
             node,
-            message: buildHandlerPropMessage(
-              propName,
-              handlerName ?? "",
-              settings.eventHandlerPropPrefix,
-            ),
+            message: buildHandlerPropMessage(propName, handlerName ?? ""),
           });
         }
       },

@@ -59,12 +59,10 @@ export const rnNoInlineObjectInListItem = defineRule<Rule>({
         const isInlineObject = isNodeOfType(expression, "ObjectExpression");
         const isInlineArray = isNodeOfType(expression, "ArrayExpression");
         if (!isInlineObject && !isInlineArray) return;
-        const propName = isNodeOfType(node.name, "JSXIdentifier") ? node.name.name : "<unknown>";
         const literalKind = isInlineArray ? "array" : "object";
-        const activeRenderProp = renderPropStack[renderPropStack.length - 1];
         context.report({
           node,
-          message: `Your users see memo() rows still redraw when this ${literalKind} on "${propName}" inside ${activeRenderProp} is rebuilt for every row.`,
+          message: `This ${literalKind} is rebuilt for every row, so your memo() rows still redraw.`,
         });
       },
     };

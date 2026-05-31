@@ -3,8 +3,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { findVariableInitializer } from "../../utils/find-variable-initializer.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE =
-  "This JSX crashes because `React` isn't in scope & the old transform turns tags into `React.createElement` calls.";
+const MESSAGE = "This JSX crashes because `React` isn't in scope.";
 
 // Port of `oxc_linter::rules::react::react_in_jsx_scope`. Only relevant
 // for the legacy classic JSX runtime; tsconfig `jsx: "react-jsx"` (or

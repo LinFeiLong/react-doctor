@@ -15,8 +15,7 @@ export const noEval = defineRule<Rule>({
       if (isNodeOfType(node.callee, "Identifier") && node.callee.name === "eval") {
         context.report({
           node,
-          message:
-            "eval() is a code-injection vulnerability: it runs any string as code, so attacker-controlled input becomes attacker-controlled code.",
+          message: "eval() is a code-injection vulnerability: it runs any string as code.",
         });
         return;
       }
@@ -38,7 +37,7 @@ export const noEval = defineRule<Rule>({
         context.report({
           node,
           message:
-            "new Function() is a code-injection vulnerability: it builds & runs code from a string, so attacker-controlled input becomes attacker-controlled code.",
+            "new Function() is a code-injection vulnerability: it builds & runs code from a string.",
         });
       }
     },

@@ -51,20 +51,6 @@ const isRenderItemFunction = (node: EsTreeNode): boolean => {
   return isRenderItemJsxAttribute(parent.parent);
 };
 
-const resolveRenderPropName = (node: EsTreeNode): string => {
-  const container = node.parent;
-  if (!isNodeOfType(container, "JSXExpressionContainer")) return "renderItem";
-  const attr = container.parent;
-  if (
-    isNodeOfType(attr, "JSXAttribute") &&
-    isNodeOfType(attr.name, "JSXIdentifier") &&
-    RENDER_ITEM_PROP_NAMES.has(attr.name.name)
-  ) {
-    return attr.name.name;
-  }
-  return "renderItem";
-};
-
 // HACK: every row of a virtualized list invokes its `renderItem`
 // function — and any `() => onPress(item.id)` arrow created inside that
 // function is a fresh closure per row, per render. memo()-wrapped row
@@ -83,7 +69,6 @@ export const rnListCallbackPerRow = defineRule<Rule>({
   create: (context: RuleContext) => {
     const inspect = (node: EsTreeNode): void => {
       if (!isRenderItemFunction(node)) return;
-      const renderPropName = resolveRenderPropName(node);
       const inlineHandlers = detectInlineRowHandlers(node);
       for (const handler of inlineHandlers) {
         const handlerName =
@@ -92,7 +77,7 @@ export const rnListCallbackPerRow = defineRule<Rule>({
             : "<handler>";
         context.report({
           node: handler,
-          message: `Your users see memo() rows still redraw when ${handlerName} inside ${renderPropName} is rebuilt for every row each draw.`,
+          message: `This ${handlerName} is rebuilt for every row, so your memo() rows still redraw.`,
         });
       }
     };

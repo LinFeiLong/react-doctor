@@ -55,9 +55,9 @@ const hasUppercaseChar = (input: string): boolean => /[A-Z]/.test(input);
 
 const INVALID_PROP_ON_TAG = (propName: string, allowedTags: string): string =>
   `React ignores \`${propName}\` here because it only works on these tags: ${allowedTags}.`;
-const DATA_LOWERCASE_REQUIRED = (suggestedProp: string): string =>
+const DATA_LOWERCASE_REQUIRED = (): string =>
   `React drops this \`data-*\` prop because of its capital letters.`;
-const UNKNOWN_PROP_WITH_STANDARD_NAME = (suggested: string): string =>
+const UNKNOWN_PROP_WITH_STANDARD_NAME = (): string =>
   `React ignores this prop because it doesn't recognize the name.`;
 const UNKNOWN_PROP_GENERIC = "React ignores this prop because it doesn't recognize the name.";
 
@@ -140,7 +140,7 @@ export const noUnknownProperty = defineRule<Rule>({
             if (requireDataLowercase && hasUppercaseChar(actualName)) {
               context.report({
                 node: attribute.name,
-                message: DATA_LOWERCASE_REQUIRED(actualName.toLowerCase()),
+                message: DATA_LOWERCASE_REQUIRED(),
               });
             }
             continue;
@@ -169,7 +169,7 @@ export const noUnknownProperty = defineRule<Rule>({
           if (suggestion) {
             context.report({
               node: attribute.name,
-              message: UNKNOWN_PROP_WITH_STANDARD_NAME(suggestion),
+              message: UNKNOWN_PROP_WITH_STANDARD_NAME(),
             });
           } else {
             context.report({ node: attribute.name, message: UNKNOWN_PROP_GENERIC });

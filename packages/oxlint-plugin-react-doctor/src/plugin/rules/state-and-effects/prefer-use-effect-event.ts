@@ -280,7 +280,7 @@ export const preferUseEffectEvent = defineRule<Rule>({
             : "an async sub-handler";
           context.report({
             node: depElement,
-            message: `Your effect re-subscribes whenever "${depName}" changes because it's listed in the deps even though it's only used inside ${subHandlerLabel}.`,
+            message: `Your effect re-subscribes whenever "${depName}" changes, even though it's only used inside ${subHandlerLabel}.`,
           });
         }
       }

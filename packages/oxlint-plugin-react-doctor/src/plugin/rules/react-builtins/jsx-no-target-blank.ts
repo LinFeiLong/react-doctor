@@ -5,11 +5,11 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
 const NOREFERRER_MESSAGE =
-  '`target="_blank"` without `rel="noreferrer"` is a reverse-tabnabbing vulnerability: the linked page can rewrite your tab to a phishing site.';
+  '`target="_blank"` without `rel="noreferrer"` lets the linked page hijack your tab to a phishing site.';
 const NOOPENER_MESSAGE =
-  '`target="_blank"` without `rel` is a reverse-tabnabbing vulnerability: the linked page can rewrite your tab to a phishing site.';
+  '`target="_blank"` without `rel` lets the linked page hijack your tab to a phishing site.';
 const SPREAD_MESSAGE =
-  'A spread here can add `target="_blank"`, opening a reverse-tabnabbing vulnerability where the linked page rewrites your tab.';
+  'A spread here can add `target="_blank"`, letting the linked page hijack your tab to a phishing site.';
 
 interface JsxNoTargetBlankSettings {
   enforceDynamicLinks?: "always" | "never";

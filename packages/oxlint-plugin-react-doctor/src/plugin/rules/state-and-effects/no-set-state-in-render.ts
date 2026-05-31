@@ -57,7 +57,7 @@ export const noSetStateInRender = defineRule<Rule>({
         const setterIdentifierName = setterCall.callee.name;
         context.report({
           node: setterCall,
-          message: `${setterIdentifierName}() loops forever because it runs on every render & starts another render that calls it again.`,
+          message: `${setterIdentifierName}() loops forever because it runs during render & triggers another render.`,
         });
       }
     };

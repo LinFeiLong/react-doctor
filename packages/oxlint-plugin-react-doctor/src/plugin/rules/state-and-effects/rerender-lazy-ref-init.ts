@@ -72,13 +72,10 @@ export const rerenderLazyRefInit = defineRule<Rule>({
       if (isPlainCall && isReactHookName(calleeName)) return;
 
       const callShape = isNewCall ? `new ${calleeName}()` : `${calleeName}()`;
-      const lazyFix = isNewCall
-        ? `ref.current = new ${calleeName}();`
-        : `ref.current = ${calleeName}();`;
 
       context.report({
         node: initializer,
-        message: `useRef(${callShape}) wastes a fresh value on every render because useRef can't take a lazy initializer, so it's thrown away after the first render.`,
+        message: `useRef(${callShape}) rebuilds this value on every render & throws it away.`,
       });
     },
   }),

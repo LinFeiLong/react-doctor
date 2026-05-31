@@ -16,7 +16,7 @@ export const buildLiteralDepMessage = (hookName: string): string =>
   `A literal in \`${hookName}\`'s dependency array never changes & does nothing.`;
 
 export const buildRefCurrentDepMessage = (hookName: string, depName: string): string =>
-  `\`${hookName}\` won't re-run when \`${depName}\` changes because a ref's \`.current\` updates without a redraw.`;
+  `\`${hookName}\` won't re-run when \`${depName}\` changes, since a ref never triggers a redraw.`;
 
 export const buildNonArrayDepsMessage = (hookName: string): string =>
   `\`${hookName}\`'s dependencies can't be checked because its second argument isn't an inline array.`;
@@ -27,7 +27,7 @@ export const buildMissingDepArrayMessage = (hookName: string): string =>
 export const buildMissingCallbackMessage = (hookName: string): string =>
   `\`${hookName}\` crashes without a function as its first argument.`;
 
-export const buildEffectEventDepMessage = (depName: string): string =>
+export const buildEffectEventDepMessage = (): string =>
   `A function from \`useEffectEvent\` is stable & shouldn't sit in the dependency array.`;
 
 export const buildSpreadDepMessage = (hookName: string): string =>
@@ -49,7 +49,7 @@ export const buildSetStateWithoutDepsMessage = (hookName: string, setterName: st
   `\`${hookName}\` calls \`${setterName}\` with no dependency array, so it can loop forever & freeze the component.`;
 
 export const buildRefCleanupMessage = (depName: string): string =>
-  `Your cleanup can read the wrong node because the ref \`${depName}\` may have changed by the time it runs.`;
+  `Your cleanup may read the wrong node since the ref \`${depName}\` can change before it runs.`;
 
 export const buildAssignmentMessage = (name: string): string =>
   `Assigning to \`${name}\` inside a hook is thrown away after each render.`;

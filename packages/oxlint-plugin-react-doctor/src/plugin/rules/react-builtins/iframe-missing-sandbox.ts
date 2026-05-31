@@ -25,9 +25,9 @@ const ALLOWED_SANDBOX_VALUES = new Set([
 ]);
 
 const MISSING_MESSAGE =
-  "An `<iframe>` with no `sandbox` is a security vulnerability: the embedded page runs with full access to your site & users.";
+  "An `<iframe>` with no `sandbox` is a security hole: the embedded page gets full access to your site.";
 const INVALID_VALUE_MESSAGE = (value: string): string =>
-  `\`${value}\` isn't a valid \`sandbox\` token, so the browser ignores it & leaves the iframe dangerously under-restricted.`;
+  `\`${value}\` isn't a valid \`sandbox\` token, so the browser ignores it & leaves your iframe exposed.`;
 const INVALID_COMBINATION_MESSAGE =
   "Combining `allow-scripts` & `allow-same-origin` lets the iframe remove its own sandbox, defeating the protection.";
 

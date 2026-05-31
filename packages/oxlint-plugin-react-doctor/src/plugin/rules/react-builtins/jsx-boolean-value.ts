@@ -3,8 +3,8 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const NEVER_MESSAGE = (attributeName: string): string => `This prop is written inconsistently.`;
-const ALWAYS_MESSAGE = (attributeName: string): string => `This prop is written inconsistently.`;
+const NEVER_MESSAGE = (): string => `This prop is written inconsistently.`;
+const ALWAYS_MESSAGE = (): string => `This prop is written inconsistently.`;
 const FALSE_OMITTED_MESSAGE = (attributeName: string): string =>
   `\`${attributeName}={false}\` does nothing.`;
 
@@ -67,7 +67,7 @@ export const jsxBooleanValue = defineRule<Rule>({
         if (settings.mode === "never") {
           // shorthand should be allowed unless attribute is on always-list
           if (isShorthand && alwaysSet.has(attributeName)) {
-            context.report({ node, message: ALWAYS_MESSAGE(attributeName) });
+            context.report({ node, message: ALWAYS_MESSAGE() });
             return;
           }
           if (
@@ -78,7 +78,7 @@ export const jsxBooleanValue = defineRule<Rule>({
             return;
           const literalValue = (value.expression as EsTreeNodeOfType<"Literal">).value;
           if (literalValue === true && !alwaysSet.has(attributeName)) {
-            context.report({ node, message: NEVER_MESSAGE(attributeName) });
+            context.report({ node, message: NEVER_MESSAGE() });
             return;
           }
           if (
@@ -93,7 +93,7 @@ export const jsxBooleanValue = defineRule<Rule>({
 
         // mode === "always"
         if (isShorthand && !neverSet.has(attributeName)) {
-          context.report({ node, message: ALWAYS_MESSAGE(attributeName) });
+          context.report({ node, message: ALWAYS_MESSAGE() });
           return;
         }
         if (
@@ -109,7 +109,7 @@ export const jsxBooleanValue = defineRule<Rule>({
           // true`, `={false}` is also treated as undefined which means
           // "omit" — same conclusion.)
           if (literalValue === true || literalValue === false) {
-            context.report({ node, message: NEVER_MESSAGE(attributeName) });
+            context.report({ node, message: NEVER_MESSAGE() });
           }
         }
       },

@@ -12,7 +12,7 @@ import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 const MESSAGE =
-  "createContext() inside a component or hook builds a brand new context every render, so every consumer gets cut off from its Provider & reset.";
+  "createContext() builds a new context every render, so every consumer gets cut off & resets.";
 
 // Context-providing modules whose `createContext` export has the same
 // identity-stability semantics as React's. Calling any of these inside

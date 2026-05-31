@@ -143,7 +143,7 @@ export const rnPreferPressableOverGestureDetector = defineRule<Rule>({
       context.report({
         node,
         message:
-          "Your users wait longer for the screen because <GestureDetector gesture={Gesture.Tap()...}> sets up a native handler each time it appears.",
+          "Your users wait longer for the screen when <GestureDetector> handles a simple tap.",
       });
     },
   }),

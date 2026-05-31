@@ -48,7 +48,7 @@ export const rnScrollviewDynamicPadding = defineRule<Rule>({
 
           context.report({
             node: property,
-            message: `Your users see rows jump when a changing ${key} on contentContainerStyle relays out the whole scroll content.`,
+            message: `Your users see rows jump when a changing ${key} on contentContainerStyle shifts the whole list.`,
           });
           return;
         }

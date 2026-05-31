@@ -26,7 +26,7 @@ export const rnPreferReanimated = defineRule<Rule>({
 
         const suggestion =
           importedName === "LayoutAnimation"
-            ? "Your users see stutter when LayoutAnimation runs on the JS thread and recalculates the whole layout."
+            ? "Your users see stutter when LayoutAnimation runs on the JS thread."
             : "Your users see stutter when Animated from react-native runs on the JS thread.";
 
         context.report({

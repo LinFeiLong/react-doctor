@@ -17,15 +17,6 @@ const UNSAFE_ALIASES = new Set([
   "componentWillUpdate",
 ]);
 
-const SAFER_REPLACEMENT: Record<string, string> = {
-  componentWillMount: "componentDidMount",
-  UNSAFE_componentWillMount: "componentDidMount",
-  componentWillReceiveProps: "getDerivedStateFromProps",
-  UNSAFE_componentWillReceiveProps: "getDerivedStateFromProps",
-  componentWillUpdate: "componentDidUpdate",
-  UNSAFE_componentWillUpdate: "componentDidUpdate",
-};
-
 const buildMessage = (methodName: string): string =>
   `\`${methodName}\` causes subtle bugs & React is removing it.`;
 

@@ -3,8 +3,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 
-const MESSAGE =
-  "A `javascript:` URL is an XSS vulnerability that runs injected input as code, & React 19 blocks it.";
+const MESSAGE = "A `javascript:` URL is an XSS hole that runs injected input as code.";
 
 // Matches `javascript:` allowing whitespace between letters and any
 // casing — exactly the regex `oxc_linter::rules::react::jsx_no_script_url`

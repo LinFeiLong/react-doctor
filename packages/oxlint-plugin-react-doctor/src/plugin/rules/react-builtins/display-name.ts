@@ -154,14 +154,6 @@ const isCreateContextCall = (node: EsTreeNode): boolean => {
   );
 };
 
-const getCallName = (node: EsTreeNode): string | null => {
-  if (!isNodeOfType(node, "CallExpression")) return null;
-  const callee = node.callee;
-  if (isNodeOfType(callee, "Identifier")) return callee.name;
-  if (isNodeOfType(callee, "MemberExpression")) return getStaticMemberName(callee);
-  return null;
-};
-
 const isNamedFunctionLike = (node: EsTreeNode): boolean =>
   (isNodeOfType(node, "FunctionExpression") || isNodeOfType(node, "FunctionDeclaration")) &&
   Boolean(node.id?.name);

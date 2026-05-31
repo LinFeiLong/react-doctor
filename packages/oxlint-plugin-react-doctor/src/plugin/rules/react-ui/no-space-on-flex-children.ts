@@ -48,7 +48,7 @@ export const noSpaceOnFlexChildren = defineRule<Rule>({
       const spaceValue = spaceMatch[2];
       context.report({
         node: jsxAttribute,
-        message: `space-${spaceAxis}-${spaceValue} on a flex or grid parent breaks spacing for your users when a child is hidden & in right-to-left layouts.`,
+        message: `space-${spaceAxis}-${spaceValue} on a flex or grid parent breaks spacing for your users.`,
       });
     },
   }),

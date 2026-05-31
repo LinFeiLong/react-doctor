@@ -15,7 +15,6 @@ import {
   isStateSetterCall,
   isUseEffect,
 } from "./utils/effect/react.js";
-import { stringifyExpressionSnippet } from "./utils/effect/stringify-expression-snippet.js";
 
 // 1:1 port of upstream `src/rules/no-initialize-state.js`.
 // Difference vs upstream: upstream uses `context.sourceCode.getText`
@@ -59,10 +58,6 @@ export const noInitializeState = defineRule<Rule>({
         const stateBinding = elements[0] ?? elements[1];
         const stateName =
           stateBinding && isNodeOfType(stateBinding, "Identifier") ? stateBinding.name : "<state>";
-        const argumentText =
-          callExpr.arguments && callExpr.arguments.length > 0
-            ? stringifyExpressionSnippet(callExpr.arguments[0] as EsTreeNode)
-            : "undefined";
         context.report({
           node: callExpr,
           message: `Your users see an extra render with empty "${stateName}" because a useEffect sets its starting value.`,

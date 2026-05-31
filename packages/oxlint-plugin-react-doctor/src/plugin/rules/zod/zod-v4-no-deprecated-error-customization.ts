@@ -101,8 +101,7 @@ export const zodV4NoDeprecatedErrorCustomization = defineRule<Rule>({
       if (!factoryUsesDeprecatedErrorParameter(node) && !parseCallUsesErrorMap(node)) return;
       context.report({
         node,
-        message:
-          "Zod 4 replaced message strings, `invalid_type_error`, `required_error`, & `errorMap` with one `error` option, so this breaks when you upgrade.",
+        message: "Zod 4 changed how you customize error messages, so this breaks when you upgrade.",
       });
     },
   }),

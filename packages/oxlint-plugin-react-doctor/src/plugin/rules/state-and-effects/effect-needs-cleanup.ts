@@ -199,13 +199,9 @@ export const effectNeedsCleanup = defineRule<Rule>({
 
       const firstUsage = usages[0];
       const verb = firstUsage.kind === "timer" ? "schedules" : "subscribes via";
-      const release =
-        firstUsage.kind === "timer"
-          ? `clear${firstUsage.resourceName === "setInterval" ? "Interval" : "Timeout"}(...)`
-          : "the matching remove/unsubscribe call";
       context.report({
         node,
-        message: `\`${firstUsage.resourceName}(...)\` leaks memory by stacking up on every rerun & after unmount because useEffect ${verb} it but never cleans up.`,
+        message: `\`${firstUsage.resourceName}(...)\` leaks memory because useEffect ${verb} it but never cleans it up.`,
       });
     },
   }),

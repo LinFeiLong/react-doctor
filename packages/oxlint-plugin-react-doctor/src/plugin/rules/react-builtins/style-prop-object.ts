@@ -8,7 +8,7 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
-  "Your styles don't render because the `style` prop needs an object like `{{ color: 'red' }}`, not a string.";
+  "Your styles don't render because you passed the `style` prop a string instead of an object.";
 
 interface StylePropObjectSettings {
   allow?: ReadonlyArray<string>;

@@ -103,10 +103,9 @@ export const noDirectStateMutation = defineRule<Rule>({
             const rootName = getRootIdentifierName(child.left);
             if (!rootName || !stateValueToSetter.has(rootName)) return;
             if (currentlyShadowed.has(rootName)) return;
-            const setterName = stateValueToSetter.get(rootName);
             context.report({
               node: child,
-              message: `Your screen won't update because changing "${rootName}" in place doesn't give React a new value to notice.`,
+              message: `Your screen won't update because you change "${rootName}" in place.`,
             });
             return;
           }
@@ -120,7 +119,6 @@ export const noDirectStateMutation = defineRule<Rule>({
             const rootName = getRootIdentifierName(callee.object);
             if (!rootName || !stateValueToSetter.has(rootName)) return;
             if (currentlyShadowed.has(rootName)) return;
-            const setterName = stateValueToSetter.get(rootName);
             context.report({
               node: child,
               message: `Your screen won't update because .${methodName}() changes "${rootName}" in place.`,

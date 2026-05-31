@@ -32,7 +32,7 @@ export const queryNoRestDestructuring = defineRule<Rule>({
       if (hasRestElement) {
         context.report({
           node: node.id,
-          message: `Rest destructuring on the ${calleeName}() result subscribes to every field & re-renders on each change.`,
+          message: `Rest-destructuring ${calleeName}() subscribes to every field, so it re-renders on each change.`,
         });
       }
     },
