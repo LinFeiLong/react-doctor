@@ -626,9 +626,13 @@ export const createServer = (connection: Connection): void => {
     const [firstArgument] = params.arguments ?? [];
     switch (params.command) {
       case COMMAND_SCAN_WORKSPACE: {
-        // Drop in-flight background lint chunks so they can't apply stale
-        // results after the full audit reconciles each project.
+        // Manual re-audit: drop in-flight scans, cached per-file lint
+        // results, and project metadata so the audit runs fresh against
+        // current config / ignore / package data rather than reusing stale
+        // cache entries on the old fingerprint.
         cancelAllProjectScans();
+        scanRunner?.invalidateCaches();
+        projectGraph?.invalidate();
         projectGraph?.refresh();
         scanWorkspaceFull();
         // The audit runs at background priority and so skips open buffers;
