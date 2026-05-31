@@ -30,6 +30,10 @@ export class LspTestClient {
     this.child = spawn(process.execPath, [SERVER_BIN, "--stdio"], {
       cwd: PACKAGE_ROOT,
       stdio: ["pipe", "pipe", "pipe"],
+      // Disable the persistent lint cache so tests never depend on cache
+      // state left by a prior run (the cache fingerprint can't see source
+      // changes between dev runs, only config/version).
+      env: { ...process.env, REACT_DOCTOR_LSP_NO_CACHE: "1" },
     });
     this.child.stdout.on("data", (chunk: Buffer) => this.onData(chunk));
     // Surface server logs on failure without failing the pipe.

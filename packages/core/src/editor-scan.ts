@@ -106,6 +106,10 @@ export const runEditorScan = async (input: EditorScanInput): Promise<EditorScanR
   const adoptExistingLintConfig = userConfig?.adoptExistingLintConfig ?? true;
   const customRulesOnly = userConfig?.customRulesOnly ?? false;
   const ignoredTags = new Set(userConfig?.ignore?.tags ?? []);
+  // Editors surface warnings (like ESLint in-editor); the CLI's
+  // hide-warnings-by-default is a terminal-output choice. An explicit
+  // `warnings: false` in config still wins for users who opt out globally.
+  const warnings = userConfig?.warnings ?? true;
 
   const configLayer = hasConfigOverride
     ? Config.layerOf({
@@ -140,6 +144,7 @@ export const runEditorScan = async (input: EditorScanInput): Promise<EditorScanR
     ignoredTags,
     ...(input.nodeBinaryPath !== undefined ? { nodeBinaryPath: input.nodeBinaryPath } : {}),
     runDeadCode,
+    warnings,
     isCi: false,
     resolveLocalGithubViewerPermission: false,
     skipJsxIncludeFilter: true,
