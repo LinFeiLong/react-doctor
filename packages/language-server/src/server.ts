@@ -159,23 +159,32 @@ export const createServer = (connection: Connection): void => {
    */
   const scanWorkspaceLint = (): void => {
     if (!projectGraph || !scheduler) return;
+    const activeScheduler = scheduler;
     const projectList = projectGraph.listProjects();
     let chunkCount = 0;
+    const enqueueChunk = (projectDirectory: string, files: string[]): void => {
+      chunkCount += 1;
+      activeScheduler.enqueue({
+        priority: "background",
+        projectDirectory,
+        files,
+        runDeadCode: false,
+        useOverlay: false,
+        reason: "workspace lint chunk",
+      });
+    };
     for (const project of projectList) {
-      const files = enumerateProjectFiles(project.directory);
-      // No enumerable files → a single whole-project scan as a fallback.
-      const batches = files.length === 0 ? [[]] : chunk(files, workspaceChunkSize);
-      for (const batch of batches) {
-        chunkCount += 1;
-        scheduler.enqueue({
-          priority: "background",
-          projectDirectory: project.directory,
-          files: batch,
-          runDeadCode: false,
-          useOverlay: false,
-          reason: "workspace lint chunk",
-        });
+      const enumerated = enumerateProjectFiles(project.directory);
+      // Open files are owned by interactive (buffer-aware) scans; a disk
+      // chunk would race and overwrite their unsaved-buffer diagnostics.
+      const files = enumerated.filter((fsPath) => !isOpen(fsPath));
+      if (files.length === 0) {
+        // Nothing enumerable → one whole-project fallback scan. If every
+        // file is merely open, it's already covered interactively — skip.
+        if (enumerated.length === 0) enqueueChunk(project.directory, []);
+        continue;
       }
+      for (const batch of chunk(files, workspaceChunkSize)) enqueueChunk(project.directory, batch);
     }
     logger.info(
       `Workspace lint scan: ${projectList.length} project(s), ${chunkCount} chunk(s) of up to ${workspaceChunkSize} files.`,
