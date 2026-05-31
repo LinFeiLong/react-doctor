@@ -1,4 +1,5 @@
 import {
+  PUBLIC_CLIENT_KEY_PATTERNS,
   SECRET_FALSE_POSITIVE_SUFFIXES,
   SECRET_MIN_LENGTH_CHARS,
   SECRET_PATTERNS,
@@ -45,6 +46,13 @@ export const noSecretsInClientCode = defineRule<Rule>({
 
         const variableName = node.id.name;
         const literalValue = node.init.value;
+
+        // Public, client-safe keys ship in the browser by design; skip
+        // them before either detector can flag them.
+        if (PUBLIC_CLIENT_KEY_PATTERNS.some((pattern) => pattern.test(literalValue))) {
+          return;
+        }
+
         const isServerOnlyScope = isInsideServerOnlyScope(node);
 
         const trailingSuffix = getIdentifierTrailingWord(variableName);
