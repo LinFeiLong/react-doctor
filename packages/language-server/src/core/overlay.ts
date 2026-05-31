@@ -1,10 +1,20 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { STAGED_FILES_PROJECT_CONFIG_FILENAMES } from "@react-doctor/core";
+import {
+  ADOPTABLE_LINT_CONFIG_FILENAMES,
+  STAGED_FILES_PROJECT_CONFIG_FILENAMES,
+} from "@react-doctor/core";
 import type { TextProvider } from "../types.js";
 
 const OVERLAY_TEMP_PREFIX = "react-doctor-lsp-";
+
+// Project configs + adoptable lint configs (e.g. `.eslintrc.json`) the
+// overlay must mirror so an on-type buffer scan resolves the SAME rule set
+// as the on-save disk scan; otherwise findings flicker between the two.
+const OVERLAY_CONFIG_FILENAMES = [
+  ...new Set([...STAGED_FILES_PROJECT_CONFIG_FILENAMES, ...ADOPTABLE_LINT_CONFIG_FILENAMES]),
+];
 
 export interface OverlaySnapshot {
   /** Temp directory mirroring the project with overlaid buffer content. */
@@ -60,7 +70,7 @@ export const materializeOverlay = (input: MaterializeOverlayInput): OverlaySnaps
       return null;
     }
 
-    for (const configFilename of STAGED_FILES_PROJECT_CONFIG_FILENAMES) {
+    for (const configFilename of OVERLAY_CONFIG_FILENAMES) {
       const source = path.join(input.projectDirectory, configFilename);
       const target = path.join(tempDirectory, configFilename);
       if (fs.existsSync(source) && !fs.existsSync(target)) {

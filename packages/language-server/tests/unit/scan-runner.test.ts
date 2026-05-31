@@ -31,10 +31,8 @@ describe("scan-runner", () => {
 
     const outcome = await runner.performScan(request, { isCancelled: false });
 
-    expect(outcome).not.toBeNull();
-    expect(outcome?.ok).toBe(true);
-    expect(outcome?.coversProject).toBe(false);
-    // No whole-project diagnostics leaked in for a single out-of-project file.
-    expect(outcome?.byFile.size).toBe(0);
+    // Null = no result: no whole-project scan, and (crucially) no outcome
+    // that would clear the unscanned file as if it were lint-clean.
+    expect(outcome).toBeNull();
   });
 });

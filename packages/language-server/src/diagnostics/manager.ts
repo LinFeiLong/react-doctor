@@ -60,6 +60,17 @@ export class DiagnosticsManager {
       this.publish(uri, lspDiagnostics);
     }
 
+    // A failed or lint-degraded scan didn't reliably assess the requested
+    // files. Record what it found, but never clear existing diagnostics —
+    // a transient `runEditorScan` failure must not strip squiggles that a
+    // later successful scan would reproduce.
+    if (!outcome.ok || outcome.didLintFail) {
+      const tracked = this.projectUris.get(project) ?? new Set<string>();
+      for (const uri of liveUris) tracked.add(uri);
+      this.projectUris.set(project, tracked);
+      return;
+    }
+
     // Files explicitly requested but absent from byFile were scanned
     // clean — clear any diagnostics previously shown for them.
     for (const fsPath of outcome.requestedPaths) {

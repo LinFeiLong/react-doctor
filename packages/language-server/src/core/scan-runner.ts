@@ -193,10 +193,12 @@ export const createScanRunner = (options: ScanRunnerOptions): ScanRunner => {
 
         // A per-file request whose paths all resolved outside the project
         // (or whose buffers were unreadable) yields an empty include list.
-        // Bail here — falling through, an empty `includePaths` would be
-        // treated as a whole-project scan and lint the entire tree.
+        // Return null (no result): falling through, an empty `includePaths`
+        // would be treated as a whole-project scan, and emitting an outcome
+        // would clear those files as if they were lint-clean even though
+        // nothing was scanned.
         if (includePaths.length === 0) {
-          return outcomeWithoutScan(request, byFile, requestedPaths);
+          return null;
         }
       }
 

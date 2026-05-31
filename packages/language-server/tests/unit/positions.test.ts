@@ -69,6 +69,17 @@ describe("isPositionInRange", () => {
     expect(isPositionInRange(range, { line: 1, character: 11 })).toBe(false);
     expect(isPositionInRange(range, { line: 0, character: 5 })).toBe(false);
   });
+
+  it("treats the start as inclusive and the end as exclusive (LSP semantics)", () => {
+    expect(isPositionInRange(range, { line: 1, character: 2 })).toBe(true); // start
+    expect(isPositionInRange(range, { line: 1, character: 10 })).toBe(false); // end (exclusive)
+  });
+
+  it("still matches a zero-width range at its single point", () => {
+    const empty = { start: { line: 3, character: 4 }, end: { line: 3, character: 4 } };
+    expect(isPositionInRange(empty, { line: 3, character: 4 })).toBe(true);
+    expect(isPositionInRange(empty, { line: 3, character: 5 })).toBe(false);
+  });
 });
 
 describe("rangesOverlap", () => {

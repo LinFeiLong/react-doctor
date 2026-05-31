@@ -71,15 +71,25 @@ export const rangeFromLineColumn = (text: string | null, line: number, column: n
   return { start, end: { line: startLine, character: startCharacter + 1 } };
 };
 
-/** Whether `position` falls within `range` (inclusive of both ends). */
+/**
+ * Whether `position` falls within `range`. The end is exclusive, matching
+ * LSP range semantics (so the cursor one unit past the underline is not a
+ * match) — except a zero-width range still matches at its single point so
+ * a collapsed diagnostic span stays hoverable.
+ */
 export const isPositionInRange = (range: Range, position: Position): boolean => {
   const afterStart =
     position.line > range.start.line ||
     (position.line === range.start.line && position.character >= range.start.character);
   const beforeEnd =
     position.line < range.end.line ||
-    (position.line === range.end.line && position.character <= range.end.character);
-  return afterStart && beforeEnd;
+    (position.line === range.end.line && position.character < range.end.character);
+  const atZeroWidthRange =
+    range.start.line === range.end.line &&
+    range.start.character === range.end.character &&
+    position.line === range.start.line &&
+    position.character === range.start.character;
+  return (afterStart && beforeEnd) || atZeroWidthRange;
 };
 
 const isBefore = (first: Position, second: Position): boolean =>
