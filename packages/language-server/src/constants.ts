@@ -103,8 +103,13 @@ export const ALL_COMMANDS = [
 /** Canonical GitHub repository, used for "report false positive" links. */
 export const CANONICAL_GITHUB_URL = "https://github.com/millionco/react-doctor";
 
-/** Source file extensions the server scans on open / change / save. */
-export const SCANNABLE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"] as const;
+/**
+ * Source file extensions the server scans on open / change / save / watch.
+ * Mirrors core's `SOURCE_FILE_PATTERN` — the set the workspace enumeration
+ * and the CLI lint — so reactive (open/change) and proactive (workspace)
+ * scanning cover exactly the same files.
+ */
+export const SCANNABLE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx"] as const;
 
 /** Filenames whose change invalidates project/config caches. */
 export const CONFIG_WATCH_FILENAMES = [

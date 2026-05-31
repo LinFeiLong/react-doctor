@@ -394,7 +394,9 @@ export const createServer = (connection: Connection): void => {
       void connection.client.register(DidChangeWatchedFilesNotification.type, {
         watchers: [
           { globPattern: `**/{${CONFIG_WATCH_FILENAMES.join(",")}}` },
-          { globPattern: "**/*.{ts,tsx,js,jsx,mjs,cjs}" },
+          {
+            globPattern: `**/*.{${SCANNABLE_EXTENSIONS.map((extension) => extension.slice(1)).join(",")}}`,
+          },
         ],
       });
     }
