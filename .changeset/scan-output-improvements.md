@@ -1,5 +1,5 @@
 ---
-"react-doctor": minor
+"react-doctor": patch
 ---
 
 Cleaner scan output and smarter file scoping:
