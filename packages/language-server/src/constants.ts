@@ -125,4 +125,7 @@ export const CONFIG_WATCH_FILENAMES = [
   "yarn.lock",
   "bun.lock",
   "bun.lockb",
+  // Changes the set of enumerated source files → triggers a workspace
+  // re-scan + reconcile so newly-ignored files' diagnostics are cleared.
+  ".gitignore",
 ] as const;

@@ -121,6 +121,26 @@ export class DiagnosticsManager {
     return [...this.byUri.keys()];
   }
 
+  /**
+   * Clears diagnostics for a project's tracked files that are no longer
+   * "live" (present in `liveFsPaths`). Used after a chunked workspace scan,
+   * which covers no project as a whole, to drop files that left the
+   * enumeration (deleted / gitignored / renamed) and would otherwise keep
+   * stale squiggles.
+   */
+  retainProjectFiles(project: string, liveFsPaths: Iterable<string>): void {
+    const tracked = this.projectUris.get(project);
+    if (!tracked) return;
+    const liveUris = new Set<string>();
+    for (const fsPath of liveFsPaths) liveUris.add(toUri(fsPath));
+    for (const uri of [...tracked]) {
+      if (liveUris.has(uri)) continue;
+      this.byUri.delete(uri);
+      this.publish(uri, []);
+      tracked.delete(uri);
+    }
+  }
+
   /** Clears (and publishes empty for) every URI owned by a project. */
   clearProject(project: string): void {
     const uris = this.projectUris.get(project);

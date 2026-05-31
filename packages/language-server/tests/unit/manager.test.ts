@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { Diagnostic as CoreDiagnostic } from "@react-doctor/core";
 import { DiagnosticsManager } from "../../src/diagnostics/manager.js";
+import { fsPathToUri as toUri } from "../../src/text/uri.js";
 import type { ScanOutcome, ScanRequest } from "../../src/types.js";
 
 const FS_PATH = "/proj/src/App.tsx";
@@ -84,5 +85,30 @@ describe("DiagnosticsManager.applyOutcome", () => {
     manager.applyOutcome(outcome({ didLintFail: true, lintFailureReason: "partial" }));
     expect(manager.get(uri).length).toBe(1);
     expect(cleared).not.toContain(uri);
+  });
+});
+
+describe("DiagnosticsManager.retainProjectFiles", () => {
+  it("clears tracked files that left the live set but keeps live ones", () => {
+    const { manager, cleared } = createManager();
+    const other = "/proj/src/Other.tsx";
+    manager.applyOutcome(
+      outcome({
+        byFile: new Map([
+          [FS_PATH, [diagnostic()]],
+          [other, [diagnostic()]],
+        ]),
+        requestedPaths: [FS_PATH, other],
+      }),
+    );
+    cleared.length = 0;
+
+    // App.tsx left the enumeration (e.g. gitignored); Other.tsx stays live.
+    manager.retainProjectFiles("/proj", [other]);
+
+    expect(manager.get(toUri(FS_PATH)).length).toBe(0); // dropped → cleared
+    expect(manager.get(toUri(other)).length).toBe(1); // live → kept
+    expect(cleared).toContain(toUri(FS_PATH));
+    expect(cleared).not.toContain(toUri(other));
   });
 });

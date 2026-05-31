@@ -174,8 +174,14 @@ export const createServer = (connection: Connection): void => {
         reason: "workspace lint chunk",
       });
     };
+    const openPaths = documents.all().map((document) => normalizeFsPath(uriToFsPath(document.uri)));
     for (const project of projectList) {
       const enumerated = enumerateProjectFiles(project.directory);
+      // A chunked scan never covers a project as a whole, so a file that
+      // left the enumeration (deleted / gitignored / renamed) is in no
+      // chunk and its diagnostics would linger. Reconcile against the live
+      // set — enumeration plus open buffers (owned by interactive scans).
+      manager?.retainProjectFiles(project.directory, [...enumerated, ...openPaths]);
       // Open files are owned by interactive (buffer-aware) scans; a disk
       // chunk would race and overwrite their unsaved-buffer diagnostics.
       const files = enumerated.filter((fsPath) => !isOpen(fsPath));
@@ -448,6 +454,17 @@ export const createServer = (connection: Connection): void => {
           ...addedRoots,
         ];
         projectGraph = createProjectGraph({ roots: workspaceRoots, logger });
+        // Re-scan open buffers interactively (the workspace scan skips open
+        // files), so documents already open in a newly-added folder get
+        // diagnostics without waiting for an edit.
+        for (const document of documents.all()) {
+          scheduleFileScan(
+            uriToFsPath(document.uri),
+            "interactive",
+            true,
+            "workspace folders changed",
+          );
+        }
         scanWorkspaceLint();
       });
     }

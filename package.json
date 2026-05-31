@@ -9,6 +9,9 @@
     "type": "git",
     "url": "https://github.com/millionco/react-doctor.git"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "type": "module",
   "scripts": {
     "dev": "turbo run dev --filter=react-doctor",
@@ -43,6 +46,12 @@
     "typescript": "^6.0.3",
     "vite-plus": "^0.1.15"
   },
+  "overrides": {
+    "oxlint": "^1.66.0",
+    "oxlint-tsgolint": "^0.23.0",
+    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.15",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@^0.1.15"
+  },
   "engines": {
     "node": "^20.19.0 || >=22.12.0",
     "pnpm": ">=8"
@@ -53,10 +62,6 @@
       "@parcel/watcher",
       "esbuild",
       "unrs-resolver"
-    ],
-    "overrides": {
-      "oxlint": "^1.66.0",
-      "oxlint-tsgolint": "^0.23.0"
-    }
+    ]
   }
 }
