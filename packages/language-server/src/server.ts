@@ -631,6 +631,12 @@ export const createServer = (connection: Connection): void => {
         cancelAllProjectScans();
         projectGraph?.refresh();
         scanWorkspaceFull();
+        // The audit runs at background priority and so skips open buffers;
+        // re-scan them interactively so an open tab isn't left stale (the
+        // cancel above also dropped any pending open-buffer scans).
+        for (const document of documents.all()) {
+          scheduleFileScan(uriToFsPath(document.uri), "interactive", true, "scan workspace");
+        }
         return;
       }
       case COMMAND_SCAN_FILE: {

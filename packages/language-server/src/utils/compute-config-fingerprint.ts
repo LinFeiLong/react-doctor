@@ -12,13 +12,25 @@ import { CONFIG_WATCH_FILENAMES } from "../constants.js";
  */
 export const computeConfigFingerprint = (projectDirectory: string, version: string): string => {
   const parts: string[] = [`v=${version}`];
-  for (const filename of CONFIG_WATCH_FILENAMES) {
-    try {
-      const stat = fs.statSync(path.join(projectDirectory, filename));
-      parts.push(`${filename}=${stat.mtimeMs}:${stat.size}`);
-    } catch {
-      parts.push(`${filename}=absent`);
+  // Walk from the project up to the filesystem root so a monorepo
+  // sub-package's fingerprint also reflects ancestor config / lockfiles
+  // (e.g. a root `pnpm-lock.yaml`) — the same files the watcher invalidates
+  // caches on. Each level is keyed by its absolute path so they stay
+  // distinct, and only files that exist contribute (add / remove / edit all
+  // change the hash).
+  let directory = projectDirectory;
+  for (;;) {
+    for (const filename of CONFIG_WATCH_FILENAMES) {
+      try {
+        const stat = fs.statSync(path.join(directory, filename));
+        parts.push(`${directory}/${filename}=${stat.mtimeMs}:${stat.size}`);
+      } catch {
+        // Absent at this level — contributes nothing.
+      }
     }
+    const parent = path.dirname(directory);
+    if (parent === directory) break;
+    directory = parent;
   }
   return crypto.createHash("sha1").update(parts.join("|")).digest("hex");
 };
