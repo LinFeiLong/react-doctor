@@ -284,7 +284,16 @@ export const createServer = (connection: Connection): void => {
   };
 
   const maybeWarnLintUnavailable = (outcome: ScanOutcome): void => {
-    if (!outcome.didLintFail) return;
+    if (!outcome.didLintFail) {
+      // Lint recovered → clear degraded status so it doesn't stay stuck on
+      // "warning" after a later scan succeeds.
+      if (serverHealth === "warning") {
+        serverHealth = "ok";
+        lintWarningShown = false;
+        publishServerStatus();
+      }
+      return;
+    }
     if (serverHealth !== "warning") {
       serverHealth = "warning";
       publishServerStatus();
@@ -447,6 +456,11 @@ export const createServer = (connection: Connection): void => {
             manager?.clearProject(project.directory);
           }
         }
+        // Drop core + lint caches (same as config-change / restart) so
+        // discovery, config, ignore, and package metadata don't go stale
+        // across folder updates.
+        scanRunner?.invalidateCaches();
+        projectGraph?.invalidate();
         // Discovery froze its roots at `initialize`, so rebuild the graph
         // against the updated set instead of just refreshing within it.
         workspaceRoots = [
