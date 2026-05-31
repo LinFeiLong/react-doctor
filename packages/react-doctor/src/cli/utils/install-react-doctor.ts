@@ -317,7 +317,7 @@ interface InstallReactDoctorOptions {
   prompt?: typeof prompts;
 }
 
-const getSkillSourceDirectory = (): string => {
+export const getSkillSourceDirectory = (): string => {
   const distDirectory = path.dirname(fileURLToPath(import.meta.url));
   return path.join(distDirectory, "skills", SKILL_NAME);
 };

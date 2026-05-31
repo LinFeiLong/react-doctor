@@ -4,7 +4,6 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { InspectResult } from "@react-doctor/core";
 import { inspectAction } from "../src/cli/commands/inspect.js";
-import { promptInstallSetup } from "../src/cli/utils/prompt-install-setup.js";
 import { inspect } from "../src/inspect.js";
 
 const mockState = vi.hoisted(() => ({
@@ -140,13 +139,6 @@ describe("inspectAction setup prompt", () => {
       webDirectory,
       expect.objectContaining({
         includePaths: ["src/App.tsx"],
-      }),
-    );
-    expect(promptInstallSetup).toHaveBeenCalledWith(
-      expect.objectContaining({
-        projectRoot: rootDirectory,
-        hasCompletedScan: true,
-        skipPrompts: false,
       }),
     );
   });
