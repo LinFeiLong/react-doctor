@@ -86,6 +86,7 @@ export const createServer = (connection: Connection): void => {
   };
 
   let projectGraph: ProjectGraph | null = null;
+  let workspaceRoots: string[] = [];
   let scheduler: Scheduler | null = null;
   let scanRunner: ScanRunner | null = null;
   let manager: DiagnosticsManager | null = null;
@@ -306,8 +307,8 @@ export const createServer = (connection: Connection): void => {
   // ── Lifecycle ────────────────────────────────────────────────────
 
   connection.onInitialize((params: InitializeParams): InitializeResult => {
-    const roots = resolveWorkspaceRoots(params);
-    projectGraph = createProjectGraph({ roots, logger });
+    workspaceRoots = resolveWorkspaceRoots(params).map(normalizeFsPath);
+    projectGraph = createProjectGraph({ roots: workspaceRoots, logger });
 
     try {
       const resolution = resolveNodeForOxlint();
@@ -425,8 +426,28 @@ export const createServer = (connection: Connection): void => {
     }
 
     if (supportsWorkspaceFolderChange) {
-      connection.workspace.onDidChangeWorkspaceFolders(() => {
-        projectGraph?.refresh();
+      connection.workspace.onDidChangeWorkspaceFolders((event) => {
+        const removedRoots = event.removed.map((folder) =>
+          normalizeFsPath(uriToFsPath(folder.uri)),
+        );
+        const addedRoots = event.added.map((folder) => normalizeFsPath(uriToFsPath(folder.uri)));
+        // Clear diagnostics owned by folders leaving the workspace before
+        // rebuilding the graph (afterwards their projects are gone).
+        const isUnderRemovedRoot = (directory: string): boolean =>
+          removedRoots.some((root) => directory === root || directory.startsWith(`${root}/`));
+        for (const project of projectGraph?.listProjects() ?? []) {
+          if (isUnderRemovedRoot(project.directory)) {
+            scheduler?.cancelProject(project.directory);
+            manager?.clearProject(project.directory);
+          }
+        }
+        // Discovery froze its roots at `initialize`, so rebuild the graph
+        // against the updated set instead of just refreshing within it.
+        workspaceRoots = [
+          ...workspaceRoots.filter((root) => !removedRoots.includes(root)),
+          ...addedRoots,
+        ];
+        projectGraph = createProjectGraph({ roots: workspaceRoots, logger });
         scanWorkspaceLint();
       });
     }
