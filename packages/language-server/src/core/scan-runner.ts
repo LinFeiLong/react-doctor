@@ -79,6 +79,28 @@ const statSafe = (fsPath: string): FileStat | null => {
 };
 
 /**
+ * Outcome for a per-file request served without running oxlint (every
+ * file was cached, or none resolved inside the project). `byFile` holds
+ * any cache hits; requested files absent from it are cleared downstream.
+ */
+const outcomeWithoutScan = (
+  request: ScanRequest,
+  byFile: Map<string, CoreDiagnostic[]>,
+  requestedPaths: ReadonlyArray<string>,
+): ScanOutcome => ({
+  request,
+  ok: true,
+  skipped: false,
+  byFile,
+  coversProject: false,
+  requestedPaths,
+  project: null,
+  didLintFail: false,
+  lintFailureReason: null,
+  error: null,
+});
+
+/**
  * Creates the scan runner used by the scheduler. Each scan runs
  * `runEditorScan` (offline, no score, no git) against either the live
  * overlay tree (unsaved buffers) or disk, groups diagnostics by canonical
@@ -144,18 +166,7 @@ export const createScanRunner = (options: ScanRunnerOptions): ScanRunner => {
 
     // Whole batch served from cache → no subprocess needed.
     if (cache && filesToScan.length === 0) {
-      return {
-        request,
-        ok: true,
-        skipped: false,
-        byFile,
-        coversProject: false,
-        requestedPaths,
-        project: null,
-        didLintFail: false,
-        lintFailureReason: null,
-        error: null,
-      };
+      return outcomeWithoutScan(request, byFile, requestedPaths);
     }
 
     let scanDirectory = projectDirectory;
@@ -178,6 +189,14 @@ export const createScanRunner = (options: ScanRunnerOptions): ScanRunner => {
           includePaths = filesToScan
             .map((filePath) => toProjectRelative(projectDirectory, filePath))
             .filter((relative): relative is string => relative !== null);
+        }
+
+        // A per-file request whose paths all resolved outside the project
+        // (or whose buffers were unreadable) yields an empty include list.
+        // Bail here — falling through, an empty `includePaths` would be
+        // treated as a whole-project scan and lint the entire tree.
+        if (includePaths.length === 0) {
+          return outcomeWithoutScan(request, byFile, requestedPaths);
         }
       }
 

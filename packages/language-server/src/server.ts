@@ -619,9 +619,14 @@ export const createServer = (connection: Connection): void => {
     );
   };
 
-  // Flush the lint cache to disk before the editor tears the server down,
-  // so the next session reuses it (the debounced write may not have fired).
+  // Tear down cleanly: stop the debounced config-rescan and any in-flight /
+  // queued scans first, then flush the lint cache to disk so the next
+  // session reuses it (the debounced write may not have fired). Stopping
+  // work before the flush prevents a config change moments before shutdown
+  // from enqueuing a rescan or re-dirtying the cache after teardown begins.
   connection.onShutdown(() => {
+    if (configRescanTimer) clearTimeout(configRescanTimer);
+    scheduler?.dispose();
     scanRunner?.dispose();
   });
 
