@@ -113,11 +113,14 @@ describe("DiagnosticsManager.applyOutcome", () => {
 
 describe("DiagnosticsManager open-buffer protection", () => {
   it("a background disk scan does not overwrite an open file's diagnostics", () => {
+    const openUri = toUri(FS_PATH);
     const published: Array<{ uri: string; count: number }> = [];
     const manager = new DiagnosticsManager({
       publish: (uri, diagnostics) => published.push({ uri, count: diagnostics.length }),
       textProvider: () => "const App = () => null\n",
-      isOpen: (fsPath) => fsPath === FS_PATH, // App.tsx is open in the editor
+      // Compare by URI so the predicate is stable across the fsPath <-> URI
+      // round-trip on every platform (App.tsx is "open").
+      isOpen: (fsPath) => toUri(fsPath) === openUri,
     });
 
     // Interactive (overlay) scan publishes the open buffer's diagnostics.
@@ -127,8 +130,7 @@ describe("DiagnosticsManager open-buffer protection", () => {
         byFile: new Map([[FS_PATH, [diagnostic()]]]),
       }),
     );
-    const uri = toUri(FS_PATH);
-    expect(manager.get(uri).length).toBe(1);
+    expect(manager.get(openUri).length).toBe(1);
     published.length = 0;
 
     // A background whole-project audit reports the file clean from disk —
@@ -141,8 +143,8 @@ describe("DiagnosticsManager open-buffer protection", () => {
         requestedPaths: [],
       }),
     );
-    expect(manager.get(uri).length).toBe(1);
-    expect(published.some((entry) => entry.uri === uri && entry.count === 0)).toBe(false);
+    expect(manager.get(openUri).length).toBe(1);
+    expect(published.some((entry) => entry.uri === openUri && entry.count === 0)).toBe(false);
   });
 });
 
