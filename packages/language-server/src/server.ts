@@ -103,9 +103,21 @@ export const createServer = (connection: Connection): void => {
   let isBusy = false;
   let serverHealth: "ok" | "warning" = "ok";
 
+  // Open documents indexed by canonical fs path → client URI. `documents`
+  // keys by the exact URI the client sent, which can differ from
+  // `fsPathToUri(fsPath)` (casing, encoding, drive-letter, symlinks), so a
+  // naive lookup would miss the buffer and fall back to disk — silently
+  // defeating the open-file protections. Maintained on open/close below.
+  const openDocumentUriByPath = new Map<string, string>();
+
+  const findOpenDocument = (fsPath: string): TextDocument | undefined => {
+    const uri = openDocumentUriByPath.get(normalizeFsPath(fsPath));
+    return uri === undefined ? undefined : documents.get(uri);
+  };
+
   /** Live text of a file: open buffer first, then disk. */
   const readText = (fsPath: string): string | null => {
-    const document = documents.get(fsPathToUri(fsPath));
+    const document = findOpenDocument(fsPath);
     if (document) return document.getText();
     try {
       return fs.readFileSync(fsPath, "utf8");
@@ -114,7 +126,7 @@ export const createServer = (connection: Connection): void => {
     }
   };
 
-  const isOpen = (fsPath: string): boolean => documents.get(fsPathToUri(fsPath)) !== undefined;
+  const isOpen = (fsPath: string): boolean => findOpenDocument(fsPath) !== undefined;
 
   const scheduleFileScan = (
     fsPath: string,
@@ -491,7 +503,12 @@ export const createServer = (connection: Connection): void => {
   // ── Document sync ────────────────────────────────────────────────
 
   documents.onDidOpen((event) => {
+    openDocumentUriByPath.set(normalizeFsPath(uriToFsPath(event.document.uri)), event.document.uri);
     scheduleFileScan(uriToFsPath(event.document.uri), "interactive", true, "open");
+  });
+
+  documents.onDidClose((event) => {
+    openDocumentUriByPath.delete(normalizeFsPath(uriToFsPath(event.document.uri)));
   });
 
   documents.onDidChangeContent((event) => {
