@@ -479,8 +479,7 @@ export const runInstallReactDoctor = async (
     selectedSetupActions.length === 0 && selectedSetupOptions.includes(SETUP_OPTION_SKIP);
 
   const shouldInstallGitHook =
-    gitHookPath !== null &&
-    gitHookPath !== undefined &&
+    gitHookPath != null &&
     (Boolean(options.yes) ||
       (!didSkipOptionalSetup && selectedSetupActions.includes(SETUP_OPTION_GIT_HOOK)));
 

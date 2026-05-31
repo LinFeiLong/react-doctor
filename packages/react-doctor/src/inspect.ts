@@ -309,12 +309,11 @@ const runInspectWithRuntime = async (
     scannedFilePaths: output.scannedFilePaths,
     scanElapsedMilliseconds: output.scanElapsedMilliseconds,
   };
-  const result = await Effect.runPromise(
+  return await Effect.runPromise(
     finalizeAndRender(finalizeInput).pipe(
       options.silent ? Effect.provideService(Console.Console, silentConsole) : (program) => program,
     ),
   );
-  return result;
 };
 
 interface FinalizeInput {

@@ -23,7 +23,7 @@ export type CliAgentId = keyof typeof CLI_AGENT_BINARIES;
 //   codex   → --yolo (bypass approvals + sandbox)
 //   cursor  → --force (auto-approve commands; `--yolo` is its alias)
 // The user already opted in by picking the agent from the handoff menu.
-export const CLI_AGENT_AUTO_FLAGS = {
+const CLI_AGENT_AUTO_FLAGS = {
   "claude-code": ["--dangerously-skip-permissions"],
   codex: ["--yolo"],
   cursor: ["--force"],
