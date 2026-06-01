@@ -59,6 +59,17 @@ describe("react-hooks-js native plugin", () => {
     expect(runRule("set-state-in-render", code)).toHaveLength(0);
   });
 
+  it("error-boundaries fires on JSX constructed in a try block", () => {
+    const code = "function Component() {\n  let el;\n  try {\n    el = <Child />;\n  } catch {}\n  return el;\n}\n";
+    expect(runRule("error-boundaries", code)).toHaveLength(1);
+  });
+
+  it("set-state-in-effect fires on setState in a useEffect body", () => {
+    const code =
+      'import { useState, useEffect } from "react";\nfunction Component() {\n  const [state, setState] = useState(0);\n  useEffect(() => {\n    setState(1);\n  });\n  return <div>{state}</div>;\n}\n';
+    expect(runRule("set-state-in-effect", code)).toHaveLength(1);
+  });
+
   it("an unported rule (refs) exposes a rule that simply reports nothing yet", () => {
     expect(reactHooksPlugin.rules.refs).toBeDefined();
     expect(runRule("refs", SET_STATE_IN_RENDER)).toHaveLength(0);
