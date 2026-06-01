@@ -145,6 +145,8 @@ export const STAGED_FILES_PROJECT_CONFIG_FILENAMES = [
 
 export const CANONICAL_GITHUB_URL = "https://github.com/millionco/react-doctor";
 
+export const CANONICAL_DISCORD_URL = "https://react.doctor/discord";
+
 export const SKILL_NAME = "react-doctor";
 
 // HACK: cap on combined stdout+stderr bytes per oxlint batch. Above

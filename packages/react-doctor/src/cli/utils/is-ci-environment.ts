@@ -1,7 +1,7 @@
 // Narrow on canonical CI signals only — the ones that, on their own, should
 // suppress the share URL (noise in CI logs) and mark the run CI-originated for
 // the score path. Broader providers in CI_PROVIDER_BY_ENVIRONMENT_VARIABLE only
-// label telemetry and otherwise rely on the universal `CI=true`. Does not imply
+// label telemetry and otherwise rely on the universal `CI` flag. Does not imply
 // `--no-score`.
 export const CI_ENVIRONMENT_VARIABLES = ["GITHUB_ACTIONS", "GITLAB_CI", "CIRCLECI"] as const;
 
@@ -58,18 +58,24 @@ export const CODING_AGENT_ENVIRONMENT_VARIABLES = [
   ...GENERIC_CODING_AGENT_ENVIRONMENT_VARIABLES,
 ] as const;
 
+// CI providers set `CI` to "true", "1", or "True"; treat any value that isn't an
+// explicit falsy marker as CI so `CI=1` isn't silently ignored.
+const FALSY_CI_FLAG_VALUES = new Set(["", "0", "false"]);
+const isCiFlagSet = (value: string | undefined): boolean =>
+  value !== undefined && !FALSY_CI_FLAG_VALUES.has(value.toLowerCase());
+
 export const isCiEnvironment = (): boolean =>
   CI_ENVIRONMENT_VARIABLES.some((environmentVariable) =>
     Boolean(process.env[environmentVariable]),
-  ) || process.env.CI === "true";
+  ) || isCiFlagSet(process.env.CI);
 
 // Resolves the CI provider brand for telemetry, falling back to "unknown" for a
-// bare `CI=true`. Returns null when there's no CI signal at all.
+// bare `CI` flag. Returns null when there's no CI signal at all.
 export const detectCiProvider = (): string | null => {
   for (const [environmentVariable, provider] of CI_PROVIDER_BY_ENVIRONMENT_VARIABLE) {
     if (process.env[environmentVariable]) return provider;
   }
-  return process.env.CI === "true" ? "unknown" : null;
+  return isCiFlagSet(process.env.CI) ? "unknown" : null;
 };
 
 const detectCodingAgentFromValue = (): string | null => {
