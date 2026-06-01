@@ -144,7 +144,7 @@ fn lower_with_mutation_aliasing(
     //   -> deadCodeElimination -> inferMutationAliasingRanges(isFunctionExpression)
     //   -> rewriteInstructionKindsBasedOnReassignment -> inferReactiveScopeVariables
     analyse_functions(func, next_scope, enable_preserve, transitively_freeze_fn_exprs);
-    infer_mutation_aliasing_effects(func, true, enable_preserve, transitively_freeze_fn_exprs);
+    infer_mutation_aliasing_effects(func, true, enable_preserve, transitively_freeze_fn_exprs, false);
     dead_code_elimination(func);
     let function_effects = infer_mutation_aliasing_ranges(func, true);
     rewrite_instruction_kinds_based_on_reassignment(func);

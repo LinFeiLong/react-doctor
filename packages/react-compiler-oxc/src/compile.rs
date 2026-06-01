@@ -1590,6 +1590,7 @@ fn build_reactive(
         false,
         enable_preserve,
         transitively_freeze_fn_exprs,
+        env.config.validate_no_impure_functions_in_render,
     );
     crate::passes::dead_code_elimination::dead_code_elimination(func);
     crate::passes::prune_maybe_throws::prune_maybe_throws(func, &mut ctx);
@@ -1827,11 +1828,12 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
         };
         let collected = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _guard = SuppressPanicOutput::new();
-            let mut env = Environment::new(
-                fn_type,
-                EnvironmentConfig::from_source(code),
-                context.clone(),
-            );
+            // Lint mode turns on `validateNoImpureFunctionsInRender` so the
+            // `purity` rule's `Impure` effects are emitted (the codegen path keeps
+            // the default `false`, preserving corpus parity).
+            let mut lint_config = EnvironmentConfig::from_source(code);
+            lint_config.validate_no_impure_functions_in_render = true;
+            let mut env = Environment::new(fn_type, lint_config, context.clone());
             let mut func = match lower(
                 &target.func,
                 target.body,
@@ -1990,6 +1992,7 @@ fn run_passes(
             false,
             enable_preserve,
             transitively_freeze_fn_exprs,
+            env.config.validate_no_impure_functions_in_render,
         );
     }
 

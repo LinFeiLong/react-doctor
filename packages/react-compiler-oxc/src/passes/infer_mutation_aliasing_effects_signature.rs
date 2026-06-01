@@ -623,7 +623,16 @@ fn compute_effects_for_legacy_signature(
         reason: return_value_reason,
     });
 
-    // impure / knownIncompatible omitted (not exercised).
+    // `impure`: a call to a known-impure builtin (e.g. `Math.random`) is a
+    // render-unsafe side effect. Gated on `validateNoImpureFunctionsInRender`
+    // (off for codegen, on for lint) so it does not perturb corpus codegen.
+    // (`knownIncompatible` is handled separately by the IncompatibleLibrary path.)
+    if signature.impure && state.validate_no_impure {
+        effects.push(AliasingEffect::Impure {
+            place: receiver.clone(),
+            reason: "Cannot call impure function during render".to_string(),
+        });
+    }
 
     let mut stores: Vec<Place> = Vec::new();
     let mut captures: Vec<Place> = Vec::new();

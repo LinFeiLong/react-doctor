@@ -122,16 +122,24 @@ struct InferenceState {
     /// declared function (the TS `state.values(fn)[0].kind === 'FunctionExpression'`
     /// + `buildSignatureFromFunctionExpression` path).
     fn_expr_values: HashMap<ValueId, std::rc::Rc<crate::hir::instruction::FnExprSignatureData>>,
+    /// `env.config.validateNoImpureFunctionsInRender`: gates emitting an `Impure`
+    /// effect for a known-impure call signature (the `purity` lint rule).
+    validate_no_impure: bool,
 }
 
 impl InferenceState {
-    fn empty(is_function_expression: bool, transitively_freeze_fn_exprs: bool) -> Self {
+    fn empty(
+        is_function_expression: bool,
+        transitively_freeze_fn_exprs: bool,
+        validate_no_impure: bool,
+    ) -> Self {
         InferenceState {
             is_function_expression,
             transitively_freeze_fn_exprs,
             values: HashMap::new(),
             variables: HashMap::new(),
             fn_expr_values: HashMap::new(),
+            validate_no_impure,
         }
     }
 
@@ -352,6 +360,7 @@ impl InferenceState {
                 values: next_values.unwrap_or_else(|| self.values.clone()),
                 variables: next_variables.unwrap_or_else(|| self.variables.clone()),
                 fn_expr_values,
+                validate_no_impure: self.validate_no_impure,
             })
         }
     }
@@ -528,9 +537,13 @@ pub fn infer_mutation_aliasing_effects(
     is_function_expression: bool,
     enable_preserve: bool,
     transitively_freeze_fn_exprs: bool,
+    validate_no_impure: bool,
 ) {
-    let mut initial_state =
-        InferenceState::empty(is_function_expression, transitively_freeze_fn_exprs);
+    let mut initial_state = InferenceState::empty(
+        is_function_expression,
+        transitively_freeze_fn_exprs,
+        validate_no_impure,
+    );
     let mut next_value_id: ValueId = 0;
     let mut alloc = |s: &mut InferenceState, kind: AbstractValue| -> ValueId {
         let v = next_value_id;

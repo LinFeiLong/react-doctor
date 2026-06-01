@@ -117,6 +117,15 @@ pub struct EnvironmentConfig {
     /// [`EnvironmentConfig::is_memoization_validation_enabled`].
     pub validate_no_set_state_in_render: bool,
 
+    /// `validateNoImpureFunctionsInRender` (TS default `true`, but defaulted
+    /// `false` here so the codegen path is unaffected — see below). Gates whether
+    /// `computeEffectsForLegacySignature` emits an `Impure` effect for a call to a
+    /// known-impure builtin (e.g. `Math.random`). An `Impure` effect makes a
+    /// render-time call a recoverable bailout in the codegen path, so to keep the
+    /// 1398-fixture corpus parity it stays OFF for codegen; the lint driver turns
+    /// it ON to surface the `purity` rule.
+    pub validate_no_impure_functions_in_render: bool,
+
     /// `enableEmitInstrumentForget` (TS default `null`). When set (the
     /// `@enableEmitInstrumentForget` pragma maps it to the
     /// `testComplexConfigDefaults` object — `Utils/TestUtils.ts`), codegen emits an
@@ -172,6 +181,7 @@ impl Default for EnvironmentConfig {
             // Harness override: `false` unless `@validatePreserveExistingMemoizationGuarantees`.
             validate_preserve_existing_memoization_guarantees: false,
             validate_no_set_state_in_render: true,
+            validate_no_impure_functions_in_render: false,
             enable_emit_instrument_forget: None,
             enable_emit_hook_guards: None,
             enable_custom_type_definition_for_reanimated: false,

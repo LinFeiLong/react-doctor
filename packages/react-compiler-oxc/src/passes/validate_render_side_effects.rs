@@ -87,6 +87,12 @@ mod tests {
     }
 
     #[test]
+    fn flags_impure_call_in_render() {
+        let code = "function Component() {\n  const id = Math.random();\n  return <div>{id}</div>;\n}\n";
+        assert_eq!(count(code, ErrorCategory::Purity), 1);
+    }
+
+    #[test]
     fn allows_pure_render() {
         let code = "function Component(props) {\n  const value = props.a + 1;\n  return <div>{value}</div>;\n}\n";
         assert_eq!(count(code, ErrorCategory::Globals), 0);
