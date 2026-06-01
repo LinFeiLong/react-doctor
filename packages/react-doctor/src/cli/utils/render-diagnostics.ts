@@ -333,9 +333,6 @@ const countHiddenErrorRuleGroups = (
 ): number =>
   Math.max(0, selectErrorRuleGroups(diagnostics, rulePriority).length - TOP_ERRORS_DISPLAY_COUNT);
 
-// Non-verbose hides EVERY warning rule (warnings aren't listed in the
-// default summary anymore), so the overflow line surfaces the full count as
-// "+N optional warnings" pointing at --verbose.
 const countHiddenWarningRuleGroups = (
   diagnostics: Diagnostic[],
   rulePriority?: ReadonlyMap<string, number>,
@@ -344,12 +341,6 @@ const countHiddenWarningRuleGroups = (
   return buildSortedRuleGroups(warningDiagnostics, rulePriority).length;
 };
 
-// A single overflow line that merges the hidden error and warning rule
-// groups, e.g. "+4 more rules and +50 optional warnings — run --verbose …".
-// Counts are rule groups (not individual findings): hidden errors read as
-// "more rules" (error red) and hidden warnings as "optional warnings"
-// (warning yellow) so the two can't be misread as one tally. Returns
-// undefined when nothing is hidden so callers can skip the section.
 const buildOverflowSummaryLine = (
   hiddenErrorRuleCount: number,
   hiddenWarningRuleCount: number,
@@ -473,8 +464,6 @@ export const printDiagnostics = (
     if (!isVerbose) {
       detailLines = buildTopErrorsLines(diagnostics, resolveSourceRoot, rulePriority);
     } else {
-      // Verbose renders warnings in the same boxed-code-frame format as
-      // errors — one block builder for every rule group, ordered by priority.
       const sortedRuleGroups = buildSortedRuleGroups(diagnostics, rulePriority);
       detailLines = sortedRuleGroups.flatMap(([ruleKey, ruleDiagnostics]) => {
         const block = buildRuleDetailBlock(
@@ -488,9 +477,6 @@ export const printDiagnostics = (
       });
     }
 
-    // Verbose renders every rule and site, so there's no hidden overflow to
-    // summarize; non-verbose merges the capped error + warning tails into one
-    // line at the very bottom.
     const overflowLine = isVerbose
       ? undefined
       : buildOverflowSummaryLine(
@@ -502,8 +488,6 @@ export const printDiagnostics = (
       buildCategoryBreakdownLines(diagnostics, rulePriority),
       buildCountsSummaryLines(diagnostics),
       detailLines,
-      // Warnings aren't listed in the default summary — they're summarized in
-      // the overflow line and shown in full under --verbose.
       overflowLine ? [overflowLine] : [],
     );
     for (const line of lines) {

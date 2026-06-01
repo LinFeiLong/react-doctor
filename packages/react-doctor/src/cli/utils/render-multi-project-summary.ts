@@ -78,11 +78,7 @@ export interface MultiProjectSummaryInput {
   readonly completedScans: ReadonlyArray<{ readonly result: InspectResult }>;
   readonly userConfig: ReactDoctorConfig | null;
   readonly verbose: boolean;
-  // Suppresses the share link (CI, --no-score, or share disabled), matching
-  // the single-project gate.
   readonly isOffline: boolean;
-  // Label for the share URL's `p` param — the workspace root name, so the
-  // monorepo shares under one clean name instead of a joined package list.
   readonly projectName: string;
 }
 

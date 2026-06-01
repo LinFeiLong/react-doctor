@@ -37,15 +37,9 @@ export interface PrintFooterInput {
   readonly diagnostics: Diagnostic[];
   readonly scoreResult: ScoreResult | null;
   readonly projectName: string;
-  // When true (CI, --no-score, no --share) the share link is suppressed and
-  // the footer is docs-only.
   readonly isOffline: boolean;
 }
 
-// The closing footer: a divider, an optional share link, and the docs
-// pointer. Printed once at the very end of a run (below the per-project
-// summaries in a monorepo) so the links read as a closing call-to-action
-// rather than crowding the overview.
 export const printFooter = (input: PrintFooterInput): Effect.Effect<void> =>
   Effect.gen(function* () {
     yield* Console.log("");
