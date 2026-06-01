@@ -17,10 +17,10 @@ import type { Diagnostic } from "@react-doctor/core";
 import { boxText } from "./box-text.js";
 import { buildCodeFrame } from "./build-code-frame.js";
 import {
+  buildSortedRuleGroups,
   compareByRulePriority,
   formatFixRecipeLine,
   formatLearnMoreLine,
-  sortRuleGroupsByImportance,
 } from "./diagnostic-grouping.js";
 import { indentMultilineText } from "./indent-multiline-text.js";
 import { wrapTextToWidth } from "./wrap-indented-text.js";
@@ -64,6 +64,14 @@ const buildVerboseSiteMap = (diagnostics: Diagnostic[]): Map<string, VerboseSite
 
 const formatSiteCountBadge = (count: number): string => (count > 1 ? `×${count}` : "");
 
+// The dim `×N` badge that trails a rule's header line, or empty for a
+// single site. Shared by the error and warning rule headers so the badge
+// reads identically wherever a rule's occurrence count is shown.
+const formatTrailingSiteBadge = (count: number): string => {
+  const badge = formatSiteCountBadge(count);
+  return badge.length > 0 ? ` ${highlighter.gray(badge)}` : "";
+};
+
 // A category leads with its most valuable rule. `ruleGroups` are already
 // priority-sorted, so the first one is the category's top.
 const categoryTopRuleKey = (categoryGroup: CategoryDiagnosticGroup): string =>
@@ -75,17 +83,11 @@ const buildCategoryDiagnosticGroups = (
 ): CategoryDiagnosticGroup[] => {
   const categoryGroups = groupBy(diagnostics, (diagnostic) => diagnostic.category);
   return [...categoryGroups.entries()]
-    .map(([category, categoryDiagnostics]) => {
-      const ruleGroups = groupBy(
-        categoryDiagnostics,
-        (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
-      );
-      return {
-        category,
-        diagnostics: categoryDiagnostics,
-        ruleGroups: sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority),
-      };
-    })
+    .map(([category, categoryDiagnostics]) => ({
+      category,
+      diagnostics: categoryDiagnostics,
+      ruleGroups: buildSortedRuleGroups(categoryDiagnostics, rulePriority),
+    }))
     .toSorted((categoryGroupA, categoryGroupB) => {
       // Categories rank by their top rule's API priority. With no API
       // priority (offline / `--no-score`) every category compares equal,
@@ -245,8 +247,7 @@ const buildRuleDetailBlock = (
 ): ReadonlyArray<string> => {
   const representative = pickRepresentativeDiagnostic(ruleDiagnostics);
   const { severity } = representative;
-  const siteCountBadge = formatSiteCountBadge(ruleDiagnostics.length);
-  const trailingBadge = siteCountBadge.length > 0 ? ` ${highlighter.gray(siteCountBadge)}` : "";
+  const trailingBadge = formatTrailingSiteBadge(ruleDiagnostics.length);
   const headline = colorizeBySeverity(
     `${representative.category}: ${representative.title ?? ruleKey}`,
     severity,
@@ -310,6 +311,21 @@ const computeRuleNameColumnWidth = (ruleKeys: ReadonlyArray<string>): number =>
 const padRuleNameToColumn = (ruleName: string, columnWidth: number): string =>
   ruleName.length >= columnWidth ? ruleName : ruleName + " ".repeat(columnWidth - ruleName.length);
 
+// The `  ⚠ <rule> ×N` header shared by the verbose warning block and the
+// non-verbose roll-up. Only the icon carries the warning color — the rule
+// name stays neutral so a long list doesn't drown in yellow. The name pads
+// to the shared column only when a badge follows, so the `×N` badges align
+// without leaving trailing whitespace on single-site rules.
+const buildWarningHeaderLine = (
+  ruleKey: string,
+  siteCount: number,
+  ruleNameColumnWidth: number,
+): string => {
+  const hasBadge = formatSiteCountBadge(siteCount).length > 0;
+  const ruleName = hasBadge ? padRuleNameToColumn(ruleKey, ruleNameColumnWidth) : ruleKey;
+  return `  ${highlighter.warn("⚠")} ${ruleName}${formatTrailingSiteBadge(siteCount)}`;
+};
+
 // Compact warning block: the `plugin/rule` key + `×N` badge, the impact,
 // the fix, the canonical fix-recipe directive, then a flat, unspaced list
 // of every `file:line` site. Warnings skip the boxed code frames (reserved
@@ -321,12 +337,9 @@ const buildWarningRuleBlock = (
   isAgentEnvironment: boolean,
 ): ReadonlyArray<string> => {
   const representative = pickRepresentativeDiagnostic(ruleDiagnostics);
-  const siteCountBadge = formatSiteCountBadge(ruleDiagnostics.length);
-  const headerName = highlighter.warn(
-    siteCountBadge.length > 0 ? padRuleNameToColumn(ruleKey, ruleNameColumnWidth) : ruleKey,
-  );
-  const trailingBadge = siteCountBadge.length > 0 ? ` ${highlighter.gray(siteCountBadge)}` : "";
-  const lines: string[] = [`  ${highlighter.warn("⚠")} ${headerName}${trailingBadge}`];
+  const lines: string[] = [
+    buildWarningHeaderLine(ruleKey, ruleDiagnostics.length, ruleNameColumnWidth),
+  ];
 
   // Humans get a short, prominent docs link right under the rule name; an
   // agent instead gets the cache-busting fetch directive lower down so it
@@ -373,14 +386,11 @@ const buildWarningRuleBlock = (
 const selectErrorRuleGroups = (
   diagnostics: Diagnostic[],
   rulePriority?: ReadonlyMap<string, number>,
-): [string, Diagnostic[]][] => {
-  const errorDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-  const ruleGroups = groupBy(
-    errorDiagnostics,
-    (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
+): [string, Diagnostic[]][] =>
+  buildSortedRuleGroups(
+    diagnostics.filter((diagnostic) => diagnostic.severity === "error"),
+    rulePriority,
   );
-  return sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority);
-};
 
 const selectTopErrorRuleGroups = (
   diagnostics: Diagnostic[],
@@ -450,11 +460,7 @@ const buildWarningsListLines = (
   const warningDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "warning");
   if (warningDiagnostics.length === 0) return [];
 
-  const ruleGroups = groupBy(
-    warningDiagnostics,
-    (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
-  );
-  const sortedRuleGroups = sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority);
+  const sortedRuleGroups = buildSortedRuleGroups(warningDiagnostics, rulePriority);
   // A long tail of warning rules would bury the summary, so cap the list and
   // surface the overflow as a single "+N more" line that points at --verbose.
   const shownRuleGroups = sortedRuleGroups.slice(0, MAX_WARNING_RULES_SHOWN_NON_VERBOSE);
@@ -469,13 +475,7 @@ const buildWarningsListLines = (
     "",
   ];
   for (const [ruleKey, ruleDiagnostics] of shownRuleGroups) {
-    const siteCountBadge = formatSiteCountBadge(ruleDiagnostics.length);
-    // Only the ⚠ icon carries the warning color — the rule name stays neutral
-    // so a long roll-up doesn't drown in yellow.
-    const ruleName =
-      siteCountBadge.length > 0 ? padRuleNameToColumn(ruleKey, ruleNameColumnWidth) : ruleKey;
-    const trailingBadge = siteCountBadge.length > 0 ? ` ${highlighter.gray(siteCountBadge)}` : "";
-    lines.push(`  ${highlighter.warn("⚠")} ${ruleName}${trailingBadge}`);
+    lines.push(buildWarningHeaderLine(ruleKey, ruleDiagnostics.length, ruleNameColumnWidth));
   }
   if (hiddenRuleCount > 0) {
     lines.push(buildMoreRulesLine(hiddenRuleCount, "warnings", highlighter.warn));
@@ -554,11 +554,7 @@ export const printDiagnostics = (
     if (!isVerbose) {
       detailLines = buildTopErrorsLines(diagnostics, resolveSourceRoot, rulePriority);
     } else {
-      const ruleGroups = groupBy(
-        diagnostics,
-        (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
-      );
-      const sortedRuleGroups = sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority);
+      const sortedRuleGroups = buildSortedRuleGroups(diagnostics, rulePriority);
       // Warnings share one padded name column so their `×N` badges align;
       // errors render in the boxed-code-frame format instead.
       const warningRuleNameColumnWidth = computeRuleNameColumnWidth(

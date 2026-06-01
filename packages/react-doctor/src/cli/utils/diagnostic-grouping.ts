@@ -1,4 +1,4 @@
-import { buildRuleDocsUrl, hasPublishedFixRecipe } from "@react-doctor/core";
+import { buildRuleDocsUrl, groupBy, hasPublishedFixRecipe } from "@react-doctor/core";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 
 // Ordering / formatting helpers shared by the diagnostics renderer, the
@@ -45,12 +45,27 @@ export const compareByRulePriority = (
   return priorityB - priorityA;
 };
 
-export const sortRuleGroupsByImportance = (
+const sortRuleGroupsByImportance = (
   diagnosticGroups: [string, Diagnostic[]][],
   rulePriority?: ReadonlyMap<string, number>,
 ): [string, Diagnostic[]][] =>
   diagnosticGroups.toSorted(([ruleKeyA], [ruleKeyB]) =>
     compareByRulePriority(ruleKeyA, ruleKeyB, rulePriority),
+  );
+
+// Buckets diagnostics into `<plugin>/<rule>` groups, then ranks them by the
+// score API's per-rule priority (stable scan order when unranked). The
+// single grouping+ranking primitive every rule-list surface builds on — the
+// category breakdown, the top-errors block, the warnings roll-up, the
+// verbose per-rule detail, the agent handoff, and the on-disk dump — so they
+// all bucket and order rules identically.
+export const buildSortedRuleGroups = (
+  diagnostics: ReadonlyArray<Diagnostic>,
+  rulePriority?: ReadonlyMap<string, number>,
+): [string, Diagnostic[]][] =>
+  sortRuleGroupsByImportance(
+    [...groupBy([...diagnostics], (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`)],
+    rulePriority,
   );
 
 // Agent-facing directive (not a bare label) so a consuming agent treats the
