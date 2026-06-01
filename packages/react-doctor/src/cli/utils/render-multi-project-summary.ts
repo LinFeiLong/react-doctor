@@ -12,7 +12,7 @@ import { computeProjectedScore } from "./compute-score-projection.js";
 import { buildRulePriorityMap } from "./diagnostic-grouping.js";
 import { isCodingAgentEnvironment } from "./is-ci-environment.js";
 import { formatElapsedTime, printDiagnostics } from "./render-diagnostics.js";
-import { printDocsNote, printSummary, printVerboseTip } from "./render-summary.js";
+import { printFooter, printSummary } from "./render-summary.js";
 
 interface ProjectScanEntry {
   readonly projectName: string;
@@ -78,11 +78,17 @@ export interface MultiProjectSummaryInput {
   readonly completedScans: ReadonlyArray<{ readonly result: InspectResult }>;
   readonly userConfig: ReactDoctorConfig | null;
   readonly verbose: boolean;
+  // Suppresses the share link (CI, --no-score, or share disabled), matching
+  // the single-project gate.
+  readonly isOffline: boolean;
+  // Label for the share URL's `p` param — the workspace root name, so the
+  // monorepo shares under one clean name instead of a joined package list.
+  readonly projectName: string;
 }
 
 export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effect.Effect<void> =>
   Effect.gen(function* () {
-    const { completedScans, userConfig, verbose } = input;
+    const { completedScans, userConfig, verbose, isOffline, projectName } = input;
 
     const allDiagnostics: Diagnostic[] = completedScans.flatMap((scan) => scan.result.diagnostics);
     const surfaceDiagnostics = filterDiagnosticsForSurface(allDiagnostics, "cli", userConfig);
@@ -197,7 +203,10 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
       yield* Console.log(buildSummaryLine(entry, longestProjectNameLength));
     }
 
-    yield* Console.log("");
-    yield* printVerboseTip(surfaceDiagnostics, verbose);
-    yield* printDocsNote();
+    yield* printFooter({
+      diagnostics: surfaceDiagnostics,
+      scoreResult: aggregateScore,
+      projectName,
+      isOffline,
+    });
   });

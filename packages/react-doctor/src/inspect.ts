@@ -47,7 +47,7 @@ import {
   printNoScoreHeader,
   printScoreHeader,
 } from "./cli/utils/render-score-header.js";
-import { printDocsNote, printSummary, printVerboseTip } from "./cli/utils/render-summary.js";
+import { printFooter, printSummary } from "./cli/utils/render-summary.js";
 import { resolveOxlintNode } from "./cli/utils/resolve-oxlint-node.js";
 import { isSpinnerSilent, setSpinnerSilent } from "./cli/utils/spinner.js";
 import { VERSION } from "./cli/utils/version.js";
@@ -532,8 +532,12 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       );
     }
 
-    yield* printVerboseTip([...surfaceDiagnostics], options.verbose);
-    yield* printDocsNote();
+    yield* printFooter({
+      diagnostics: [...surfaceDiagnostics],
+      scoreResult: score,
+      projectName: project.projectName,
+      isOffline: !shouldShowShareLink,
+    });
 
     return buildResult();
   });
