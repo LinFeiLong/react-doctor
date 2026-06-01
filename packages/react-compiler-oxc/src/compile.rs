@@ -1822,6 +1822,13 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
     let mut diagnostics = Diagnostics::new();
     for target in targets {
         let fn_type = react_function_type(&target);
+        // The React Compiler (and thus eslint-plugin-react-hooks) only compiles —
+        // and therefore only lints — functions it classifies as a Component or
+        // Hook (`getComponentOrHookLike`); plain functions are `Other` and never
+        // produce compiler diagnostics. Skip them so the native surface matches.
+        if matches!(fn_type, ReactFunctionType::Other) {
+            continue;
+        }
         let context = match target.func.scope_id() {
             Some(scope) => find_context_identifiers(&semantic, scope),
             None => BTreeSet::new(),
@@ -1834,6 +1841,7 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
             let mut lint_config = EnvironmentConfig::from_source(code);
             lint_config.validate_no_impure_functions_in_render = true;
             let mut env = Environment::new(fn_type, lint_config, context.clone());
+            let mut local = Diagnostics::new();
             let mut func = match lower(
                 &target.func,
                 target.body,
@@ -1844,9 +1852,16 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
                 false,
             ) {
                 Ok(func) => func,
-                Err(_) => return Vec::new(),
+                // A function that fails to lower is left uncompiled, exactly as the
+                // React Compiler bails — surface the matching todo/unsupported
+                // diagnostic for the allowlisted constructs (see above).
+                Err(error) => {
+                    if let Some(diagnostic) = lower_bail_diagnostic(&error, &resolver) {
+                        local.push(diagnostic);
+                    }
+                    return local.into_vec();
+                }
             };
-            let mut local = Diagnostics::new();
             // `validateUseMemo` / `validateContextVariableLValues` run on the raw
             // lowered HIR, BEFORE `dropManualMemoization` rewrites the `useMemo`
             // calls away (Pipeline.ts:163-164).
@@ -1893,6 +1908,41 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
     }
 
     diagnostics.into_vec()
+}
+
+/// Surface a *lowering* bail as a lint diagnostic, but ONLY for the specific
+/// constructs whose categorization is verified to match
+/// `babel-plugin-react-compiler` (the `eslint-plugin-react-hooks` oracle). The
+/// Rust lowering is more conservative than babel in places (e.g. it bails on a
+/// `try` without `catch`, which babel compiles), so surfacing *every* bail would
+/// produce false positives. This allowlist maps the proven-matching bail kinds to
+/// their babel `ErrorCategory`; everything else stays silent (a benign miss).
+fn lower_bail_diagnostic(
+    error: &crate::build_hir::LowerError,
+    resolver: &PositionResolver,
+) -> Option<Diagnostic> {
+    use crate::build_hir::LowerError;
+    let (category, loc, reason) = match error {
+        LowerError::UnsupportedStatement { kind, loc }
+            if kind == "TryStatement (with finalizer)" =>
+        {
+            (
+                crate::diagnostic::ErrorCategory::Todo,
+                loc,
+                "(BuildHIR::lowerStatement) Handle TryStatement statements with finalizers",
+            )
+        }
+        LowerError::UnsupportedStatement { kind, loc } if kind == "ForOfStatement(await)" => (
+            crate::diagnostic::ErrorCategory::Todo,
+            loc,
+            "(BuildHIR::lowerStatement) Handle for-await-of statements",
+        ),
+        _ => return None,
+    };
+    Some(
+        Diagnostic::create(category, reason)
+            .with_error_detail(resolver.resolve(loc), Some(reason.to_string())),
+    )
 }
 
 /// Run every ported lint validation over a function staged to [`LINT_STAGE`],

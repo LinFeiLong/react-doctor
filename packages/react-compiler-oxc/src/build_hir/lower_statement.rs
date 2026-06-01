@@ -490,21 +490,25 @@ fn lower_try_statement(
 ) -> Result<(), LowerError> {
     let stmt_loc = span_to_loc(stmt.span, builder);
 
-    // A `try` without a `catch` clause is not yet supported.
-    let Some(handler_clause) = &stmt.handler else {
-        return Err(LowerError::UnsupportedStatement {
-            kind: "TryStatement (without catch clause)".to_string(),
-            loc: stmt_loc,
-        });
-    };
-    // A `finally` clause is not yet supported. (The TS records the error but
-    // proceeds; here we bail so the function is left as-is in the output.)
+    // A `finally` clause is not yet supported. Checked BEFORE the catch-clause
+    // check so a `try { } finally { }` (no catch) bails as "with finalizer" — this
+    // matches `babel-plugin-react-compiler`, which flags any `try` with a
+    // finalizer as a Todo regardless of whether a `catch` is present. (The TS
+    // records the error but proceeds; here we bail so the function is left as-is.)
     if stmt.finalizer.is_some() {
         return Err(LowerError::UnsupportedStatement {
             kind: "TryStatement (with finalizer)".to_string(),
             loc: stmt_loc,
         });
     }
+    // A `try` without a `catch` clause (and without a finalizer, handled above) is
+    // not yet supported.
+    let Some(handler_clause) = &stmt.handler else {
+        return Err(LowerError::UnsupportedStatement {
+            kind: "TryStatement (without catch clause)".to_string(),
+            loc: stmt_loc,
+        });
+    };
 
     let continuation = builder.reserve(BlockKind::Block);
     let continuation_id = continuation.id;

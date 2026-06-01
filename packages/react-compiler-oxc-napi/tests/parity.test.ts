@@ -7,18 +7,12 @@ import nativePlugin from "../plugin.js";
 // native plugin must match 1:1 for the rules we've ported.
 import reactHooksPlugin from "eslint-plugin-react-hooks";
 
-// The rules verified for 1:1 parity with the oracle. The native plugin must
-// produce identical (rule, line) diagnostics to eslint-plugin-react-hooks for
-// every one, across the fixture corpus below.
-//
-// `unsupported-syntax` and `todo` are intentionally OUT of scope: they fire from
-// the React Compiler's open-ended bail/Todo paths, and the native port does not
-// preserve babel's per-construct error CATEGORY (e.g. babel flags `try/finally`
-// as `todo`, while the native lowering marks it `UnsupportedStatement`).
-// Reaching 1:1 there requires auditing every bail site's category against babel
-// (a compiler-error-path-parity effort), so they are not asserted here. The
-// native plugin never emits them, so it has no false positives — only benign
-// false negatives on rarely-reachable constructs.
+// All 16 React-Compiler rules eslint-plugin-react-hooks ships. The native plugin
+// must produce identical (rule, line) diagnostics to the oracle for every one,
+// across the fixture corpus below — including the bail-derived `todo` /
+// `unsupported-syntax` rules (the native lowering surfaces an allowlist of
+// constructs proven to match babel's categorization, e.g. try/finally and
+// for-await -> todo; constructs babel compiles stay silent in both).
 const PORTED_RULES = [
   "set-state-in-render",
   "error-boundaries",
@@ -34,6 +28,8 @@ const PORTED_RULES = [
   "preserve-manual-memoization",
   "incompatible-library",
   "component-hook-factories",
+  "unsupported-syntax",
+  "todo",
 ] as const;
 
 const RULES_CONFIG: Linter.RulesRecord = Object.fromEntries(
@@ -204,10 +200,34 @@ function Component(props) {
 }`,
   },
   {
-    name: "try/finally",
+    name: "try/finally (todo)",
     code: `function Component() {
   try {
     doWork();
+  } finally {
+    cleanup();
+  }
+  return <div />;
+}`,
+  },
+  {
+    name: "try/catch (compiles, no todo)",
+    code: `function Component() {
+  try {
+    doWork();
+  } catch {
+    fallback();
+  }
+  return <div />;
+}`,
+  },
+  {
+    name: "try/catch/finally (todo)",
+    code: `function Component() {
+  try {
+    doWork();
+  } catch {
+    fallback();
   } finally {
     cleanup();
   }
