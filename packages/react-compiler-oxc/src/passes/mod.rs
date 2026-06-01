@@ -51,6 +51,7 @@ pub mod prune_unused_labels_hir;
 pub mod reactive_scope_util;
 pub mod rewrite_instruction_kinds;
 pub mod validate_hooks_usage;
+pub mod validate_incompatible_library;
 pub mod validate_no_jsx_in_try_statement;
 pub mod validate_no_ref_access_in_render;
 pub mod validate_no_set_state_in_effects;
