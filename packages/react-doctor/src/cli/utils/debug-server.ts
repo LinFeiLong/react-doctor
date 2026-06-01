@@ -41,8 +41,10 @@ interface DebugSessionState {
   processedEntryIds: Set<string>;
 }
 
-const getErrorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
+// Session ids index a per-session log filename (`debug-<id>.log`), so they
+// must stay within the log directory: only word chars, dash, underscore —
+// no path separators or `..`.
+const SESSION_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
 const parseIngestSessionId = (url: string): string | null => {
   try {
@@ -57,6 +59,11 @@ const parseIngestSessionId = (url: string): string | null => {
 export const createDebugServer = async (
   options: DebugServerOptions = {},
 ): Promise<DebugServerResult> => {
+  if (options.sessionId !== undefined && !SESSION_ID_PATTERN.test(options.sessionId)) {
+    throw new Error(
+      "Invalid --session-id: only letters, digits, '-' and '_' are allowed (no path separators).",
+    );
+  }
   const sessionId =
     options.sessionId || crypto.randomBytes(DEBUG_SESSION_ID_BYTE_LENGTH).toString("hex");
   const logDirectory = path.join(options.cwd || os.tmpdir(), DEBUG_LOG_DIRECTORY_NAME);
@@ -157,6 +164,12 @@ export const createDebugServer = async (
           response.end(JSON.stringify({ error: "Invalid JSON" }));
         }
       });
+      request.on("error", () => {
+        if (!response.writableEnded) {
+          response.writeHead(400, { "Content-Type": "application/json" });
+          response.end(JSON.stringify({ error: "Request error" }));
+        }
+      });
       return;
     }
 
@@ -166,9 +179,9 @@ export const createDebugServer = async (
         sessionState.processedEntryIds.clear();
         response.writeHead(200, { "Content-Type": "application/json" });
         response.end(JSON.stringify({ ok: true, cleared: true }));
-      } catch (error: unknown) {
+      } catch {
         response.writeHead(500, { "Content-Type": "application/json" });
-        response.end(JSON.stringify({ error: getErrorMessage(error) }));
+        response.end(JSON.stringify({ error: "Failed to clear log" }));
       }
       return;
     }
@@ -180,9 +193,9 @@ export const createDebugServer = async (
           : "";
         response.writeHead(200, { "Content-Type": "application/x-ndjson" });
         response.end(logContent);
-      } catch (error: unknown) {
+      } catch {
         response.writeHead(500, { "Content-Type": "text/plain" });
-        response.end(getErrorMessage(error));
+        response.end("Failed to read log");
       }
       return;
     }
@@ -215,6 +228,10 @@ export const createDebugServer = async (
       });
 
       server.on("close", () => removeDebugServerLock(logDirectory));
+      // SIGINT runs the CLI's `exitGracefully` handler, which calls
+      // `process.exit` before the server's `close` event can fire, so wire
+      // lock removal to `exit` (always fires) to avoid a stale lock file.
+      process.once("exit", () => removeDebugServerLock(logDirectory));
 
       resolve({ server, info, reused: false });
     });

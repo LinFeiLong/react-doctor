@@ -43,16 +43,30 @@ const startDaemon = async (options: DebugCommandOptions): Promise<void> => {
   }
 
   let stdoutBuffer = "";
+  let isSettled = false;
   const serverInfoLine = await new Promise<string>((resolve, reject) => {
+    const settle = (action: () => void) => {
+      if (isSettled) return;
+      isSettled = true;
+      action();
+    };
     childProcess.stdout!.on("data", (chunk: Buffer) => {
       stdoutBuffer += chunk.toString();
       const newlineIndex = stdoutBuffer.indexOf("\n");
-      if (newlineIndex !== -1) resolve(stdoutBuffer.slice(0, newlineIndex));
+      // Strip a trailing CR so the printed line is valid JSON on Windows.
+      if (newlineIndex !== -1) {
+        settle(() => resolve(stdoutBuffer.slice(0, newlineIndex).replace(/\r$/, "")));
+      }
     });
-    childProcess.on("error", reject);
-    childProcess.on("exit", (code) => {
-      if (code !== 0) reject(new Error(`Debug server process exited with code ${code}`));
-    });
+    childProcess.on("error", (error) => settle(() => reject(error)));
+    childProcess.on("exit", (code) =>
+      // The server child stays alive once it prints its info line, so a
+      // resolve always wins the race; reaching `exit` first means it died
+      // before printing — reject rather than hang the parent forever.
+      settle(() =>
+        reject(new Error(`Debug server process exited (code ${code ?? "unknown"}) before startup`)),
+      ),
+    );
   });
 
   console.log(serverInfoLine);
