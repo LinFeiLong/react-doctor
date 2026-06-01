@@ -27,14 +27,6 @@ npx react-doctor@latest
 
 https://github.com/user-attachments/assets/07cc88d9-9589-44c3-aa73-5d603cb1c570
 
-On a large repo, add `--experimental-parallel` to fan the scan out across your CPU cores:
-
-```bash
-npx react-doctor@latest --experimental-parallel
-```
-
-React Doctor's rules run as oxlint JS plugins, which are single-threaded per process, so the scan scales nearly linearly with the number of worker processes — typically 3–4x faster on large codebases. Pass `--experimental-parallel <n>` to cap the worker count, or set `REACT_DOCTOR_PARALLEL=<n>` (handy in CI). Diagnostics are identical to a serial run.
-
 ### 2. Install for agents
 
 Once you have an audit, you can install the skill for your coding agent to learn from the issues and fix them in the future.
@@ -75,15 +67,25 @@ jobs:
       - uses: millionco/react-doctor@main
 ```
 
-React Doctor scans the files changed in the pull request, emits inline annotations, blocks on error-level findings, and updates one sticky PR comment with the score and issue summary. The built-in GitHub token is used automatically; no secret or PAT is required. On forked PRs where GitHub withholds write permissions, the scan and annotations still run, but the sticky comment may be skipped.
-
-**Permissions:** set `permissions: { contents: read, pull-requests: write }` so React Doctor can read the pull request's changed files for a changed-files-only scan and post the sticky summary comment. If `pull-requests: read` is unavailable (for example on fork PRs or with a restricted default token), the action degrades gracefully to a full-project scan instead of failing.
-
 [Add GitHub Action →](https://github.com/marketplace/actions/react-doctor)
 
-### 4. Configure rules in `react-doctor.config.json`
+### 4. Configure rules in `doctor.config.ts`
 
-Point the `$schema` key at `https://react.doctor/schema/config.json` to get autocomplete, hover docs, and typo warnings for every option in any editor that understands JSON Schema.
+Configure with a `doctor.config.ts` (or `.js`, `.mjs`, `.cjs`, `.json`, `.jsonc`) in your project root.
+
+```ts
+// doctor.config.ts
+import type { ReactDoctorConfig } from "react-doctor/api";
+
+export default {
+  lint: true,
+  rules: {
+    "react-doctor/no-array-index-as-key": "off",
+  },
+} satisfies ReactDoctorConfig;
+```
+
+Prefer JSON? Use `doctor.config.json`:
 
 ```jsonc
 {
@@ -91,6 +93,20 @@ Point the `$schema` key at `https://react.doctor/schema/config.json` to get auto
   "lint": true,
 }
 ```
+
+## Telemetry
+
+The CLI reports crashes, basic run traces, and anonymous usage counters to [Sentry](https://sentry.io/) to help us fix bugs and prioritize work.
+
+We collect:
+
+- Environment: CLI version, platform, Node version
+- Invocation: which command, package manager, and run context (whether it's local vs. CI vs. coding agent)
+- Project shape: framework, React version, TypeScript, project size NO file contents)
+- Rules fired: rule names and counts only (e.g. `react-doctor/no-array-index-as-key`) (NO code or specific findings)
+- De-minified React Doctor CLI stack traces
+
+To opt out, run: `npx react-doctor@latest --no-telemetry`
 
 ## Contributing
 

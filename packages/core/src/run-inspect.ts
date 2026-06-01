@@ -15,8 +15,10 @@ import type {
 import { buildDiagnosticPipeline } from "./build-diagnostic-pipeline.js";
 import { checkExpoProject } from "./check-expo-project.js";
 import { checkPnpmHardening } from "./check-pnpm-hardening.js";
+import { checkReactNativeProject } from "./check-react-native-project.js";
 import { checkReducedMotion } from "./check-reduced-motion.js";
 import { DEFAULT_SHOW_WARNINGS } from "./constants.js";
+import { highlighter } from "./highlighter.js";
 import { computeJsxIncludePaths } from "./jsx-include-paths.js";
 import { deadCodeMaySurfaceWhenWarningsHidden } from "./utils/dead-code-may-surface.js";
 import {
@@ -48,9 +50,9 @@ export interface InspectInput {
   readonly respectInlineDisables: boolean;
   /**
    * Per-call override for `ReactDoctorConfig.warnings`. When omitted,
-   * the loaded config's `warnings` value wins (defaulting to `false`),
-   * so warnings stay hidden unless the user opts in via `--warnings` or
-   * `warnings: true`.
+   * the loaded config's `warnings` value wins (defaulting to `true`),
+   * so warnings surface unless the user opts out via `--no-warnings` or
+   * `warnings: false`.
    */
   readonly warnings?: boolean;
   readonly adoptExistingLintConfig: boolean;
@@ -313,6 +315,7 @@ export const runInspect = <HooksR = never>(
           ...checkReducedMotion(scanDirectory),
           ...checkPnpmHardening(scanDirectory),
           ...checkExpoProject(scanDirectory, project),
+          ...checkReactNativeProject(scanDirectory, project),
         ];
     const envCollected = yield* Stream.runCollect(
       applyPerElementPipeline(Stream.fromIterable(environmentDiagnostics)),
@@ -330,9 +333,11 @@ export const runInspect = <HooksR = never>(
     });
 
     // Read only for the spinner suffix below (the Linter reads the same
-    // Reference to actually fan out the lint pass); default 1 = serial.
+    // Reference to actually fan out the lint pass); defaults to parallel
+    // (auto-detected cores).
     const scanConcurrency = yield* OxlintConcurrency;
-    const workerCountSuffix = scanConcurrency > 1 ? ` · ${scanConcurrency} workers` : "";
+    const workerCountSuffix =
+      scanConcurrency > 1 ? ` ${highlighter.dim(`[~${scanConcurrency} workers]`)}` : "";
 
     const scanProgress = yield* progressService.start("Scanning...");
     const scanStartTime = Date.now();
@@ -384,12 +389,12 @@ export const runInspect = <HooksR = never>(
     }
 
     // Dead-code analysis only ever emits `"warning"`-severity diagnostics
-    // (the `deslop` plugin, all `Maintainability`). When warnings are
-    // hidden that output is filtered out before it reaches any surface or
-    // the score, so the expensive pass (separate worker, large heap, long
-    // timeout) would be pure wasted work — skip it. `--warnings` /
-    // `warnings: true` (and `--fail-on warning`, which forces warnings on)
-    // re-enable it, as does a severity override that restamps dead-code
+    // (the `deslop` plugin, all `Maintainability`). Warnings show by
+    // default, so this normally runs; only when the user opts out via
+    // `--no-warnings` / `warnings: false` is that output filtered out
+    // before it reaches any surface or the score, making the expensive
+    // pass (separate worker, large heap, long timeout) pure wasted work —
+    // so skip it then, unless a severity override restamps dead-code
     // findings to `"warn"`/`"error"` so they survive the global hide.
     const shouldRunDeadCode =
       input.runDeadCode &&

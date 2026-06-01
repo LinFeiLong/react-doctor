@@ -1,7 +1,9 @@
 import * as Effect from "effect/Effect";
+import { METRIC } from "../utils/constants.js";
 import { handleError } from "../utils/handle-error.js";
 import { runInstallReactDoctor } from "../utils/install-react-doctor.js";
 import { printBrandedHeader } from "../utils/print-branded-header.js";
+import { recordCount } from "../utils/record-metric.js";
 import { reportErrorToSentry } from "../utils/report-error.js";
 
 interface InstallCommandOptions {
@@ -26,6 +28,7 @@ export const installAction = async (
   options: InstallCommandOptions,
   command?: InstallCommand,
 ): Promise<void> => {
+  recordCount(METRIC.cliInvoked, 1, { command: "install" });
   Effect.runSync(printBrandedHeader);
   try {
     const parentOptions = command?.parent?.opts?.();
@@ -36,7 +39,7 @@ export const installAction = async (
       projectRoot: options.cwd ?? process.cwd(),
     });
   } catch (error) {
-    await reportErrorToSentry(error);
-    handleError(error);
+    const sentryEventId = await reportErrorToSentry(error);
+    handleError(error, { sentryEventId });
   }
 };

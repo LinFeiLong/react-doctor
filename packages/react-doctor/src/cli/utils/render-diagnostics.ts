@@ -14,10 +14,12 @@ import {
 import type { Diagnostic } from "@react-doctor/core";
 import { boxText } from "./box-text.js";
 import { buildCodeFrame } from "./build-code-frame.js";
+import { buildSectionDivider } from "./build-section-divider.js";
 import {
+  buildSortedRuleGroups,
   compareByRulePriority,
   formatFixRecipeLine,
-  sortRuleGroupsByImportance,
+  formatLearnMoreLine,
 } from "./diagnostic-grouping.js";
 import { indentMultilineText } from "./indent-multiline-text.js";
 import { wrapTextToWidth } from "./wrap-indented-text.js";
@@ -61,6 +63,14 @@ const buildVerboseSiteMap = (diagnostics: Diagnostic[]): Map<string, VerboseSite
 
 const formatSiteCountBadge = (count: number): string => (count > 1 ? `×${count}` : "");
 
+// The dim `×N` badge that trails a rule's header line, or empty for a
+// single site. Shared by the error and warning rule headers so the badge
+// reads identically wherever a rule's occurrence count is shown.
+const formatTrailingSiteBadge = (count: number): string => {
+  const badge = formatSiteCountBadge(count);
+  return badge.length > 0 ? ` ${highlighter.gray(badge)}` : "";
+};
+
 // A category leads with its most valuable rule. `ruleGroups` are already
 // priority-sorted, so the first one is the category's top.
 const categoryTopRuleKey = (categoryGroup: CategoryDiagnosticGroup): string =>
@@ -72,17 +82,11 @@ const buildCategoryDiagnosticGroups = (
 ): CategoryDiagnosticGroup[] => {
   const categoryGroups = groupBy(diagnostics, (diagnostic) => diagnostic.category);
   return [...categoryGroups.entries()]
-    .map(([category, categoryDiagnostics]) => {
-      const ruleGroups = groupBy(
-        categoryDiagnostics,
-        (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
-      );
-      return {
-        category,
-        diagnostics: categoryDiagnostics,
-        ruleGroups: sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority),
-      };
-    })
+    .map(([category, categoryDiagnostics]) => ({
+      category,
+      diagnostics: categoryDiagnostics,
+      ruleGroups: buildSortedRuleGroups(categoryDiagnostics, rulePriority),
+    }))
     .toSorted((categoryGroupA, categoryGroupB) => {
       // Categories rank by their top rule's API priority. With no API
       // priority (offline / `--no-score`) every category compares equal,
@@ -185,10 +189,13 @@ const formatClusterLocation = (cluster: DiagnosticCluster): string => {
 // sites, indented under its rule block. The location sits on its own line
 // directly above the frame so it's obvious which file the frame belongs to.
 // A multi-site cluster marks the whole line span; a single site keeps its
-// precise caret column.
+// precise caret column. `renderCodeFrame` is false for warning blocks —
+// they keep their `file:line` locations but drop the boxed source frame so
+// the costlier errors stay the visual focus.
 const buildDiagnosticClusterLines = (
   cluster: DiagnosticCluster,
   resolveSourceRoot: SourceRootResolver,
+  renderCodeFrame: boolean,
 ): ReadonlyArray<string> => {
   const lead = cluster.diagnostics[0]!;
   const isMultiSite = cluster.diagnostics.length > 1;
@@ -196,13 +203,15 @@ const buildDiagnosticClusterLines = (
     "",
     highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${formatClusterLocation(cluster)}`),
   ];
-  const codeFrame = buildCodeFrame({
-    filePath: lead.filePath,
-    line: cluster.startLine,
-    column: isMultiSite ? 0 : lead.column,
-    endLine: isMultiSite ? cluster.endLine : undefined,
-    rootDirectory: resolveSourceRoot(lead),
-  });
+  const codeFrame = renderCodeFrame
+    ? buildCodeFrame({
+        filePath: lead.filePath,
+        line: cluster.startLine,
+        column: isMultiSite ? 0 : lead.column,
+        endLine: isMultiSite ? cluster.endLine : undefined,
+        rootDirectory: resolveSourceRoot(lead),
+      })
+    : null;
   if (codeFrame) {
     lines.push(
       indentMultilineText(boxText(codeFrame, OUTPUT_MEASURE_WIDTH_CHARS), TOP_ERROR_DETAIL_INDENT),
@@ -229,11 +238,11 @@ const buildRuleDetailBlock = (
   ruleDiagnostics: Diagnostic[],
   resolveSourceRoot: SourceRootResolver,
   renderEverySite: boolean,
+  isAgentEnvironment: boolean,
 ): ReadonlyArray<string> => {
   const representative = pickRepresentativeDiagnostic(ruleDiagnostics);
   const { severity } = representative;
-  const siteCountBadge = formatSiteCountBadge(ruleDiagnostics.length);
-  const trailingBadge = siteCountBadge.length > 0 ? ` ${highlighter.gray(siteCountBadge)}` : "";
+  const trailingBadge = formatTrailingSiteBadge(ruleDiagnostics.length);
   const headline = colorizeBySeverity(
     `${representative.category}: ${representative.title ?? ruleKey}`,
     severity,
@@ -241,6 +250,17 @@ const buildRuleDetailBlock = (
   const icon = colorizeBySeverity(severity === "error" ? "✗" : "⚠", severity);
 
   const lines: string[] = [`  ${icon} ${headline}${trailingBadge}`];
+
+  // Verbose lists every site, so humans get a prominent docs link right
+  // under the rule name; agents instead get the cache-busting fetch
+  // directive lower down (after the fix) so they pull and follow the
+  // canonical recipe before editing.
+  if (renderEverySite && !isAgentEnvironment) {
+    const learnMoreLine = formatLearnMoreLine(representative);
+    if (learnMoreLine) {
+      lines.push(`${TOP_ERROR_DETAIL_INDENT}${highlighter.info(learnMoreLine)}`);
+    }
+  }
 
   // Verbose lists every rule & site, so the per-rule impact prose would
   // just repeat down the whole report — skip it there and let the boxed
@@ -269,28 +289,78 @@ const buildRuleDetailBlock = (
     }
   }
 
+  if (renderEverySite && isAgentEnvironment) {
+    const fixRecipeLine = formatFixRecipeLine(representative);
+    if (fixRecipeLine) {
+      lines.push(highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${fixRecipeLine}`));
+    }
+  }
+
+  // Errors always get the boxed code frame; in verbose every rule does
+  // (warnings included) so the exhaustive view renders warnings in the same
+  // format as errors. The default summary keeps frames error-only so a long
+  // warning tail doesn't drown the report.
+  const renderCodeFrame = severity === "error" || renderEverySite;
   const sites = renderEverySite ? ruleDiagnostics : [representative];
   for (const cluster of clusterNearbyDiagnostics(sites)) {
-    lines.push(...buildDiagnosticClusterLines(cluster, resolveSourceRoot));
+    lines.push(...buildDiagnosticClusterLines(cluster, resolveSourceRoot, renderCodeFrame));
   }
 
   return lines;
 };
 
-// The highest-priority error rule groups behind the "Top N errors you
-// should fix" block, in display order (score-API priority first, then
-// severity + stakes).
+// Every error rule group in display order (score-API priority first, then
+// severity + stakes). The top-N slice headlines the "errors you should fix"
+// block; the remainder feeds the "+N more" overflow line.
+const selectErrorRuleGroups = (
+  diagnostics: Diagnostic[],
+  rulePriority?: ReadonlyMap<string, number>,
+): [string, Diagnostic[]][] =>
+  buildSortedRuleGroups(
+    diagnostics.filter((diagnostic) => diagnostic.severity === "error"),
+    rulePriority,
+  );
+
 const selectTopErrorRuleGroups = (
   diagnostics: Diagnostic[],
   limit: number,
   rulePriority?: ReadonlyMap<string, number>,
-): [string, Diagnostic[]][] => {
-  const errorDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-  const ruleGroups = groupBy(
-    errorDiagnostics,
-    (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
-  );
-  return sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority).slice(0, limit);
+): [string, Diagnostic[]][] => selectErrorRuleGroups(diagnostics, rulePriority).slice(0, limit);
+
+// The non-verbose run only shows one representative site per top error rule
+// group and no warnings at all, so anything past that — extra error rule
+// groups, the other sites of a shown rule, or any warning — only appears
+// under `--verbose`. The line surfaces that pointer whenever detail is
+// hidden, with `+N more rules` counting hidden error groups (the unit the
+// top-errors block uses) and `+N optional warnings` counting individual
+// warnings (matching the overview's per-category and total tallies).
+const buildOverflowSummaryLine = (
+  diagnostics: Diagnostic[],
+  rulePriority?: ReadonlyMap<string, number>,
+): string | undefined => {
+  const errorRuleGroups = selectErrorRuleGroups(diagnostics, rulePriority);
+  const shownErrorRuleCount = Math.min(TOP_ERRORS_DISPLAY_COUNT, errorRuleGroups.length);
+  if (diagnostics.length <= shownErrorRuleCount) return undefined;
+
+  const hiddenErrorRuleCount = errorRuleGroups.length - shownErrorRuleCount;
+  const warningCount = diagnostics.filter((diagnostic) => diagnostic.severity === "warning").length;
+
+  const parts: string[] = [];
+  if (hiddenErrorRuleCount > 0) {
+    const ruleNoun = hiddenErrorRuleCount === 1 ? "rule" : "rules";
+    parts.push(highlighter.bold(highlighter.error(`+${hiddenErrorRuleCount} more ${ruleNoun}`)));
+  }
+  if (warningCount > 0) {
+    const warningNoun = warningCount === 1 ? "warning" : "warnings";
+    parts.push(highlighter.bold(highlighter.warn(`+${warningCount} optional ${warningNoun}`)));
+  }
+
+  const command = highlighter.bold(highlighter.info("npx react-doctor@latest --verbose"));
+  const lead =
+    parts.length > 0
+      ? `${parts.join(highlighter.dim(" and "))} ${highlighter.dim("— run")}`
+      : highlighter.dim("Run");
+  return `  ${lead} ${command} ${highlighter.dim("for details")}`;
 };
 
 // The exact rule keys surfaced in the top-errors block — the set the
@@ -309,21 +379,18 @@ const buildTopErrorsLines = (
   resolveSourceRoot: SourceRootResolver,
   rulePriority?: ReadonlyMap<string, number>,
 ): ReadonlyArray<string> => {
-  const topRuleGroups = selectTopErrorRuleGroups(
-    diagnostics,
-    TOP_ERRORS_DISPLAY_COUNT,
-    rulePriority,
-  );
+  const errorRuleGroups = selectErrorRuleGroups(diagnostics, rulePriority);
+  const topRuleGroups = errorRuleGroups.slice(0, TOP_ERRORS_DISPLAY_COUNT);
   if (topRuleGroups.length === 0) return [];
 
   const lines: string[] = [
     // Dim rule separating the overview tally from the detailed fixes.
-    highlighter.dim(`  ${"─".repeat(OUTPUT_MEASURE_WIDTH_CHARS)}`),
+    buildSectionDivider(),
     `  ${highlighter.bold(`Top ${topRuleGroups.length} ${topRuleGroups.length === 1 ? "error" : "errors"} you should fix`)}`,
     "",
   ];
   for (const [ruleKey, ruleDiagnostics] of topRuleGroups) {
-    lines.push(...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, false));
+    lines.push(...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, false, false));
     lines.push("");
   }
   return lines;
@@ -350,8 +417,8 @@ const joinSections = (...sections: ReadonlyArray<string>[]): string[] => {
 };
 
 // The total-issue tally (e.g. "600 issues"), shown right under the
-// category breakdown as part of the overview. The "list every issue"
-// hint lives at the very bottom of the run instead (see `printVerboseTip`).
+// category breakdown as part of the overview. The `--verbose` hint lives
+// in the combined overflow line at the end of the run instead.
 const buildCountsSummaryLines = (diagnostics: Diagnostic[]): ReadonlyArray<string> => {
   const totalIssueCount = diagnostics.length;
   if (totalIssueCount === 0) return [];
@@ -384,6 +451,10 @@ export const printDiagnostics = (
   // most-valuable-first; absent (offline / `--no-score`) ordering falls
   // back to severity + stakes.
   rulePriority?: ReadonlyMap<string, number>,
+  // True when a coding agent is driving the CLI. Verbose rule blocks then
+  // emit the cache-busting fetch directive instead of the human "Learn more"
+  // link. Defaults to false (human) so tests render deterministically.
+  isAgentEnvironment = false,
 ): Effect.Effect<void> =>
   Effect.gen(function* () {
     const resolveSourceRoot: SourceRootResolver =
@@ -396,22 +467,28 @@ export const printDiagnostics = (
     if (!isVerbose) {
       detailLines = buildTopErrorsLines(diagnostics, resolveSourceRoot, rulePriority);
     } else {
-      const ruleGroups = groupBy(
-        diagnostics,
-        (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
-      );
-      detailLines = sortRuleGroupsByImportance([...ruleGroups.entries()], rulePriority).flatMap(
-        ([ruleKey, ruleDiagnostics]) => [
-          ...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, true),
-          "",
-        ],
-      );
+      const sortedRuleGroups = buildSortedRuleGroups(diagnostics, rulePriority);
+      detailLines = sortedRuleGroups.flatMap(([ruleKey, ruleDiagnostics]) => {
+        const block = buildRuleDetailBlock(
+          ruleKey,
+          ruleDiagnostics,
+          resolveSourceRoot,
+          true,
+          isAgentEnvironment,
+        );
+        return [...block, ""];
+      });
     }
+
+    const overflowLine = isVerbose
+      ? undefined
+      : buildOverflowSummaryLine(diagnostics, rulePriority);
 
     const lines = joinSections(
       buildCategoryBreakdownLines(diagnostics, rulePriority),
       buildCountsSummaryLines(diagnostics),
       detailLines,
+      overflowLine ? [overflowLine] : [],
     );
     for (const line of lines) {
       yield* Console.log(line);

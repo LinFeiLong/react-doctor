@@ -17,10 +17,9 @@ export const JSX_FILE_PATTERN = /\.(tsx|jsx)$/;
 
 // Whether `"warning"`-severity diagnostics surface when neither the
 // caller (`--warnings` / `warnings:`) nor `config.warnings` decide.
-// Warnings are hidden by default so a clean scan reports only
-// `"error"`-severity findings; users opt them in with `--warnings`
-// or `"warnings": true`.
-export const DEFAULT_SHOW_WARNINGS = false;
+// Warnings show by default — only `"error"` is too generous a bar for a
+// health scan; users opt out with `--no-warnings` or `"warnings": false`.
+export const DEFAULT_SHOW_WARNINGS = true;
 
 export const MILLISECONDS_PER_SECOND = 1000;
 
@@ -78,10 +77,22 @@ export const ENTERPRISE_CONTACT_URL = "https://react.doctor/enterprise";
 
 export const SHARE_BASE_URL = "https://react.doctor/share";
 
-// Base URL for the per-rule fix recipes the `/doctor` playbook fetches
-// on demand. The full URL for one rule is
-// `<base>/<plugin>/<rule>.md` (see `buildRulePromptUrl`).
-export const PROMPTS_RULES_BASE_URL = "https://www.react.doctor/prompts/rules";
+// Root of the documentation site. Guides for CI/CD setup, config files (to
+// suppress rules), and diff/PR scanning live under it; the CLI links here
+// from its closing "learn more" note.
+export const DOCS_URL = "https://www.react.doctor/docs";
+
+// Base URL for the per-rule documentation pages. The canonical,
+// human-readable fix recipe for one rule lives at `<base>/<plugin>/<rule>`
+// (see `buildRuleDocsUrl`) — the CLI links here from its fix-recipe
+// directive. The raw `.md` prompts the `/doctor` playbook fetches on demand
+// live under `https://www.react.doctor/prompts/rules/<plugin>/<rule>.md`.
+export const DOCS_RULES_BASE_URL = `${DOCS_URL}/rules`;
+
+// Canonical JSON Schema for `doctor.config.json`. Stamped as the
+// `$schema` field when the rule-config CLI creates a config file so
+// editors get autocomplete + hover docs (matches the README guidance).
+export const CONFIG_SCHEMA_URL = "https://react.doctor/schema/config.json";
 
 export const FETCH_TIMEOUT_MS = 10_000;
 
@@ -102,9 +113,10 @@ export const SPAWN_ARGS_MAX_LENGTH_CHARS = 24_000;
 // vs the hard-cap perf cliffs they prevent.
 export const OXLINT_MAX_FILES_PER_BATCH = 100;
 
-// Bounds for the `--experimental-parallel` lint worker count (also set via the
-// `REACT_DOCTOR_PARALLEL` env var / `OxlintConcurrency` Reference). React
-// Doctor's rules are oxlint JS plugins — single-threaded per process — so
+// Bounds for the lint worker count (the `OxlintConcurrency` Reference, seeded
+// by the `REACT_DOCTOR_PARALLEL` env var; the CLI's `--no-parallel` flag forces
+// the MIN end). React Doctor's rules are oxlint JS plugins — single-threaded
+// per process — so
 // running the file batches across N concurrent oxlint subprocesses scales the
 // scan nearly linearly with N. MAX bounds peak memory (each worker holds its
 // batch's ASTs); the resolved count is clamped to [MIN, MAX].
@@ -138,7 +150,14 @@ export const STAGED_FILES_PROJECT_CONFIG_FILENAMES = [
   "tsconfig.json",
   "tsconfig.base.json",
   "package.json",
-  "react-doctor.config.json",
+  "doctor.config.ts",
+  "doctor.config.mts",
+  "doctor.config.cts",
+  "doctor.config.js",
+  "doctor.config.mjs",
+  "doctor.config.cjs",
+  "doctor.config.json",
+  "doctor.config.jsonc",
   "oxlint.json",
   ".oxlintrc.json",
 ] as const;
@@ -200,11 +219,6 @@ export const MAX_RULE_GROUPS_PER_CATEGORY_NON_VERBOSE = 3;
 // minutes. 7 days × 24 h × 60 min = 10080. Surfaced as the
 // recommended starting point for the supply-chain hardening check.
 export const RECOMMENDED_PNPM_MINIMUM_RELEASE_AGE_MINUTES = 10_080;
-
-// Minimum width of the rule-name column in the diagnostics list. Pads
-// shorter rule names so the right-aligned `N sites` count stays in a
-// consistent column even when one rule has a much longer identifier.
-export const RULE_NAME_COLUMN_WIDTH_CHARS = 36;
 
 // The closed set of user-facing diagnostic categories. Every rule
 // (collapsed at codegen via `CATEGORY_BUCKET` in

@@ -6,6 +6,8 @@ import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
 import { installReactDoctorSkillForAgent } from "./install-skill-for-agent.js";
 import { isCommandAvailable } from "./is-command-available.js";
+import { METRIC } from "./constants.js";
+import { recordCount } from "./record-metric.js";
 import {
   CLI_AGENT_BINARIES,
   type CliAgentId,
@@ -51,6 +53,8 @@ const detectLaunchableAgents = async (): Promise<CliAgentId[]> => {
 export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> => {
   if (!input.interactive || input.diagnostics.length === 0) return;
 
+  logger.break();
+
   const launchableAgents = await detectLaunchableAgents();
   const { handoffTarget } = await prompts<"handoffTarget">(
     {
@@ -75,6 +79,19 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
     },
     { onCancel: () => true },
   );
+
+  // Count the fix-loop outcome (the core activation moment): did the user launch
+  // an agent (any agent id), copy/print the prompt, or skip/cancel?
+  let handoffOutcome = "launch";
+  if (handoffTarget === undefined) handoffOutcome = "cancel";
+  else if (handoffTarget === SKIP_CHOICE) handoffOutcome = "skip";
+  else if (handoffTarget === PRINT_CHOICE) handoffOutcome = "print";
+  else if (handoffTarget === CLIPBOARD_CHOICE) handoffOutcome = "clipboard";
+  recordCount(METRIC.agentHandoff, 1, {
+    outcome: handoffOutcome,
+    agent: handoffOutcome === "launch" ? handoffTarget : undefined,
+    diagnosticsCount: input.diagnostics.length,
+  });
 
   // Cancel (Esc / Ctrl-C) or "Skip" exits without writing the prompt/files.
   if (handoffTarget === undefined || handoffTarget === SKIP_CHOICE) return;

@@ -198,6 +198,77 @@ for this codebase) for canonical examples.
   transport, so every `Effect.fn("Service.method")` span and every top-level
   `Effect.withSpan("...")` ships to the configured backend. Eval reference:
   `react-doctor-evals/src/Observability.ts → layerAxiom`.
+- **Sentry tracing (CLI only).** The published CLI bridges the same Effect spans
+  into Sentry. `cli/utils/apply-observability.ts` is the single chooser of the
+  tracer backend (Effect has one `Tracer` reference, so they're mutually
+  exclusive): user OTLP wins (and the Effect trace is parented under the Sentry
+  trace via `Tracer.externalSpan` for a shared `trace_id`); otherwise, when
+  Sentry performance tracing is live, `cli/utils/sentry-tracer.ts`
+  (`makeSentryTracer`) materializes each Effect span as a child Sentry span
+  under the per-run transaction (`cli/utils/with-sentry-run-span.ts`); otherwise
+  the no-op native tracer. All of this is gated by `isSentryTracingEnabled()` so
+  it's a true no-op for the `@react-doctor/api` library, `--no-score`, tests,
+  and `SENTRY_TRACES_SAMPLE_RATE=0`. Source maps are uploaded for symbolication
+  by `scripts/sentry-sourcemaps.mjs` (Debug IDs); the SDK `release`
+  (`react-doctor@<version>`) must match what that script uploads.
+- **Sentry scope shape.** `cli/utils/build-sentry-scope.ts` is the one place that
+  projects the run snapshot (and the scanned project, once known) into Sentry
+  `tags` + `contexts`; both `instrument.ts` (`initialScope`) and
+  `report-error.ts` consume it, so add new metadata there, not at call sites.
+  Project info is captured in the `beforeLint` hook via
+  `recordSentryProjectContext` (`with-sentry-run-span.ts`), which both remembers
+  it for the lazy error path (a module-level ref read by `buildSentryScope`,
+  mirroring how `buildRunContext` reads ambient state at capture time) and sets
+  it as root-span attributes for the live transaction.
+- **Sentry anonymization.** Telemetry must stay anonymized. `Sentry.init` sets
+  `sendDefaultPii: false`, and `beforeSend` + `beforeSendTransaction` both run
+  `scrubSentryEvent` (`cli/utils/scrub-sentry-event.ts`): it strips
+  hostname/`server_name`/device name and the IP-bearing `user`, drops captured
+  stack-frame local variables, and runs every remaining string (messages,
+  frames, contexts, extra, tags, breadcrumbs, and span attributes like
+  `inspect.directory`) through `scrubSensitivePaths` (home dir / username →
+  `~`, in `cli/utils/scrub-sensitive-text.ts`) + core's `redactSensitiveText`
+  (secrets/emails). `buildRunContext` also scrubs `cwd`/`argv` at the source. If
+  you add a new field to any Sentry event, confirm it carries no username,
+  hostname, IP, secret, or absolute path — and prefer adding it through
+  `buildSentryScope` so the central scrub covers it. `scrubSentryEvent` returns
+  `null` on any failure so an un-anonymized event is never sent.
+- **Crash references + trace linkage.** `reportErrorToSentry` returns the Sentry
+  event id; the CLI catch blocks thread it into `handleError` so it's printed as
+  a user-quotable reference and added to the prefilled GitHub issue. Errors
+  thrown during a scan are linked to the run transaction by capturing them with
+  the run's trace as the scope's propagation context — `withSentryRunSpan`
+  records the live trace in `active-run-trace.ts` (cleared only on success, so
+  the command catch — which runs after the span ends — can still read it), and
+  `reportErrorToSentry` re-attaches via `scope.setPropagationContext`.
+- **Sentry metrics (CLI only).** Anonymized Application Metrics (counters +
+  distributions) are emitted through `cli/utils/record-metric.ts`
+  (`recordCount` / `recordDistribution`), each guarded so it's a true no-op
+  unless `Sentry.isInitialized()` — inert for `--no-score`, tests,
+  and the `@react-doctor/api` library — and independent of `tracesSampleRate`
+  (metrics flow even when tracing is off). Metric names live in the `METRIC` map
+  in `cli/utils/constants.ts` (dotted, domain-grouped; high-cardinality
+  dimensions go in attributes, never the name). The run snapshot — and, once a
+  scan discovers it, the project shape — is merged onto **every metric at emit
+  time** by `record-metric.ts`'s `withRunAttributes`, which reprojects
+  `buildSentryScope().tags` per emit. This mirrors how events rebuild
+  `buildSentryScope` lazily, so metrics track runtime state (`--json` mode, a
+  workspace scan's project rolling over, the project clearing on
+  `resetSentryRunState`) rather than a stale init-time snapshot, and the
+  attributes pass through `beforeSendMetric` scrubbing like any other. Emit
+  sites pass only metric-specific attributes; the project shape comes from
+  `recordSentryProjectContext` → `getSentryProjectInfo()`. Per-scan metrics
+  (`scan.*`, `rule.fired`, `lint.failed`, …) are
+  emitted by `cli/utils/record-scan-metrics.ts`; `rule.fired` is one
+  high-cardinality counter keyed by `rule`/`plugin`/`category`/`severity`
+  attributes (never a metric-name-per-rule). Anonymization: `Sentry.init` sets
+  `beforeSendMetric: scrubSentryMetric` (`cli/utils/scrub-sentry-metric.ts`),
+  which drops the `server.address` hostname attribute (the SDK adds it to the
+  metric _before_ the hook, so the strip lands) and scrubs paths/secrets from
+  attribute values via the shared `cli/utils/anonymize-text.ts` (also used by
+  `scrubSentryEvent`), returning `null` to drop on failure. Add new counters
+  through `record-metric.ts` + the `METRIC` map, and confirm any new attribute
+  carries no username, path, or secret.
 
 ### Console / logging
 
