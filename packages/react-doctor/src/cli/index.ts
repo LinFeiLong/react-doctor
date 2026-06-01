@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { CANONICAL_GITHUB_URL, highlighter } from "@react-doctor/core";
-import { initializeSentry } from "../instrument.js";
+import { flushSentry, initializeSentry } from "../instrument.js";
 import { inspectAction } from "./commands/inspect.js";
 import { installAction } from "./commands/install.js";
 import {
@@ -265,11 +265,16 @@ applyColorPreference(strippedArgv);
 // 12-factor (#1): map `help` / `help <command>` to Commander's `--help`.
 const argv = normalizeHelpInvocation(strippedArgv, knownCommands);
 
-program.parseAsync(argv).catch(async (error: unknown) => {
-  await reportErrorToSentry(error);
-  if (isJsonModeActive()) {
-    writeJsonErrorReport(error);
-    process.exit(1);
-  }
-  handleError(error);
-});
+program
+  .parseAsync(argv)
+  // Deliver any queued performance transaction before the process exits on the
+  // success path; error funnels flush via `reportErrorToSentry`.
+  .then(() => flushSentry())
+  .catch(async (error: unknown) => {
+    const sentryEventId = await reportErrorToSentry(error);
+    if (isJsonModeActive()) {
+      writeJsonErrorReport(error);
+      process.exit(1);
+    }
+    handleError(error, { sentryEventId });
+  });
