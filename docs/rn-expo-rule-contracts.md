@@ -349,6 +349,42 @@ validate warn-severity rules; for this validation I scanned the cache directly w
 The harness `run` also aborts on a missing cached file (`PlatformError` → `Effect.die`); a
 per-repo catch would make large sweeps resilient.
 
+## Stage 3b — Large RN/Expo regression eval (444 repos)
+
+Scaled the eval up by mining the harness's `repos.json` (8,423 entries / 3,190 distinct repos, no
+framework metadata). HTTP-probed each entry's `package.json` via `raw.githubusercontent.com` to find
+RN/Expo repos and capture `expo`/`react-native` versions, then cloned the modern-first set (sparse
+
+- blob-filtered) into the RDE cache and scanned with `--warnings`.
+
+* **Universe:** 817 RN/Expo rootDir entries across **444 distinct repos** (224 Expo SDK ≥ 50; 552 RN
+  0.73+; newest are Expo SDK 56 / RN 0.85).
+* **Scanned:** 803 rootDirs (10 unscannable), **329 hits**.
+
+| Rule                                                                                                                     | Hits / repos | Verdict                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------ | -------------------------------------------------------------------------------------------- |
+| `rn-no-metro-babel-preset`                                                                                               | 122 / 103    | ✅ TP — real `module:metro-react-native-babel-preset` references (RN-library babel template) |
+| `rn-no-set-native-props`                                                                                                 | 89 / 22      | ✅ TP (rnmapbox/polar/ecency `ref.current?.setNativeProps`)                                  |
+| `rn-no-panresponder`                                                                                                     | 58 / 34      | ✅ TP                                                                                        |
+| `rn-no-deep-imports`                                                                                                     | 39 / 20      | ✅ TP (`NewAppScreen`, `Appearance`/`ColorSchemeName` types — generic message correct)       |
+| `rn-detox-missing-await`                                                                                                 | 5 / 1        | ✅ TP (un-awaited `waitFor`)                                                                 |
+| `rn-no-image-children`                                                                                                   | 4 / 4        | ✅ TP (incl. a wrapper forwarding `{children}` into RN `<Image>`)                            |
+| `expo-no-non-inlined-env`                                                                                                | 12 / 3       | ⚠️ 6 TP (gameplay raw-env destructuring) + **6 FP fixed**                                    |
+| `rn-library-react-in-dependencies` / `expo-reanimated-v4-requires-new-arch` / `expo-updates-no-unsafe-production-config` | 0            | ✅ guardrails correctly silent                                                               |
+
+### False positives found and fixed (with regression tests)
+
+`expo-no-non-inlined-env` fired on **runtime/tooling probes** — `process.env["JEST_WORKER_ID"]`,
+`process.env?.["EXPO_DEBUG"]` (often behind `typeof process.env[...] === "string"` guards), and a
+`cli/logger.ts`. These read non-`EXPO_PUBLIC_` vars expected to be absent in the bundle, not the
+inlinable config the rule targets. Fix: the computed arm now only flags a **string-literal key when
+it starts with `EXPO_PUBLIC_`** (dynamic keys still flag; destructuring stays broad), and `cli`/`bin`
+were added to the excluded dirs. Re-scan: the 6 probe FPs are gone; the 6 genuine
+destructuring TPs (`const { CLIENT_ID } = process.env` in client code) are preserved.
+
+After the fix: **9/10 rules clean TP across 444 repos, the env rule's only remaining hits are real
+destructuring bugs, 0 known false positives.**
+
 ## RDE idea-validation results (OSS cache)
 
 Validated against the local OSS cache at `~/.cache/rde/repos` (**500 repos**; **103 declare

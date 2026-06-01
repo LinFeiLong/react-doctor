@@ -13,10 +13,22 @@ const EMPTY_VISITORS: RuleVisitors = {};
 // dynamically (they run in Node, not the bundled client, so Metro never
 // inlines them). The OSS corpus showed nearly every computed / destructured
 // `process.env` access lives in exactly these files — config, scripts/tooling,
-// Expo Router server routes (`*+api`), `*.server.*` modules, and tests — so
-// excluding them is what keeps this rule low-noise.
+// CLI entry points, Expo Router server routes (`*+api`), `*.server.*` modules,
+// and tests — so excluding them is what keeps this rule low-noise.
 const NODE_OR_BUILD_FILE =
-  /(\.config\.[cm]?[jt]sx?$)|((^|\/)(scripts|tools|tooling)\/)|(\+(api|html)\.[cm]?[jt]sx?$)|(\.server\.[cm]?[jt]sx?$)|(\.(test|spec)\.[cm]?[jt]sx?$)|((^|\/)__tests__\/)|(\.e2e\.[cm]?[jt]sx?$)/;
+  /(\.config\.[cm]?[jt]sx?$)|((^|\/)(scripts|tools|tooling|cli|bin)\/)|(\+(api|html)\.[cm]?[jt]sx?$)|(\.server\.[cm]?[jt]sx?$)|(\.(test|spec)\.[cm]?[jt]sx?$)|((^|\/)__tests__\/)|(\.e2e\.[cm]?[jt]sx?$)/;
+
+// A computed key that is a string literal NOT starting with `EXPO_PUBLIC_`.
+// These are overwhelmingly runtime/tooling probes — `process.env["JEST_WORKER_ID"]`,
+// `process.env["EXPO_DEBUG"]`, debug flags — read defensively (often behind a
+// `typeof process.env[...] === "string"` guard) and deliberately expected to be
+// absent in the bundled app. Only `EXPO_PUBLIC_*` keys are the inlinable config
+// the rule targets, so a non-`EXPO_PUBLIC_` literal key is skipped. Dynamic
+// (non-literal) keys still flag.
+const isNonExpoPublicLiteralKey = (key: EsTreeNode): boolean =>
+  isNodeOfType(key, "Literal") &&
+  typeof key.value === "string" &&
+  !key.value.startsWith("EXPO_PUBLIC_");
 
 // True for the `process.env` member access (`process` . `env`, static).
 // `isNodeOfType` null-guards, so a null/undefined node is handled without an
@@ -50,6 +62,8 @@ export const expoNoNonInlinedEnv = defineRule<Rule>({
       MemberExpression(node: EsTreeNodeOfType<"MemberExpression">) {
         if (!node.computed) return;
         if (!isProcessEnv(node.object)) return;
+        // Skip literal non-`EXPO_PUBLIC_` keys (runtime/tooling probes).
+        if (isNonExpoPublicLiteralKey(node.property)) return;
         context.report({
           node,
           message:

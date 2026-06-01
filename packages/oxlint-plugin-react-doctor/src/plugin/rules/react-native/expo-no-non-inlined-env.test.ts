@@ -72,4 +72,31 @@ describe("expo-no-non-inlined-env", () => {
     const result = runRule(expoNoNonInlinedEnv, code, { filename: "src/lib/db.server.ts" });
     expect(result.diagnostics).toHaveLength(0);
   });
+
+  // Regression (RDE eval): runtime/tooling probes read non-EXPO_PUBLIC vars by
+  // literal computed key (often behind a typeof guard) and expect them absent
+  // in the bundle — not the inlinable-config bug this rule targets.
+  it("does NOT flag a literal non-EXPO_PUBLIC computed key (runtime probe)", () => {
+    const code = `const isJest = typeof process.env["JEST_WORKER_ID"] === "string";`;
+    const result = runRule(expoNoNonInlinedEnv, code, appFile);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  it("does NOT flag an optional-chained non-EXPO_PUBLIC literal key", () => {
+    const code = `const debug = process.env?.["EXPO_DEBUG"] === "1";`;
+    const result = runRule(expoNoNonInlinedEnv, code, appFile);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  it("still flags a literal EXPO_PUBLIC_ computed key", () => {
+    const code = `const v = process.env["EXPO_PUBLIC_SECRET_TOKEN"];`;
+    const result = runRule(expoNoNonInlinedEnv, code, appFile);
+    expect(result.diagnostics).toHaveLength(1);
+  });
+
+  it("does NOT flag in cli/ tooling files", () => {
+    const code = `const level = process.env["EXPO_DEBUG"];`;
+    const result = runRule(expoNoNonInlinedEnv, code, { filename: "packages/x/cli/logger.ts" });
+    expect(result.diagnostics).toHaveLength(0);
+  });
 });
