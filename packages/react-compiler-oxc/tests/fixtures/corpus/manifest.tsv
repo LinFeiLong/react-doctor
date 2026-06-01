@@ -1,3 +1,20 @@
+# Corpus manifest (Stage 18 dual-oracle).
+# Columns: name<TAB>ext<TAB>abs-fixture-path[<TAB>oracle-kind]
+# oracle-kind (optional 4th column, default `.expect.md`):
+#   .expect.md  - <name>.code from the fixture's .expect.md `## Code` block
+#                 (FULL harness pipeline: React Compiler + chained fbt/idx + prettier).
+#   .cc.code    - <name>.cc.code from src/verify/capture-code.ts (compiler-only;
+#                 NO chained fbt/idx plugins, NO prettier). Routed here ONLY when the
+#                 divergence vs .expect.md is a downstream plugin (fbt/idx), a prettier
+#                 reformat, or a parser/generator artifact in the FULL pipeline that is
+#                 NOT part of the React Compiler's own output, AND the Rust compiler-only
+#                 output canonical-matches this capture (proven via compiler_only_parity).
+# Reason kinds seen below: `downstream-plugin:fbt`, `downstream-plugin:idx`,
+# `prettier-artifact:*`, `flow-parser:comment-strip` (HermesParser drops comments for
+# @flow files, which capture-code.ts now mirrors), `babel-generator:non-ascii-escape`
+# (jsesc escapes non-ASCII in bare JSX attrs, which the Rust codegen now mirrors).
+# Each .cc.code entry is preceded by a `# <name>: <reason>` line. See
+# tests/corpus_parity.rs + examples/regen_corpus.rs for the regeneration + parity logic.
 alias-capture-in-method-receiver-and-mutate	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/alias-capture-in-method-receiver-and-mutate.js
 alias-capture-in-method-receiver	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/alias-capture-in-method-receiver.js
 alias-computed-load	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/alias-computed-load.js
@@ -306,38 +323,70 @@ expression-with-assignment-dynamic	js	/Users/aidenybai/Developer/react-doctor-2/
 expression-with-assignment	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/expression-with-assignment.js
 extend-scopes-if	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/extend-scopes-if.js
 fast-refresh-reloading	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fast-refresh-reloading.js
-fbt__bug-fbt-plural-multiple-function-calls	ts	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/bug-fbt-plural-multiple-function-calls.ts
-fbt__bug-fbt-plural-multiple-mixed-call-tag	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/bug-fbt-plural-multiple-mixed-call-tag.tsx
-fbt__fbs-params	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbs-params.js
-fbt__fbt-call-complex-param-value	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-call-complex-param-value.js
-fbt__fbt-call	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-call.js
-fbt__fbt-no-whitespace-btw-text-and-param	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-no-whitespace-btw-text-and-param.tsx
-fbt__fbt-param-with-leading-whitespace	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-leading-whitespace.js
-fbt__fbt-param-with-newline	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-newline.js
-fbt__fbt-param-with-quotes	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-quotes.js
-fbt__fbt-param-with-trailing-whitespace	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-trailing-whitespace.js
-fbt__fbt-param-with-unicode	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-unicode.js
-fbt__fbt-params-complex-param-value	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-params-complex-param-value.js
-fbt__fbt-params	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-params.js
-fbt__fbt-preserve-jsxtext	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-preserve-jsxtext.js
-fbt__fbt-preserve-whitespace-subtree	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-preserve-whitespace-subtree.tsx
-fbt__fbt-preserve-whitespace-two-subtrees	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-preserve-whitespace-two-subtrees.tsx
-fbt__fbt-preserve-whitespace	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-preserve-whitespace.tsx
-fbt__fbt-repro-invalid-mutable-range-destructured-prop	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-repro-invalid-mutable-range-destructured-prop.js
-fbt__fbt-single-space-btw-param-and-text	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-single-space-btw-param-and-text.tsx
-fbt__fbt-template-string-same-scope	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-template-string-same-scope.js
-fbt__fbt-to-string	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-to-string.js
-fbt__fbt-whitespace-around-param-value	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-whitespace-around-param-value.tsx
-fbt__fbt-whitespace-within-text	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-whitespace-within-text.tsx
-fbt__fbtparam-text-must-use-expression-container	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbtparam-text-must-use-expression-container.js
-fbt__fbtparam-with-jsx-element-content	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbtparam-with-jsx-element-content.js
-fbt__fbtparam-with-jsx-fragment-value	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbtparam-with-jsx-fragment-value.js
-fbt__lambda-with-fbt	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/lambda-with-fbt.js
-fbt__recursively-merge-scopes-jsx	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/recursively-merge-scopes-jsx.js
-fbt__repro-fbt-param-nested-fbt-jsx	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/repro-fbt-param-nested-fbt-jsx.js
-fbt__repro-fbt-param-nested-fbt	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/repro-fbt-param-nested-fbt.js
-fbt__repro-macro-property-not-handled	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/repro-macro-property-not-handled.tsx
-fbt__repro-separately-memoized-fbt-param	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/repro-separately-memoized-fbt-param.js
+# fbt__bug-fbt-plural-multiple-function-calls: downstream-plugin:fbt
+fbt__bug-fbt-plural-multiple-function-calls	ts	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/bug-fbt-plural-multiple-function-calls.ts	.cc.code
+# fbt__bug-fbt-plural-multiple-mixed-call-tag: downstream-plugin:fbt
+fbt__bug-fbt-plural-multiple-mixed-call-tag	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/bug-fbt-plural-multiple-mixed-call-tag.tsx	.cc.code
+# fbt__fbs-params: downstream-plugin:fbt
+fbt__fbs-params	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbs-params.js	.cc.code
+# fbt__fbt-call-complex-param-value: downstream-plugin:fbt
+fbt__fbt-call-complex-param-value	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-call-complex-param-value.js	.cc.code
+# fbt__fbt-call: downstream-plugin:fbt
+fbt__fbt-call	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-call.js	.cc.code
+# fbt__fbt-no-whitespace-btw-text-and-param: downstream-plugin:fbt
+fbt__fbt-no-whitespace-btw-text-and-param	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-no-whitespace-btw-text-and-param.tsx	.cc.code
+# fbt__fbt-param-with-leading-whitespace: downstream-plugin:fbt
+fbt__fbt-param-with-leading-whitespace	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-leading-whitespace.js	.cc.code
+# fbt__fbt-param-with-newline: downstream-plugin:fbt
+fbt__fbt-param-with-newline	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-newline.js	.cc.code
+# fbt__fbt-param-with-quotes: downstream-plugin:fbt
+fbt__fbt-param-with-quotes	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-quotes.js	.cc.code
+# fbt__fbt-param-with-trailing-whitespace: downstream-plugin:fbt
+fbt__fbt-param-with-trailing-whitespace	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-trailing-whitespace.js	.cc.code
+# fbt__fbt-param-with-unicode: downstream-plugin:fbt + babel-generator:non-ascii-escape
+fbt__fbt-param-with-unicode	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-param-with-unicode.js	.cc.code
+# fbt__fbt-params-complex-param-value: downstream-plugin:fbt
+fbt__fbt-params-complex-param-value	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-params-complex-param-value.js	.cc.code
+# fbt__fbt-params: downstream-plugin:fbt
+fbt__fbt-params	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-params.js	.cc.code
+# fbt__fbt-preserve-jsxtext: downstream-plugin:fbt
+fbt__fbt-preserve-jsxtext	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-preserve-jsxtext.js	.cc.code
+# fbt__fbt-preserve-whitespace-subtree: downstream-plugin:fbt
+fbt__fbt-preserve-whitespace-subtree	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-preserve-whitespace-subtree.tsx	.cc.code
+# fbt__fbt-preserve-whitespace-two-subtrees: downstream-plugin:fbt
+fbt__fbt-preserve-whitespace-two-subtrees	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-preserve-whitespace-two-subtrees.tsx	.cc.code
+# fbt__fbt-preserve-whitespace: downstream-plugin:fbt
+fbt__fbt-preserve-whitespace	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-preserve-whitespace.tsx	.cc.code
+# fbt__fbt-repro-invalid-mutable-range-destructured-prop: downstream-plugin:fbt
+fbt__fbt-repro-invalid-mutable-range-destructured-prop	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-repro-invalid-mutable-range-destructured-prop.js	.cc.code
+# fbt__fbt-single-space-btw-param-and-text: downstream-plugin:fbt
+fbt__fbt-single-space-btw-param-and-text	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-single-space-btw-param-and-text.tsx	.cc.code
+# fbt__fbt-template-string-same-scope: downstream-plugin:fbt
+fbt__fbt-template-string-same-scope	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-template-string-same-scope.js	.cc.code
+# fbt__fbt-to-string: downstream-plugin:fbt
+fbt__fbt-to-string	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-to-string.js	.cc.code
+# fbt__fbt-whitespace-around-param-value: downstream-plugin:fbt
+fbt__fbt-whitespace-around-param-value	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-whitespace-around-param-value.tsx	.cc.code
+# fbt__fbt-whitespace-within-text: downstream-plugin:fbt
+fbt__fbt-whitespace-within-text	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbt-whitespace-within-text.tsx	.cc.code
+# fbt__fbtparam-text-must-use-expression-container: downstream-plugin:fbt
+fbt__fbtparam-text-must-use-expression-container	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbtparam-text-must-use-expression-container.js	.cc.code
+# fbt__fbtparam-with-jsx-element-content: downstream-plugin:fbt
+fbt__fbtparam-with-jsx-element-content	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbtparam-with-jsx-element-content.js	.cc.code
+# fbt__fbtparam-with-jsx-fragment-value: downstream-plugin:fbt
+fbt__fbtparam-with-jsx-fragment-value	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/fbtparam-with-jsx-fragment-value.js	.cc.code
+# fbt__lambda-with-fbt: downstream-plugin:fbt
+fbt__lambda-with-fbt	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/lambda-with-fbt.js	.cc.code
+# fbt__recursively-merge-scopes-jsx: downstream-plugin:fbt + flow-parser:comment-strip
+fbt__recursively-merge-scopes-jsx	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/recursively-merge-scopes-jsx.js	.cc.code
+# fbt__repro-fbt-param-nested-fbt-jsx: downstream-plugin:fbt
+fbt__repro-fbt-param-nested-fbt-jsx	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/repro-fbt-param-nested-fbt-jsx.js	.cc.code
+# fbt__repro-fbt-param-nested-fbt: downstream-plugin:fbt
+fbt__repro-fbt-param-nested-fbt	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/repro-fbt-param-nested-fbt.js	.cc.code
+# fbt__repro-macro-property-not-handled: downstream-plugin:fbt
+fbt__repro-macro-property-not-handled	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/repro-macro-property-not-handled.tsx	.cc.code
+# fbt__repro-separately-memoized-fbt-param: downstream-plugin:fbt
+fbt__repro-separately-memoized-fbt-param	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fbt/repro-separately-memoized-fbt-param.js	.cc.code
 flag-enable-emit-hook-guards	ts	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/flag-enable-emit-hook-guards.ts
 flatten-scopes-with-methodcall-hook	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/flatten-scopes-with-methodcall-hook.js
 flow-enum-inline	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/flow-enum-inline.js
@@ -458,7 +507,8 @@ hooks-freeze-possibly-mutable-arguments	js	/Users/aidenybai/Developer/react-doct
 hooks-with-React-namespace	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/hooks-with-React-namespace.js
 idx-method-no-outlining-wildcard	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/idx-method-no-outlining-wildcard.js
 idx-method-no-outlining	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/idx-method-no-outlining.js
-idx-no-outlining	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/idx-no-outlining.js
+# idx-no-outlining: downstream-plugin:idx
+idx-no-outlining	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/idx-no-outlining.js	.cc.code
 ignore-inner-interface-types	ts	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/ignore-inner-interface-types.ts
 ignore-use-no-forget	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/ignore-use-no-forget.js
 iife-inline-ternary	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/iife-inline-ternary.js
@@ -744,7 +794,8 @@ phi-reference-effects	ts	/Users/aidenybai/Developer/react-doctor-2/packages/reac
 phi-type-inference-array-push-consecutive-phis	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/phi-type-inference-array-push-consecutive-phis.js
 phi-type-inference-array-push	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/phi-type-inference-array-push.js
 phi-type-inference-property-store	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/phi-type-inference-property-store.js
-preserve-existing-memoization-guarantees__lambda-with-fbt-preserve-memoization	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/preserve-existing-memoization-guarantees/lambda-with-fbt-preserve-memoization.js
+# preserve-existing-memoization-guarantees__lambda-with-fbt-preserve-memoization: downstream-plugin:fbt
+preserve-existing-memoization-guarantees__lambda-with-fbt-preserve-memoization	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/preserve-existing-memoization-guarantees/lambda-with-fbt-preserve-memoization.js	.cc.code
 preserve-jsxtext-stringliteral-distinction	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/preserve-jsxtext-stringliteral-distinction.js
 preserve-memo-deps-conditional-property-chain-less-precise-deps	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/preserve-memo-deps-conditional-property-chain-less-precise-deps.js
 preserve-memo-deps-conditional-property-chain	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/preserve-memo-deps-conditional-property-chain.js
@@ -1015,7 +1066,8 @@ repro-mutate-result-of-function-call-with-frozen-argument-in-function-expression
 repro-mutate-result-of-method-call-on-frozen-value-in-function-expression	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-mutate-result-of-method-call-on-frozen-value-in-function-expression.js
 repro-mutate-result-of-method-call-on-frozen-value-is-allowed	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-mutate-result-of-method-call-on-frozen-value-is-allowed.js
 repro-nested-try-catch-in-usememo	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-nested-try-catch-in-usememo.js
-repro-no-value-for-temporary-reactive-scope-with-early-return	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-no-value-for-temporary-reactive-scope-with-early-return.js
+# repro-no-value-for-temporary-reactive-scope-with-early-return: downstream-plugin:fbt + flow-parser:comment-strip
+repro-no-value-for-temporary-reactive-scope-with-early-return	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-no-value-for-temporary-reactive-scope-with-early-return.js	.cc.code
 repro-no-value-for-temporary	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-no-value-for-temporary.js
 repro-non-identifier-object-keys	ts	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-non-identifier-object-keys.ts
 repro-object-expression-computed-key-modified-during-after-construction-hoisted-sequence-expr	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-object-expression-computed-key-modified-during-after-construction-hoisted-sequence-expr.js
@@ -1037,7 +1089,8 @@ repro-separate-scopes-for-divs	js	/Users/aidenybai/Developer/react-doctor-2/pack
 repro-slow-validate-preserve-memo	ts	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-slow-validate-preserve-memo.ts
 repro-stale-closure-forward-reference	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-stale-closure-forward-reference.js
 repro-undefined-expression-of-jsxexpressioncontainer	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-undefined-expression-of-jsxexpressioncontainer.js
-repro-unmerged-fbt-call-merge-overlapping-reactive-scopes	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-unmerged-fbt-call-merge-overlapping-reactive-scopes.js
+# repro-unmerged-fbt-call-merge-overlapping-reactive-scopes: downstream-plugin:fbt
+repro-unmerged-fbt-call-merge-overlapping-reactive-scopes	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-unmerged-fbt-call-merge-overlapping-reactive-scopes.js	.cc.code
 repro-unreachable-code-early-return-in-useMemo	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-unreachable-code-early-return-in-useMemo.js
 repro-useMemo-if-else-both-early-return	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/repro-useMemo-if-else-both-early-return.js
 resolve-react-hooks-based-on-import-name	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/resolve-react-hooks-based-on-import-name.js
@@ -1174,7 +1227,8 @@ switch-with-fallthrough	js	/Users/aidenybai/Developer/react-doctor-2/packages/re
 switch-with-only-default	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/switch-with-only-default.js
 switch	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/switch.js
 tagged-template-in-hook	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/tagged-template-in-hook.js
-tagged-template-literal	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/tagged-template-literal.js
+# tagged-template-literal: prettier-artifact:template-literal-reindent
+tagged-template-literal	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/tagged-template-literal.js	.cc.code
 target-flag-meta-internal	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/target-flag-meta-internal.js
 target-flag	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/target-flag.js
 template-literal	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/template-literal.js
@@ -1183,7 +1237,8 @@ temporary-at-start-of-value-block	js	/Users/aidenybai/Developer/react-doctor-2/p
 temporary-property-load-accessed-outside-scope	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/temporary-property-load-accessed-outside-scope.js
 ternary-assignment-expression	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/ternary-assignment-expression.js
 ternary-expression	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/ternary-expression.js
-timers	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/timers.js
+# timers: prettier-artifact:jsx-whitespace
+timers	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/timers.js	.cc.code
 todo-function-expression-captures-value-later-frozen	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/todo-function-expression-captures-value-later-frozen.js
 todo-global-load-cached	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/todo-global-load-cached.tsx
 todo-global-property-load-cached	tsx	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/todo-global-property-load-cached.tsx
@@ -1336,7 +1391,8 @@ allow-modify-global-in-callback-jsx	js	/Users/aidenybai/Developer/react-doctor-2
 array-pattern-spread-creates-array	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/array-pattern-spread-creates-array.js
 block-scoping-switch-variable-scoping	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/block-scoping-switch-variable-scoping.js
 context-variable-as-jsx-element-tag	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/context-variable-as-jsx-element-tag.js
-existing-variables-with-c-name	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/existing-variables-with-c-name.js
+# existing-variables-with-c-name: prettier-artifact:leading-pragma-comment
+existing-variables-with-c-name	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/existing-variables-with-c-name.js	.cc.code
 fast-refresh-dont-refresh-const-changes-prod	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fast-refresh-dont-refresh-const-changes-prod.js
 fast-refresh-refresh-on-const-changes-dev	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/fast-refresh-refresh-on-const-changes-dev.js
 gating__dynamic-gating-bailout-nopanic	js	/Users/aidenybai/Developer/react-doctor-2/packages/react-compiler/src/__tests__/fixtures/compiler/gating/dynamic-gating-bailout-nopanic.js

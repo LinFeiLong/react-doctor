@@ -360,6 +360,38 @@ pub const GENERATED_USE_FRAGMENT_ID: &str = "<generated_116>";
 /// `returnValueKind: Mutable`, `noAlias: true`.
 pub const GENERATED_USE_NO_ALIAS_ID: &str = "<generated_117>";
 
+/// `createAnonId()` results for the `shared-runtime` typed functions that carry an
+/// explicit `aliasing` config (`makeSharedRuntimeTypeProvider`). They follow the
+/// typed hooks (last = `useNoAlias` = `<generated_117>`) in `installTypeConfig`'s
+/// `Object.entries` property order — `typedIdentity` (118), `typedAssign` (119),
+/// `typedAlias` (120), `typedCapture` (121), `typedCreateFrom` (122),
+/// `typedMutate` (123) — verified verbatim against the `InferTypes` oracle
+/// (`typedCapture` prints `TFunction<<generated_121>>(): :TObject<BuiltInArray>`,
+/// `typedCreateFrom` = 122, `typedMutate` = 123). Unlike `typedArrayPush`, each
+/// has an `aliasing` signature so `InferMutationAliasingEffects` emits the precise
+/// `Capture`/`CreateFrom`/`Mutate` effects (a clean `Capture` from `@value` into
+/// the return, *not* the untyped-function `MaybeAlias`/`MutateTransitive`
+/// fallback) — that is what keeps `o`'s frozen scope from being merged into `x`'s
+/// in the `transitivity-*` fixtures.
+///
+/// `typedIdentity`: `params: [@value]`, `Assign(@value -> @return)`, `Any`.
+pub const GENERATED_SHARED_RUNTIME_TYPED_IDENTITY_ID: &str = "<generated_118>";
+/// `typedAssign`: `params: [@value]`, `Create(@return, Mutable) + Alias(@value ->
+/// @return)`, `Any` (mutable return).
+pub const GENERATED_SHARED_RUNTIME_TYPED_ASSIGN_ID: &str = "<generated_119>";
+/// `typedAlias`: `params: [@value]`, `Create(@return, Mutable) + Alias(@value ->
+/// @return)`, `Any` (mutable return).
+pub const GENERATED_SHARED_RUNTIME_TYPED_ALIAS_ID: &str = "<generated_120>";
+/// `typedCapture`: `params: [@value]`, `Create(@return, Mutable) + Capture(@value
+/// -> @return)`, `Array` return.
+pub const GENERATED_SHARED_RUNTIME_TYPED_CAPTURE_ID: &str = "<generated_121>";
+/// `typedCreateFrom`: `params: [@value]`, `CreateFrom(@value -> @return)`, `Any`
+/// (mutable) return.
+pub const GENERATED_SHARED_RUNTIME_TYPED_CREATE_FROM_ID: &str = "<generated_122>";
+/// `typedMutate`: `params: [@object, @value]`, `Create(@return, Primitive) +
+/// Mutate(@object) + Capture(@value -> @object)`, `Primitive` return.
+pub const GENERATED_SHARED_RUNTIME_TYPED_MUTATE_ID: &str = "<generated_123>";
+
 /// Shape ids for the `react-native-reanimated` module type
 /// (`Globals.ts::getReanimatedModuleType`), installed only when
 /// `enableCustomTypeDefinitionForReanimated` is set. The TS builds them in the
@@ -378,7 +410,17 @@ pub const GENERATED_USE_NO_ALIAS_ID: &str = "<generated_117>";
 /// Frozen, noAlias: true, calleeEffect: Read, hookKind: Custom`). The TS mints a
 /// distinct id per hook, but they all carry identical signatures and an empty
 /// property set, so one shape backs all six (id values are unobservable here).
-pub const GENERATED_REANIMATED_FROZEN_HOOK_ID: &str = "<generated_118>";
+///
+/// In the running compiler this would be `<generated_118>`, but the
+/// `react-native-reanimated` and `shared-runtime` module types are *never*
+/// resolved in the same compilation (each is installed lazily on first import), so
+/// `<generated_118>` is also `typedIdentity`'s id under the shared-runtime provider.
+/// Our static registry merges both providers, so we give the (unobservable, never
+/// printed) reanimated frozen-hook shape a distinct synthetic id to disambiguate
+/// the merged `call_signature_for_shape` keying — the shared-runtime typed-function
+/// ids (`<generated_118..123>`) ARE printed in the `transitivity-*` IR refs and so
+/// keep their TS-faithful values.
+pub const GENERATED_REANIMATED_FROZEN_HOOK_ID: &str = "<reanimated_frozen_hook>";
 /// The shared mutable-hook shape id for `useSharedValue`/`useDerivedValue`
 /// (`restParam: Freeze, returnType: Object<ReanimatedSharedValueId>,
 /// returnValueKind: Mutable, noAlias: true, calleeEffect: Read, hookKind:
@@ -1093,6 +1135,91 @@ fn call_signature_for_shape(shape_id: &str) -> Option<CallSignature> {
                 ValueReason::Other,
             )
         }
+        GENERATED_SHARED_RUNTIME_TYPED_CAPTURE_ID => {
+            // `typedCapture(value)`: `positionalParams: [Read], calleeEffect: Read,
+            // returnType: Array, returnValueKind: Mutable`. The `aliasing` config
+            // (`Create(@return, Mutable) + Capture(@value -> @return)`) is what
+            // produces the precise single `Capture $return <- value` effect instead
+            // of the untyped-function `MaybeAlias`/`MutateTransitiveConditionally`
+            // fallback — keeping the argument's mutable range from being inflated.
+            CallSignature {
+                positional_params: vec![Read],
+                rest_param: None,
+                callee_effect: Read,
+                return_value_kind: Mutable,
+                return_value_reason: ValueReason::KnownReturnSignature,
+                mutable_only_if_operands_are_mutable: false,
+                impure: false,
+                no_alias: false,
+                aliasing: Some(typed_capture_aliasing_signature()),
+            }
+        }
+        GENERATED_SHARED_RUNTIME_TYPED_CREATE_FROM_ID => {
+            // `typedCreateFrom(value)`: `positionalParams: [Read], calleeEffect:
+            // Read, returnType: Any, returnValueKind: Mutable`. `aliasing`:
+            // `CreateFrom(@value -> @return)`.
+            CallSignature {
+                positional_params: vec![Read],
+                rest_param: None,
+                callee_effect: Read,
+                return_value_kind: Mutable,
+                return_value_reason: ValueReason::KnownReturnSignature,
+                mutable_only_if_operands_are_mutable: false,
+                impure: false,
+                no_alias: false,
+                aliasing: Some(typed_create_from_aliasing_signature()),
+            }
+        }
+        GENERATED_SHARED_RUNTIME_TYPED_MUTATE_ID => {
+            // `typedMutate(object, value)`: `positionalParams: [Read, Capture],
+            // calleeEffect: Store, returnType: Primitive, returnValueKind:
+            // Primitive`. `aliasing`: `Create(@return, Primitive) + Mutate(@object) +
+            // Capture(@value -> @object)`.
+            CallSignature {
+                positional_params: vec![Read, Capture],
+                rest_param: None,
+                callee_effect: Store,
+                return_value_kind: Primitive,
+                return_value_reason: ValueReason::KnownReturnSignature,
+                mutable_only_if_operands_are_mutable: false,
+                impure: false,
+                no_alias: false,
+                aliasing: Some(typed_mutate_aliasing_signature()),
+            }
+        }
+        GENERATED_SHARED_RUNTIME_TYPED_IDENTITY_ID
+        | GENERATED_SHARED_RUNTIME_TYPED_ASSIGN_ID => {
+            // `typedIdentity(value)` / `typedAssign(value)`: `positionalParams:
+            // [Read], calleeEffect: Read, returnType: Any, returnValueKind: Mutable`.
+            // `aliasing`: `Assign(@value -> @return)` — the return is the argument.
+            CallSignature {
+                positional_params: vec![Read],
+                rest_param: None,
+                callee_effect: Read,
+                return_value_kind: Mutable,
+                return_value_reason: ValueReason::KnownReturnSignature,
+                mutable_only_if_operands_are_mutable: false,
+                impure: false,
+                no_alias: false,
+                aliasing: Some(typed_identity_aliasing_signature()),
+            }
+        }
+        GENERATED_SHARED_RUNTIME_TYPED_ALIAS_ID => {
+            // `typedAlias(value)`: `positionalParams: [Read], calleeEffect: Read,
+            // returnType: Any, returnValueKind: Mutable`. `aliasing`: `Create(@return,
+            // Mutable) + Alias(@value -> @return)`.
+            CallSignature {
+                positional_params: vec![Read],
+                rest_param: None,
+                callee_effect: Read,
+                return_value_kind: Mutable,
+                return_value_reason: ValueReason::KnownReturnSignature,
+                mutable_only_if_operands_are_mutable: false,
+                impure: false,
+                no_alias: false,
+                aliasing: Some(typed_alias_aliasing_signature()),
+            }
+        }
         GENERATED_USE_FREEZE_ID => {
             // `useFreeze` (`makeSharedRuntimeTypeProvider`): a hook with
             // `restParam: Freeze`, `calleeEffect: Read`, `returnType: Poly`,
@@ -1261,6 +1388,115 @@ fn use_effect_aliasing_signature() -> AliasingSignature {
                 into: SigPlace::Returns,
                 value: ValueKind::Primitive,
                 reason: ValueReason::KnownReturnSignature,
+            },
+        ],
+    }
+}
+
+/// The `typedCapture(value)` aliasing signature (`makeSharedRuntimeTypeProvider`):
+/// `params: [@value]`, effects `Create(@return, Mutable, KnownReturnSignature)` then
+/// `Capture(@value -> @return)`. A clean single `Capture` from the (single
+/// positional) argument into the freshly-created mutable return — *not* the
+/// untyped-function `MaybeAlias` + `MutateTransitiveConditionally` fallback. This is
+/// what lets `InferMutationAliasingRanges` keep the captured value's mutable range
+/// confined to the `useMemo` callback scope rather than inflating an earlier frozen
+/// value's range (the `transitivity-*` regression).
+fn typed_capture_aliasing_signature() -> AliasingSignature {
+    AliasingSignature {
+        params: 1,
+        has_rest: false,
+        temporaries: 0,
+        effects: vec![
+            SigEffect::Create {
+                into: SigPlace::Returns,
+                value: ValueKind::Mutable,
+                reason: ValueReason::KnownReturnSignature,
+            },
+            SigEffect::Capture {
+                from: SigPlace::Param(0),
+                into: SigPlace::Returns,
+            },
+        ],
+    }
+}
+
+/// The `typedCreateFrom(value)` aliasing signature
+/// (`makeSharedRuntimeTypeProvider`): `params: [@value]`, single effect
+/// `CreateFrom(@value -> @return)`. The return is created *from* the argument
+/// (a transitive-mutation source that does not extend the argument's own range
+/// the way a plain `Capture` would).
+fn typed_create_from_aliasing_signature() -> AliasingSignature {
+    AliasingSignature {
+        params: 1,
+        has_rest: false,
+        temporaries: 0,
+        effects: vec![SigEffect::CreateFrom {
+            from: SigPlace::Param(0),
+            into: SigPlace::Returns,
+        }],
+    }
+}
+
+/// The `typedMutate(object, value)` aliasing signature
+/// (`makeSharedRuntimeTypeProvider`): `params: [@object, @value]`, effects
+/// `Create(@return, Primitive, KnownReturnSignature)`, `Mutate(@object)`,
+/// `Capture(@value -> @object)`. Mutates the first argument and captures the second
+/// into it, returning a primitive.
+fn typed_mutate_aliasing_signature() -> AliasingSignature {
+    AliasingSignature {
+        params: 2,
+        has_rest: false,
+        temporaries: 0,
+        effects: vec![
+            SigEffect::Create {
+                into: SigPlace::Returns,
+                value: ValueKind::Primitive,
+                reason: ValueReason::KnownReturnSignature,
+            },
+            SigEffect::Mutate(SigPlace::Param(0)),
+            SigEffect::Capture {
+                from: SigPlace::Param(1),
+                into: SigPlace::Param(0),
+            },
+        ],
+    }
+}
+
+/// The `typedIdentity(value)` / `typedAssign(value)` aliasing signature
+/// (`makeSharedRuntimeTypeProvider`): `params: [@value]`, single effect
+/// `Assign(@value -> @return)` — the return *is* the argument (identity / direct
+/// assignment), so it shares the argument's identity and mutable range without a
+/// fresh `Create`.
+fn typed_identity_aliasing_signature() -> AliasingSignature {
+    AliasingSignature {
+        params: 1,
+        has_rest: false,
+        temporaries: 0,
+        effects: vec![SigEffect::Assign {
+            from: SigPlace::Param(0),
+            into: SigPlace::Returns,
+        }],
+    }
+}
+
+/// The `typedAlias(value)` aliasing signature (`makeSharedRuntimeTypeProvider`):
+/// `params: [@value]`, effects `Create(@return, Mutable, KnownReturnSignature)` then
+/// `Alias(@value -> @return)`. Creates a fresh mutable return that aliases the
+/// argument (mutating the return mutates the argument).
+fn typed_alias_aliasing_signature() -> AliasingSignature {
+    AliasingSignature {
+        params: 1,
+        has_rest: false,
+        temporaries: 0,
+        effects: vec![
+            SigEffect::Create {
+                into: SigPlace::Returns,
+                value: ValueKind::Mutable,
+                reason: ValueReason::KnownReturnSignature,
+            },
+            SigEffect::Alias {
+                from: SigPlace::Param(0),
+                into: SigPlace::Returns,
             },
         ],
     }
@@ -2175,6 +2411,38 @@ fn install_shared_runtime_shapes(shapes: &mut ShapeRegistry) {
         },
     );
 
+    // The typed `shared-runtime` *functions* carrying an explicit `aliasing`
+    // config (`typedIdentity`/`typedAssign`/`typedAlias`/`typedCapture`/
+    // `typedCreateFrom`/`typedMutate`). Each is a callable function shape; the
+    // call effects (the precise `Capture`/`CreateFrom`/`Mutate`/`Alias` signature)
+    // live in `call_signature_for_shape`. The return *type* is the function shape's
+    // `function_type.return_type` (`installTypeConfig` `case 'function'` →
+    // `returnType`): `typedCapture` returns `Array`, `typedCreateFrom`/`typedAlias`/
+    // `typedAssign`/`typedIdentity` return `Any` (Poly), `typedMutate` returns
+    // `Primitive`.
+    for (id, return_type) in [
+        (GENERATED_SHARED_RUNTIME_TYPED_IDENTITY_ID, Type::Poly),
+        (GENERATED_SHARED_RUNTIME_TYPED_ASSIGN_ID, Type::Poly),
+        (GENERATED_SHARED_RUNTIME_TYPED_ALIAS_ID, Type::Poly),
+        (
+            GENERATED_SHARED_RUNTIME_TYPED_CAPTURE_ID,
+            object_type(BUILTIN_ARRAY_ID),
+        ),
+        (GENERATED_SHARED_RUNTIME_TYPED_CREATE_FROM_ID, Type::Poly),
+        (GENERATED_SHARED_RUNTIME_TYPED_MUTATE_ID, Type::Primitive),
+    ] {
+        shapes.insert(
+            id.to_string(),
+            ObjectShape {
+                properties: Vec::new(),
+                function_type: Some(FunctionSignature {
+                    return_type,
+                    is_constructor: false,
+                }),
+            },
+        );
+    }
+
     // The `shared-runtime` module object: maps each typed import name to its
     // resolved type. Names absent here fall through to the hook-name custom-hook
     // fallback in `get_global_declaration`.
@@ -2208,6 +2476,34 @@ fn install_shared_runtime_shapes(shapes: &mut ShapeRegistry) {
             (
                 "useNoAlias".to_string(),
                 function_type(GENERATED_USE_NO_ALIAS_ID, Type::Poly),
+            ),
+            // The typed functions with explicit `aliasing` configs.
+            (
+                "typedIdentity".to_string(),
+                function_type(GENERATED_SHARED_RUNTIME_TYPED_IDENTITY_ID, Type::Poly),
+            ),
+            (
+                "typedAssign".to_string(),
+                function_type(GENERATED_SHARED_RUNTIME_TYPED_ASSIGN_ID, Type::Poly),
+            ),
+            (
+                "typedAlias".to_string(),
+                function_type(GENERATED_SHARED_RUNTIME_TYPED_ALIAS_ID, Type::Poly),
+            ),
+            (
+                "typedCapture".to_string(),
+                function_type(
+                    GENERATED_SHARED_RUNTIME_TYPED_CAPTURE_ID,
+                    object_type(BUILTIN_ARRAY_ID),
+                ),
+            ),
+            (
+                "typedCreateFrom".to_string(),
+                function_type(GENERATED_SHARED_RUNTIME_TYPED_CREATE_FROM_ID, Type::Poly),
+            ),
+            (
+                "typedMutate".to_string(),
+                function_type(GENERATED_SHARED_RUNTIME_TYPED_MUTATE_ID, Type::Primitive),
             ),
         ]),
     );

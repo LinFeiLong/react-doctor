@@ -82,9 +82,11 @@ fn main() {
     let manifest_path = corpus.join("manifest.tsv");
     let manifest = fs::read_to_string(&manifest_path).expect("read manifest.tsv");
 
-    // Existing sanitized names already present in the manifest.
+    // Existing sanitized names already present in the manifest (skipping the
+    // Stage-18 `#` reason-comment / header lines of the dual-oracle manifest).
     let existing: BTreeSet<String> = manifest
         .lines()
+        .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
         .filter_map(|l| l.split('\t').next().map(|s| s.to_string()))
         .collect();
 

@@ -320,6 +320,27 @@ pub struct ModuleOptions {
 /// function verbatim (an opt-out), exactly as the oracle emits it.
 const HOOKS_VALIDATION_ERROR: &str = "hooks-validation: rules of hooks violated";
 
+/// Marker error returned by [`build_reactive`] when `inferMutationAliasingRanges`
+/// records a render-unsafe side-effect diagnostic on the top-level function — a
+/// `MutateGlobal` (reassigning / mutating a variable declared outside the
+/// component/hook), `MutateFrozen` (mutating a known-immutable value), or `Impure`
+/// effect. The TS `appendFunctionErrors`/`shouldRecordErrors` path records these on
+/// `env` (gated `!isFunctionExpression && env.enableValidations`, and
+/// `enableValidations` is always true), and `runReactiveCompilerPipeline` returns
+/// `Err(env.aggregateErrors())` if `env.hasErrors()` (`Pipeline.ts:527`). The
+/// caller maps this to a recoverable verbatim bailout under `@panicThreshold:"none"`
+/// (the only threshold under which such a fixture appears in the emitting corpus;
+/// any other threshold re-throws and aborts the build, so no `result.code`).
+const RENDER_SIDE_EFFECT_ERROR: &str = "render-side-effect: mutation of a value declared outside the component/hook";
+
+/// Marker error returned by [`build_reactive`] when `validatePreservedManualMemoization`
+/// records a `PreserveManualMemo` diagnostic (`Pipeline.ts:498-503`): an existing
+/// `useMemo`/`useCallback` could not be preserved (inferred deps did not match the
+/// source deps, a dependency may mutate later, or an originally-memoized value
+/// became unmemoized). Handled identically to [`RENDER_SIDE_EFFECT_ERROR`] — a
+/// recoverable verbatim bailout under `@panicThreshold:"none"`.
+const PRESERVE_MEMO_ERROR: &str = "preserve-manual-memo: existing memoization could not be preserved";
+
 /// `panicThreshold` (`Entrypoint/Options.ts` `PanicThresholdOptionsSchema`). Only
 /// the subset relevant to whether a recoverable error is re-thrown is modeled.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1004,7 +1025,15 @@ pub fn compile_to_reactive_with_options(
                 // babel build, so no `result.code` is emitted); we keep it as an
                 // error so such a function is never silently emitted as a (wrong)
                 // compiled form.
-                if err == HOOKS_VALIDATION_ERROR
+                // A render-unsafe side effect (`MutateGlobal`/`MutateFrozen`/
+                // `Impure`) or an unpreservable manual memoization
+                // (`PreserveManualMemo`) is recorded as an error in the same way;
+                // under `@panicThreshold:"none"` the TS `handleError` leaves the
+                // function verbatim, so we model all three identically to the
+                // hooks-validation case.
+                if (err == HOOKS_VALIDATION_ERROR
+                    || err == RENDER_SIDE_EFFECT_ERROR
+                    || err == PRESERVE_MEMO_ERROR)
                     && options.panic_threshold == PanicThreshold::None
                 {
                     results.push(skipped_result(name, span, is_arrow, is_declaration));
@@ -1549,7 +1578,30 @@ fn build_reactive(
     );
     crate::passes::dead_code_elimination::dead_code_elimination(func);
     crate::passes::prune_maybe_throws::prune_maybe_throws(func, &mut ctx);
-    crate::passes::infer_mutation_aliasing_ranges::infer_mutation_aliasing_ranges(func, false);
+    // `inferMutationAliasingRanges(fn, {isFunctionExpression: false})` records a
+    // render-unsafe side-effect diagnostic (`MutateGlobal`/`MutateFrozen`/`Impure`)
+    // on the top-level function via `appendFunctionErrors`/`shouldRecordErrors`
+    // (gated `!isFunctionExpression && env.enableValidations`, the latter always
+    // true). A recorded error makes `runReactiveCompilerPipeline` return `Err`
+    // (`Pipeline.ts:527`'s `env.hasErrors()`). We surface that here as a
+    // distinguishable error; the caller maps it to a recoverable verbatim bailout
+    // under `@panicThreshold:"none"` (the only threshold under which such a fixture
+    // is in the emitting corpus). The error-bearing effects appear in the returned
+    // function effects only via the direct per-instruction path (a render-time
+    // `StoreGlobal`/mutation), never bubbled from a nested function expression —
+    // exactly the TS `shouldRecordErrors` direct path.
+    let top_level_effects =
+        crate::passes::infer_mutation_aliasing_ranges::infer_mutation_aliasing_ranges(func, false);
+    if top_level_effects.iter().any(|e| {
+        matches!(
+            e,
+            crate::hir::instruction::AliasingEffect::MutateGlobal { .. }
+                | crate::hir::instruction::AliasingEffect::MutateFrozen { .. }
+                | crate::hir::instruction::AliasingEffect::Impure { .. }
+        )
+    }) {
+        return Err(RENDER_SIDE_EFFECT_ERROR.to_string());
+    }
     crate::passes::infer_reactive_places::infer_reactive_places(func);
     crate::passes::rewrite_instruction_kinds::rewrite_instruction_kinds_based_on_reassignment(func);
     crate::passes::infer_reactive_scope_variables::infer_reactive_scope_variables(
@@ -1604,16 +1656,23 @@ fn build_reactive(
     let unique_identifiers = crate::reactive_scopes::rename_variables(&mut reactive);
     crate::reactive_scopes::prune_hoisted_contexts(&mut reactive);
 
-    // NOTE: `validatePreservedManualMemoization` (Pipeline.ts:498-503) is NOT ported
-    // here. It would recover exactly one gating fixture
-    // (`gating__dynamic-gating-bailout-nopanic`), but a faithful port regresses ~21
-    // currently-matching fixtures carrying `@enablePreserveExistingMemoizationGuarantees:false`:
-    // in those, the Rust reactive IR places the `FinishMemoize` decl *inside* its own
-    // (kept) memoized scope as a scoped temporary, whereas the TS IR places it as an
-    // unscoped (frozen) temporary *outside* the scope, so the pass's `isUnmemoized`
-    // check false-positives on the not-yet-completed scope. That is a pre-existing
-    // `BuildReactiveScopeTerminals` / freeze-under-`@enable:false` IR divergence, not a
-    // gating concern; wiring the validation would violate the no-regression gate.
+    // `validatePreservedManualMemoization` (Pipeline.ts:498-503): run when
+    // `enablePreserveExistingMemoizationGuarantees || validatePreserveExistingMemoizationGuarantees`.
+    // The harness sets `validatePreserveExistingMemoizationGuarantees` from the
+    // first-line pragma (default `false`, see `EnvironmentConfig`), so this runs
+    // under the default `@enablePreserveExistingMemoizationGuarantees` (true) or the
+    // `@validatePreserveExistingMemoizationGuarantees` pragma. A failure records a
+    // `PreserveManualMemo` diagnostic on `env`; we surface it as an error that the
+    // caller maps to a recoverable verbatim bailout under `@panicThreshold:"none"`
+    // (`handleError`). Note this runs on the post-`pruneHoistedContexts` reactive IR
+    // (before codegen), exactly matching the TS pipeline ordering.
+    if env.config.enable_preserve_existing_memoization_guarantees
+        || env.config.validate_preserve_existing_memoization_guarantees
+    {
+        if crate::reactive_scopes::validate_preserved_manual_memoization(&reactive) {
+            return Err(PRESERVE_MEMO_ERROR.to_string());
+        }
+    }
 
     Ok((reactive, unique_identifiers, fbt_operands))
 }

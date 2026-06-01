@@ -30,8 +30,8 @@ use crate::hir::value::{
 };
 
 use super::model::{
-    ReactiveBlock, ReactiveFunction, ReactiveScopeBlock, ReactiveStatement, ReactiveTerminal,
-    ReactiveValue,
+    ReactiveBlock, ReactiveFunction, ReactiveInstruction, ReactiveScopeBlock, ReactiveStatement,
+    ReactiveTerminal, ReactiveValue,
 };
 use super::prune_non_reactive_dependencies::each_reactive_value_operand;
 
@@ -1040,11 +1040,22 @@ fn force_memoize_scope_dependencies(
 
 struct PruneScopesTransform<'m> {
     memoized: &'m HashSet<DeclarationId>,
+    /// Scope ids that were pruned (inlined) during this transform. Used to mark
+    /// `FinishMemoize.pruned` (`PruneNonEscapingScopes.ts`'s `prunedScopes`).
+    pruned_scopes: HashSet<ScopeId>,
+    /// Reassignment chains for inlined useMemo temporaries, keyed by the
+    /// reassigned/lvalue declarationId (`PruneNonEscapingScopes.ts`'s
+    /// `reassignments`).
+    reassignments: HashMap<DeclarationId, Vec<crate::hir::place::Identifier>>,
 }
 
 impl<'m> PruneScopesTransform<'m> {
     fn new(memoized: &'m HashSet<DeclarationId>) -> Self {
-        PruneScopesTransform { memoized }
+        PruneScopesTransform {
+            memoized,
+            pruned_scopes: HashSet::new(),
+            reassignments: HashMap::new(),
+        }
     }
 
     fn transform_block(&mut self, block: &mut ReactiveBlock) {
@@ -1056,7 +1067,10 @@ impl<'m> PruneScopesTransform<'m> {
                     if self.should_keep(&scope_block) {
                         next.push(ReactiveStatement::Scope(scope_block));
                     } else {
-                        // replace-many with the scope's instructions (inline).
+                        // replace-many with the scope's instructions (inline). The
+                        // scope id joins `prunedScopes` so a later `FinishMemoize`
+                        // decl in this pruned scope is marked pruned.
+                        self.pruned_scopes.insert(scope_block.scope.id);
                         next.extend(scope_block.instructions);
                     }
                 }
@@ -1068,12 +1082,70 @@ impl<'m> PruneScopesTransform<'m> {
                     self.transform_terminal_blocks(&mut term_stmt.terminal);
                     next.push(ReactiveStatement::Terminal(term_stmt));
                 }
-                ReactiveStatement::Instruction(instruction) => {
+                ReactiveStatement::Instruction(mut instruction) => {
+                    self.transform_instruction(&mut instruction);
                     next.push(ReactiveStatement::Instruction(instruction));
                 }
             }
         }
         *block = next;
+    }
+
+    /// `transformInstruction` (`PruneNonEscapingScopes.ts:1067-1119`): track
+    /// reassignment chains for inlined useMemo temporaries, and mark a
+    /// `FinishMemoize` pruned when all its memo decls are unscoped or in pruned
+    /// scopes (so `validatePreservedManualMemoization` does not false-positive on a
+    /// non-escaping value that was correctly pruned).
+    fn transform_instruction(&mut self, instruction: &mut ReactiveInstruction) {
+        let lvalue_decl = instruction.lvalue.as_ref().map(|l| l.identifier.clone());
+        let lvalue_scope_none = instruction
+            .lvalue
+            .as_ref()
+            .is_some_and(|l| l.identifier.scope.is_none());
+        if let ReactiveValue::Instruction(boxed) = &instruction.value {
+            match boxed.as_ref() {
+                InstructionValue::StoreLocal { lvalue, value, .. }
+                    if lvalue.kind == crate::hir::value::InstructionKind::Reassign =>
+                {
+                    // Complex cases of useMemo inlining: a reassigned temporary.
+                    self.reassignments
+                        .entry(lvalue.place.identifier.declaration_id)
+                        .or_default()
+                        .push(value.identifier.clone());
+                }
+                InstructionValue::LoadLocal { place, .. }
+                    if place.identifier.scope.is_some() && lvalue_scope_none =>
+                {
+                    // Simpler cases: a direct LoadLocal of a scoped place into the
+                    // original (unscoped) lvalue.
+                    if let Some(decl) = &lvalue_decl {
+                        self.reassignments
+                            .entry(decl.declaration_id)
+                            .or_default()
+                            .push(place.identifier.clone());
+                    }
+                }
+                _ => {}
+            }
+        }
+        if let ReactiveValue::Instruction(boxed) = &mut instruction.value {
+            if let InstructionValue::FinishMemoize { decl, pruned, .. } = boxed.as_mut() {
+                let decls: Vec<crate::hir::place::Identifier> = if decl.identifier.scope.is_none() {
+                    self.reassignments
+                        .get(&decl.identifier.declaration_id)
+                        .cloned()
+                        .unwrap_or_else(|| vec![decl.identifier.clone()])
+                } else {
+                    vec![decl.identifier.clone()]
+                };
+                if decls
+                    .iter()
+                    .all(|d| d.scope.is_none() || self.pruned_scopes.contains(&d.scope.unwrap()))
+                {
+                    *pruned = true;
+                }
+            }
+        }
     }
 
     fn transform_terminal_blocks(&mut self, terminal: &mut ReactiveTerminal) {

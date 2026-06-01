@@ -2269,6 +2269,18 @@ impl Emitter {
                         let raw = strip_string_quotes(e);
                         if jsx_string_requires_container(&raw) && !is_fbt_operand {
                             format!("{name}={{{e}}}")
+                        } else if is_fbt_operand && raw.chars().any(|c| (c as u32) >= 0x80) {
+                            // A bare fbt-operand attribute keeps the literal string
+                            // (no expression container), but babel-generator's printer
+                            // escapes any non-ASCII codepoint to `\uXXXX` (jsesc, the
+                            // generator default). Mirror that so the bare attribute is
+                            // byte-identical to the React Compiler's own output (e.g.
+                            // `fbt-param-with-unicode`'s `name="user name ☺"`).
+                            // A JSX attribute does NOT process `\u` escapes when re-
+                            // parsed, but this matches babel-generator's actual emitted
+                            // bytes — the faithful compiler-only oracle.
+                            let quote = e.as_bytes()[0] as char;
+                            format!("{name}={quote}{}{quote}", escape_non_ascii(&raw))
                         } else {
                             format!("{name}={e}")
                         }
@@ -2990,6 +3002,26 @@ fn escape_string(s: &str) -> String {
             '\r' => out.push_str("\\r"),
             '\t' => out.push_str("\\t"),
             _ => out.push(c),
+        }
+    }
+    out
+}
+
+/// Escape every non-ASCII codepoint as a JS `\uXXXX` escape over its UTF-16 code
+/// units (uppercase hex, zero-padded to 4 digits), mirroring babel-generator's
+/// `jsesc` default for string literals (a codepoint > 0xFFFF emits a surrogate
+/// pair, e.g. `😀`). ASCII (< 0x80) is left as-is. Used for the bare
+/// fbt-operand JSX attribute path, whose oracle is babel-generator's raw output.
+fn escape_non_ascii(s: &str) -> String {
+    let mut out = String::new();
+    for c in s.chars() {
+        if (c as u32) < 0x80 {
+            out.push(c);
+        } else {
+            let mut buf = [0u16; 2];
+            for unit in c.encode_utf16(&mut buf) {
+                out.push_str(&format!("\\u{unit:04X}"));
+            }
         }
     }
     out
