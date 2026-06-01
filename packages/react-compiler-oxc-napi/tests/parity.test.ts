@@ -7,9 +7,18 @@ import nativePlugin from "../plugin.js";
 // native plugin must match 1:1 for the rules we've ported.
 import reactHooksPlugin from "eslint-plugin-react-hooks";
 
-// The rules ported to the native compiler. unsupported-syntax / todo are
-// excluded: they derive from compiler bail paths and aren't safely portable
-// without compiler-error-path parity, so they're out of scope for this harness.
+// The rules verified for 1:1 parity with the oracle. The native plugin must
+// produce identical (rule, line) diagnostics to eslint-plugin-react-hooks for
+// every one, across the fixture corpus below.
+//
+// `unsupported-syntax` and `todo` are intentionally OUT of scope: they fire from
+// the React Compiler's open-ended bail/Todo paths, and the native port does not
+// preserve babel's per-construct error CATEGORY (e.g. babel flags `try/finally`
+// as `todo`, while the native lowering marks it `UnsupportedStatement`).
+// Reaching 1:1 there requires auditing every bail site's category against babel
+// (a compiler-error-path-parity effort), so they are not asserted here. The
+// native plugin never emits them, so it has no false positives — only benign
+// false negatives on rarely-reachable constructs.
 const PORTED_RULES = [
   "set-state-in-render",
   "error-boundaries",
@@ -150,6 +159,59 @@ function Component() {
 function Component(props) {
   const table = useReactTable(props.options);
   return <div>{table.foo}</div>;
+}`,
+  },
+  // Exotic constructs that exercise the compiler's bail/Todo/UnsupportedSyntax
+  // paths. The oracle does not flag these (the compiler is permissive); native
+  // must agree (no spurious diagnostics, no missed ones).
+  {
+    name: "async component",
+    code: `async function Component() {
+  const value = await fetchValue();
+  return <div>{value}</div>;
+}`,
+  },
+  {
+    name: "generator function",
+    code: `function* gen() {
+  yield 1;
+}`,
+  },
+  {
+    name: "for-await loop",
+    code: `async function load() {
+  for await (const item of source()) {
+    handle(item);
+  }
+  return null;
+}`,
+  },
+  {
+    name: "labeled loop with continue",
+    code: `function Component(props) {
+  outer: for (const row of props.rows) {
+    for (const cell of row) {
+      if (cell == null) continue outer;
+    }
+  }
+  return <div />;
+}`,
+  },
+  {
+    name: "rest element + spread call",
+    code: `function Component({ first, ...rest }) {
+  return <div>{first}{format(...rest.values)}</div>;
+}`,
+  },
+  {
+    name: "try/finally",
+    code: `function Component() {
+  try {
+    doWork();
+  } finally {
+    cleanup();
+  }
+  return <div />;
 }`,
   },
 ];
