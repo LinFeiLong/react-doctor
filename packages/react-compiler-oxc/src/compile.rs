@@ -1862,6 +1862,7 @@ fn run_lint_validations(func: &HirFunction, resolver: &PositionResolver, out: &m
         func, resolver, out,
     );
     crate::passes::validate_render_side_effects::validate_render_side_effects(func, resolver, out);
+    crate::passes::validate_static_components::validate_static_components(func, resolver, out);
 }
 
 /// Apply the pipeline passes to `func` up to and including `stage`, seeding the
