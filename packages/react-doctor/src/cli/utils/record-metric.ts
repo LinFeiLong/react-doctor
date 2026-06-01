@@ -1,4 +1,6 @@
 import * as Sentry from "@sentry/node";
+import { buildSentryScope } from "./build-sentry-scope.js";
+import { toSpanAttributes } from "./to-span-attributes.js";
 
 // Sentry metric attributes accept primitives; `null`/`undefined` denote an
 // absent signal and are dropped so a missing value never becomes a misleading
@@ -14,34 +16,46 @@ interface MetricOptions {
 
 const cleanAttributes = (
   attributes: MetricAttributes | undefined,
-): Record<string, string | number | boolean> | undefined => {
-  if (!attributes) return undefined;
+): Record<string, string | number | boolean> => {
   const cleaned: Record<string, string | number | boolean> = {};
+  if (!attributes) return cleaned;
   for (const [key, value] of Object.entries(attributes)) {
     if (value !== null && value !== undefined) cleaned[key] = value;
   }
-  return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  return cleaned;
 };
+
+// Every metric carries the run snapshot (and the scanned project, once
+// discovered) merged from the same lazy `buildSentryScope()` projection the
+// event scope uses. Rebuilding per emit — instead of a sticky global-scope
+// snapshot taken at init — means metrics track runtime state (`--json` mode, a
+// workspace scan's project rolling over, the project clearing after a run)
+// exactly like events do, and these attributes pass through `beforeSendMetric`
+// scrubbing like any other. Call-specific attributes win on key collision.
+const withRunAttributes = (
+  attributes: MetricAttributes | undefined,
+): Record<string, string | number | boolean> => ({
+  ...toSpanAttributes(buildSentryScope().tags),
+  ...cleanAttributes(attributes),
+});
 
 /**
  * Emits a Sentry counter. A guarded, swallow-on-throw no-op unless the CLI's
  * Sentry SDK is live, so it's inert under `--no-score`, tests, and the
  * programmatic `@react-doctor/api` library (none of which initialize Sentry).
  * Metrics flow independently of performance tracing, so counters are still
- * recorded when `SENTRY_TRACES_SAMPLE_RATE=0`. Run + project context rides
- * along automatically via the global scope attributes set in `instrument.ts`
- * and `recordSentryProjectContext`.
+ * recorded when `SENTRY_TRACES_SAMPLE_RATE=0`.
  */
 export const recordCount = (name: string, value = 1, attributes?: MetricAttributes): void => {
   if (!Sentry.isInitialized()) return;
   try {
-    Sentry.metrics.count(name, value, { attributes: cleanAttributes(attributes) });
+    Sentry.metrics.count(name, value, { attributes: withRunAttributes(attributes) });
   } catch {}
 };
 
 /**
  * Emits a Sentry distribution (value ranges — durations, sizes, scores). Same
- * gating and anonymized-attribute handling as {@link recordCount}.
+ * gating and run-attribute handling as {@link recordCount}.
  */
 export const recordDistribution = (
   name: string,
@@ -52,7 +66,7 @@ export const recordDistribution = (
   try {
     Sentry.metrics.distribution(name, value, {
       unit: options.unit,
-      attributes: cleanAttributes(options.attributes),
+      attributes: withRunAttributes(options.attributes),
     });
   } catch {}
 };

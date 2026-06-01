@@ -8,7 +8,6 @@ import {
 } from "./cli/utils/constants.js";
 import { scrubSentryEvent } from "./cli/utils/scrub-sentry-event.js";
 import { scrubSentryMetric } from "./cli/utils/scrub-sentry-metric.js";
-import { toSpanAttributes } from "./cli/utils/to-span-attributes.js";
 import { VERSION } from "./cli/utils/version.js";
 
 let isInitialized = false;
@@ -136,14 +135,10 @@ export const initializeSentry = (): void => {
     // Same anonymization contract for Application Metrics (counters/distributions):
     // drop the `server.address` hostname attribute and scrub paths/secrets from
     // attribute values, dropping the metric on failure. Metrics are enabled by
-    // default and flow independently of `tracesSampleRate`.
+    // default and flow independently of `tracesSampleRate`. The run + project
+    // snapshot is merged onto each metric at emit time (see `record-metric.ts`),
+    // mirroring how `buildSentryScope` rebuilds event tags, so metrics track
+    // runtime state instead of a stale init-time snapshot.
     beforeSendMetric: (metric) => scrubSentryMetric(metric),
   });
-
-  // Project the run snapshot onto the global scope as metric *attributes*
-  // (distinct from event/transaction tags) so every counter carries
-  // origin/command/CI/agent/package-manager/Node-major. The scanned project
-  // shape is added later, once a scan discovers it
-  // (`recordSentryProjectContext`).
-  Sentry.getGlobalScope().setAttributes(toSpanAttributes(tags));
 };

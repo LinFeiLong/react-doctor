@@ -109,7 +109,11 @@ export const recordScanMetrics = (input: ScanMetricsInput): void => {
       severity: firing.severity,
     });
   }
-  if (result.diagnostics.length === 0) {
+  // "Clean" means the scan actually completed and found nothing — not that a
+  // failed/incomplete run (lint or dead-code failed, a check was skipped)
+  // happened to produce zero diagnostics. `skippedChecks` already includes
+  // lint/dead-code failures, so it's the single "fully completed" signal.
+  if (result.diagnostics.length === 0 && !hasSkippedChecks) {
     recordCount(METRIC.scanClean, 1, { mode: input.mode });
   }
 

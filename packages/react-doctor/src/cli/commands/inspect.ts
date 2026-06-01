@@ -159,7 +159,6 @@ const maybeMigrateLegacyConfig = (
 };
 
 export const inspectAction = async (directory: string, flags: InspectFlags): Promise<void> => {
-  recordCount(METRIC.cliInvoked, 1, { command: "inspect" });
   const isScoreOnly = Boolean(flags.score);
   const isJsonMode = Boolean(flags.json);
   const isQuiet = isScoreOnly || isJsonMode;
@@ -169,6 +168,9 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
   if (isJsonMode) {
     enableJsonMode({ compact: Boolean(flags.jsonCompact), directory: requestedDirectory });
   }
+  // Recorded after JSON mode is enabled so the metric's run attributes reflect
+  // the true `jsonMode` (run context is rebuilt per emit in `record-metric.ts`).
+  recordCount(METRIC.cliInvoked, 1, { command: "inspect" });
 
   try {
     validateModeFlags(flags);

@@ -249,11 +249,16 @@ for this codebase) for canonical examples.
   (metrics flow even when tracing is off). Metric names live in the `METRIC` map
   in `cli/utils/constants.ts` (dotted, domain-grouped; high-cardinality
   dimensions go in attributes, never the name). The run snapshot — and, once a
-  scan discovers it, the project shape — rides every metric as **global scope
-  attributes** set in `instrument.ts` and `recordSentryProjectContext`
-  (`Sentry.getGlobalScope().setAttributes(toSpanAttributes(...))`): the metrics
-  analog of `initialScope.tags`, so emit sites pass only metric-specific
-  attributes. Per-scan metrics (`scan.*`, `rule.fired`, `lint.failed`, …) are
+  scan discovers it, the project shape — is merged onto **every metric at emit
+  time** by `record-metric.ts`'s `withRunAttributes`, which reprojects
+  `buildSentryScope().tags` per emit. This mirrors how events rebuild
+  `buildSentryScope` lazily, so metrics track runtime state (`--json` mode, a
+  workspace scan's project rolling over, the project clearing on
+  `resetSentryRunState`) rather than a stale init-time snapshot, and the
+  attributes pass through `beforeSendMetric` scrubbing like any other. Emit
+  sites pass only metric-specific attributes; the project shape comes from
+  `recordSentryProjectContext` → `getSentryProjectInfo()`. Per-scan metrics
+  (`scan.*`, `rule.fired`, `lint.failed`, …) are
   emitted by `cli/utils/record-scan-metrics.ts`; `rule.fired` is one
   high-cardinality counter keyed by `rule`/`plugin`/`category`/`severity`
   attributes (never a metric-name-per-rule). Anonymization: `Sentry.init` sets
@@ -261,13 +266,9 @@ for this codebase) for canonical examples.
   which drops the `server.address` hostname attribute (the SDK adds it to the
   metric _before_ the hook, so the strip lands) and scrubs paths/secrets from
   attribute values via the shared `cli/utils/anonymize-text.ts` (also used by
-  `scrubSentryEvent`), returning `null` to drop on failure. CAVEAT: the SDK
-  merges the **global scope attributes after** `beforeSendMetric`, so they
-  bypass the scrubber — keep them PII-free by construction (the run/project tags
-  already are: enums, booleans, counts — never `cwd`/`argv`, which live only in
-  the event `run` context block, not the tags). Add new counters through
-  `record-metric.ts` + the `METRIC` map, and confirm any new attribute carries
-  no username, path, or secret.
+  `scrubSentryEvent`), returning `null` to drop on failure. Add new counters
+  through `record-metric.ts` + the `METRIC` map, and confirm any new attribute
+  carries no username, path, or secret.
 
 ### Console / logging
 

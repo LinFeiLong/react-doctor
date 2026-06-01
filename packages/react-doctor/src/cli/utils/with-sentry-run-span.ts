@@ -73,11 +73,9 @@ export const recordSentryProjectContext = (
   rootSpan: SentryRootSpan,
 ): void => {
   setSentryProjectInfo(projectInfo);
-  const projectAttributes = toSpanAttributes(buildSentryProjectContext(projectInfo).tags);
-  rootSpan?.setAttributes(projectAttributes);
-  // The same project shape also rides every metric emitted after discovery
-  // (`project.detected`, `scan.completed`, `rule.fired`, ...): scope attributes
-  // feed metrics, the root-span attributes above feed the transaction. No-op
-  // when Sentry is disabled.
-  if (Sentry.isInitialized()) Sentry.getGlobalScope().setAttributes(projectAttributes);
+  rootSpan?.setAttributes(toSpanAttributes(buildSentryProjectContext(projectInfo).tags));
+  // Metrics emitted after discovery (`project.detected`, `scan.completed`,
+  // `rule.fired`, ...) pick the project shape up via `getSentryProjectInfo()`
+  // when `record-metric.ts` rebuilds the scope per emit — so it also clears
+  // correctly on `resetSentryRunState`, exactly like event tags do.
 };
