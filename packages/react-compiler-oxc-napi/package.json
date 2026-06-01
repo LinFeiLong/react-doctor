@@ -43,13 +43,6 @@
   "dependencies": {
     "@babel/code-frame": "^7.29.0"
   },
-  "optionalDependencies": {
-    "@react-doctor/compiler-native-darwin-x64": "0.1.0",
-    "@react-doctor/compiler-native-darwin-arm64": "0.1.0",
-    "@react-doctor/compiler-native-linux-x64-gnu": "0.1.0",
-    "@react-doctor/compiler-native-linux-arm64-gnu": "0.1.0",
-    "@react-doctor/compiler-native-win32-x64-msvc": "0.1.0"
-  },
   "devDependencies": {
     "@napi-rs/cli": "^3.0.0",
     "eslint": "^9.39.2",
