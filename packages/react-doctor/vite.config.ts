@@ -92,6 +92,16 @@ export default defineConfig({
       dts: true,
       target: "node20",
       platform: "node",
+      // Emit dist/cli.js.map (plus a sourceMappingURL comment) so crash
+      // reports reach Sentry with original-TypeScript frames instead of
+      // bundled dist/cli.js positions. The bin shim flips on Node's
+      // source-map support, which rewrites Error.stack using this map
+      // before @sentry/node reads it. Keep it external (not 'inline'):
+      // dist/cli.js stays lean and Node only reads the map lazily when a
+      // stack is materialized (i.e. on a crash), so startup pays nothing.
+      // Only this CLI entry emits a map — the API entry below doesn't, and
+      // never initializes Sentry.
+      sourcemap: true,
       env: {
         VERSION: process.env.VERSION ?? packageJson.version,
       },
