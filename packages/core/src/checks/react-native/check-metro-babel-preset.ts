@@ -42,7 +42,9 @@ export const checkReactNativeMetroBabelPreset = (rootDirectory: string): Diagnos
         filePath: fileName,
         plugin: "react-doctor",
         rule: "rn-no-metro-babel-preset",
-        severity: "warning",
+        // Hard-fails the Metro/Babel transform on RN 0.73+ — surface by
+        // default, not behind --warnings.
+        severity: "error",
         message:
           "`module:metro-react-native-babel-preset` was renamed to `@react-native/babel-preset` and is no longer installed by React Native 0.73+ — this preset reference fails to resolve and breaks the Metro/Babel transform.",
         help: "Replace the preset with `module:@react-native/babel-preset` (or `babel-preset-expo` on Expo) and remove the old `metro-react-native-babel-preset` dependency.",

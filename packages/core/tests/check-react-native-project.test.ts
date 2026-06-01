@@ -83,9 +83,11 @@ describe("checkReactNativeProject — legacy metro babel preset", () => {
       "babel.config.js",
       `module.exports = { presets: ['module:metro-react-native-babel-preset'] };`,
     );
-    expect(
-      rulesOf(checkReactNativeProject(projectDirectory, buildRnProject(projectDirectory))),
-    ).toContain("rn-no-metro-babel-preset");
+    const diagnostics = checkReactNativeProject(projectDirectory, buildRnProject(projectDirectory));
+    const hit = diagnostics.find((d) => d.rule === "rn-no-metro-babel-preset");
+    expect(hit).toBeDefined();
+    // A broken build transform must surface by default (errors aren't hidden).
+    expect(hit?.severity).toBe("error");
   });
 
   it("does NOT flag the current @react-native/babel-preset", () => {

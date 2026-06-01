@@ -17,6 +17,8 @@ export const checkExpoUpdatesConfig = (context: ExpoCheckContext): Diagnostic[] 
   return [
     buildExpoDiagnostic({
       rule: "expo-updates-no-unsafe-production-config",
+      // Can permanently brick installed apps — surface by default, not behind --warnings.
+      severity: "error",
       filePath: appConfig.configFile ?? "app.json",
       message:
         "`updates.disableAntiBrickingMeasures: true` disables expo-updates' recovery safeguards and is liable to leave installed apps in a permanently bricked state, so it must not be used in production.",

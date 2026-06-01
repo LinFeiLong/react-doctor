@@ -425,16 +425,21 @@ describe("checkExpoProject — gitignore (.expo / local modules)", () => {
 });
 
 describe("checkExpoProject — reanimated v4 requires new architecture", () => {
-  it("flags reanimated v4 with newArchEnabled: false", () => {
+  it("flags reanimated v4 with newArchEnabled: false as an error", () => {
     const projectDirectory = makeProjectDirectory();
     writePackageJson(projectDirectory, {
       name: "expo-app",
       dependencies: { expo: "~52.0.0", "react-native-reanimated": "~4.0.0" },
     });
     writeAppJson(projectDirectory, { name: "x", newArchEnabled: false });
-    expect(
-      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
-    ).toContain("expo-reanimated-v4-requires-new-arch");
+    const diagnostics = checkExpoProject(
+      projectDirectory,
+      buildExpoProject(projectDirectory, "~52.0.0"),
+    );
+    const hit = diagnostics.find((d) => d.rule === "expo-reanimated-v4-requires-new-arch");
+    expect(hit).toBeDefined();
+    // A guaranteed first-launch crash must surface by default (errors aren't hidden).
+    expect(hit?.severity).toBe("error");
   });
 
   it("flags when react-native-worklets is present with newArchEnabled: false", () => {
@@ -495,16 +500,21 @@ describe("checkExpoProject — reanimated v4 requires new architecture", () => {
 });
 
 describe("checkExpoProject — unsafe updates production config", () => {
-  it("flags updates.disableAntiBrickingMeasures: true", () => {
+  it("flags updates.disableAntiBrickingMeasures: true as an error", () => {
     const projectDirectory = makeProjectDirectory();
     writePackageJson(projectDirectory, { name: "expo-app", dependencies: { expo: "~52.0.0" } });
     writeAppJson(projectDirectory, {
       name: "x",
       updates: { disableAntiBrickingMeasures: true },
     });
-    expect(
-      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
-    ).toContain("expo-updates-no-unsafe-production-config");
+    const diagnostics = checkExpoProject(
+      projectDirectory,
+      buildExpoProject(projectDirectory, "~52.0.0"),
+    );
+    const hit = diagnostics.find((d) => d.rule === "expo-updates-no-unsafe-production-config");
+    expect(hit).toBeDefined();
+    // Can permanently brick installed apps — must surface by default.
+    expect(hit?.severity).toBe("error");
   });
 
   it("does NOT flag when the flag is absent", () => {

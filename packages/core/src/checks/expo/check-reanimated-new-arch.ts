@@ -34,6 +34,8 @@ export const checkExpoReanimatedNewArch = (context: ExpoCheckContext): Diagnosti
   return [
     buildExpoDiagnostic({
       rule: "expo-reanimated-v4-requires-new-arch",
+      // A guaranteed first-launch crash — surface by default, not behind --warnings.
+      severity: "error",
       filePath: appConfig.configFile ?? "app.json",
       message:
         "react-native-reanimated v4 supports only the New Architecture, but `newArchEnabled: false` is set in your app config, so the app will crash on first launch.",
