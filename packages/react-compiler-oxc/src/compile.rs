@@ -876,6 +876,15 @@ pub fn compile_to_reactive_with_options(
         options.flow_suppressions,
     );
 
+    // One module-wide uid allocator for `OutlineFunctions`, seeded with the
+    // program's identifiers (babel's program-scope `generateUid`). Shared across
+    // every component so outlined `_temp`/`_temp2`/… names are globally unique — a
+    // per-function allocator would restart at `_temp` and emit duplicate top-level
+    // `function _temp` declarations across components in the same module.
+    let mut uid_allocator = crate::passes::outline_functions::UidAllocator::with_reserved(
+        crate::codegen::codegen_reactive_function::collect_program_names(code),
+    );
+
     for target in targets {
         let name = target.func.id_name();
         let span = target.func.span();
@@ -969,6 +978,7 @@ pub fn compile_to_reactive_with_options(
             fn_type,
             context,
             code,
+            &mut uid_allocator,
         );
         match outcome {
             Ok((reactive, outlined, unique_identifiers, fbt_operands)) => {
@@ -1467,6 +1477,7 @@ fn compile_one_reactive(
     fn_type: ReactFunctionType,
     context: BTreeSet<oxc::semantic::SymbolId>,
     code: &str,
+    uid_allocator: &mut crate::passes::outline_functions::UidAllocator,
 ) -> Result<
     (
         crate::reactive_scopes::ReactiveFunction,
@@ -1490,7 +1501,8 @@ fn compile_one_reactive(
             false,
         )
         .map_err(|e| format!("{e}"))?;
-        let (reactive, unique_identifiers, fbt_operands) = build_reactive(&mut func, &env, code)?;
+        let (reactive, unique_identifiers, fbt_operands) =
+            build_reactive(&mut func, &env, code, uid_allocator)?;
         Ok::<_, String>((reactive, func.outlined.clone(), unique_identifiers, fbt_operands))
     }));
     match result {
@@ -1508,6 +1520,7 @@ fn build_reactive(
     func: &mut HirFunction,
     env: &Environment,
     source: &str,
+    uid_allocator: &mut crate::passes::outline_functions::UidAllocator,
 ) -> Result<
     (
         crate::reactive_scopes::ReactiveFunction,
@@ -1622,7 +1635,7 @@ fn build_reactive(
     if env.config.enable_name_anonymous_functions {
         crate::passes::name_anonymous_functions::name_anonymous_functions(func);
     }
-    crate::passes::outline_functions::outline_functions(func, &fbt_operands);
+    crate::passes::outline_functions::outline_functions(func, &fbt_operands, uid_allocator);
     crate::passes::align_method_call_scopes::align_method_call_scopes(func);
     crate::passes::align_object_method_scopes::align_object_method_scopes(func);
     crate::passes::prune_unused_labels_hir::prune_unused_labels_hir(func);
@@ -1933,7 +1946,7 @@ fn run_passes(
     // generated name. NB: there is no separate dumpable `NameAnonymousFunctions`
     // stage here.
     if stage_at_least(stage, "OutlineFunctions") {
-        crate::passes::outline_functions::outline_functions(func, &fbt_operands);
+        crate::passes::outline_functions::outline_functions_standalone(func, &fbt_operands);
     }
 
     // `AlignMethodCallScopes`: unify a method call's result and resolved-method
