@@ -27,8 +27,6 @@ npx react-doctor@latest
 
 https://github.com/user-attachments/assets/07cc88d9-9589-44c3-aa73-5d603cb1c570
 
-<small>Taking too long? Add `--experimental-parallel` to fan the scan out across your CPU cores.</small>
-
 ### 2. Install for agents
 
 Once you have an audit, you can install the skill for your coding agent to learn from the issues and fix them in the future.
