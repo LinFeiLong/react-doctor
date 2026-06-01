@@ -63,9 +63,6 @@ importers:
       '@effect/platform-node-shared':
         specifier: 4.0.0-beta.70
         version: 4.0.0-beta.70(effect@4.0.0-beta.70)
-      '@react-doctor/compiler-native':
-        specifier: workspace:*
-        version: link:../react-compiler-oxc-napi
       deslop-js:
         specifier: ^0.0.14
         version: 0.0.14(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
@@ -94,6 +91,10 @@ importers:
       '@types/picomatch':
         specifier: ^4.0.3
         version: 4.0.3
+    optionalDependencies:
+      '@react-doctor/compiler-native':
+        specifier: workspace:*
+        version: link:../react-compiler-oxc-napi
 
   packages/eslint-plugin-react-doctor:
     dependencies:
@@ -251,9 +252,6 @@ importers:
       '@effect/platform-node-shared':
         specifier: 4.0.0-beta.70
         version: 4.0.0-beta.70(effect@4.0.0-beta.70)
-      '@react-doctor/compiler-native':
-        specifier: workspace:*
-        version: link:../react-compiler-oxc-napi
       '@sentry/node':
         specifier: ^10.54.0
         version: 10.54.0
@@ -303,6 +301,10 @@ importers:
       ora:
         specifier: ^9.4.0
         version: 9.4.0
+    optionalDependencies:
+      '@react-doctor/compiler-native':
+        specifier: workspace:*
+        version: link:../react-compiler-oxc-napi
 
   packages/website:
     dependencies:

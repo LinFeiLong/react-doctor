@@ -127,3 +127,45 @@ jobs:
         run: pnpm exec napi build --platform --release
       - name: Plugin + parity tests
         run: pnpm exec vp test run packages/react-compiler-oxc-napi/tests
+
+  # Publish @react-doctor/compiler-native + its per-platform packages to npm.
+  # Gated behind a manual dispatch / `compiler-native-v*` tag so it never runs on
+  # ordinary pushes (and never collides with the changeset publish flow). Downloads
+  # every prebuilt `.node` from the `build` job, then `napi prepublish` assembles
+  # the platform npm dirs (matching `optionalDependencies`) and publishes them
+  # alongside the main package.
+  publish:
+    needs: [rust-test, build, js-test]
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/compiler-native-v') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22.18.0"
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@11
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages/react-compiler-oxc-napi/artifacts
+      - name: Assemble per-platform npm packages from artifacts
+        working-directory: packages/react-compiler-oxc-napi
+        run: |
+          # Flatten the per-target upload-artifact subdirs into one dir, then let
+          # napi distribute each .node into its npm/<platform> package.
+          find artifacts -name '*.node' -exec mv {} . \;
+          pnpm exec napi artifacts --output-dir . --npm-dir npm
+      - name: Publish to npm
+        working-directory: packages/react-compiler-oxc-napi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+        run: pnpm exec napi prepublish -t npm --npm-dir npm
