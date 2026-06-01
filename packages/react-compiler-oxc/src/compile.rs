@@ -1826,10 +1826,14 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
                 Ok(func) => func,
                 Err(_) => return Vec::new(),
             };
-            if run_passes(&mut func, &env, LINT_STAGE, code).is_err() {
-                return Vec::new();
-            }
             let mut local = Diagnostics::new();
+            // `validateUseMemo` / `validateContextVariableLValues` run on the raw
+            // lowered HIR, BEFORE `dropManualMemoization` rewrites the `useMemo`
+            // calls away (Pipeline.ts:163-164).
+            crate::passes::validate_use_memo::validate_use_memo(&func, &resolver, &mut local);
+            if run_passes(&mut func, &env, LINT_STAGE, code).is_err() {
+                return local.into_vec();
+            }
             run_lint_validations(&func, &resolver, &mut local);
             local.into_vec()
         }))
