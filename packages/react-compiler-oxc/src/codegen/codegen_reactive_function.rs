@@ -491,7 +491,7 @@ fn strip_comments_if_flow_first_line(original: &str, out: &str) -> String {
 /// program-wide `hasReference` analog (`Imports.ts::hasReference` =
 /// `knownReferencedNames | scope.hasBinding | scope.hasGlobal | scope.hasReference`)
 /// used by `newUid` to allocate collision-free import-local names.
-fn collect_program_names(code: &str) -> HashSet<String> {
+pub(crate) fn collect_program_names(code: &str) -> HashSet<String> {
     use oxc::allocator::Allocator;
     use oxc::ast::ast::IdentifierReference;
     use oxc::ast::ast::{BindingIdentifier, JSXIdentifier};
@@ -681,18 +681,42 @@ fn add_runtime_import(code: &str, cache_import_name: &str, script_source_type: b
     use oxc::parser::Parser;
     use oxc::span::{GetSpan, SourceType};
 
-    // Script source type (`@script`): there are no ESM `import` declarations to
-    // merge into, so `addImportsToProgram` emits the `require(…)` destructure form
-    // (`Imports.ts:295-313`). Prepend it; the `c` specifier prints as a
-    // `{ c: <name> }` object-pattern property.
-    if script_source_type {
-        return format!(
-            "const {{ c: {cache_import_name} }} = require(\"{RUNTIME_MODULE}\");\n{code}"
-        );
-    }
-
     let allocator = Allocator::default();
     let parsed = Parser::new(&allocator, code, SourceType::tsx()).parse();
+
+    // Insertion point for a freshly-added import: AFTER any leading directive
+    // prologue (`"use client"`, `"use strict"`, …). Directives live outside the
+    // statement `body` (like babel's `Program.directives`), and the TS inserts the
+    // runtime import via `unshiftContainer('body', …)` (Imports.ts:316), which lands
+    // after them — so the directive stays first and keeps its meaning. Prepending at
+    // byte 0 would demote `"use client"` to a non-directive expression statement.
+    let insert_at: usize = if parsed.program.directives.is_empty() {
+        0
+    } else {
+        parsed
+            .program
+            .body
+            .first()
+            .map(|s| s.span().start as usize)
+            .unwrap_or_else(|| parsed.program.directives.last().unwrap().span().end as usize)
+    };
+    let splice = |insertion: &str| -> String {
+        let mut out = String::with_capacity(code.len() + insertion.len());
+        out.push_str(&code[..insert_at]);
+        out.push_str(insertion);
+        out.push_str(&code[insert_at..]);
+        out
+    };
+
+    // Script source type (`@script`): there are no ESM `import` declarations to
+    // merge into, so `addImportsToProgram` emits the `require(…)` destructure form
+    // (`Imports.ts:295-313`).
+    if script_source_type {
+        return splice(&format!(
+            "const {{ c: {cache_import_name} }} = require(\"{RUNTIME_MODULE}\");\n"
+        ));
+    }
+
     for stmt in &parsed.program.body {
         let Statement::ImportDeclaration(import) = stmt else {
             continue;
@@ -734,8 +758,10 @@ fn add_runtime_import(code: &str, cache_import_name: &str, script_source_type: b
             return out;
         }
     }
-    // No mergeable existing import: prepend a fresh one.
-    format!("import {{ c as {cache_import_name} }} from \"{RUNTIME_MODULE}\";\n{code}")
+    // No mergeable existing import: insert a fresh one after any leading directives.
+    splice(&format!(
+        "import {{ c as {cache_import_name} }} from \"{RUNTIME_MODULE}\";\n"
+    ))
 }
 
 /// What a temporary's [`DeclarationId`] resolves to in `cx.temp`: a pre-rendered
@@ -2687,6 +2713,15 @@ fn classify_expr(s: &str) -> ExprKind {
                 quote = None;
                 after_operand = true;
             }
+            i += 1;
+            continue;
+        }
+        // A byte >= 0x80 is part of a multi-byte UTF-8 char (e.g. `▋` in JSX text
+        // or a unicode identifier). None are JS operators/punctuation (all ASCII),
+        // and slicing `&s[i..]` mid-char below would panic — so treat the char as
+        // operand content and skip its bytes one at a time to the next boundary.
+        if b >= 0x80 {
+            after_operand = true;
             i += 1;
             continue;
         }

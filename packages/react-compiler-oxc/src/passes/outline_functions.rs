@@ -22,7 +22,7 @@ use crate::hir::value::{InstructionValue, NonLocalBinding};
 
 /// Generates Babel-`generateUid`-style globally-unique names: `_<base>`,
 /// `_<base>2`, `_<base>3`, … The default base (no name hint) is `temp`.
-struct UidAllocator {
+pub(crate) struct UidAllocator {
     used: HashSet<String>,
 }
 
@@ -31,6 +31,16 @@ impl UidAllocator {
         UidAllocator {
             used: HashSet::new(),
         }
+    }
+
+    /// A module-wide allocator pre-seeded with the names already claimed by the
+    /// program (bindings / references / globals), mirroring babel's program-scope
+    /// `generateUid`, which is shared across every component in the module. Threading
+    /// one of these through all of a module's `outline_functions` calls makes the
+    /// generated `_temp`/`_temp2`/… names globally unique (a fresh per-function
+    /// allocator would restart at `_temp` and collide across components).
+    pub(crate) fn with_reserved(reserved: HashSet<String>) -> Self {
+        UidAllocator { used: reserved }
     }
 
     /// `generateGloballyUniqueIdentifierName(name)` → Babel `scope.generateUid`:
@@ -120,17 +130,33 @@ fn to_identifier(input: &str) -> String {
 /// components produced by `OutlineJSX`, which runs first and shares the env's
 /// `#outlinedFunctions` list) are preserved, and their generated names seed the
 /// allocator so a fresh closure does not collide with an already-claimed `_temp`.
-pub fn outline_functions(func: &mut HirFunction, fbt_operands: &HashSet<IdentifierId>) {
-    let mut allocator = UidAllocator::new();
-    // Reserve names already claimed by an earlier pass (`OutlineJSX`).
+pub fn outline_functions(
+    func: &mut HirFunction,
+    fbt_operands: &HashSet<IdentifierId>,
+    allocator: &mut UidAllocator,
+) {
+    // Reserve names already claimed by an earlier pass (`OutlineJSX`) on this
+    // function. The `allocator` itself persists across the module's functions, so
+    // names stay globally unique without restarting at `_temp` per component.
     for existing in &func.outlined {
         if let Some(id) = &existing.id {
             allocator.used.insert(id.clone());
         }
     }
     let mut outlined: Vec<HirFunction> = Vec::new();
-    outline_in(func, fbt_operands, &mut allocator, &mut outlined);
+    outline_in(func, fbt_operands, allocator, &mut outlined);
     func.outlined.extend(outlined);
+}
+
+/// Convenience for single-function call sites (the staged `--stage` pipeline used
+/// by the IR-parity harness): a fresh per-call allocator, matching babel's
+/// per-program scope when only one function is compiled.
+pub(crate) fn outline_functions_standalone(
+    func: &mut HirFunction,
+    fbt_operands: &HashSet<IdentifierId>,
+) {
+    let mut allocator = UidAllocator::new();
+    outline_functions(func, fbt_operands, &mut allocator);
 }
 
 /// Recursive worker: outlines eligible function expressions within `func`,
