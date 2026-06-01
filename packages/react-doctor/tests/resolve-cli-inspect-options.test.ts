@@ -55,7 +55,7 @@ describe("resolveCliInspectOptions: CI behavior (issue #302)", () => {
 });
 
 describe("resolveCliInspectOptions: warnings vs --fail-on", () => {
-  it("leaves warnings unset by default (hidden via the inspect() default)", () => {
+  it("leaves warnings unset by default (shown via the inspect() default)", () => {
     expect(resolveCliInspectOptions({}, null).warnings).toBeUndefined();
   });
 
