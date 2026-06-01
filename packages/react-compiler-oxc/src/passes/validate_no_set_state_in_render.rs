@@ -13,7 +13,7 @@ use std::collections::HashSet;
 use crate::diagnostic::{Diagnostic, Diagnostics, ErrorCategory, PositionResolver};
 use crate::hir::ids::IdentifierId;
 use crate::hir::model::HirFunction;
-use crate::hir::place::{Identifier, Type};
+use crate::hir::type_checks::is_set_state_type;
 use crate::hir::value::InstructionValue;
 
 use super::cfg::each_instruction_value_operand;
@@ -27,15 +27,6 @@ const RENDER_REASON: &str = "Cannot call setState during render";
 const RENDER_DETAIL: &str = "Found setState() in render";
 const RENDER_DESCRIPTION: &str = "Calling setState during render may trigger an infinite loop.\n* To reset state when other state/props change, store the previous value in state and update conditionally: https://react.dev/reference/react/useState#storing-information-from-previous-renders\n* To derive data from other state/props, compute the derived data during render without using state";
 const RENDER_DESCRIPTION_KEYED: &str = "Calling setState during render may trigger an infinite loop.\n* To reset state when other state/props change, use `const [state, setState] = useKeyedState(initialState, key)` to reset `state` when `key` changes.\n* To derive data from other state/props, compute the derived data during render without using state";
-
-/// `isSetStateType(id)`: a `Function`-typed identifier whose shape is the
-/// `BuiltInSetState` updater.
-fn is_set_state_type(identifier: &Identifier) -> bool {
-    matches!(
-        &identifier.type_,
-        Type::Function { shape_id: Some(shape), .. } if shape == "BuiltInSetState"
-    )
-}
 
 /// `validateNoSetStateInRender(fn)`: collect every set-state-in-render diagnostic
 /// for `func` (and its nested function expressions). `enable_use_keyed_state`

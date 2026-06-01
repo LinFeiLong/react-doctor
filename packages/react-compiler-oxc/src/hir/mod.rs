@@ -22,6 +22,7 @@ pub mod model;
 pub mod place;
 pub mod print;
 pub mod terminal;
+pub mod type_checks;
 pub mod value;
 
 pub use ids::{BlockId, DeclarationId, IdAllocator, IdentifierId, InstructionId, ScopeId, TypeId};

@@ -1851,6 +1851,9 @@ fn run_lint_validations(func: &HirFunction, resolver: &PositionResolver, out: &m
     crate::passes::validate_no_set_state_in_render::validate_no_set_state_in_render(
         func, resolver, false, out,
     );
+    crate::passes::validate_no_set_state_in_effects::validate_no_set_state_in_effects(
+        func, resolver, out,
+    );
     crate::passes::validate_no_jsx_in_try_statement::validate_no_jsx_in_try_statement(
         func, resolver, out,
     );

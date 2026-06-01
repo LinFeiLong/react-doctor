@@ -52,6 +52,7 @@ pub mod reactive_scope_util;
 pub mod rewrite_instruction_kinds;
 pub mod validate_hooks_usage;
 pub mod validate_no_jsx_in_try_statement;
+pub mod validate_no_set_state_in_effects;
 pub mod validate_no_set_state_in_render;
 
 use crate::hir::ids::{BlockId, IdAllocator, IdentifierId};

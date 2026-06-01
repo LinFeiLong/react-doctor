@@ -2801,6 +2801,32 @@ pub fn default_globals() -> GlobalRegistry {
         function_type(BUILTIN_USE_OPERATOR_ID, Type::Poly),
     );
 
+    // The effect hooks (`useEffect`/`useLayoutEffect`/`useInsertionEffect`/
+    // `useEffectEvent`). Their `Globals.ts` shapes mirror the `React` namespace
+    // members (see `GENERATED_REACT_ID` above): a typed-shape global is required so
+    // the lint surface's `isUseEffectHookType` family recognizes them by type
+    // (`validateNoSetStateInEffects`). Their aliasing signatures
+    // (`call_signature_for_shape`) match the TS exactly, so codegen is unchanged.
+    globals.insert(
+        "useEffect".to_string(),
+        function_type(BUILTIN_USE_EFFECT_HOOK_ID, Type::Primitive),
+    );
+    globals.insert(
+        "useLayoutEffect".to_string(),
+        function_type(BUILTIN_USE_LAYOUT_EFFECT_HOOK_ID, Type::Poly),
+    );
+    globals.insert(
+        "useInsertionEffect".to_string(),
+        function_type(BUILTIN_USE_INSERTION_EFFECT_HOOK_ID, Type::Poly),
+    );
+    globals.insert(
+        "useEffectEvent".to_string(),
+        function_type(
+            BUILTIN_USE_EFFECT_EVENT_ID,
+            function_type(BUILTIN_EFFECT_EVENT_FUNCTION_ID, Type::Poly),
+        ),
+    );
+
     // The `React` namespace object (`Globals.ts`'s `TYPED_GLOBALS` `React` entry).
     // Without this, `LoadGlobal React` resolved to no shape, so `React.useState` /
     // `React.useReducer` fell through `getPropertyType`'s `isHookName` branch to the
