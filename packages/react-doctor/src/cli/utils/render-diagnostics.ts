@@ -185,10 +185,13 @@ const formatClusterLocation = (cluster: DiagnosticCluster): string => {
 // sites, indented under its rule block. The location sits on its own line
 // directly above the frame so it's obvious which file the frame belongs to.
 // A multi-site cluster marks the whole line span; a single site keeps its
-// precise caret column.
+// precise caret column. `renderCodeFrame` is false for warning blocks —
+// they keep their `file:line` locations but drop the boxed source frame so
+// the costlier errors stay the visual focus.
 const buildDiagnosticClusterLines = (
   cluster: DiagnosticCluster,
   resolveSourceRoot: SourceRootResolver,
+  renderCodeFrame: boolean,
 ): ReadonlyArray<string> => {
   const lead = cluster.diagnostics[0]!;
   const isMultiSite = cluster.diagnostics.length > 1;
@@ -196,13 +199,15 @@ const buildDiagnosticClusterLines = (
     "",
     highlighter.gray(`${TOP_ERROR_DETAIL_INDENT}${formatClusterLocation(cluster)}`),
   ];
-  const codeFrame = buildCodeFrame({
-    filePath: lead.filePath,
-    line: cluster.startLine,
-    column: isMultiSite ? 0 : lead.column,
-    endLine: isMultiSite ? cluster.endLine : undefined,
-    rootDirectory: resolveSourceRoot(lead),
-  });
+  const codeFrame = renderCodeFrame
+    ? buildCodeFrame({
+        filePath: lead.filePath,
+        line: cluster.startLine,
+        column: isMultiSite ? 0 : lead.column,
+        endLine: isMultiSite ? cluster.endLine : undefined,
+        rootDirectory: resolveSourceRoot(lead),
+      })
+    : null;
   if (codeFrame) {
     lines.push(
       indentMultilineText(boxText(codeFrame, OUTPUT_MEASURE_WIDTH_CHARS), TOP_ERROR_DETAIL_INDENT),
@@ -269,9 +274,13 @@ const buildRuleDetailBlock = (
     }
   }
 
+  // Code frames are reserved for errors: warnings list their sites but
+  // skip the boxed source so the report doesn't drown in frames now that
+  // warnings surface by default.
+  const renderCodeFrame = severity === "error";
   const sites = renderEverySite ? ruleDiagnostics : [representative];
   for (const cluster of clusterNearbyDiagnostics(sites)) {
-    lines.push(...buildDiagnosticClusterLines(cluster, resolveSourceRoot));
+    lines.push(...buildDiagnosticClusterLines(cluster, resolveSourceRoot, renderCodeFrame));
   }
 
   return lines;
