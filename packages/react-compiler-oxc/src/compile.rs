@@ -1830,9 +1830,7 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
                 return Vec::new();
             }
             let mut local = Diagnostics::new();
-            crate::passes::validate_no_set_state_in_render::validate_no_set_state_in_render(
-                &func, &resolver, false, &mut local,
-            );
+            run_lint_validations(&func, &resolver, &mut local);
             local.into_vec()
         }))
         .unwrap_or_default();
@@ -1842,6 +1840,20 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
     }
 
     diagnostics.into_vec()
+}
+
+/// Run every ported lint validation over a function staged to [`LINT_STAGE`],
+/// in the TS `Pipeline.ts` order, collecting their diagnostics. Each pass that is
+/// ported emits diagnostics for its [`ErrorCategory`](crate::diagnostic::ErrorCategory);
+/// the not-yet-ported categories contribute nothing (their rules surface no
+/// diagnostics until the corresponding pass lands here).
+fn run_lint_validations(func: &HirFunction, resolver: &PositionResolver, out: &mut Diagnostics) {
+    crate::passes::validate_no_set_state_in_render::validate_no_set_state_in_render(
+        func, resolver, false, out,
+    );
+    crate::passes::validate_no_jsx_in_try_statement::validate_no_jsx_in_try_statement(
+        func, resolver, out,
+    );
 }
 
 /// Apply the pipeline passes to `func` up to and including `stage`, seeding the
