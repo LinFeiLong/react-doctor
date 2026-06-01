@@ -123,13 +123,13 @@ importers:
       eslint-visitor-keys:
         specifier: ^5.0.1
         version: 5.0.1
+      oxc-parser:
+        specifier: ^0.132.0
+        version: 0.132.0
     devDependencies:
       '@types/node':
         specifier: ^25.6.0
         version: 25.6.0
-      oxc-parser:
-        specifier: ^0.132.0
-        version: 0.132.0
 
   packages/react-doctor:
     dependencies:
