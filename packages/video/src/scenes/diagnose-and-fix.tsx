@@ -35,7 +35,8 @@ const HERO_LABEL_FONT_SIZE_PX = 56;
 const HERO_BAR_FONT_SIZE_PX = 48;
 const HERO_GAP_PX = 48;
 const HERO_TOP_PX = 348;
-const HERO_LEFT_PX = 350;
+const HERO_LEFT_PX = 200;
+const SCORE_BAR_PIXEL_WIDTH_PX = 640;
 
 const BADGE_FACE_FONT_SIZE_PX = 0;
 const BADGE_NUMBER_FONT_SIZE_PX = 64;
@@ -62,7 +63,7 @@ const ITEM_FADE_FRAMES = 5;
 
 const SPINNER_APPEAR_FRAME = 75;
 const FIX_START_FRAME = 106;
-const FIX_INTERVAL_FRAMES = 1;
+const FIX_INTERVAL_FRAMES = 0.6;
 const FIX_FADE_FRAMES = 3;
 const ALL_FIXED_FADE_FRAMES = 8;
 
@@ -345,7 +346,7 @@ export const DiagnoseAndFix = () => {
         }}
       >
         <span style={{ color: MUTED_COLOR }}>❯ </span>
-        <span style={{ color: "white" }}>fix my React code</span>
+        <span style={{ color: "white" }}>fix my React Native code</span>
       </div>
 
       <div
@@ -430,7 +431,7 @@ export const DiagnoseAndFix = () => {
 
             return (
               <div
-                key={diagnostic.message}
+                key={`${diagnostic.message}-${diagnostic.file}`}
                 style={{
                   fontFamily,
                   fontSize: DIAGNOSTIC_FONT_SIZE_PX,
@@ -542,7 +543,7 @@ export const DiagnoseAndFix = () => {
           >
             <div
               style={{
-                width: 900,
+                width: SCORE_BAR_PIXEL_WIDTH_PX,
                 height: barFontSize,
                 backgroundColor: "#525252",
                 display: "flex",
