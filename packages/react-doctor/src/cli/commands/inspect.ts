@@ -34,6 +34,7 @@ import {
 } from "../utils/json-mode.js";
 import { printAnnotations } from "../utils/print-annotations.js";
 import { printBrandedHeader } from "../utils/print-branded-header.js";
+import { reportErrorToSentry } from "../utils/report-error.js";
 import { readChangedFilesFrom } from "../utils/read-changed-files-from.js";
 import { printMultiProjectSummary } from "../utils/render-multi-project-summary.js";
 import { isCiOrCodingAgentEnvironment } from "../utils/is-ci-environment.js";
@@ -377,6 +378,7 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
       }
     }
   } catch (error) {
+    await reportErrorToSentry(error);
     if (isJsonMode) {
       writeJsonErrorReport(error);
       process.exitCode = 1;

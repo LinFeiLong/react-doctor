@@ -60,6 +60,11 @@ export default defineConfig({
         alwaysBundle: ["commander", "ora"],
         neverBundle: [
           "@effect/platform-node-shared",
+          // Sentry bundles its own OpenTelemetry instrumentation chain
+          // and resolves native/optional deps via require() at runtime;
+          // keep it external so those lookups run untouched (same
+          // rationale as `effect` and `deslop-js` below).
+          "@sentry/node",
           "agent-install",
           // HACK: deslop-js wraps oxc-parser / oxc-resolver, both of
           // which load platform-specific NAPI bindings via require().
@@ -110,6 +115,7 @@ export default defineConfig({
         alwaysBundle: ["commander", "ora"],
         neverBundle: [
           "@effect/platform-node-shared",
+          "@sentry/node",
           "agent-install",
           "deslop-js",
           "effect",

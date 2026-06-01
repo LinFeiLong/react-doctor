@@ -2,6 +2,7 @@ import * as Effect from "effect/Effect";
 import { handleError } from "../utils/handle-error.js";
 import { runInstallReactDoctor } from "../utils/install-react-doctor.js";
 import { printBrandedHeader } from "../utils/print-branded-header.js";
+import { reportErrorToSentry } from "../utils/report-error.js";
 
 interface InstallCommandOptions {
   yes?: boolean;
@@ -35,6 +36,7 @@ export const installAction = async (
       projectRoot: options.cwd ?? process.cwd(),
     });
   } catch (error) {
+    await reportErrorToSentry(error);
     handleError(error);
   }
 };

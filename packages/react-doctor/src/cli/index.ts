@@ -1,13 +1,17 @@
 import { Command } from "commander";
 import { CANONICAL_GITHUB_URL, highlighter } from "@react-doctor/core";
+import { initializeSentry } from "../instrument.js";
 import { inspectAction } from "./commands/inspect.js";
 import { installAction } from "./commands/install.js";
 import { exitGracefully } from "./utils/exit-gracefully.js";
 import { handleError } from "./utils/handle-error.js";
 import { isJsonModeActive, writeJsonErrorReport } from "./utils/json-mode.js";
+import { reportErrorToSentry } from "./utils/report-error.js";
 import { stripUnknownCliFlags } from "./utils/strip-unknown-cli-flags.js";
 import { unrefStdin } from "./utils/unref-stdin.js";
 import { VERSION } from "./utils/version.js";
+
+initializeSentry();
 
 process.on("SIGINT", exitGracefully);
 process.on("SIGTERM", exitGracefully);
@@ -101,7 +105,8 @@ process.stdout.on("error", (error: NodeJS.ErrnoException) => {
   if (error.code === "EPIPE") process.exit(0);
 });
 
-program.parseAsync(stripUnknownCliFlags(process.argv)).catch((error: unknown) => {
+program.parseAsync(stripUnknownCliFlags(process.argv)).catch(async (error: unknown) => {
+  await reportErrorToSentry(error);
   if (isJsonModeActive()) {
     writeJsonErrorReport(error);
     process.exit(1);

@@ -21,3 +21,9 @@ export const PERFECT_SCORE_RAINBOW_FRAME_DELAY_MS = 50;
 // stdout valid JSON so downstream parsers don't see a half-written report.
 export const INTERNAL_ERROR_JSON_FALLBACK =
   '{"schemaVersion":1,"ok":false,"error":{"message":"Internal error","name":"Error","chain":[]}}\n';
+
+// Sentry DSN for CLI crash reporting. Public by design (DSNs are safe to
+// embed in client-side code) and only used by the CLI application entry,
+// never the programmatic `@react-doctor/api` library.
+export const SENTRY_DSN =
+  "https://f253d570240a59b8dbd77b7a548ef133@o4510226365743104.ingest.us.sentry.io/4511487817809920";
