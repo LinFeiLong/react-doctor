@@ -7,7 +7,9 @@ import { checkExpoGitignore } from "./checks/expo/check-gitignore.js";
 import { checkExpoLockfile } from "./checks/expo/check-lockfile.js";
 import { checkExpoMetroConfig } from "./checks/expo/check-metro-config.js";
 import { checkExpoPackageJsonConflicts } from "./checks/expo/check-package-json-conflicts.js";
+import { checkExpoReanimatedNewArch } from "./checks/expo/check-reanimated-new-arch.js";
 import { checkExpoRouterReactNavigation } from "./checks/expo/check-router-react-navigation.js";
+import { checkExpoUpdatesConfig } from "./checks/expo/check-updates-config.js";
 import { checkExpoVectorIcons } from "./checks/expo/check-vector-icons.js";
 
 // The react-doctor port of expo-doctor's check suite. Each sub-check is the
@@ -32,5 +34,7 @@ export const checkExpoProject = (rootDirectory: string, project: ProjectInfo): D
     ...checkExpoGitignore(context),
     ...checkExpoEnvLocalFiles(context),
     ...checkExpoMetroConfig(context),
+    ...checkExpoReanimatedNewArch(context),
+    ...checkExpoUpdatesConfig(context),
   ];
 };

@@ -52,6 +52,13 @@ const buildExpoProject = (
   sourceFileCount: 10,
 });
 
+const writeAppJson = (projectDirectory: string, expoConfig: Record<string, unknown>): void => {
+  fs.writeFileSync(
+    path.join(projectDirectory, "app.json"),
+    JSON.stringify({ expo: expoConfig }, null, 2),
+  );
+};
+
 const rulesOf = (diagnostics: ReadonlyArray<Diagnostic>): string[] =>
   diagnostics.map((diagnostic) => diagnostic.rule);
 
@@ -410,5 +417,78 @@ describe("checkExpoProject — gitignore (.expo / local modules)", () => {
     expect(
       rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory))),
     ).toContain("expo-gitignore");
+  });
+});
+
+describe("checkExpoProject — reanimated v4 requires new architecture", () => {
+  it("flags reanimated v4 with newArchEnabled: false", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-reanimated": "~4.0.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x", newArchEnabled: false });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).toContain("expo-reanimated-v4-requires-new-arch");
+  });
+
+  it("flags when react-native-worklets is present with newArchEnabled: false", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-worklets": "^0.1.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x", newArchEnabled: false });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).toContain("expo-reanimated-v4-requires-new-arch");
+  });
+
+  it("does NOT flag reanimated v3 with newArchEnabled: false", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-reanimated": "~3.10.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x", newArchEnabled: false });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-reanimated-v4-requires-new-arch");
+  });
+
+  it("does NOT flag reanimated v4 when newArchEnabled is not disabled", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-reanimated": "~4.0.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x" });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-reanimated-v4-requires-new-arch");
+  });
+});
+
+describe("checkExpoProject — unsafe updates production config", () => {
+  it("flags updates.disableAntiBrickingMeasures: true", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, { name: "expo-app", dependencies: { expo: "~52.0.0" } });
+    writeAppJson(projectDirectory, {
+      name: "x",
+      updates: { disableAntiBrickingMeasures: true },
+    });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).toContain("expo-updates-no-unsafe-production-config");
+  });
+
+  it("does NOT flag when the flag is absent", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, { name: "expo-app", dependencies: { expo: "~52.0.0" } });
+    writeAppJson(projectDirectory, { name: "x", updates: { fallbackToCacheTimeout: 0 } });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-updates-no-unsafe-production-config");
   });
 });

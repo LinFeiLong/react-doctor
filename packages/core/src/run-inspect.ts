@@ -15,6 +15,7 @@ import type {
 import { buildDiagnosticPipeline } from "./build-diagnostic-pipeline.js";
 import { checkExpoProject } from "./check-expo-project.js";
 import { checkPnpmHardening } from "./check-pnpm-hardening.js";
+import { checkReactNativeProject } from "./check-react-native-project.js";
 import { checkReducedMotion } from "./check-reduced-motion.js";
 import { DEFAULT_SHOW_WARNINGS } from "./constants.js";
 import { computeJsxIncludePaths } from "./jsx-include-paths.js";
@@ -313,6 +314,7 @@ export const runInspect = <HooksR = never>(
           ...checkReducedMotion(scanDirectory),
           ...checkPnpmHardening(scanDirectory),
           ...checkExpoProject(scanDirectory, project),
+          ...checkReactNativeProject(scanDirectory, project),
         ];
     const envCollected = yield* Stream.runCollect(
       applyPerElementPipeline(Stream.fromIterable(environmentDiagnostics)),
