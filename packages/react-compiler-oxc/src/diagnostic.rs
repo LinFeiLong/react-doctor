@@ -228,15 +228,60 @@ pub struct BabelSourceLocation {
     pub end: BabelPosition,
 }
 
-/// One lint diagnostic, bucketed by [`ErrorCategory`]. `reason` is the
-/// human-readable message (the eslint-formatted `printErrorMessage`); `loc` is the
-/// primary location (`detail.primaryLocation()`), absent for whole-program issues.
+/// One `kind: 'error'` detail of a [`Diagnostic`] (`CompilerDiagnosticDetail`):
+/// a source location plus an optional message rendered into the code frame. The
+/// first detail's `loc` is the diagnostic's `primaryLocation()`.
+#[derive(Clone, Debug)]
+pub struct DiagnosticDetail {
+    pub loc: Option<BabelSourceLocation>,
+    pub message: Option<String>,
+}
+
+/// One lint diagnostic, bucketed by [`ErrorCategory`] — the Rust mirror of the TS
+/// `CompilerDiagnostic`. The JS plugin formats the final eslint message
+/// (`printErrorMessage`) from these structured fields, so the message and code
+/// frame match `eslint-plugin-react-hooks` byte-for-byte.
 #[derive(Clone, Debug)]
 pub struct Diagnostic {
     pub category: ErrorCategory,
     pub severity: ErrorSeverity,
     pub reason: String,
-    pub loc: Option<BabelSourceLocation>,
+    pub description: Option<String>,
+    pub details: Vec<DiagnosticDetail>,
+}
+
+impl Diagnostic {
+    /// `CompilerDiagnostic.create(...)`: a diagnostic with no details yet. The
+    /// severity is derived from the category, exactly as the TS getter does.
+    pub fn create(category: ErrorCategory, reason: impl Into<String>) -> Self {
+        Self {
+            category,
+            severity: rule_for_category(category).severity,
+            reason: reason.into(),
+            description: None,
+            details: Vec::new(),
+        }
+    }
+
+    pub fn with_description(mut self, description: impl Into<String>) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+
+    /// `withDetails({ kind: 'error', loc, message })`.
+    pub fn with_error_detail(
+        mut self,
+        loc: Option<BabelSourceLocation>,
+        message: Option<String>,
+    ) -> Self {
+        self.details.push(DiagnosticDetail { loc, message });
+        self
+    }
+
+    /// `primaryLocation()`: the first error detail's location.
+    pub fn primary_location(&self) -> Option<BabelSourceLocation> {
+        self.details.first().and_then(|detail| detail.loc)
+    }
 }
 
 /// A collector passes push diagnostics into during a lint run.
@@ -312,6 +357,33 @@ impl<'s> PositionResolver<'s> {
         BabelSourceLocation {
             start: self.position(start),
             end: self.position(end),
+        }
+    }
+
+    /// Resolve an HIR [`SourceLocation`](crate::hir::place::SourceLocation) to a
+    /// babel location: byte spans are resolved against the source, an
+    /// already-resolved span passes through, and the generated sentinel yields
+    /// `None` (a whole-program diagnostic with no primary location).
+    pub fn resolve(&self, loc: &crate::hir::place::SourceLocation) -> Option<BabelSourceLocation> {
+        use crate::hir::place::SourceLocation;
+        match loc {
+            SourceLocation::Generated => None,
+            SourceLocation::Span { start, end, .. } => Some(self.location(*start, *end)),
+            SourceLocation::Resolved {
+                start_line,
+                start_column,
+                end_line,
+                end_column,
+            } => Some(BabelSourceLocation {
+                start: BabelPosition {
+                    line: *start_line,
+                    column: *start_column,
+                },
+                end: BabelPosition {
+                    line: *end_line,
+                    column: *end_column,
+                },
+            }),
         }
     }
 }

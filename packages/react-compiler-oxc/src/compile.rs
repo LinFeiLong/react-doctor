@@ -20,6 +20,7 @@ use oxc::semantic::SemanticBuilder;
 use oxc::span::{GetSpan, SourceType};
 
 use crate::build_hir::{FunctionLike, lower, lower_with_renames};
+use crate::diagnostic::{Diagnostic, Diagnostics, PositionResolver};
 use crate::environment::{
     Environment, EnvironmentConfig, builtin_shapes, default_globals, find_context_identifiers,
     is_hook_name,
@@ -1772,6 +1773,75 @@ pub fn compile_to_stage(code: &str, filename: &str, stage: &str) -> Vec<LoweredF
     }
 
     results
+}
+
+/// The HIR pipeline stage after which the lint validations run, mirroring the TS
+/// `Pipeline.ts` ordering: `validateNoSetStateInRender` (and its siblings) run
+/// immediately after `InferMutationAliasingRanges`.
+const LINT_STAGE: &str = "InferMutationAliasingRanges";
+
+/// Run the React Compiler's lint validations over every top-level function-like
+/// in `code`, returning the collected [`Diagnostic`]s bucketed by
+/// [`ErrorCategory`](crate::diagnostic::ErrorCategory). This is the analysis the
+/// napi `lint` binding and the JS plugin (the `react-hooks-js/*` rules) consume in
+/// place of `eslint-plugin-react-hooks` / `babel-plugin-react-compiler`.
+///
+/// Each function is driven through the pipeline to [`LINT_STAGE`] under a
+/// panic-catching guard, so an unported construct in one function bails that
+/// function's analysis without aborting the whole file.
+pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
+    install_quiet_panic_hook();
+    let resolver = PositionResolver::new(code);
+    let allocator = Allocator::default();
+    let _ = filename;
+    let source_type = SourceType::tsx();
+    let parsed = Parser::new(&allocator, code, source_type).parse();
+    let program = parsed.program;
+    let semantic = SemanticBuilder::new().build(&program).semantic;
+
+    let mut targets: Vec<Target<'_>> = Vec::new();
+    for statement in &program.body {
+        collect_top_level(statement, &mut targets);
+    }
+
+    let mut diagnostics = Diagnostics::new();
+    for target in targets {
+        let fn_type = react_function_type(&target);
+        let context = match target.func.scope_id() {
+            Some(scope) => find_context_identifiers(&semantic, scope),
+            None => BTreeSet::new(),
+        };
+        let collected = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _guard = SuppressPanicOutput::new();
+            let mut env = Environment::new(fn_type, EnvironmentConfig::from_source(code), context);
+            let mut func = match lower(
+                &target.func,
+                target.body,
+                target.is_arrow_expression_body,
+                &semantic,
+                &mut env,
+                Default::default(),
+                false,
+            ) {
+                Ok(func) => func,
+                Err(_) => return Vec::new(),
+            };
+            if run_passes(&mut func, &env, LINT_STAGE, code).is_err() {
+                return Vec::new();
+            }
+            let mut local = Diagnostics::new();
+            crate::passes::validate_no_set_state_in_render::validate_no_set_state_in_render(
+                &func, &resolver, false, &mut local,
+            );
+            local.into_vec()
+        }))
+        .unwrap_or_default();
+        for diagnostic in collected {
+            diagnostics.push(diagnostic);
+        }
+    }
+
+    diagnostics.into_vec()
 }
 
 /// Apply the pipeline passes to `func` up to and including `stage`, seeding the

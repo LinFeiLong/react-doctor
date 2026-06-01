@@ -20,13 +20,13 @@ pub mod type_inference;
 
 pub use codegen::{canonicalize, codegen, compile_module, print_program};
 pub use diagnostic::{
-    BabelPosition, BabelSourceLocation, Diagnostic, Diagnostics, ErrorCategory, ErrorSeverity,
-    LintRule, LintRulePreset, PositionResolver, lint_rules, rule_for_category,
+    BabelPosition, BabelSourceLocation, Diagnostic, DiagnosticDetail, Diagnostics, ErrorCategory,
+    ErrorSeverity, LintRule, LintRulePreset, PositionResolver, lint_rules, rule_for_category,
 };
 pub use compile::{
     CompilationMode, CompiledReactive, DynamicGatingOptions, ExternalFunction, LoweredFn,
     ModuleOptions, PanicThreshold, compile_to_reactive, compile_to_reactive_with_options,
-    compile_to_stage, has_memo_cache_import, has_module_scope_opt_out, lint_rename_source,
+    compile_to_stage, has_memo_cache_import, has_module_scope_opt_out, lint, lint_rename_source,
     lower_to_hir,
 };
 

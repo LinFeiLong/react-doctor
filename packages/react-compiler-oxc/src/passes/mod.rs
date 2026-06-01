@@ -51,6 +51,7 @@ pub mod prune_unused_labels_hir;
 pub mod reactive_scope_util;
 pub mod rewrite_instruction_kinds;
 pub mod validate_hooks_usage;
+pub mod validate_no_set_state_in_render;
 
 use crate::hir::ids::{BlockId, IdAllocator, IdentifierId};
 use crate::hir::model::HirFunction;
