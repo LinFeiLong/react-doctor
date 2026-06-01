@@ -28,8 +28,15 @@ export const WELCOME_TYPEWRITER_CHAR_DELAY_MS = 32;
 export const WELCOME_INTER_LINE_DELAY_MS = 500;
 export const WELCOME_EXPLANATION_HOLD_MS = 2000;
 export const WELCOME_HOLD_MS = 1000;
-export const CATEGORY_COUNTUP_FRAME_COUNT = 16;
-export const CATEGORY_COUNTUP_FRAME_DELAY_MS = 45;
+// The category breakdown reveals one issue at a time (errors then warnings,
+// category by category). Small/medium breakdowns step by a single unit per
+// frame; `MAX_STEPS` caps the frame budget so a huge repo's reveal stays short
+// (the per-step increment grows instead).
+export const CATEGORY_COUNTUP_MAX_STEPS = 24;
+export const CATEGORY_COUNTUP_FRAME_DELAY_MS = 70;
+// Beat to hold on the settled category tally before the detail blocks reveal,
+// so the at-a-glance breakdown reads before the report scrolls on.
+export const CATEGORY_COUNTUP_SETTLE_HOLD_MS = 1000;
 export const SCORE_PROJECTION_FRAME_COUNT = 16;
 export const SCORE_PROJECTION_FRAME_DELAY_MS = 35;
 // Terminal rows from the cursor (sitting just after the "you could improve"

@@ -15,14 +15,17 @@ import type { Diagnostic } from "@react-doctor/core";
 import { boxText } from "./box-text.js";
 import { buildCodeFrame } from "./build-code-frame.js";
 import { buildSectionDivider } from "./build-section-divider.js";
-import { CATEGORY_COUNTUP_FRAME_COUNT, CATEGORY_COUNTUP_FRAME_DELAY_MS } from "./constants.js";
+import {
+  CATEGORY_COUNTUP_FRAME_DELAY_MS,
+  CATEGORY_COUNTUP_MAX_STEPS,
+  CATEGORY_COUNTUP_SETTLE_HOLD_MS,
+} from "./constants.js";
 import {
   buildSortedRuleGroups,
   compareByRulePriority,
   formatFixRecipeLine,
   formatLearnMoreLine,
 } from "./diagnostic-grouping.js";
-import { easeOutCubic } from "./ease-out-cubic.js";
 import { indentMultilineText } from "./indent-multiline-text.js";
 import { wrapTextToWidth } from "./wrap-indented-text.js";
 import { writeStdout } from "./write-stdout.js";
@@ -142,25 +145,51 @@ const buildCategoryTally = (categoryGroup: CategoryDiagnosticGroup): CategoryTal
 const buildCategoryTallyLines = (tallies: ReadonlyArray<CategoryTally>): string[] =>
   tallies.map((tally) => formatCategoryTallyLine(tally, tally.errorCount, tally.warningCount));
 
-// Animated count-up of the category tally for a first interactive run; counts
-// only grow, so frames never shrink and no per-line clear is needed. Lands on
-// the exact same lines `buildCategoryTallyLines` prints statically.
+// Renders the breakdown with only the first `revealedUnitCount` issues shown,
+// filled one category at a time (a category's errors before its warnings)
+// so the reveal reads as issues landing one by one, top to bottom.
+const buildPartiallyRevealedTallyLines = (
+  tallies: ReadonlyArray<CategoryTally>,
+  revealedUnitCount: number,
+): string[] => {
+  let remainingToReveal = revealedUnitCount;
+  return tallies.map((tally) => {
+    const errorShown = Math.min(tally.errorCount, remainingToReveal);
+    remainingToReveal -= errorShown;
+    const warningShown = Math.min(tally.warningCount, remainingToReveal);
+    remainingToReveal -= warningShown;
+    return formatCategoryTallyLine(tally, errorShown, warningShown);
+  });
+};
+
+// Animated reveal of the category tally for an interactive run: issues land one
+// at a time (errors then warnings, category by category) rather than every
+// count easing up at once. Counts only grow, so frames never shrink and no
+// per-line clear is needed; the last frame matches `buildCategoryTallyLines`.
 const printCategoryCountUp = (tallies: ReadonlyArray<CategoryTally>): Effect.Effect<void> =>
   Effect.gen(function* () {
-    for (let frame = 0; frame <= CATEGORY_COUNTUP_FRAME_COUNT; frame += 1) {
-      const fraction = easeOutCubic(frame / CATEGORY_COUNTUP_FRAME_COUNT);
-      const lines = tallies.map((tally) =>
-        formatCategoryTallyLine(
-          tally,
-          Math.round(tally.errorCount * fraction),
-          Math.round(tally.warningCount * fraction),
-        ),
-      );
-      const cursorUp = frame === 0 ? "" : `\x1b[${tallies.length}A`;
+    const totalUnitCount = tallies.reduce(
+      (sum, tally) => sum + tally.errorCount + tally.warningCount,
+      0,
+    );
+    // Step one issue per frame when there are few; otherwise grow the step so a
+    // large breakdown still resolves within the frame budget.
+    const unitsPerStep = Math.max(1, Math.ceil(totalUnitCount / CATEGORY_COUNTUP_MAX_STEPS));
+    for (
+      let revealedUnitCount = 0;
+      revealedUnitCount < totalUnitCount;
+      revealedUnitCount += unitsPerStep
+    ) {
+      const lines = buildPartiallyRevealedTallyLines(tallies, revealedUnitCount);
+      const cursorUp = revealedUnitCount === 0 ? "" : `\x1b[${tallies.length}A`;
       yield* writeStdout(`${cursorUp}\r${lines.join("\n\r")}\n`);
-      if (frame < CATEGORY_COUNTUP_FRAME_COUNT)
-        yield* Effect.sleep(CATEGORY_COUNTUP_FRAME_DELAY_MS);
+      yield* Effect.sleep(CATEGORY_COUNTUP_FRAME_DELAY_MS);
     }
+    // Land on the full tallies (the loop stops one step short when the total
+    // isn't a clean multiple of the step).
+    const cursorUp = totalUnitCount === 0 ? "" : `\x1b[${tallies.length}A`;
+    yield* writeStdout(`${cursorUp}\r${buildCategoryTallyLines(tallies).join("\n\r")}\n`);
+    yield* Effect.sleep(CATEGORY_COUNTUP_SETTLE_HOLD_MS);
   });
 
 const TOP_ERROR_DETAIL_INDENT = "    ";
