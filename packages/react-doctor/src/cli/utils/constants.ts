@@ -28,6 +28,10 @@ export const INTERNAL_ERROR_JSON_FALLBACK =
 export const SENTRY_DSN =
   "https://f253d570240a59b8dbd77b7a548ef133@o4510226365743104.ingest.us.sentry.io/4511487817809920";
 
+// Loopback host the debug server binds to by default; kept local so the
+// NDJSON ingest endpoint is not exposed beyond the machine.
+export const DEBUG_DEFAULT_HOST = "127.0.0.1";
+
 // Bytes of randomness for a `react-doctor debug` session id; hex-encoded
 // into a 6-char id that namespaces the per-session NDJSON log file.
 export const DEBUG_SESSION_ID_BYTE_LENGTH = 3;

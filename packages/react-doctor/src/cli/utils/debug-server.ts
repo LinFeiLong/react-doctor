@@ -4,6 +4,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import {
+  DEBUG_DEFAULT_HOST,
   DEBUG_LOG_DIRECTORY_NAME,
   DEBUG_MAX_DEDUP_ENTRIES,
   DEBUG_SESSION_ID_BYTE_LENGTH,
@@ -68,7 +69,7 @@ export const createDebugServer = async (
     options.sessionId || crypto.randomBytes(DEBUG_SESSION_ID_BYTE_LENGTH).toString("hex");
   const logDirectory = path.join(options.cwd || os.tmpdir(), DEBUG_LOG_DIRECTORY_NAME);
   const primaryLogPath = options.logPath || path.join(logDirectory, `debug-${sessionId}.log`);
-  const host = options.host || "127.0.0.1";
+  const host = options.host || DEBUG_DEFAULT_HOST;
   const requestedPort = options.port || 0;
 
   if (!fs.existsSync(logDirectory)) fs.mkdirSync(logDirectory, { recursive: true });
@@ -137,32 +138,40 @@ export const createDebugServer = async (
       let requestBody = "";
       request.on("data", (chunk: Buffer) => (requestBody += chunk));
       request.on("end", () => {
+        let logEntry: { id?: string; sessionId?: string; timestamp?: number };
         try {
-          const logEntry = JSON.parse(requestBody);
-
-          if (logEntry.id && sessionState.processedEntryIds.has(logEntry.id)) {
-            response.writeHead(200, { "Content-Type": "application/json" });
-            response.end(JSON.stringify({ ok: true, duplicate: true }));
-            return;
-          }
-
-          logEntry.sessionId = logEntry.sessionId || requestSessionId;
-          logEntry.timestamp = logEntry.timestamp || Date.now();
-          fs.appendFileSync(sessionState.logPath, JSON.stringify(logEntry) + "\n");
-
-          if (logEntry.id) {
-            if (sessionState.processedEntryIds.size >= DEBUG_MAX_DEDUP_ENTRIES) {
-              sessionState.processedEntryIds.clear();
-            }
-            sessionState.processedEntryIds.add(logEntry.id);
-          }
-
-          response.writeHead(200, { "Content-Type": "application/json" });
-          response.end(JSON.stringify({ ok: true }));
+          logEntry = JSON.parse(requestBody);
         } catch {
           response.writeHead(400, { "Content-Type": "application/json" });
           response.end(JSON.stringify({ error: "Invalid JSON" }));
+          return;
         }
+
+        if (logEntry.id && sessionState.processedEntryIds.has(logEntry.id)) {
+          response.writeHead(200, { "Content-Type": "application/json" });
+          response.end(JSON.stringify({ ok: true, duplicate: true }));
+          return;
+        }
+
+        logEntry.sessionId = logEntry.sessionId || requestSessionId;
+        logEntry.timestamp = logEntry.timestamp || Date.now();
+        try {
+          fs.appendFileSync(sessionState.logPath, JSON.stringify(logEntry) + "\n");
+        } catch {
+          response.writeHead(500, { "Content-Type": "application/json" });
+          response.end(JSON.stringify({ error: "Failed to write log" }));
+          return;
+        }
+
+        if (logEntry.id) {
+          if (sessionState.processedEntryIds.size >= DEBUG_MAX_DEDUP_ENTRIES) {
+            sessionState.processedEntryIds.clear();
+          }
+          sessionState.processedEntryIds.add(logEntry.id);
+        }
+
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end(JSON.stringify({ ok: true }));
       });
       request.on("error", () => {
         if (!response.writableEnded) {

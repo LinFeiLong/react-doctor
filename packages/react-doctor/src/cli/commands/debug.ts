@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process";
+import type { Server } from "node:http";
 import { Command } from "commander";
 import { highlighter } from "@react-doctor/core";
 import { cliLogger as logger } from "../utils/cli-logger.js";
-import { createDebugServer } from "../utils/debug-server.js";
+import { DEBUG_DEFAULT_HOST } from "../utils/constants.js";
+import { createDebugServer, type DebugServerInfo } from "../utils/debug-server.js";
 import { spinner } from "../utils/spinner.js";
 
 interface DebugCommandOptions {
@@ -25,10 +27,24 @@ interface DebugCommandContext {
   };
 }
 
+const registerShutdown = (server: Server): void => {
+  const shutdown = () => {
+    server.close();
+    process.exit(0);
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+};
+
+const printServerDetails = (info: DebugServerInfo): void => {
+  logger.dim(`  Endpoint: ${info.endpoint}`);
+  logger.dim(`  Log path: ${info.logPath}`);
+};
+
 const startDaemon = async (options: DebugCommandOptions): Promise<void> => {
   const childArgs = [process.argv[1], "debug", "--json"];
   if (options.port) childArgs.push("-p", String(options.port));
-  if (options.host !== "127.0.0.1") childArgs.push("-H", options.host);
+  if (options.host !== DEBUG_DEFAULT_HOST) childArgs.push("-H", options.host);
   if (options.sessionId) childArgs.push("-s", options.sessionId);
   if (options.logPath) childArgs.push("-l", options.logPath);
 
@@ -88,12 +104,7 @@ const startJson = async (options: DebugCommandOptions): Promise<void> => {
     process.exit(0);
   }
 
-  const shutdown = () => {
-    server.close();
-    process.exit(0);
-  };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
+  registerShutdown(server);
 };
 
 const startInteractive = async (options: DebugCommandOptions): Promise<void> => {
@@ -110,21 +121,13 @@ const startInteractive = async (options: DebugCommandOptions): Promise<void> => 
     startSpinner.succeed(
       `Debug server already running on port ${highlighter.bold(String(info.port))}`,
     );
-    logger.dim(`  Endpoint: ${info.endpoint}`);
-    logger.dim(`  Log path: ${info.logPath}`);
+    printServerDetails(info);
     return;
   }
 
   startSpinner.succeed(`Debug server listening on port ${highlighter.bold(String(info.port))}`);
-  logger.dim(`  Endpoint: ${info.endpoint}`);
-  logger.dim(`  Log path: ${info.logPath}`);
-
-  const shutdown = () => {
-    server.close();
-    process.exit(0);
-  };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
+  printServerDetails(info);
+  registerShutdown(server);
 };
 
 export const debugAction = async (
