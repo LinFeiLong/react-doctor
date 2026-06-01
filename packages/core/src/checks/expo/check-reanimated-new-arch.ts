@@ -2,7 +2,7 @@ import { getLowestDependencyMajor } from "../../project-info/utils/dependency-ve
 import type { Diagnostic } from "../../types/index.js";
 import type { ExpoCheckContext } from "./expo-check-context.js";
 import { buildExpoDiagnostic } from "./utils/build-expo-diagnostic.js";
-import { getNestedConfigValue, readExpoAppConfig } from "./utils/read-expo-app-config.js";
+import { readExpoAppConfig } from "./utils/read-expo-app-config.js";
 
 const REANIMATED_PACKAGE = "react-native-reanimated";
 const WORKLETS_PACKAGE = "react-native-worklets";
@@ -29,7 +29,7 @@ export const checkExpoReanimatedNewArch = (context: ExpoCheckContext): Diagnosti
   if (!isReanimatedV4Plus) return [];
 
   const appConfig = readExpoAppConfig(context.rootDirectory);
-  if (getNestedConfigValue(appConfig.config, ["newArchEnabled"]) !== false) return [];
+  if (appConfig.config?.newArchEnabled !== false) return [];
 
   return [
     buildExpoDiagnostic({

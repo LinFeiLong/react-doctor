@@ -1,19 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import { isFile } from "../../../project-info/index.js";
 
-// The static Expo config forms a static analyzer can read are the JSON ones
-// (`app.config.json` / `app.json`); Expo nests the config under an `expo` key
-// in `app.json`, so we unwrap it.
-//
-// A dynamic `app.config.{js,ts,cjs,mjs}` is the source of truth when present:
-// Expo reads the static config first, passes it into the dynamic config, and
-// uses the dynamic file's RETURN value — so the dynamic file can override any
-// value declared in `app.json` (a stale `newArchEnabled: false` /
-// `disableAntiBrickingMeasures: true` there may be flipped at build time). We
-// can't evaluate that file offline, so when one exists we treat the config as
-// unknown (no diagnostics) rather than trust possibly-overridden `app.json`
-// values. This is a documented false-negative, never a false positive.
+// A dynamic `app.config.{js,ts,cjs,mjs}` is Expo's source of truth when present:
+// Expo reads the static config, passes it into the dynamic file, and uses that
+// file's RETURN value — so it can override any value in `app.json` (a stale
+// `newArchEnabled: false` / `disableAntiBrickingMeasures: true` there may be
+// flipped at build time). We can't evaluate it offline, so when one exists we
+// report no config (a documented false-negative, never a false positive).
 const APP_CONFIG_JSON_FILES = ["app.config.json", "app.json"] as const;
 const APP_CONFIG_DYNAMIC_FILES = [
   "app.config.ts",
@@ -22,65 +18,45 @@ const APP_CONFIG_DYNAMIC_FILES = [
   "app.config.mjs",
 ] as const;
 
+// Only the fields the Expo checks read. `Schema.Struct` ignores unknown keys,
+// so the rest of the (large) app config passes through harmlessly; `app.json` /
+// `app.config.json` nest everything under an `expo` key.
+const ExpoConfigSchema = Schema.Struct({
+  newArchEnabled: Schema.optional(Schema.Boolean),
+  updates: Schema.optional(
+    Schema.Struct({ disableAntiBrickingMeasures: Schema.optional(Schema.Boolean) }),
+  ),
+});
+const AppManifestSchema = Schema.Struct({ expo: Schema.optional(ExpoConfigSchema) });
+
+export type ExpoConfig = Schema.Schema.Type<typeof ExpoConfigSchema>;
+
 export interface ExpoAppConfig {
-  /** Parsed `expo` config object from a JSON app config, or null. */
-  readonly config: Record<string, unknown> | null;
-  /** The file `config` was parsed from (so checks can report it), or null. */
+  readonly config: ExpoConfig | null;
   readonly configFile: string | null;
 }
 
-const readFileSafe = (filePath: string): string | null => {
+const NO_CONFIG: ExpoAppConfig = { config: null, configFile: null };
+
+const decodeExpoConfig = (filePath: string): ExpoConfig | null => {
+  let raw: unknown;
   try {
-    return fs.readFileSync(filePath, "utf-8");
+    raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
   } catch {
     return null;
   }
-};
-
-const unwrapExpoConfig = (parsed: unknown): Record<string, unknown> | null => {
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
-  const asRecord = parsed as Record<string, unknown>;
-  const expoField = asRecord.expo;
-  if (typeof expoField === "object" && expoField !== null && !Array.isArray(expoField)) {
-    return expoField as Record<string, unknown>;
-  }
-  return asRecord;
+  return Option.getOrNull(Schema.decodeUnknownOption(AppManifestSchema)(raw))?.expo ?? null;
 };
 
 export const readExpoAppConfig = (rootDirectory: string): ExpoAppConfig => {
-  // A dynamic config can override anything in app.json and we can't evaluate
-  // it offline, so don't trust the static JSON when one is present.
-  const hasDynamicConfig = APP_CONFIG_DYNAMIC_FILES.some((fileName) =>
-    isFile(path.join(rootDirectory, fileName)),
-  );
-  if (hasDynamicConfig) return { config: null, configFile: null };
-
+  if (APP_CONFIG_DYNAMIC_FILES.some((fileName) => isFile(path.join(rootDirectory, fileName)))) {
+    return NO_CONFIG;
+  }
   for (const fileName of APP_CONFIG_JSON_FILES) {
     const filePath = path.join(rootDirectory, fileName);
     if (!isFile(filePath)) continue;
-    const contents = readFileSafe(filePath);
-    if (contents === null) continue;
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(contents);
-    } catch {
-      continue;
-    }
-    const config = unwrapExpoConfig(parsed);
+    const config = decodeExpoConfig(filePath);
     if (config) return { config, configFile: fileName };
   }
-  return { config: null, configFile: null };
-};
-
-// Reads a nested value off the parsed config, e.g. `expo.updates.x`.
-export const getNestedConfigValue = (
-  config: Record<string, unknown> | null,
-  pathSegments: ReadonlyArray<string>,
-): unknown => {
-  let current: unknown = config;
-  for (const segment of pathSegments) {
-    if (typeof current !== "object" || current === null || Array.isArray(current)) return undefined;
-    current = (current as Record<string, unknown>)[segment];
-  }
-  return current;
+  return NO_CONFIG;
 };

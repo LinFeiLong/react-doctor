@@ -1,7 +1,7 @@
 import type { Diagnostic } from "../../types/index.js";
 import type { ExpoCheckContext } from "./expo-check-context.js";
 import { buildExpoDiagnostic } from "./utils/build-expo-diagnostic.js";
-import { getNestedConfigValue, readExpoAppConfig } from "./utils/read-expo-app-config.js";
+import { readExpoAppConfig } from "./utils/read-expo-app-config.js";
 
 // `expo.updates.disableAntiBrickingMeasures: true` turns off the safeguards
 // that let expo-updates recover from a bad update; the Expo docs state it
@@ -12,9 +12,7 @@ import { getNestedConfigValue, readExpoAppConfig } from "./utils/read-expo-app-c
 // documented false-negative (see `readExpoAppConfig`).
 export const checkExpoUpdatesConfig = (context: ExpoCheckContext): Diagnostic[] => {
   const appConfig = readExpoAppConfig(context.rootDirectory);
-  if (getNestedConfigValue(appConfig.config, ["updates", "disableAntiBrickingMeasures"]) !== true) {
-    return [];
-  }
+  if (appConfig.config?.updates?.disableAntiBrickingMeasures !== true) return [];
 
   return [
     buildExpoDiagnostic({
