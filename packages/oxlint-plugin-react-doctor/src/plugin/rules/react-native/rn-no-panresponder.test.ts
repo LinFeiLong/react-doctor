@@ -34,4 +34,17 @@ describe("rn-no-panresponder", () => {
     const result = runRule(rnNoPanresponder, code);
     expect(result.diagnostics).toHaveLength(0);
   });
+
+  // Type-only imports are erased at build time → no runtime PanResponder.
+  it("does NOT flag a declaration-level `import type`", () => {
+    const code = `import type { PanResponder } from "react-native";`;
+    const result = runRule(rnNoPanresponder, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  it("does NOT flag an inline `import { type PanResponder }`", () => {
+    const code = `import { View, type PanResponder } from "react-native";`;
+    const result = runRule(rnNoPanresponder, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
 });
