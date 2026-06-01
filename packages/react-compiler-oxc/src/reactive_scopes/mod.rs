@@ -61,7 +61,9 @@ pub use prune_unused_lvalues::prune_unused_lvalues;
 pub use prune_unused_scopes::prune_unused_scopes;
 pub use rename_variables::rename_variables;
 pub use stabilize_block_ids::stabilize_block_ids;
-pub use validate_preserved_manual_memoization::validate_preserved_manual_memoization;
+pub use validate_preserved_manual_memoization::{
+    validate_preserved_manual_memoization, validate_preserved_manual_memoization_lint,
+};
 pub use model::{
     ReactiveBlock, ReactiveFunction, ReactiveInstruction, ReactiveLogicalValue,
     ReactiveOptionalCallValue, ReactiveScopeBlock, ReactiveSequenceValue, ReactiveStatement,

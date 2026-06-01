@@ -132,6 +132,9 @@ struct Validator {
     manual_memo_state: Option<ManualMemoBlockState>,
     /// Set to `true` if any `PreserveManualMemo` diagnostic would be recorded.
     has_error: bool,
+    /// Source locations of each failure (for the lint surface; the codegen path
+    /// only consults [`has_error`]).
+    failure_locs: Vec<crate::hir::place::SourceLocation>,
 }
 
 fn is_named(identifier: &Identifier) -> bool {
@@ -146,7 +149,13 @@ impl Validator {
             temporaries: HashMap::new(),
             manual_memo_state: None,
             has_error: false,
+            failure_locs: Vec::new(),
         }
+    }
+
+    fn record_failure(&mut self, loc: &crate::hir::place::SourceLocation) {
+        self.has_error = true;
+        self.failure_locs.push(loc.clone());
     }
 
     /// `recordDepsInValue(value, state)` — recursively visit values + instructions
@@ -325,7 +334,7 @@ impl Validator {
                                         && !self.pruned_scopes.contains(&scope)
                                     {
                                         // "This dependency may be modified later".
-                                        self.has_error = true;
+                                        self.record_failure(&value.loc);
                                     }
                                 }
                             }
@@ -365,7 +374,7 @@ impl Validator {
                         if is_unmemoized(id, &self.scopes) {
                             // "This value was memoized in source but not in
                             // compilation output".
-                            self.has_error = true;
+                            self.record_failure(&decl.loc);
                         }
                     }
                 }
@@ -445,7 +454,7 @@ impl Validator {
             }
         }
         // No source dependency matched the inferred dependency.
-        self.has_error = true;
+        self.record_failure(&dep.loc);
     }
 
     fn visit_block(&mut self, block: &ReactiveBlock) {
@@ -576,4 +585,55 @@ pub fn validate_preserved_manual_memoization(func: &ReactiveFunction) -> bool {
     let mut validator = Validator::new();
     validator.visit_block(&func.body);
     validator.has_error
+}
+
+#[cfg(test)]
+mod lint_tests {
+    use crate::compile::lint;
+    use crate::diagnostic::ErrorCategory;
+
+    fn count(code: &str) -> usize {
+        lint(code, "Component.tsx")
+            .iter()
+            .filter(|diagnostic| diagnostic.category == ErrorCategory::PreserveManualMemo)
+            .count()
+    }
+
+    #[test]
+    fn flags_dropped_memoization() {
+        // The inferred dependency `value` is not present in the source deps `[]`,
+        // so the compiler cannot preserve the manual memoization.
+        let code = "import { useMemo } from \"react\";\nfunction Component({ value }) {\n  const x = useMemo(() => identity(value), []);\n  return <div>{x}</div>;\n}\n";
+        assert!(count(&code) >= 1);
+    }
+
+    #[test]
+    fn allows_correct_memoization() {
+        let code = "import { useMemo } from \"react\";\nfunction Component({ value }) {\n  const x = useMemo(() => identity(value), [value]);\n  return <div>{x}</div>;\n}\n";
+        assert_eq!(count(&code), 0);
+    }
+}
+
+const PRESERVE_MEMO_REASON: &str = "Existing memoization could not be preserved";
+const PRESERVE_MEMO_DESCRIPTION: &str = "React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected.";
+const PRESERVE_MEMO_DETAIL: &str = "Could not preserve existing manual memoization";
+
+/// The lint-surface entry: emit located `PreserveManualMemo` diagnostics.
+pub fn validate_preserved_manual_memoization_lint(
+    func: &ReactiveFunction,
+    resolver: &crate::diagnostic::PositionResolver,
+    diagnostics: &mut crate::diagnostic::Diagnostics,
+) {
+    let mut validator = Validator::new();
+    validator.visit_block(&func.body);
+    for loc in validator.failure_locs {
+        diagnostics.push(
+            crate::diagnostic::Diagnostic::create(
+                crate::diagnostic::ErrorCategory::PreserveManualMemo,
+                PRESERVE_MEMO_REASON,
+            )
+            .with_description(PRESERVE_MEMO_DESCRIPTION)
+            .with_error_detail(resolver.resolve(&loc), Some(PRESERVE_MEMO_DETAIL.to_string())),
+        );
+    }
 }

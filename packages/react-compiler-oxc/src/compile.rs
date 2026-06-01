@@ -1503,7 +1503,7 @@ fn compile_one_reactive(
         )
         .map_err(|e| format!("{e}"))?;
         let (reactive, unique_identifiers, fbt_operands) =
-            build_reactive(&mut func, &env, code, uid_allocator)?;
+            build_reactive(&mut func, &env, code, uid_allocator, None)?;
         Ok::<_, String>((reactive, func.outlined.clone(), unique_identifiers, fbt_operands))
     }));
     match result {
@@ -1522,6 +1522,7 @@ fn build_reactive(
     env: &Environment,
     source: &str,
     uid_allocator: &mut crate::passes::outline_functions::UidAllocator,
+    lint_sink: Option<(&PositionResolver, &mut Diagnostics)>,
 ) -> Result<
     (
         crate::reactive_scopes::ReactiveFunction,
@@ -1683,8 +1684,21 @@ fn build_reactive(
     if env.config.enable_preserve_existing_memoization_guarantees
         || env.config.validate_preserve_existing_memoization_guarantees
     {
-        if crate::reactive_scopes::validate_preserved_manual_memoization(&reactive) {
-            return Err(PRESERVE_MEMO_ERROR.to_string());
+        match lint_sink {
+            // Lint mode: collect located diagnostics rather than bailing, so the
+            // `preserve-manual-memoization` rule can report the violation.
+            Some((resolver, diagnostics)) => {
+                crate::reactive_scopes::validate_preserved_manual_memoization_lint(
+                    &reactive,
+                    resolver,
+                    diagnostics,
+                );
+            }
+            None => {
+                if crate::reactive_scopes::validate_preserved_manual_memoization(&reactive) {
+                    return Err(PRESERVE_MEMO_ERROR.to_string());
+                }
+            }
         }
     }
 
@@ -1813,7 +1827,11 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
         };
         let collected = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _guard = SuppressPanicOutput::new();
-            let mut env = Environment::new(fn_type, EnvironmentConfig::from_source(code), context);
+            let mut env = Environment::new(
+                fn_type,
+                EnvironmentConfig::from_source(code),
+                context.clone(),
+            );
             let mut func = match lower(
                 &target.func,
                 target.body,
@@ -1835,6 +1853,35 @@ pub fn lint(code: &str, filename: &str) -> Vec<Diagnostic> {
                 return local.into_vec();
             }
             run_lint_validations(&func, &resolver, &mut local);
+
+            // `validatePreservedManualMemoization` runs on the post-
+            // `PruneHoistedContexts` reactive IR (Pipeline.ts), so it needs a
+            // separate reactive build from a fresh lowering. A bail here just
+            // skips this rule for the function.
+            let mut reactive_env = Environment::new(
+                fn_type,
+                EnvironmentConfig::from_source(code),
+                context.clone(),
+            );
+            if let Ok(mut reactive_func) = lower(
+                &target.func,
+                target.body,
+                target.is_arrow_expression_body,
+                &semantic,
+                &mut reactive_env,
+                Default::default(),
+                false,
+            ) {
+                let mut allocator =
+                    crate::passes::outline_functions::UidAllocator::with_reserved(Default::default());
+                let _ = build_reactive(
+                    &mut reactive_func,
+                    &reactive_env,
+                    code,
+                    &mut allocator,
+                    Some((&resolver, &mut local)),
+                );
+            }
             local.into_vec()
         }))
         .unwrap_or_default();
