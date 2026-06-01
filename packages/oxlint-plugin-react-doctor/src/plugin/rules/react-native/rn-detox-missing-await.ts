@@ -102,7 +102,7 @@ export const rnDetoxMissingAwait = defineRule<Rule>({
   requires: ["react-native"],
   severity: "warn",
   recommendation:
-    "Prepend `await` to Detox actions, `waitFor(...)` chains, and `expect(element(...))` assertions — they return promises tied to Detox's synchronization, so a missing await runs steps out of order.",
+    "Prepend `await` to Detox actions, `waitFor(...)` chains, and `expect(element(...))` assertions. They return promises tied to Detox's synchronization, so a missing await runs steps out of order.",
   create: (context: RuleContext) => {
     const filename = normalizeFilename(context.filename ?? "");
     if (!filename || !DETOX_TEST_FILE.test(filename)) return EMPTY_VISITORS;
@@ -125,7 +125,7 @@ export const rnDetoxMissingAwait = defineRule<Rule>({
           if (!DETOX_ELEMENT_ACTIONS.has(terminalMethod)) return;
           context.report({
             node,
-            message: `This Detox action (\`${terminalMethod}\`) isn't awaited — it runs out of order and can race. Prepend \`await\`.`,
+            message: `This Detox action (\`${terminalMethod}\`) isn't awaited, so it runs out of order and can race. Prepend \`await\`.`,
           });
           return;
         }
@@ -133,7 +133,7 @@ export const rnDetoxMissingAwait = defineRule<Rule>({
         if (root.calleeName === "waitFor") {
           context.report({
             node,
-            message: "This Detox `waitFor(...)` chain isn't awaited — prepend `await`.",
+            message: "This Detox `waitFor(...)` chain isn't awaited. Prepend `await`.",
           });
           return;
         }
@@ -141,7 +141,7 @@ export const rnDetoxMissingAwait = defineRule<Rule>({
         if (root.calleeName === "expect" && isDetoxExpectSubject(root.rootCall)) {
           context.report({
             node,
-            message: "This Detox `expect(element(...))` assertion isn't awaited — prepend `await`.",
+            message: "This Detox `expect(element(...))` assertion isn't awaited. Prepend `await`.",
           });
         }
       },

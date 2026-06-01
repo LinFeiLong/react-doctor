@@ -94,7 +94,7 @@ describe("rn-no-deep-imports", () => {
     const code = `import { NativeScrollEvent } from "react-native/Libraries/Components/ScrollView/ScrollView";`;
     const result = runRule(rnNoDeepImports, code);
     expect(result.diagnostics).toHaveLength(1);
-    expect(result.diagnostics[0].message).toContain('import from "react-native"');
+    expect(result.diagnostics[0].message).toContain('from "react-native"');
     expect(result.diagnostics[0].message).not.toContain("{ ScrollView }");
   });
 });

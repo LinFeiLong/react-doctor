@@ -83,7 +83,7 @@ const classifyDeepImport = (source: unknown): DeepImportFinding | null => {
   if (source === NEW_APP_SCREEN_PATH || source.startsWith(`${NEW_APP_SCREEN_PATH}/`)) {
     return {
       message:
-        "`react-native/Libraries/NewAppScreen` was moved out of core in React Native 0.80 — import from `@react-native/new-app-screen` instead.",
+        "`react-native/Libraries/NewAppScreen` was moved out of core in React Native 0.80; import from `@react-native/new-app-screen` instead.",
     };
   }
 
@@ -97,7 +97,7 @@ const classifyDeepImport = (source: unknown): DeepImportFinding | null => {
   const exportName = lastPathSegment(source);
   if (PUBLIC_RN_ROOT_EXPORTS.has(exportName)) {
     return {
-      message: `Deep import from "${source}" is a deprecated React Native internal subpath (RFC 0894) and breaks on upgrade — import from "react-native" instead.`,
+      message: `Deep import from "${source}" is a deprecated React Native internal subpath (RFC 0894) and breaks on upgrade. Import from "react-native" instead.`,
     };
   }
   return null;

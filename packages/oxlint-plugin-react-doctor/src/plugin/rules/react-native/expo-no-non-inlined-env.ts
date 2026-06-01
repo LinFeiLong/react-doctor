@@ -40,7 +40,7 @@ export const expoNoNonInlinedEnv = defineRule<Rule>({
   requires: ["expo"],
   severity: "warn",
   recommendation:
-    "Read env vars with static dotted access (`process.env.EXPO_PUBLIC_NAME`) — computed access and destructuring aren't inlined by babel-preset-expo and resolve to `undefined` at runtime.",
+    "Read env vars with static dotted access (`process.env.EXPO_PUBLIC_NAME`). Computed access and destructuring aren't inlined by babel-preset-expo and resolve to `undefined` at runtime.",
   create: (context: RuleContext) => {
     const filename = normalizeFilename(context.filename ?? "");
     if (filename && NODE_OR_BUILD_FILE.test(filename)) return EMPTY_VISITORS;

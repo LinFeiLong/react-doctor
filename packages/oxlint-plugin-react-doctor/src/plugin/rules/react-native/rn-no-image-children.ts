@@ -43,7 +43,7 @@ export const rnNoImageChildren = defineRule<Rule>({
   requires: ["react-native"],
   severity: "error",
   recommendation:
-    "React Native's `<Image>` can't render children — use `<ImageBackground>` (same `source`/`style` props) to layer content over an image.",
+    "React Native's `<Image>` can't render children. Use `<ImageBackground>` (same `source`/`style` props) to layer content over an image.",
   create: (context: RuleContext) => ({
     JSXElement(node: EsTreeNodeOfType<"JSXElement">) {
       const openingElement = node.openingElement;

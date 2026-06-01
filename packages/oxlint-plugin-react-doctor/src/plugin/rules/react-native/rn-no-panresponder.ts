@@ -20,7 +20,7 @@ export const rnNoPanresponder = defineRule<Rule>({
   requires: ["react-native"],
   severity: "warn",
   recommendation:
-    "Use `react-native-gesture-handler` (`Gesture.Pan()`) instead of `PanResponder` — it runs gestures on the native UI thread, so they stay smooth even when the JS thread is busy.",
+    "Use `react-native-gesture-handler` (`Gesture.Pan()`) instead of `PanResponder`. It runs gestures on the native UI thread, so they stay smooth even when the JS thread is busy.",
   create: (context: RuleContext) => ({
     ImportDeclaration(node: EsTreeNodeOfType<"ImportDeclaration">) {
       if (node.source?.value !== "react-native") return;

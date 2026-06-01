@@ -27,7 +27,7 @@ export const rnNoSetNativeProps = defineRule<Rule>({
   requires: ["react-native"],
   severity: "warn",
   recommendation:
-    "Drive the prop through React state, an `Animated.Value` (with `useNativeDriver: true`), or a Reanimated shared value — `setNativeProps` is a silent no-op under the New Architecture.",
+    "Drive the prop through React state, an `Animated.Value` (with `useNativeDriver: true`), or a Reanimated shared value. `setNativeProps` is a silent no-op under the New Architecture.",
   create: (context: RuleContext) => ({
     CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
       const callee = node.callee;
@@ -39,7 +39,7 @@ export const rnNoSetNativeProps = defineRule<Rule>({
       context.report({
         node,
         message:
-          "`setNativeProps` is a silent no-op under the New Architecture (Fabric) — this imperative update won't change the view. Drive the prop via state, an Animated.Value, or a Reanimated shared value.",
+          "`setNativeProps` is a silent no-op under the New Architecture (Fabric), so this imperative update won't change the view. Drive the prop via state, an Animated.Value, or a Reanimated shared value.",
       });
     },
   }),
