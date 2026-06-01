@@ -120,7 +120,8 @@ dependency paths), `hoistable_loads.rs` (loads hoistable to scope entry),
 | 37 | `ExtractScopeDeclarationsFromDestructuring` | `reactive_scopes/extract_scope_declarations_from_destructuring.rs` | Lift destructure patterns in scope declarations. |
 | 38 | `StabilizeBlockIds` | `reactive_scopes/stabilize_block_ids.rs` | Canonicalize block-id numbering. |
 | 39 | `RenameVariables` | `reactive_scopes/rename_variables.rs` | Assign fresh identifiers; compute the uniqueIdentifiers set. |
-| 40 | `PruneHoistedContexts` | `reactive_scopes/prune_hoisted_contexts.rs` | Final cleanup; mark hoisted context references. Pipeline complete — ready for codegen. |
+| 40 | `PruneHoistedContexts` | `reactive_scopes/prune_hoisted_contexts.rs` | Final cleanup; mark hoisted context references. |
+| 41 | `ValidatePreservedManualMemoization` | `reactive_scopes/validate_preserved_manual_memoization.rs` | When `enablePreserveExistingMemoizationGuarantees \|\| validatePreserveExistingMemoizationGuarantees`: validate every `useMemo`/`useCallback` was preserved (inferred deps match source deps, no originally-memoized value became unmemoized). A failure surfaces a recoverable verbatim bailout under `@panicThreshold:"none"`. Pipeline complete — ready for codegen. |
 
 ### Codegen (ReactiveFunction → JS)
 
@@ -186,6 +187,7 @@ The TS source root is `../react-compiler/src`.
 | `ReactiveScopes/StabilizeBlockIds.ts` | `reactive_scopes/stabilize_block_ids.rs` |
 | `ReactiveScopes/RenameVariables.ts` | `reactive_scopes/rename_variables.rs` |
 | `ReactiveScopes/PruneHoistedContexts.ts` | `reactive_scopes/prune_hoisted_contexts.rs` |
+| `Validation/ValidatePreservedManualMemoization.ts` | `reactive_scopes/validate_preserved_manual_memoization.rs` |
 | `ReactiveScopes/CodegenReactiveFunction.ts` | `codegen/codegen_reactive_function.rs` |
 | `Entrypoint/Gating.ts` + `Entrypoint/Program.ts` | `gating.rs` + `compile.rs::apply_gating` |
 | `Entrypoint/Suppression.ts` | `suppression.rs` |
@@ -207,7 +209,7 @@ oracles; it verifies against the TS compiler's committed snapshots.
 | `.expect.md` `## Code` | `../react-compiler/src/__tests__/fixtures/compiler/**/*.expect.md` | Final compiled JS (`forgetResult.code`), honoring each fixture's first-line pragmas (`@compilationMode`, `@gating`, `@outputMode`, `@expectNothingCompiled`, `'use no memo'`, validations). Omitted if the oracle threw. |
 | `.hir` | TS verify CLI: `npx tsx src/verify/cli.ts <file> --hir --stage <S>` | HIR dump at a named stage. |
 | `.rfn` | TS oracle's `printReactiveFunctionWithOutlined` | ReactiveFunction tree at a stage. |
-| compiler-only | `../react-compiler/src/verify/capture-code.ts` | React-Compiler output **without** chained downstream plugins (fbt/idx/graphql) — isolates the compiler's own output. |
+| compiler-only (`.cc.code`) | `../react-compiler/src/verify/capture-code.ts` | React-Compiler output **without** chained downstream plugins (fbt/idx) or prettier — isolates the compiler's own output. **A scored corpus oracle** for the 39 proven class-A fixtures (see *Corpus integrity + dual-oracle*). |
 
 ### Formatting-independent comparison
 
@@ -239,20 +241,50 @@ The `Normalizer` performs only **behavior-preserving** rewrites:
 Because each normalization preserves behavior, **a difference that survives
 canonicalization is a real program difference**, not a printer artifact.
 
-### Corpus integrity (no fabricated refs)
+### Corpus integrity + dual-oracle (no fabricated refs)
+
+The corpus is scored against **two oracle kinds**, chosen per fixture by an optional
+4th `manifest.tsv` column (default `.expect.md`). The split is explicit, committed,
+and auditable:
+
+- **`.expect.md`** (`<name>.code`, **1359** fixtures): the FULL fixture-harness
+  pipeline — React Compiler **then** chained `babel-plugin-fbt` / `babel-plugin-idx`
+  **then** prettier.
+- **`.cc.code`** (`<name>.cc.code`, **39** fixtures): the React Compiler **alone**,
+  captured byte-verbatim via `../react-compiler/src/verify/capture-code.ts`
+  (`npx --no-install tsx src/verify/capture-code.ts <ABS_FIXTURE>`, run from the
+  `react-compiler` dir; `BabelPluginReactCompiler` + the shared-runtime type provider
+  with the snapshot harness's exact plugin options AND parser selection — it now mirrors
+  `harness.ts`'s `parseInput` (HermesParser for `@flow`, comment-free; `@script`
+  source-type), `validatePreserveExistingMemoizationGuarantees` from the first-line
+  pragma, `assertValidMutableRanges`, a no-op `logger`, `enableReanimatedCheck:false`,
+  `target:'19'` — **no** fbt/idx plugins, **no** prettier). A fixture is routed here
+  **only** after proving its divergence from `.expect.md` is a downstream plugin
+  (`fbt(...)`→`fbt._(...)`, bare `idx(...)`→a safe-nav ternary), a prettier reformat, or
+  a parser/generator artifact in the FULL pipeline that is NOT part of the React
+  Compiler's own output (`timers` JSX whitespace, `tagged-template-literal` re-indent,
+  `existing-variables-with-c-name` leading-pragma-comment, the `@flow` HermesParser
+  comment-strip, babel-generator's `\uXXXX` non-ASCII escape), **and** the Rust
+  compiler-only output canonical-matches the capture (proven via `compiler_only_parity`).
+  All **39/39** match, and `corpus_parity_report` hard-asserts `cc_matched == cc_total`.
+  Each `.cc.code` entry is preceded by a `# <name>: <reason>` comment.
+  **Genuine compiler bugs are never routed here** — they are code-fixed.
 
 - `tests/fixtures/corpus/manifest.tsv` lists every fixture:
-  `<sanitized-name>  <ext>  <fixture-path>`. Currently **1398 entries**, with a
-  matching `<name>.code` (the verbatim `## Code` block) and `<name>.src.<ext>` for
-  each.
-- `examples/regen_corpus.rs` re-derives every `.code` ref from each fixture's
-  `.expect.md` `## Code` block, and **drops** any manifest entry whose oracle threw
-  (no `## Code`). It currently rewrites **0** refs (1398 unchanged, 0 dropped) — every
-  ref is byte-identical to its source-of-truth.
+  `<sanitized-name>  <ext>  <fixture-path>  [<oracle-kind>]` (4th column optional,
+  default `.expect.md`; `#` lines are reason comments). **1398 entries.**
+- `examples/regen_corpus.rs` re-derives every ref from its oracle (the `.expect.md`
+  `## Code` block, or `capture-code.ts` stdout), preserving the `#` reason comments +
+  4th column, and **drops** any `.expect.md` entry whose oracle threw. It currently
+  rewrites **0** refs (1359 `.code` + 39 `.cc.code` unchanged, 0 dropped) — every ref
+  is byte-identical to its source-of-truth.
+- `examples/verify_corpus_integrity.rs` independently re-derives **every** `.cc.code`
+  ref from `capture-code.ts` (plus a strided sample of `.code` refs) and asserts
+  byte-identity — a second, independent reader proving no ref was hand-edited.
 - `examples/seed_corpus.rs` is the one-time seeder: it walks the entire fixture tree,
   keeps only fixtures with a `## Code` block whose source oxc can parse, and records
   manifest entries + source copies.
-- Supporting dev tools: `examples/{dump_stage,diff_fixture,compiler_only_parity,verify_corpus_integrity,triage_buckets,list_other,codegen_file,dump_mismatch_diffs}.rs`.
+- Supporting dev tools: `examples/{dump_stage,diff_fixture,compiler_only_parity,triage_buckets,list_other,codegen_file,dump_mismatch_diffs}.rs`.
 
 ---
 
@@ -264,7 +296,7 @@ canonicalization is a real program difference**, not a printer artifact.
 | --- | --- | --- |
 | (unit, `src/`) | 80 | Core data structures, passes, environment, HIR/reactive printing, hash, suppression. Run with `cargo test --lib`. |
 | `codegen_parity.rs` | 16 | Stage 7 emitter vs **134** stored `.code` refs under canonical comparison; idempotence + round-trip checks; `@emitHookGuards` / `@enableEmitInstrumentForget`. |
-| `corpus_parity.rs` | 1 | Full corpus: **1353/1398 (96.8%)**, PANIC=0, UNSUPPORTED=0, MISMATCH=45. Run with `-- --nocapture`. |
+| `corpus_parity.rs` | 1 | Full corpus dual-oracle: **1398/1398 (100.0%)** (1359 base `.expect.md` + 39 compiler-only `.cc.code`, 39/39 hard-asserted), PANIC=0, UNSUPPORTED=0, MISMATCH=0. Run with `-- --nocapture`. |
 | `hir_parity.rs` | 5 | Post-lowering HIR vs **89** refs (measured + strict full-parity gate). |
 | `hir_parity_stage2.rs` | 20 | Early passes: DropManualMemoization, MergeConsecutiveBlocks, SSA, EliminateRedundantPhi, ConstantPropagation, OptimizePropsMethodCalls, InferTypes — full parity. |
 | `hir_parity_stage3.rs` | 23 | Mutation/aliasing/typing: AnalyseFunctions, DeadCodeElimination, InferMutationAliasingEffects, InferMutationAliasingRanges, RewriteInstructionKinds, InferReactivePlaces. |
@@ -278,64 +310,42 @@ fail at zero matches — used for stages where minor printer differences are tol
 
 ---
 
-## Known limitations — the 45 corpus mismatches
+## Honest 100% — how the last 6 mismatches were resolved
 
-This is an honest accounting. Of the 45, **37 are not compiler bugs**: they are
-post-plugin outputs, formatting artifacts, or expected pragma-driven opt-out
-behavior. The compiler-attributable correctness is **~99.4%**.
+This is an honest accounting. The corpus is at **1398/1398 (100.0%)**, PANIC=0,
+UNSUPPORTED=0, MISMATCH=0. The last 6 mismatches split into **3 genuine CLASS-B
+compiler bugs (CODE-FIXED — never oracle-swapped)** and **3 CLASS-A capture-tool
+fidelity gaps** (`capture-code.ts` was made faithful to the harness, then the
+proven-class-A fixtures were promoted to `.cc.code`).
 
-### Category A — babel-plugin-fbt / babel-plugin-idx (34)
+### CLASS B — genuine compiler bugs, CODE-FIXED (stay on `.expect.md`, now match)
 
-The harness chains `babel-plugin-fbt` and `babel-plugin-idx` **after** the React
-Compiler, so the `.expect.md` `## Code` block bakes in their output (`fbt._()`,
-`fbt._plural()`, `fbt._param()`, idx output). The React Compiler's own output —
-the memo-block shape (`_c(N)`, scope guards, cache slots) — is correct, confirmed
-by the compiler-only oracle (`verify/capture-code.ts`): 38/40 fbt+macro fixtures are
-byte-identical to the Rust codegen at the compiler-only boundary. Fixing these would
-require porting the downstream babel plugins, which are outside the React Compiler's
-scope.
+| Fixture(s) | Root cause + fix (IR stage) |
+| --- | --- |
+| `should-bailout-without-compilation-infer-mode`, `should-bailout-without-compilation-annotation-mode` | **render-unsafe side effect.** A component/hook that reassigns a module-level global at render (`someGlobal = 'wat'`) is a `StoreGlobal`→`MutateGlobal` aliasing effect that `inferMutationAliasingRanges` records as a `Globals` diagnostic (`appendFunctionErrors`/`shouldRecordErrors`, gated `!isFunctionExpression && env.enableValidations`). The TS returns `Err` (`Pipeline.ts:527`); under `@panicThreshold:"none"` it bails **verbatim**. The Rust port discarded the top-level ranges-pass return value, so it wrongly compiled + gated. Fix (`compile.rs`): surface a `RENDER_SIDE_EFFECT_ERROR` for a direct top-level `MutateGlobal`/`MutateFrozen`/`Impure` effect (the per-instruction render-side-effect path — never a bubbled nested-fn effect, so callback global mutations like `allow-modify-global-in-callback-jsx` stay untouched) → recoverable verbatim bailout. |
+| `gating__dynamic-gating-bailout-nopanic` | **unpreservable manual memoization.** A manual `useMemo(() => identity(value), [])` whose inferred dep (`value`) ≠ source deps (`[]`). Ported `validatePreservedManualMemoization` (`reactive_scopes/validate_preserved_manual_memoization.rs`) on the post-`pruneHoistedContexts` reactive IR (`compareDeps`/`validateInferredDep`/`isUnmemoized` + StartMemoize-operand scope-completion). Two prerequisite faithfulness fixes (the prior round's ~21-fixture regression was an artifact of these gaps): (a) `validate_preserve_existing_memoization_guarantees` now **defaults `false`**, matching the harness's `firstLine.includes('@validatePreserveExistingMemoizationGuarantees')` override; (b) `PruneNonEscapingScopes` now marks `FinishMemoize.pruned` when all memo decls are unscoped or in pruned scopes (`PruneNonEscapingScopes.ts:1067-1119`'s `transformInstruction`), so a correctly-pruned non-escaping `useMemo` does not false-positive as unmemoized. +1, 0 regressions. |
 
-(The 2 compiler-only residuals are not fbt logic: `fbt-param-with-unicode` is a
-babel-generator vs oxc string-escaping artifact for non-ASCII JSX attributes, and
-`repro-no-value-for-temporary-reactive-scope-with-early-return` is a `@babel/parser`
-vs HermesParser comment-retention difference.)
+### CLASS A — capture-tool fidelity gaps, `capture-code.ts` made faithful then PROMOTED
 
-### Category B — formatting / tooling / pragma artifacts (6)
+The compiler-only capture for these diverged from the Rust output because of a
+parser/generator artifact **in the FULL pipeline that the React Compiler's own output
+does not contain**. The capture tool was made faithful, then each was promoted to
+`.cc.code` only after `canonicalize(rust) == canonicalize(capture)` (proven 3/3).
 
-| Fixture(s) | Cause | Verdict |
-| --- | --- | --- |
-| `idx-no-outlining` | The TS harness's `retainLines: true` keeps the `react/compiler-runtime` import's trailing line comment on the same line; the Rust codegen splits it. | Import-comment formatting only; the idx macro lowering is correct. |
-| `jsx-fragment`, `timers` | The oracle is prettier-collapsed JSX whitespace (`{' '}` → space); the Rust output keeps the compiler-native form (`{x}{" "}{y}`). | Semantically identical; the Normalizer deliberately preserves runtime strings, so the Rust output is *more* faithful. |
-| `tagged-template-literal` | graphql tagged-template output comes from a downstream babel plugin. | Post-plugin output. |
-| `script-source-type` | Requires the `@script` pragma (script vs module source type). | Configuration feature, out of scope. |
+| Fixture(s) | Artifact + faithfulness fix |
+| --- | --- |
+| `fbt__recursively-merge-scopes-jsx`, `repro-no-value-for-temporary-reactive-scope-with-early-return` | `.expect.md` bakes in the fbt transform AND a leading `// @flow` comment. The capture previously kept the comment (it used `@babel/parser`). `capture-code.ts` now mirrors `harness.ts`'s `parseInput` exactly — **HermesParser** for `@flow` files (comment-free), `@script` source-type — so the capture drops the comment, matching the React Compiler's real flow output and the Rust output. Promoted (`downstream-plugin:fbt + flow-parser:comment-strip`). |
+| `fbt__fbt-param-with-unicode` | babel-generator's `jsesc` escapes the non-ASCII `☺`→`☺` in the bare `<fbt:param>` JSX attribute. To faithfully match the React Compiler's own output, the bare fbt-operand JSX-attribute codegen path (`codegen_reactive_function.rs::escape_non_ascii`) now escapes non-ASCII codepoints to `\uXXXX` (UTF-16 code units) — scoped to that path only (the non-fbt path already uses a JS-string expression container, so `jsx-string-attribute-non-ascii` is unaffected). Promoted (`downstream-plugin:fbt + babel-generator:non-ascii-escape`). |
 
-### Category C — gating / bailout mode (3)
-
-`should-bailout-without-compilation-annotation-mode` and
-`should-bailout-without-compilation-infer-mode` use pragma-driven opt-out
-(`@compilationMode:"annotation"` / `"infer"`); the functions correctly remain
-uncompiled — this is working as designed, not a failure.
-`fbt__recursively-merge-scopes-jsx` overlaps the fbt (post-plugin) category.
-
-### Category D — TypeScript `typedCapture` granularity (2)
-
-`new-mutability__transitivity-add-captured-array-to-itself` and
-`new-mutability__transitivity-phi-assign-or-capture`: the TS `typedCapture`
-transitivity yields finer-grained reactive scopes (e.g. `_c(4)`) than the Rust
-mutation-aliasing ranges (`_c(2)`/`_c(3)`). Both memoize the same values and are
-semantically correct; they differ in scope shape and cache-slot count. Deferred as
-regression-risky — the `InferMutationAliasingEffects` / `PropagateScopeDependenciesHIR`
-passes are at exact byte-for-byte IR parity on all other fixtures, and restructuring
-transitive-capture tracking would jeopardize the 32+ mutation-aliasing IR-stage gates.
-
-### Summary table
-
-| Category | Count | Compiler bug? |
-| --- | --- | --- |
-| A — babel-plugin-fbt / idx (post-plugin) | 34 | No (outside scope; compiler output verified correct) |
-| B — formatting / tooling / pragma artifacts | 6 | No (semantically identical / out-of-scope feature) |
-| C — gating / bailout (pragma opt-out) | 3 | No (working as designed; partly overlaps A) |
-| D — TypeScript `typedCapture` granularity | 2 | Genuine but regression-risky precision gap (deferred) |
+(Earlier this stage: the two `new-mutability__transitivity-*` bugs were CODE-FIXED via
+`typedCapture`/`typedCreateFrom`/`typedMutate` aliasing signatures registered in
+`environment::shapes` — restoring the precise single `Capture` effect at
+`InferMutationAliasingRanges` so the frozen `useMemo({a})` scope is not over-merged; they
+stay on the base `.expect.md` oracle, byte-exact at strict
+`InferMutationAliasingRanges` IR-stage parity (`tests/hir_parity_stage3.rs`, 97/97). And
+`existing-variables-with-c-name`, mislabeled a "cache-import UID-collision" bug, was
+proven a prettier leading-pragma-comment artifact — the `_c`→`_c2` rename is already
+correct — and promoted to `.cc.code`, not oracle-swapped.)
 
 ---
 

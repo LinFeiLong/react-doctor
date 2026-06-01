@@ -103,7 +103,13 @@ pub struct EnvironmentConfig {
     /// (paired with `@enablePreserveExistingMemoizationGuarantees:false`) disables it.
     pub enable_transitively_freeze_function_expressions: bool,
 
-    /// `validatePreserveExistingMemoizationGuarantees` (TS default `true`). See
+    /// `validatePreserveExistingMemoizationGuarantees`. The Zod schema default is
+    /// `true`, but the test harness OVERRIDES it from the first-line pragma:
+    /// `validatePreserveExistingMemoizationGuarantees = firstLine.includes(
+    /// '@validatePreserveExistingMemoizationGuarantees')` (`harness.ts:158-160`,
+    /// mirrored in `capture-code.ts:55-57`) — i.e. `false` unless the pragma is
+    /// present. Because the corpus oracle is produced under the harness, this
+    /// defaults to `false` here (set `true` only by the `@…` pragma). See
     /// [`EnvironmentConfig::is_memoization_validation_enabled`].
     pub validate_preserve_existing_memoization_guarantees: bool,
 
@@ -163,7 +169,8 @@ impl Default for EnvironmentConfig {
             enable_treat_set_identifiers_as_state_setters: false,
             enable_preserve_existing_memoization_guarantees: true,
             enable_transitively_freeze_function_expressions: true,
-            validate_preserve_existing_memoization_guarantees: true,
+            // Harness override: `false` unless `@validatePreserveExistingMemoizationGuarantees`.
+            validate_preserve_existing_memoization_guarantees: false,
             validate_no_set_state_in_render: true,
             enable_emit_instrument_forget: None,
             enable_emit_hook_guards: None,

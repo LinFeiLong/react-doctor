@@ -243,7 +243,7 @@ const STAGE3_STAGES: &[&str] = &[
 /// as a guard.
 #[test]
 fn stage3_parity_table() {
-    eprintln!("\n=== Stage-3 per-stage parity (68 fixtures, useMemo-simple excluded) ===");
+    eprintln!("\n=== Stage-3 per-stage parity (per-stage `<name>.<stage>.hir` ref count) ===");
     eprintln!("{:<46} {:>9}  mismatched", "stage", "matched");
     let mut all_ok = true;
     for &stage in STAGE3_STAGES {

@@ -1,4 +1,5 @@
-const { c: _c } = require("react/compiler-runtime"); // @script
+const { c: _c } = require("react/compiler-runtime");
+// @script
 const React = require("react");
 
 function Component(props) {

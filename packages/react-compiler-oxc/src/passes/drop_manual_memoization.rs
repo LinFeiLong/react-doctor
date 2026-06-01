@@ -73,7 +73,7 @@ struct IdentifierSidemap {
 
 /// `collectMaybeMemoDependencies(value, maybeDeps, optional)`: extract the
 /// variable + property reads represented by `value` into a [`ManualMemoDependency`].
-fn collect_maybe_memo_dependencies(
+pub(crate) fn collect_maybe_memo_dependencies(
     value: &InstructionValue,
     maybe_deps: &mut HashMap<IdentifierId, ManualMemoDependency>,
     optional: bool,
@@ -564,7 +564,7 @@ fn binding_name(binding: &crate::hir::value::NonLocalBinding) -> &str {
 }
 
 /// Whether an identifier carries a user-source (`named`) name.
-fn is_named(identifier: &Identifier) -> bool {
+pub(crate) fn is_named(identifier: &Identifier) -> bool {
     matches!(
         &identifier.name,
         Some(crate::hir::place::IdentifierName::Named { .. })

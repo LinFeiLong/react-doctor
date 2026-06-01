@@ -1,21 +1,48 @@
-//! Independent corpus-ref integrity check (Stage 11 final-measurement gate).
+//! Independent corpus-ref integrity check (Stage 11 final-measurement gate;
+//! Stage 18 dual-oracle extension).
 //!
-//! Re-derives a sample of `.code` refs straight from each fixture's committed
-//! `.expect.md` `## Code` block — using the *same* extraction + runtime-import
-//! line-split that `regen_corpus` uses — and asserts every sampled ref is
-//! byte-identical to what is stored in `tests/fixtures/corpus/<name>.code`. This
-//! is a second, independent reader of the oracle (it does not trust the stored
-//! `.code` files), so a match proves the refs are the verbatim oracle and were
-//! not hand-edited / fabricated.
+//! Re-derives a sample of refs straight from each fixture's authoritative oracle —
+//! the `.expect.md` `## Code` block (for `.expect.md` fixtures) or `capture-code.ts`
+//! stdout (for `.cc.code` compiler-only fixtures) — using the *same* extraction +
+//! cache-import line-split that `regen_corpus` uses, and asserts every sampled ref
+//! is byte-identical to what is stored in `tests/fixtures/corpus/<name>.{code,cc.code}`.
+//! This is a second, independent reader of the oracle (it does not trust the stored
+//! ref files), so a match proves the refs are the verbatim oracle and were not
+//! hand-edited / fabricated. ALL compiler-only (`.cc.code`) fixtures are re-derived
+//! (they are the small, fully-audited class-A split).
 //!
 //! Usage (run from the crate dir):
 //!     cargo run --example verify_corpus_integrity
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 fn corpus_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/corpus")
+}
+
+fn react_compiler_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("crate parent (packages/)")
+        .join("react-compiler")
+}
+
+/// Re-run `capture-code.ts` from the `react-compiler` dir for a compiler-only
+/// (`.cc.code`) fixture, normalized exactly as `regen_corpus` does.
+fn capture_compiler_only(abspath: &str) -> Option<String> {
+    let output = Command::new("npx")
+        .args(["--no-install", "tsx", "src/verify/capture-code.ts", abspath])
+        .current_dir(react_compiler_dir())
+        .output()
+        .unwrap_or_else(|e| panic!("run capture-code.ts for {abspath}: {e}"));
+    if !output.status.success() {
+        return None;
+    }
+    let raw = String::from_utf8_lossy(&output.stdout).into_owned();
+    let body: Vec<String> = raw.lines().map(str::to_string).collect();
+    Some(normalize_runtime_import_line(body).join("\n").trim_end().to_string())
 }
 
 /// Verbatim copy of `regen_corpus::extract_code_block` so this is an independent
@@ -58,11 +85,17 @@ fn extract_code_block(expect_md: &str) -> Option<String> {
 }
 
 fn normalize_runtime_import_line(body: Vec<String>) -> Vec<String> {
-    const IMPORT_PREFIX: &str = "import { c as _c } from \"react/compiler-runtime\";";
+    const IMPORT_PREFIXES: [&str; 2] = [
+        "import { c as _c } from \"react/compiler-runtime\";",
+        "const { c: _c } = require(\"react/compiler-runtime\");",
+    ];
     let Some(first) = body.first() else {
         return body;
     };
-    let Some(rest) = first.strip_prefix(IMPORT_PREFIX) else {
+    let Some((prefix, rest)) = IMPORT_PREFIXES
+        .iter()
+        .find_map(|p| first.strip_prefix(p).map(|rest| (*p, rest)))
+    else {
         return body;
     };
     let rest = rest.trim_start();
@@ -70,7 +103,7 @@ fn normalize_runtime_import_line(body: Vec<String>) -> Vec<String> {
         return body;
     }
     let mut out = Vec::with_capacity(body.len() + 1);
-    out.push(IMPORT_PREFIX.to_string());
+    out.push(prefix.to_string());
     out.push(rest.to_string());
     out.extend(body.into_iter().skip(1));
     out
@@ -79,13 +112,16 @@ fn normalize_runtime_import_line(body: Vec<String>) -> Vec<String> {
 fn main() {
     let dir = corpus_dir();
     let manifest = fs::read_to_string(dir.join("manifest.tsv")).expect("read manifest.tsv");
-    let entries: Vec<(String, String, String)> = manifest
+    // (name, ext, abspath, is_compiler_only). `#` reason comments are skipped.
+    let entries: Vec<(String, String, String, bool)> = manifest
         .lines()
+        .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
         .filter_map(|line| {
-            let mut p = line.splitn(3, '\t');
+            let mut p = line.splitn(4, '\t');
             match (p.next(), p.next(), p.next()) {
                 (Some(n), Some(e), Some(a)) => {
-                    Some((n.to_string(), e.to_string(), a.to_string()))
+                    let is_cc = p.next().map(str::trim) == Some(".cc.code");
+                    Some((n.to_string(), e.to_string(), a.to_string(), is_cc))
                 }
                 _ => None,
             }
@@ -143,23 +179,48 @@ fn main() {
         "gating__dynamic-gating-bailout-nopanic",
     ];
 
-    let mut sample: Vec<(String, String, String)> = Vec::new();
+    let mut sample: Vec<(String, String, String, bool)> = Vec::new();
+    // ALWAYS re-derive every compiler-only (`.cc.code`) fixture: the class-A split
+    // is small + fully audited, so we prove every one of its refs is the verbatim
+    // `capture-code.ts` output (no hand-editing to mask a bug).
+    for e in entries.iter().filter(|(_, _, _, cc)| *cc) {
+        sample.push(e.clone());
+    }
     for t in targeted {
-        if let Some(e) = entries.iter().find(|(n, _, _)| n == t) {
-            sample.push(e.clone());
+        if let Some(e) = entries.iter().find(|(n, _, _, _)| n == t) {
+            if !sample.iter().any(|(n, _, _, _)| n == &e.0) {
+                sample.push(e.clone());
+            }
         }
     }
     // Evenly-strided slice (~50 more), skipping ones already targeted.
     let stride = (entries.len() / 50).max(1);
     for (i, e) in entries.iter().enumerate() {
-        if i % stride == 0 && !sample.iter().any(|(n, _, _)| n == &e.0) {
+        if i % stride == 0 && !sample.iter().any(|(n, _, _, _)| n == &e.0) {
             sample.push(e.clone());
         }
     }
 
     let mut checked = 0usize;
+    let mut cc_checked = 0usize;
     let mut mismatches: Vec<String> = Vec::new();
-    for (name, ext, abspath) in &sample {
+    for (name, ext, abspath, is_cc) in &sample {
+        if *is_cc {
+            // Re-derive `<name>.cc.code` from `capture-code.ts` (compiler-only).
+            let Some(rederived) = capture_compiler_only(abspath) else {
+                mismatches.push(format!("{name}: capture-code.ts failed"));
+                continue;
+            };
+            let rederived = format!("{rederived}\n");
+            let stored = fs::read_to_string(dir.join(format!("{name}.cc.code")))
+                .unwrap_or_else(|_| panic!("read stored .cc.code for {name}"));
+            checked += 1;
+            cc_checked += 1;
+            if rederived != stored {
+                mismatches.push(format!("{name}: re-derived != stored .cc.code"));
+            }
+            continue;
+        }
         let stem = abspath
             .strip_suffix(&format!(".{ext}"))
             .unwrap_or(abspath)
@@ -181,13 +242,15 @@ fn main() {
     }
 
     eprintln!(
-        "verify_corpus_integrity: re-derived {checked} sampled refs from .expect.md, {} byte-identical, {} divergent",
+        "verify_corpus_integrity: re-derived {checked} sampled refs ({cc_checked} compiler-only \
+         via capture-code.ts, {} via .expect.md), {} byte-identical, {} divergent",
+        checked - cc_checked,
         checked - mismatches.len(),
         mismatches.len()
     );
     eprintln!("sampled fixtures ({}):", sample.len());
-    for (name, _, _) in &sample {
-        eprintln!("  {name}");
+    for (name, _, _, is_cc) in &sample {
+        eprintln!("  {name}{}", if *is_cc { "  [.cc.code]" } else { "" });
     }
     if !mismatches.is_empty() {
         eprintln!("DIVERGENCES:");
@@ -196,5 +259,5 @@ fn main() {
         }
         std::process::exit(1);
     }
-    eprintln!("OK: every sampled ref is the verbatim `## Code` oracle.");
+    eprintln!("OK: every sampled ref is the verbatim oracle (.expect.md `## Code` or capture-code.ts).");
 }
