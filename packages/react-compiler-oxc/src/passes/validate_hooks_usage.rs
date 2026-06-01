@@ -18,16 +18,85 @@
 
 use std::collections::HashMap;
 
+use crate::diagnostic::{BabelSourceLocation, Diagnostic, Diagnostics, ErrorCategory, PositionResolver};
 use crate::hir::ids::IdentifierId;
 use crate::hir::model::{FunctionParam, HirFunction};
-use crate::hir::place::{IdentifierName, Place};
+use crate::hir::place::{IdentifierName, Place, SourceLocation};
 use crate::hir::value::InstructionValue;
+
+const CONDITIONAL_REASON: &str = "Hooks must always be called in a consistent order, and may not be called conditionally. See the Rules of Hooks (https://react.dev/warnings/invalid-hook-call-warning)";
+const INVALID_USAGE_REASON: &str = "Hooks may not be referenced as normal values, they must be called. See https://react.dev/reference/rules/react-calls-components-and-hooks#never-pass-around-hooks-as-regular-values";
+const DYNAMIC_REASON: &str = "Hooks must be the same function on every render, but this value may change over time to a different function. See https://react.dev/reference/rules/react-calls-components-and-hooks#dont-dynamically-use-hooks";
+const NESTED_REASON: &str = "Hooks must be called at the top level in the body of a function component or custom hook, and may not be called within function expressions. See the Rules of Hooks (https://react.dev/warnings/invalid-hook-call-warning)";
+
+/// Collects located `Hooks`-category diagnostics with the upstream
+/// `errorsByPlace` dedup: at most one diagnostic per source location, and a
+/// conditional-hook error upgrades a previously-recorded different error at the
+/// same place.
+struct HooksLint<'a> {
+    resolver: &'a PositionResolver<'a>,
+    by_loc: Vec<(BabelSourceLocation, Diagnostic)>,
+}
+
+impl<'a> HooksLint<'a> {
+    fn find(&self, loc: &BabelSourceLocation) -> Option<usize> {
+        self.by_loc.iter().position(|(existing, _)| existing == loc)
+    }
+
+    fn make(reason: &str, loc: BabelSourceLocation, description: Option<String>) -> Diagnostic {
+        let mut diagnostic = Diagnostic::create(ErrorCategory::Hooks, reason);
+        if let Some(description) = description {
+            diagnostic = diagnostic.with_description(description);
+        }
+        diagnostic.with_error_detail(Some(loc), Some(reason.to_string()))
+    }
+
+    fn record_conditional(&mut self, place: &Place) {
+        let Some(loc) = self.resolver.resolve(&place.loc) else { return };
+        let diagnostic = Self::make(CONDITIONAL_REASON, loc, None);
+        match self.find(&loc) {
+            Some(index) => {
+                if self.by_loc[index].1.reason != CONDITIONAL_REASON {
+                    self.by_loc[index].1 = diagnostic;
+                }
+            }
+            None => self.by_loc.push((loc, diagnostic)),
+        }
+    }
+
+    fn record_simple(&mut self, place: &Place, reason: &str) {
+        let Some(loc) = self.resolver.resolve(&place.loc) else { return };
+        if self.find(&loc).is_none() {
+            self.by_loc.push((loc, Self::make(reason, loc, None)));
+        }
+    }
+
+    fn record_nested(&mut self, loc_source: &SourceLocation, label: &str) {
+        let Some(loc) = self.resolver.resolve(loc_source) else { return };
+        let description = format!("Cannot call {label} within a function expression");
+        self.by_loc
+            .push((loc, Self::make(NESTED_REASON, loc, Some(description))));
+    }
+}
 
 use super::cfg::{
     each_instruction_value_lvalue, each_instruction_value_operand, each_terminal_operand,
 };
 use super::control_dominators::compute_unconditional_blocks;
-use super::infer_reactive_places::get_hook_kind;
+use super::infer_reactive_places::{HookKind, get_hook_kind};
+
+/// `hookKind === 'Custom' ? 'hook' : hookKind` for the nested-function message.
+fn hook_kind_label(kind: HookKind) -> &'static str {
+    match kind {
+        HookKind::UseState => "useState",
+        HookKind::UseRef => "useRef",
+        HookKind::UseReducer => "useReducer",
+        HookKind::UseActionState => "useActionState",
+        HookKind::UseTransition => "useTransition",
+        HookKind::UseOptimistic => "useOptimistic",
+        HookKind::Custom => "hook",
+    }
+}
 
 /// Whether a name is hook-like (`isHookName`: `/^use[A-Z0-9]/`).
 use crate::environment::globals::is_hook_name;
@@ -73,15 +142,18 @@ fn place_name(place: &Place) -> Option<&str> {
 
 /// State for the abstract interpretation, mirroring the closures captured by the
 /// TS `validateHooksUsage`.
-struct Validator {
+struct Validator<'a> {
     value_kinds: HashMap<IdentifierId, Kind>,
     /// Whether any Rules-of-Hooks violation was recorded. The TS records each
     /// diagnostic onto `env`; for the recoverable-bailout decision we only need to
     /// know whether *any* error occurred.
     has_error: bool,
+    /// When present, the pass also emits located `Hooks` diagnostics (the lint
+    /// surface). `None` for the codegen-bailout caller, which only needs the bool.
+    lint: Option<HooksLint<'a>>,
 }
 
-impl Validator {
+impl<'a> Validator<'a> {
     /// `getKindForPlace(place)`: the known kind of a place, upgraded to at least
     /// `PotentialHook` when the place is hook-named.
     fn get_kind_for_place(&self, place: &Place) -> Kind {
@@ -102,6 +174,9 @@ impl Validator {
     fn visit_place(&mut self, place: &Place) {
         if self.value_kinds.get(&place.identifier.id).copied() == Some(Kind::KnownHook) {
             self.has_error = true;
+            if let Some(lint) = &mut self.lint {
+                lint.record_simple(place, INVALID_USAGE_REASON);
+            }
         }
     }
 
@@ -110,6 +185,18 @@ impl Validator {
     fn record_conditional_hook_error(&mut self, place: &Place) {
         self.set_kind(place, Kind::Error);
         self.has_error = true;
+        if let Some(lint) = &mut self.lint {
+            lint.record_conditional(place);
+        }
+    }
+
+    /// `recordDynamicHookUsageError(place)`: a dynamic (value-changing) potential-
+    /// hook call.
+    fn record_dynamic_hook_usage_error(&mut self, place: &Place) {
+        self.has_error = true;
+        if let Some(lint) = &mut self.lint {
+            lint.record_simple(place, DYNAMIC_REASON);
+        }
     }
 }
 
@@ -118,11 +205,50 @@ impl Validator {
 /// a hook called inside a nested function expression).
 pub fn validate_hooks_usage(func: &HirFunction) -> bool {
     let unconditional = compute_unconditional_blocks(func);
-
     let mut v = Validator {
         value_kinds: HashMap::new(),
         has_error: false,
+        lint: None,
     };
+    run_validator(func, &unconditional, &mut v);
+    v.has_error
+}
+
+/// The lint-surface entry: emit located `Hooks` diagnostics for `func`.
+pub fn validate_hooks_usage_lint(
+    func: &HirFunction,
+    resolver: &PositionResolver,
+    diagnostics: &mut Diagnostics,
+) {
+    let lint = HooksLint {
+        resolver,
+        by_loc: Vec::new(),
+    };
+    let collected = run_with_lint(func, lint);
+    for (_, diagnostic) in collected {
+        diagnostics.push(diagnostic);
+    }
+}
+
+fn run_with_lint<'a>(
+    func: &HirFunction,
+    lint: HooksLint<'a>,
+) -> Vec<(BabelSourceLocation, Diagnostic)> {
+    let unconditional = compute_unconditional_blocks(func);
+    let mut v = Validator {
+        value_kinds: HashMap::new(),
+        has_error: false,
+        lint: Some(lint),
+    };
+    run_validator(func, &unconditional, &mut v);
+    v.lint.map(|lint| lint.by_loc).unwrap_or_default()
+}
+
+fn run_validator(
+    func: &HirFunction,
+    unconditional: &std::collections::HashSet<crate::hir::ids::BlockId>,
+    v: &mut Validator,
+) {
 
     // Params: seed their kind (a hook-named param is a potential hook).
     for param in &func.params {
@@ -210,9 +336,7 @@ pub fn validate_hooks_usage(func: &HirFunction) -> bool {
                     if is_hook_callee && !unconditional.contains(&block.id) {
                         v.record_conditional_hook_error(callee);
                     } else if callee_kind == Kind::PotentialHook {
-                        // recordDynamicHookUsageError: a dynamic (value-changing)
-                        // potential-hook call.
-                        v.has_error = true;
+                        v.record_dynamic_hook_usage_error(callee);
                     }
                     // The callee is validated above; check the remaining operands.
                     for operand in each_instruction_value_operand(&instr.value) {
@@ -229,7 +353,7 @@ pub fn validate_hooks_usage(func: &HirFunction) -> bool {
                     if is_hook_callee && !unconditional.contains(&block.id) {
                         v.record_conditional_hook_error(property);
                     } else if callee_kind == Kind::PotentialHook {
-                        v.has_error = true;
+                        v.record_dynamic_hook_usage_error(property);
                     }
                     for operand in each_instruction_value_operand(&instr.value) {
                         if operand.identifier.id == property.identifier.id {
@@ -262,7 +386,7 @@ pub fn validate_hooks_usage(func: &HirFunction) -> bool {
                 }
                 InstructionValue::ObjectMethod { lowered_func, .. }
                 | InstructionValue::FunctionExpression { lowered_func, .. } => {
-                    visit_function_expression(&lowered_func.func, &mut v);
+                    visit_function_expression(&lowered_func.func, v);
                 }
                 _ => {
                     // Else check usages of operands, but do *not* flow properties
@@ -285,8 +409,31 @@ pub fn validate_hooks_usage(func: &HirFunction) -> bool {
             v.visit_place(operand);
         }
     }
+}
 
-    v.has_error
+#[cfg(test)]
+mod lint_tests {
+    use crate::compile::lint;
+    use crate::diagnostic::ErrorCategory;
+
+    fn hooks_count(code: &str) -> usize {
+        lint(code, "Component.tsx")
+            .iter()
+            .filter(|diagnostic| diagnostic.category == ErrorCategory::Hooks)
+            .count()
+    }
+
+    #[test]
+    fn flags_conditional_hook_call() {
+        let code = "import { useState } from \"react\";\nfunction Component(props) {\n  if (props.cond) {\n    const [s] = useState(0);\n    return s;\n  }\n  return null;\n}\n";
+        assert!(hooks_count(&code) >= 1);
+    }
+
+    #[test]
+    fn allows_unconditional_hook_call() {
+        let code = "import { useState } from \"react\";\nfunction Component() {\n  const [s] = useState(0);\n  return <div>{s}</div>;\n}\n";
+        assert_eq!(hooks_count(&code), 0);
+    }
 }
 
 /// The `PropertyLoad` kind table (the TS `switch (objectKind)` in the
@@ -354,13 +501,19 @@ fn visit_function_expression(func: &HirFunction, v: &mut Validator) {
                     visit_function_expression(&lowered_func.func, v);
                 }
                 InstructionValue::CallExpression { callee, .. } => {
-                    if get_hook_kind(&callee.identifier).is_some() {
+                    if let Some(kind) = get_hook_kind(&callee.identifier) {
                         v.has_error = true;
+                        if let Some(lint) = &mut v.lint {
+                            lint.record_nested(&callee.loc, hook_kind_label(kind));
+                        }
                     }
                 }
                 InstructionValue::MethodCall { property, .. } => {
-                    if get_hook_kind(&property.identifier).is_some() {
+                    if let Some(kind) = get_hook_kind(&property.identifier) {
                         v.has_error = true;
+                        if let Some(lint) = &mut v.lint {
+                            lint.record_nested(&property.loc, hook_kind_label(kind));
+                        }
                     }
                 }
                 _ => {}
