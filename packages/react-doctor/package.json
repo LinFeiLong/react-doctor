@@ -63,7 +63,6 @@
     "conf": "^15.1.0",
     "deslop-js": "^0.0.14",
     "effect": "4.0.0-beta.70",
-    "eslint-plugin-react-hooks": "^7.1.1",
     "oxlint": "^1.66.0",
     "oxlint-plugin-react-doctor": "workspace:*",
     "prompts": "^2.4.2",

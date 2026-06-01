@@ -23,9 +23,9 @@
   },
   "dependencies": {
     "@effect/platform-node-shared": "4.0.0-beta.70",
+    "@react-doctor/compiler-native": "workspace:*",
     "deslop-js": "^0.0.14",
     "effect": "4.0.0-beta.70",
-    "eslint-plugin-react-hooks": "^7.1.1",
     "oxlint": "^1.66.0",
     "oxlint-plugin-react-doctor": "workspace:*",
     "picomatch": "^4.0.4",

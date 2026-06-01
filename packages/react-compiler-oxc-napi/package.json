@@ -1,15 +1,28 @@
 {
   "name": "@react-doctor/compiler-native",
   "version": "0.1.0",
-  "description": "Native (napi) bindings for the react-compiler-oxc lint surface.",
-  "private": true,
+  "description": "Native (Rust + oxc) reimplementation of babel-plugin-react-compiler's lint analyzer, exposed as the react-hooks-js oxlint/ESLint plugin.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/millionco/react-doctor.git",
+    "directory": "packages/react-compiler-oxc-napi"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
     "index.js",
     "index.d.ts",
+    "plugin.js",
     "react-compiler-oxc.*.node"
   ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "napi": {
     "binaryName": "react-compiler-oxc",
     "packageName": "@react-doctor/compiler-native",
@@ -24,10 +37,18 @@
   "scripts": {
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
+    "artifacts": "napi artifacts",
     "test": "vp test run"
   },
   "dependencies": {
     "@babel/code-frame": "^7.29.0"
+  },
+  "optionalDependencies": {
+    "@react-doctor/compiler-native-darwin-x64": "0.1.0",
+    "@react-doctor/compiler-native-darwin-arm64": "0.1.0",
+    "@react-doctor/compiler-native-linux-x64-gnu": "0.1.0",
+    "@react-doctor/compiler-native-linux-arm64-gnu": "0.1.0",
+    "@react-doctor/compiler-native-win32-x64-msvc": "0.1.0"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.0.0",
