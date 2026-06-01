@@ -1,5 +1,5 @@
 import http from "node:http";
-import { DEBUG_LOCK_PING_TIMEOUT_MS } from "./constants.js";
+import { DEBUG_LOCK_PING_TIMEOUT_MS } from "../utils/constants.js";
 
 // Confirm the listener at host:port is actually a debug server, not just any
 // process that happened to bind the lock's port: require a 200 whose body is

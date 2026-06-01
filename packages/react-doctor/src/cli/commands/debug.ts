@@ -3,8 +3,8 @@ import type { Server } from "node:http";
 import { Command } from "commander";
 import { highlighter } from "@react-doctor/core";
 import { cliLogger as logger } from "../utils/cli-logger.js";
+import { createDebugServer, type DebugServerInfo } from "../debug-server/index.js";
 import { DEBUG_DEFAULT_HOST } from "../utils/constants.js";
-import { createDebugServer, type DebugServerInfo } from "../utils/debug-server.js";
 import { spinner } from "../utils/spinner.js";
 
 interface DebugCommandOptions {
