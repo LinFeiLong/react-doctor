@@ -245,6 +245,9 @@ importers:
       '@effect/platform-node-shared':
         specifier: 4.0.0-beta.70
         version: 4.0.0-beta.70(effect@4.0.0-beta.70)
+      '@react-doctor/compiler-native':
+        specifier: workspace:*
+        version: link:../react-compiler-oxc-napi
       '@sentry/node':
         specifier: ^10.54.0
         version: 10.54.0
