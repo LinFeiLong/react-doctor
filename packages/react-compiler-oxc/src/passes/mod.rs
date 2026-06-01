@@ -54,6 +54,7 @@ pub mod validate_hooks_usage;
 pub mod validate_no_jsx_in_try_statement;
 pub mod validate_no_set_state_in_effects;
 pub mod validate_no_set_state_in_render;
+pub mod validate_render_side_effects;
 pub mod validate_use_memo;
 
 use crate::hir::ids::{BlockId, IdAllocator, IdentifierId};
