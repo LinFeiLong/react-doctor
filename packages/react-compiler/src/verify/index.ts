@@ -13,6 +13,14 @@
  */
 
 export {verifySource, type VerifyOptions} from './verify-source';
+export {
+  extractHIR,
+  forEachAnalyzedFunction,
+  DEFAULT_STAGE,
+  type ExtractHIROptions,
+  type ExtractedFunction,
+} from './capture-hir';
+export {printControlFlow} from './print-cfg';
 export {runChecks, type Check} from './run';
 export {
   aggregateVerdict,
