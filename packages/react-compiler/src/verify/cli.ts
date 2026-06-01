@@ -17,11 +17,20 @@
 import {readFileSync} from 'node:fs';
 import {basename, resolve} from 'node:path';
 import {Command} from 'commander';
+import {
+  extractHIR,
+  extractReactive,
+  type ExtractHIROptions,
+} from './capture-hir';
 import {verifySource} from './verify-source';
 import type {Finding, VerifierReport} from './verdict';
 
 interface CliOptions {
   json?: boolean;
+  cfg?: boolean;
+  hir?: boolean;
+  rfn?: boolean;
+  stage?: string;
 }
 
 const GREEN = '\u001b[32m';
@@ -72,6 +81,40 @@ function printReport(file: string, report: VerifierReport): void {
   );
 }
 
+function printGraph(
+  file: string,
+  code: string,
+  options: ExtractHIROptions,
+  mode: 'cfg' | 'hir',
+): void {
+  const functions = extractHIR(code, options);
+  if (functions.length === 0) {
+    process.stdout.write(
+      `${YELLOW}? ${basename(file)}${RESET} — no compilable function found\n`,
+    );
+    process.exit(2);
+  }
+  for (const fn of functions) {
+    const label = fn.name ?? '<anonymous>';
+    const body = mode === 'hir' ? fn.printed : fn.cfg;
+    process.stdout.write(`${BOLD}${label}${RESET}\n${body}\n\n`);
+  }
+}
+
+function printReactive(file: string, code: string, stage: string): void {
+  const functions = extractReactive(code, stage, {filename: basename(file)});
+  if (functions.length === 0) {
+    process.stdout.write(
+      `${YELLOW}? ${basename(file)}${RESET} — no compilable function found\n`,
+    );
+    process.exit(2);
+  }
+  for (const fn of functions) {
+    const label = fn.name ?? '<anonymous>';
+    process.stdout.write(`${BOLD}${label}${RESET}\n${fn.printed}\n\n`);
+  }
+}
+
 function main(): void {
   const program = new Command();
   program
@@ -79,6 +122,10 @@ function main(): void {
     .description('Statically verify a React file for a set of failure classes')
     .argument('<file>', 'path to a React component/hook file')
     .option('--json', 'output the raw report as JSON')
+    .option('--cfg', 'dump the analyzed control-flow graph (blocks + edges) instead of verifying')
+    .option('--hir', 'dump the full analyzed HIR (instructions + control flow) instead of verifying')
+    .option('--rfn', 'dump the reactive function (printReactiveFunctionWithOutlined) at --stage')
+    .option('--stage <name>', 'pipeline stage to capture for --cfg/--hir/--rfn (default: InferTypes)')
     .action((file: string, options: CliOptions) => {
       const absolutePath = resolve(process.cwd(), file);
       let code: string;
@@ -87,6 +134,24 @@ function main(): void {
       } catch {
         process.stderr.write(`${RED}error${RESET} cannot read file: ${file}\n`);
         process.exit(2);
+      }
+
+      if (options.rfn === true) {
+        if (options.stage === undefined) {
+          process.stderr.write(`${RED}error${RESET} --rfn requires --stage\n`);
+          process.exit(2);
+        }
+        printReactive(absolutePath, code, options.stage);
+        process.exit(0);
+      }
+
+      if (options.cfg === true || options.hir === true) {
+        const extractOptions: ExtractHIROptions = {filename: basename(absolutePath)};
+        if (options.stage !== undefined) {
+          extractOptions.stage = options.stage;
+        }
+        printGraph(absolutePath, code, extractOptions, options.hir === true ? 'hir' : 'cfg');
+        process.exit(0);
       }
 
       const report = verifySource(code, {filename: basename(absolutePath)});
