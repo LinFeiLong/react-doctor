@@ -59,6 +59,10 @@ const writeAppJson = (projectDirectory: string, expoConfig: Record<string, unkno
   );
 };
 
+const writeFile = (projectDirectory: string, fileName: string, contents: string): void => {
+  fs.writeFileSync(path.join(projectDirectory, fileName), contents);
+};
+
 const rulesOf = (diagnostics: ReadonlyArray<Diagnostic>): string[] =>
   diagnostics.map((diagnostic) => diagnostic.rule);
 
@@ -468,6 +472,26 @@ describe("checkExpoProject — reanimated v4 requires new architecture", () => {
       rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
     ).not.toContain("expo-reanimated-v4-requires-new-arch");
   });
+
+  // Regression (Bugbot): a dynamic app.config.{js,ts} can override app.json, so
+  // a stale `newArchEnabled: false` in app.json must NOT trip the check when a
+  // dynamic config is present (we can't evaluate it offline).
+  it("does NOT flag when a dynamic app.config.js may override a stale app.json", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-reanimated": "~4.0.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x", newArchEnabled: false });
+    writeFile(
+      projectDirectory,
+      "app.config.js",
+      "module.exports = ({ config }) => ({ ...config, newArchEnabled: true });\n",
+    );
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-reanimated-v4-requires-new-arch");
+  });
 });
 
 describe("checkExpoProject — unsafe updates production config", () => {
@@ -487,6 +511,20 @@ describe("checkExpoProject — unsafe updates production config", () => {
     const projectDirectory = makeProjectDirectory();
     writePackageJson(projectDirectory, { name: "expo-app", dependencies: { expo: "~52.0.0" } });
     writeAppJson(projectDirectory, { name: "x", updates: { fallbackToCacheTimeout: 0 } });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-updates-no-unsafe-production-config");
+  });
+
+  // Regression (Bugbot): a dynamic config may override a stale app.json value.
+  it("does NOT flag disableAntiBrickingMeasures from app.json when a dynamic config exists", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, { name: "expo-app", dependencies: { expo: "~52.0.0" } });
+    writeAppJson(projectDirectory, {
+      name: "x",
+      updates: { disableAntiBrickingMeasures: true },
+    });
+    writeFile(projectDirectory, "app.config.ts", "export default ({ config }) => config;\n");
     expect(
       rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
     ).not.toContain("expo-updates-no-unsafe-production-config");

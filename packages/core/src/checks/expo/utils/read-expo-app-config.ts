@@ -2,17 +2,25 @@ import fs from "node:fs";
 import path from "node:path";
 import { isFile } from "../../../project-info/index.js";
 
-// The static Expo config forms a static analyzer can read are the JSON
-// ones (`app.config.json` / `app.json`); Expo nests the config under an
-// `expo` key in `app.json`, so we unwrap it. Expo lets `app.config.{js,ts,json}`
-// override `app.json`, so the override form is read first.
+// The static Expo config forms a static analyzer can read are the JSON ones
+// (`app.config.json` / `app.json`); Expo nests the config under an `expo` key
+// in `app.json`, so we unwrap it.
 //
-// `app.config.{js,ts}` is arbitrary code we can't evaluate offline — a value
-// set only there is a documented false-negative (expo-doctor executes the
-// config to resolve it; react-doctor can't), so we deliberately do NOT
-// substring-match its text (a comment or doc line mentioning the field would
-// otherwise produce a false positive).
+// A dynamic `app.config.{js,ts,cjs,mjs}` is the source of truth when present:
+// Expo reads the static config first, passes it into the dynamic config, and
+// uses the dynamic file's RETURN value — so the dynamic file can override any
+// value declared in `app.json` (a stale `newArchEnabled: false` /
+// `disableAntiBrickingMeasures: true` there may be flipped at build time). We
+// can't evaluate that file offline, so when one exists we treat the config as
+// unknown (no diagnostics) rather than trust possibly-overridden `app.json`
+// values. This is a documented false-negative, never a false positive.
 const APP_CONFIG_JSON_FILES = ["app.config.json", "app.json"] as const;
+const APP_CONFIG_DYNAMIC_FILES = [
+  "app.config.ts",
+  "app.config.js",
+  "app.config.cjs",
+  "app.config.mjs",
+] as const;
 
 export interface ExpoAppConfig {
   /** Parsed `expo` config object from a JSON app config, or null. */
@@ -40,6 +48,13 @@ const unwrapExpoConfig = (parsed: unknown): Record<string, unknown> | null => {
 };
 
 export const readExpoAppConfig = (rootDirectory: string): ExpoAppConfig => {
+  // A dynamic config can override anything in app.json and we can't evaluate
+  // it offline, so don't trust the static JSON when one is present.
+  const hasDynamicConfig = APP_CONFIG_DYNAMIC_FILES.some((fileName) =>
+    isFile(path.join(rootDirectory, fileName)),
+  );
+  if (hasDynamicConfig) return { config: null, configFile: null };
+
   for (const fileName of APP_CONFIG_JSON_FILES) {
     const filePath = path.join(rootDirectory, fileName);
     if (!isFile(filePath)) continue;

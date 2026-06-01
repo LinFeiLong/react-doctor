@@ -7,8 +7,9 @@ import { getNestedConfigValue, readExpoAppConfig } from "./utils/read-expo-app-c
 // that let expo-updates recover from a bad update; the Expo docs state it
 // "is liable to leave an app in a bricked state" and must not be used in
 // production. We only flag the statically-readable `true` in a JSON app config
-// (`app.json` / `app.config.json`); a value set only in a dynamic
-// `app.config.{js,ts}` is a documented false-negative.
+// with NO dynamic `app.config.{js,ts}` present — a dynamic config can override
+// the flag and we can't evaluate it offline, so its presence makes this a
+// documented false-negative (see `readExpoAppConfig`).
 export const checkExpoUpdatesConfig = (context: ExpoCheckContext): Diagnostic[] => {
   const appConfig = readExpoAppConfig(context.rootDirectory);
   if (getNestedConfigValue(appConfig.config, ["updates", "disableAntiBrickingMeasures"]) !== true) {

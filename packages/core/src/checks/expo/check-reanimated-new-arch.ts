@@ -13,10 +13,10 @@ const FIRST_NEW_ARCH_ONLY_REANIMATED_MAJOR = 4;
 // projects opt out of the New Arch with `expo.newArchEnabled: false` in the
 // app config, so that combination is a guaranteed startup crash. We treat
 // `react-native-worklets` (Reanimated 4's split-out worklet runtime) as an
-// equivalent v4 signal. Only a statically-readable `newArchEnabled: false`
-// (in `app.json` / `app.config.json`) trips this; a value set exclusively in a
-// dynamic `app.config.{js,ts}` is a documented false-negative (we never
-// execute user config).
+// equivalent v4 signal. Only a statically-readable `newArchEnabled: false` in a
+// JSON app config with NO dynamic `app.config.{js,ts}` present trips this — a
+// dynamic config can override the flag and we can't evaluate it offline, so its
+// presence makes this a documented false-negative (see `readExpoAppConfig`).
 export const checkExpoReanimatedNewArch = (context: ExpoCheckContext): Diagnostic[] => {
   const reanimatedSpec =
     context.packageJson.dependencies?.[REANIMATED_PACKAGE] ??
