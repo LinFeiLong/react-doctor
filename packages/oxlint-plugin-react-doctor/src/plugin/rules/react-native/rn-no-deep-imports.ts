@@ -1,6 +1,7 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
+import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
@@ -110,6 +111,26 @@ const classifyDeepImport = (source: unknown): DeepImportFinding | null => {
 // re-exported from the `react-native` root (so the fix is a safe one-line
 // change) plus the relocated `NewAppScreen`. Type-only imports are skipped
 // because many RN internal types are not exported from the root.
+// True when every specifier on the declaration is an inline type-only
+// specifier (`import { type A, type B } from "..."`) — i.e. the whole import
+// is type-only even though `node.importKind` is `"value"`. A default/namespace
+// specifier, a value specifier, or no specifiers at all (a bare side-effect
+// import) make this false. Mirrors the declaration-level `import type` skip so
+// the two forms behave identically. `kindField` is `importKind` for imports
+// and `exportKind` for named re-exports.
+const isEverySpecifierInlineType = (
+  specifiers: ReadonlyArray<EsTreeNode> | undefined,
+  specifierType: "ImportSpecifier" | "ExportSpecifier",
+  kindField: "importKind" | "exportKind",
+): boolean => {
+  if (!specifiers || specifiers.length === 0) return false;
+  return specifiers.every(
+    (specifier) =>
+      isNodeOfType(specifier, specifierType) &&
+      (specifier as { [key: string]: unknown })[kindField] === "type",
+  );
+};
+
 export const rnNoDeepImports = defineRule<Rule>({
   id: "rn-no-deep-imports",
   title: "Deep import into react-native internals",
@@ -125,16 +146,20 @@ export const rnNoDeepImports = defineRule<Rule>({
 
     return {
       ImportDeclaration(node: EsTreeNodeOfType<"ImportDeclaration">) {
-        // Skip `import type { ... }` — many RN internal *types* are not
-        // re-exported from the root, so "import from react-native" would
-        // be wrong advice for them.
+        // Skip type-only imports — both `import type { ... }` and the inline
+        // `import { type A, type B } from "..."` form. Many RN internal *types*
+        // are not re-exported from the root, so "import from react-native"
+        // would be wrong advice. A mixed `import { Value, type T }` still has a
+        // value specifier, so it is NOT skipped.
         if (node.importKind === "type") return;
+        if (isEverySpecifierInlineType(node.specifiers, "ImportSpecifier", "importKind")) return;
         reportFinding(node, node.source?.value);
       },
       ExportNamedDeclaration(node: EsTreeNodeOfType<"ExportNamedDeclaration">) {
         if (node.exportKind === "type") return;
         // `source` is only set for re-exports (`export { x } from "..."`).
         if (!node.source) return;
+        if (isEverySpecifierInlineType(node.specifiers, "ExportSpecifier", "exportKind")) return;
         reportFinding(node, node.source.value);
       },
       ExportAllDeclaration(node: EsTreeNodeOfType<"ExportAllDeclaration">) {

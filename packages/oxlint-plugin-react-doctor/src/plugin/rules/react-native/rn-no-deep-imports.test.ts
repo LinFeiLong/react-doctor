@@ -57,6 +57,27 @@ describe("rn-no-deep-imports", () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 
+  // Regression (Bugbot): an inline all-type import is type-only even though the
+  // declaration importKind is "value" — treat it like `import type`.
+  it("does NOT flag an inline all-type import (`import { type X }`)", () => {
+    const code = `import { type ColorSchemeName } from "react-native/Libraries/Utilities/Appearance";`;
+    const result = runRule(rnNoDeepImports, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  it("does NOT flag an inline all-type re-export (`export { type X } from`)", () => {
+    const code = `export { type ViewProps } from "react-native/Libraries/Components/View/View";`;
+    const result = runRule(rnNoDeepImports, code);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  // A mixed value+type import still has a value specifier → still flagged.
+  it("flags a mixed value+inline-type import (value specifier present)", () => {
+    const code = `import { View, type ViewProps } from "react-native/Libraries/Components/View/View";`;
+    const result = runRule(rnNoDeepImports, code);
+    expect(result.diagnostics).toHaveLength(1);
+  });
+
   it("does NOT flag tooling subpaths outside Libraries/", () => {
     const code = `
       import preset from "react-native/jest-preset";
