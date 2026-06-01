@@ -23,7 +23,11 @@
   },
   "scripts": {
     "build": "napi build --platform --release",
-    "build:debug": "napi build --platform"
+    "build:debug": "napi build --platform",
+    "test": "vp test run"
+  },
+  "dependencies": {
+    "@babel/code-frame": "^7.29.0"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.0.0"
