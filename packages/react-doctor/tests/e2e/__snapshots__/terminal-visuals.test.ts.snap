@@ -5,60 +5,55 @@ exports[`in-process render across terminal widths and render modes > matches the
   Maintainability > 1 error
   Performance > 1 warning
 
-  5 issues
-
-  ────────────────────────────────────────────────────────────
-  Top 3 errors you should fix
-
-  ✗ Bugs: react-doctor/no-adjust-state-on-prop-change ×2
-    State adjusted in a useEffect when a prop changes — forces
-    an extra render with a stale UI between the two commits.
-    Adjust the state during render with a \`prev\`-prop
-    comparison instead, or refactor to remove the duplicated
-    state.
-
-    src/text-swap.tsx:5
-    ┌──────────────────────────────────────────────────────────────┐
-    │   4 |   useEffect(() => {                                    │
-    │ > 5 |     setCount(0);                                       │
-    │     |     ^                                                  │
-    │   6 |   }, [value]);                                         │
-    └──────────────────────────────────────────────────────────────┘
-
-  ✗ Maintainability: react-doctor/no-nested-component-definition
-    Component defined inside another component remounts on
-    every render, throwing away its state and DOM.
-
-    src/text-swap.tsx:2
-    ┌──────────────────────────────────────────────────────────────┐
-    │   1 | import { useState, useEffect } from 'react';           │
-    │ > 2 | export const TextSwap = ({ value }) => {               │
-    │     |     ^                                                  │
-    │   3 |   const [count, setCount] = useState(0);               │
-    └──────────────────────────────────────────────────────────────┘
-
-  ✗ Bugs: react-doctor/no-array-index-key
-    Using the array index as a key breaks reconciliation when
-    the list reorders.
-
-    src/text-swap.tsx:7
-    ┌──────────────────────────────────────────────────────────────┐
-    │   6 |   }, [value]);                                         │
-    │ > 7 |   return count;                                        │
-    │     |     ^                                                  │
-    │   8 | };                                                     │
-    └──────────────────────────────────────────────────────────────┘
-
-
-  ────────────────────────────────────────────────────────────
-  1 warning
-
-  ⚠ react-doctor/rendering-hoist-jsx
-
-  ┌─────┐  99 / 100 Great
+  ┌─────┐  99 / 100 Great   5 issues
   │ ◠ ◠ │  ██████████████████████████████████████████████████
   │  ▽  │  React Doctor (https://react.doctor)
   └─────┘
+
+✖ Bugs: react-doctor/no-adjust-state-on-prop-change ×2
+  State adjusted in a useEffect when a prop changes — forces
+  an extra render with a stale UI between the two commits.
+  Adjust the state during render with a \`prev\`-prop
+  comparison instead, or refactor to remove the duplicated
+  state.
+
+  src/text-swap.tsx:5
+  ┌──────────────────────────────────────────────────────────────┐
+  │   4 |   useEffect(() => {                                    │
+  │ > 5 |     setCount(0);                                       │
+  │     |     ^                                                  │
+  │   6 |   }, [value]);                                         │
+  └──────────────────────────────────────────────────────────────┘
+
+✖ Maintainability: react-doctor/no-nested-component-definition
+  Component defined inside another component remounts on
+  every render, throwing away its state and DOM.
+
+  src/text-swap.tsx:2
+  ┌──────────────────────────────────────────────────────────────┐
+  │   1 | import { useState, useEffect } from 'react';           │
+  │ > 2 | export const TextSwap = ({ value }) => {               │
+  │     |     ^                                                  │
+  │   3 |   const [count, setCount] = useState(0);               │
+  └──────────────────────────────────────────────────────────────┘
+
+✖ Bugs: react-doctor/no-array-index-key
+  Using the array index as a key breaks reconciliation when
+  the list reorders.
+
+  src/text-swap.tsx:7
+  ┌──────────────────────────────────────────────────────────────┐
+  │   6 |   }, [value]);                                         │
+  │ > 7 |   return count;                                        │
+  │     |     ^                                                  │
+  │   8 | };                                                     │
+  └──────────────────────────────────────────────────────────────┘
+
+  ⚠ react-doctor/rendering-hoist-jsx
+
+  Docs: https://www.react.doctor/docs
+
+  Tip: Set up CI/CD, suppress rules with a config file, and scan diffs or PRs.
 
   Tip: Run npx react-doctor@latest --verbose to see each warning explained with its fix"
 `;

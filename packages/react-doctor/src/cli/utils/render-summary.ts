@@ -12,6 +12,28 @@ import { collectAffectedFiles } from "./render-diagnostics.js";
 import { printNoScoreHeader, printScoreHeader } from "./render-score-header.js";
 import { writeDiagnosticsDirectory } from "./write-diagnostics-directory.js";
 
+// The "You could improve +X% by fixing the top N issues" line, or null when
+// there's no score or nothing to project.
+export const buildImproveLine = (
+  scoreResult: ScoreResult | null,
+  potentialScore: number | null | undefined,
+): string | null => {
+  if (!scoreResult || potentialScore == null) return null;
+  const improvement = potentialScore - scoreResult.score;
+  return (
+    highlighter.gray("  You could improve ") +
+    colorizeByScore(`+${improvement}%`, potentialScore) +
+    highlighter.gray(` by fixing these top ${TOP_ERRORS_DISPLAY_COUNT} issues`)
+  );
+};
+
+export const buildShareLine = (
+  diagnostics: Diagnostic[],
+  scoreResult: ScoreResult | null,
+  projectName: string,
+): string =>
+  `  ${highlighter.bold("Share:")} ${highlighter.info(buildShareUrl(diagnostics, scoreResult, projectName))}`;
+
 const buildShareUrl = (
   diagnostics: Diagnostic[],
   scoreResult: ScoreResult | null,
@@ -54,13 +76,19 @@ export const printVerboseTip = (
 // A closing pointer to the docs for the workflows the scan output doesn't
 // teach inline: wiring up CI/CD, writing a config file to suppress rules,
 // and scanning only a diff or PR. Printed once at the very end of a run.
-export const printDocsNote = (): Effect.Effect<void> =>
+export const printDocsNote = (showCiCdTip = true): Effect.Effect<void> =>
   Effect.gen(function* () {
     yield* Console.log("");
     yield* Console.log(`  ${highlighter.bold("Docs:")} ${highlighter.info(DOCS_URL)}`);
-    yield* Console.log(
-      highlighter.dim("  Set up CI/CD, suppress rules with a config file, and scan diffs or PRs."),
-    );
+    // Skip the "set up CI/CD" nudge for projects that already run CI.
+    if (showCiCdTip) {
+      yield* Console.log("");
+      yield* Console.log(
+        highlighter.dim(
+          "  Tip: Set up CI/CD, suppress rules with a config file, and scan diffs or PRs.",
+        ),
+      );
+    }
   });
 
 export interface PrintSummaryInput {
@@ -81,14 +109,8 @@ export const printSummary = (input: PrintSummaryInput): Effect.Effect<void> =>
   Effect.gen(function* () {
     if (input.scoreResult) {
       yield* printScoreHeader(input.scoreResult, input.potentialScore ?? undefined);
-      if (input.potentialScore != null) {
-        const improvement = input.potentialScore - input.scoreResult.score;
-        yield* Console.log(
-          highlighter.gray("  You could improve ") +
-            colorizeByScore(`+${improvement}%`, input.potentialScore) +
-            highlighter.gray(` by fixing the top ${TOP_ERRORS_DISPLAY_COUNT} issues`),
-        );
-      }
+      const improveLine = buildImproveLine(input.scoreResult, input.potentialScore);
+      if (improveLine) yield* Console.log(improveLine);
     } else {
       yield* printNoScoreHeader(input.noScoreMessage);
     }
@@ -108,8 +130,7 @@ export const printSummary = (input: PrintSummaryInput): Effect.Effect<void> =>
 
     if (!input.isOffline) {
       yield* Console.log("");
-      const shareUrl = buildShareUrl(input.diagnostics, input.scoreResult, input.projectName);
-      yield* Console.log(`  ${highlighter.bold("Share:")} ${highlighter.info(shareUrl)}`);
+      yield* Console.log(buildShareLine(input.diagnostics, input.scoreResult, input.projectName));
       yield* Console.log("");
     }
   });

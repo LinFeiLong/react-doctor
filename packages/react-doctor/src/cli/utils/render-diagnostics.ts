@@ -22,8 +22,10 @@ import {
   formatFixRecipeLine,
   formatLearnMoreLine,
 } from "./diagnostic-grouping.js";
+import { easeOutCubic } from "./ease-out-cubic.js";
 import { indentMultilineText } from "./indent-multiline-text.js";
 import { wrapTextToWidth } from "./wrap-indented-text.js";
+import { writeStdout } from "./write-stdout.js";
 
 const POINTER = isUnicodeSupported() ? "›" : ">";
 
@@ -46,7 +48,7 @@ interface CategoryDiagnosticGroup {
 
 // Resolves the absolute project root a given diagnostic's relative
 // `filePath` should be read from when building its inline code frame.
-interface SourceRootResolver {
+export interface SourceRootResolver {
   (diagnostic: Diagnostic): string;
 }
 
@@ -121,7 +123,9 @@ const buildCompactCategoryLine = (categoryGroup: CategoryDiagnosticGroup): strin
   return `  ${highlighter.bold(categoryGroup.category)} ${highlighter.dim(POINTER)} ${parts.join(highlighter.dim(", "))}`;
 };
 
-const TOP_ERROR_DETAIL_INDENT = "    ";
+// Detail (message, fix, location, frame) lines up at col 2 under the headline;
+// the ✖ marker hangs in the gutter at col 0.
+const TOP_ERROR_DETAIL_INDENT = "  ";
 
 const pickRepresentativeDiagnostic = (ruleDiagnostics: Diagnostic[]): Diagnostic =>
   ruleDiagnostics.find((diagnostic) => diagnostic.line > 0) ?? ruleDiagnostics[0];
@@ -252,9 +256,10 @@ const buildRuleDetailBlock = (
     `${representative.category}: ${representative.title ?? ruleKey}`,
     severity,
   );
-  const icon = colorizeBySeverity(severity === "error" ? "✗" : "⚠", severity);
+  const icon = colorizeBySeverity(severity === "error" ? "✖" : "⚠", severity);
 
-  const lines: string[] = [`  ${icon} ${headline}${trailingBadge}`];
+  // ✖ hangs in the gutter (col 0); the headline starts at the report edge (col 2).
+  const lines: string[] = [`${icon} ${headline}${trailingBadge}`];
 
   // Verbose lists every rule & site, so the per-rule impact prose would
   // just repeat down the whole report — skip it there and let the boxed
@@ -295,9 +300,9 @@ const buildRuleDetailBlock = (
   return lines;
 };
 
-// Indent under a warning's header line — six spaces so the body sits
-// just past the `  ⚠ ` marker.
-const WARNING_DETAIL_INDENT = "      ";
+// Warning body (message, fix, sites) lines up at col 2 under the rule name;
+// the ⚠ marker hangs in the gutter at col 0, matching the error blocks.
+const WARNING_DETAIL_INDENT = "  ";
 
 // Column the warning rule names pad to so each `×N` site badge lines up
 // regardless of name length. Grows past the default when a rule key is
@@ -323,7 +328,8 @@ const buildWarningHeaderLine = (
 ): string => {
   const hasBadge = formatSiteCountBadge(siteCount).length > 0;
   const ruleName = hasBadge ? padRuleNameToColumn(ruleKey, ruleNameColumnWidth) : ruleKey;
-  return `  ${highlighter.warn("⚠")} ${ruleName}${formatTrailingSiteBadge(siteCount)}`;
+  // ⚠ hangs in the gutter (col 0); the rule name starts at the report edge (col 2).
+  return `${highlighter.warn("⚠")} ${ruleName}${formatTrailingSiteBadge(siteCount)}`;
 };
 
 // Compact warning block: the `plugin/rule` key + `×N` badge, the impact,
@@ -423,14 +429,21 @@ export const getTopErrorRuleKeys = (
 ): ReadonlySet<string> =>
   new Set(selectTopErrorRuleGroups(diagnostics, limit, rulePriority).map(([ruleKey]) => ruleKey));
 
-const buildTopErrorsLines = (
+// The top-errors section, with each rule block's start offset (within `lines`)
+// so the renderer can play the onboarding beat before each error reveals.
+interface TopErrorsSection {
+  readonly lines: ReadonlyArray<string>;
+  readonly blockOffsets: ReadonlyArray<number>;
+}
+
+const buildTopErrorsSection = (
   diagnostics: Diagnostic[],
   resolveSourceRoot: SourceRootResolver,
   rulePriority?: ReadonlyMap<string, number>,
-): ReadonlyArray<string> => {
+): TopErrorsSection => {
   const errorRuleGroups = selectErrorRuleGroups(diagnostics, rulePriority);
   const topRuleGroups = errorRuleGroups.slice(0, TOP_ERRORS_DISPLAY_COUNT);
-  if (topRuleGroups.length === 0) return [];
+  if (topRuleGroups.length === 0) return { lines: [], blockOffsets: [] };
   const hiddenRuleCount = errorRuleGroups.length - topRuleGroups.length;
 
   const lines: string[] = [
@@ -439,14 +452,16 @@ const buildTopErrorsLines = (
     `  ${highlighter.bold(`Top ${topRuleGroups.length} ${topRuleGroups.length === 1 ? "error" : "errors"} you should fix`)}`,
     "",
   ];
+  const blockOffsets: number[] = [];
   for (const [ruleKey, ruleDiagnostics] of topRuleGroups) {
+    blockOffsets.push(lines.length);
     lines.push(...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, false));
     lines.push("");
   }
   if (hiddenRuleCount > 0) {
     lines.push(buildMoreRulesLine(hiddenRuleCount, "errors", highlighter.error));
   }
-  return lines;
+  return { lines, blockOffsets };
 };
 
 // In non-verbose mode errors get the detailed top-N block; warnings are
@@ -486,36 +501,218 @@ const buildWarningsListLines = (
 // The compact "Security › 6 errors" category tally, shown ABOVE the
 // detailed blocks so the reader gets the at-a-glance breakdown first,
 // then drills into specifics.
-const buildCategoryBreakdownLines = (
+export const buildCategoryBreakdownLines = (
   diagnostics: Diagnostic[],
   rulePriority?: ReadonlyMap<string, number>,
 ): string[] =>
   buildCategoryDiagnosticGroups(diagnostics, rulePriority).map(buildCompactCategoryLine);
 
-const joinSections = (...sections: ReadonlyArray<string>[]): string[] => {
+interface CategoryTally {
+  readonly category: string;
+  readonly errorCount: number;
+  readonly warningCount: number;
+}
+
+const buildCategoryTallies = (
+  diagnostics: Diagnostic[],
+  rulePriority?: ReadonlyMap<string, number>,
+): CategoryTally[] =>
+  buildCategoryDiagnosticGroups(diagnostics, rulePriority).map((group) => ({
+    category: group.category,
+    errorCount: group.diagnostics.filter((diagnostic) => diagnostic.severity === "error").length,
+    warningCount: group.diagnostics.filter((diagnostic) => diagnostic.severity === "warning")
+      .length,
+  }));
+
+// One category line at arbitrary displayed counts (count-up renders partial
+// values). At full counts it matches `buildCompactCategoryLine`'s static output.
+const formatCategoryTallyLine = (
+  tally: CategoryTally,
+  errorShown: number,
+  warningShown: number,
+): string => {
+  const parts: string[] = [];
+  if (tally.errorCount > 0) {
+    parts.push(highlighter.error(`${errorShown} ${errorShown === 1 ? "error" : "errors"}`));
+  }
+  if (tally.warningCount > 0) {
+    parts.push(
+      highlighter.warn(
+        highlighter.dim(`${warningShown} ${warningShown === 1 ? "warning" : "warnings"}`),
+      ),
+    );
+  }
+  return `  ${highlighter.bold(tally.category)} ${highlighter.dim(POINTER)} ${parts.join(highlighter.dim(", "))}`;
+};
+
+const CATEGORY_COUNTUP_FRAME_COUNT = 16;
+const CATEGORY_COUNTUP_FRAME_DELAY_MS = 45;
+
+// The category tally. When `animate`, the counts count up from zero in parallel
+// (first-run onboarding on a TTY); else the final lines print at once. Counts
+// only grow, so frames never shrink — no per-line clear needed.
+export const printCategoryBreakdown = (
+  diagnostics: Diagnostic[],
+  rulePriority: ReadonlyMap<string, number> | undefined,
+  animate: boolean,
+): Effect.Effect<void> =>
+  Effect.gen(function* () {
+    const tallies = buildCategoryTallies(diagnostics, rulePriority);
+    if (tallies.length === 0) return;
+
+    if (!animate) {
+      for (const tally of tallies) {
+        yield* Console.log(formatCategoryTallyLine(tally, tally.errorCount, tally.warningCount));
+      }
+      return;
+    }
+
+    for (let frame = 0; frame <= CATEGORY_COUNTUP_FRAME_COUNT; frame += 1) {
+      const fraction = easeOutCubic(frame / CATEGORY_COUNTUP_FRAME_COUNT);
+      const lines = tallies.map((tally) =>
+        formatCategoryTallyLine(
+          tally,
+          Math.round(tally.errorCount * fraction),
+          Math.round(tally.warningCount * fraction),
+        ),
+      );
+      const cursorUp = frame === 0 ? "" : `\x1b[${tallies.length}A`;
+      yield* writeStdout(`${cursorUp}\r${lines.join("\n\r")}\n`);
+      if (frame < CATEGORY_COUNTUP_FRAME_COUNT)
+        yield* Effect.sleep(CATEGORY_COUNTUP_FRAME_DELAY_MS);
+    }
+  });
+
+// Joins sections with a single blank line between non-empty ones (and a
+// trailing blank). Also returns each section's start index in the result
+// (null for an empty section) so the renderer can pace a specific section.
+const joinSections = (
+  ...sections: ReadonlyArray<string>[]
+): { lines: string[]; sectionStarts: ReadonlyArray<number | null> } => {
   const lines: string[] = [];
+  const sectionStarts: (number | null)[] = [];
   for (const section of sections) {
-    if (section.length === 0) continue;
+    if (section.length === 0) {
+      sectionStarts.push(null);
+      continue;
+    }
     if (lines.length > 0) lines.push("");
+    sectionStarts.push(lines.length);
     lines.push(...section);
   }
   if (lines.length > 0 && lines[lines.length - 1] !== "") lines.push("");
-  return lines;
+  return { lines, sectionStarts };
 };
 
-// The total-issue tally (e.g. "600 issues"), shown right under the
-// category breakdown as part of the overview. The "list every issue"
-// hint lives at the very bottom of the run instead (see `printVerboseTip`).
-const buildCountsSummaryLines = (diagnostics: Diagnostic[]): ReadonlyArray<string> => {
+// The colored "N issues" label (no indent), or null when there are none.
+export const buildIssueCountLabel = (diagnostics: Diagnostic[]): string | null => {
   const totalIssueCount = diagnostics.length;
-  if (totalIssueCount === 0) return [];
+  if (totalIssueCount === 0) return null;
   const errorCount = diagnostics.filter((diagnostic) => diagnostic.severity === "error").length;
   const warningCount = totalIssueCount - errorCount;
   const issueCountColor =
     errorCount > 0 ? highlighter.error : warningCount > 0 ? highlighter.warn : highlighter.dim;
-  return [
-    `  ${issueCountColor(`${totalIssueCount} ${totalIssueCount === 1 ? "issue" : "issues"}`)}`,
-  ];
+  return issueCountColor(`${totalIssueCount} ${totalIssueCount === 1 ? "issue" : "issues"}`);
+};
+
+export const buildCountsSummaryLines = (diagnostics: Diagnostic[]): ReadonlyArray<string> => {
+  const label = buildIssueCountLabel(diagnostics);
+  return label === null ? [] : [`  ${label}`];
+};
+
+// The top error rule blocks (detail + code frame), one array per block, no
+// shared header — the report announces them via the "fixing the top N" line.
+export const buildTopErrorBlocks = (
+  diagnostics: Diagnostic[],
+  sourceRoot: string | SourceRootResolver,
+  rulePriority?: ReadonlyMap<string, number>,
+): string[][] => {
+  const resolveSourceRoot: SourceRootResolver =
+    typeof sourceRoot === "function" ? sourceRoot : () => sourceRoot;
+  return selectErrorRuleGroups(diagnostics, rulePriority)
+    .slice(0, TOP_ERRORS_DISPLAY_COUNT)
+    .map(([ruleKey, ruleDiagnostics]) => [
+      ...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, false),
+    ]);
+};
+
+const WARNING_TYPEWRITER_FRAME_DELAY_MS = 14;
+
+// The compact `⚠ rule ×N` warning list (capped); no header, no overflow (folded
+// into the merged line above). ⚠ sits at col 2 so the error blocks keep the
+// col-0 gutter to themselves. When `animate`, each rule name types in (all rows
+// in parallel, snapping to the padded ×N form when done); else prints at once.
+export const printWarningRollup = (
+  diagnostics: Diagnostic[],
+  rulePriority: ReadonlyMap<string, number> | undefined,
+  animate: boolean,
+): Effect.Effect<void> =>
+  Effect.gen(function* () {
+    const warningDiagnostics = diagnostics.filter(
+      (diagnostic) => diagnostic.severity === "warning",
+    );
+    if (warningDiagnostics.length === 0) return;
+    const shownRuleGroups = buildSortedRuleGroups(warningDiagnostics, rulePriority).slice(
+      0,
+      MAX_WARNING_RULES_SHOWN_NON_VERBOSE,
+    );
+    const ruleNameColumnWidth = computeRuleNameColumnWidth(
+      shownRuleGroups.map(([ruleKey]) => ruleKey),
+    );
+    const finalLines = shownRuleGroups.map(
+      ([ruleKey, ruleDiagnostics]) =>
+        `  ${buildWarningHeaderLine(ruleKey, ruleDiagnostics.length, ruleNameColumnWidth)}`,
+    );
+
+    if (!animate) {
+      for (const line of finalLines) yield* Console.log(line);
+      return;
+    }
+
+    // All names finish on the same frame: paced by the longest, each shorter
+    // name reveals proportionally slower so the list lands together.
+    const longestRuleKeyLength = Math.max(...shownRuleGroups.map(([ruleKey]) => ruleKey.length));
+    for (let frame = 0; frame <= longestRuleKeyLength; frame += 1) {
+      const progress = frame / longestRuleKeyLength;
+      const lines = shownRuleGroups.map(([ruleKey], index) => {
+        const shown = Math.round(ruleKey.length * progress);
+        return shown >= ruleKey.length
+          ? (finalLines[index] ?? "")
+          : `  ${highlighter.warn("⚠")} ${ruleKey.slice(0, shown)}`;
+      });
+      const cursorUp = frame === 0 ? "" : `\x1b[${lines.length}A`;
+      yield* writeStdout(`${cursorUp}\r${lines.join("\n\r")}\n`);
+      if (frame < longestRuleKeyLength) {
+        yield* Effect.sleep(WARNING_TYPEWRITER_FRAME_DELAY_MS);
+      }
+    }
+  });
+
+// "+8 more errors and +107 more warnings." — one overflow line replacing the
+// per-section "+N more rules". Counts are rule groups beyond what's displayed.
+export const buildMergedOverflowLine = (
+  diagnostics: Diagnostic[],
+  rulePriority?: ReadonlyMap<string, number>,
+): string | null => {
+  const errorRuleGroupCount = selectErrorRuleGroups(diagnostics, rulePriority).length;
+  const warningRuleGroupCount = buildSortedRuleGroups(
+    diagnostics.filter((diagnostic) => diagnostic.severity === "warning"),
+    rulePriority,
+  ).length;
+  const moreErrors = Math.max(0, errorRuleGroupCount - TOP_ERRORS_DISPLAY_COUNT);
+  const moreWarnings = Math.max(0, warningRuleGroupCount - MAX_WARNING_RULES_SHOWN_NON_VERBOSE);
+  if (moreErrors === 0 && moreWarnings === 0) return null;
+
+  const parts: string[] = [];
+  if (moreErrors > 0) {
+    parts.push(highlighter.error(`+${moreErrors} more ${moreErrors === 1 ? "error" : "errors"}`));
+  }
+  if (moreWarnings > 0) {
+    parts.push(
+      highlighter.warn(`+${moreWarnings} more ${moreWarnings === 1 ? "warning" : "warnings"}`),
+    );
+  }
+  return `  ${highlighter.dim("We also found")} ${parts.join(highlighter.dim(" and "))}${highlighter.dim(".")}`;
 };
 
 /**
@@ -542,6 +739,9 @@ export const printDiagnostics = (
   // emit the cache-busting fetch directive instead of the human "Learn more"
   // link. Defaults to false (human) so tests render deterministically.
   isAgentEnvironment = false,
+  // The onboarding beat before each top-error block reveals. Defaults to a
+  // no-op, so non-onboarding runs print the whole block at once.
+  sectionPause: Effect.Effect<void> = Effect.void,
 ): Effect.Effect<void> =>
   Effect.gen(function* () {
     const resolveSourceRoot: SourceRootResolver =
@@ -551,8 +751,13 @@ export const printDiagnostics = (
     // In verbose the detail is EVERY rule and EVERY site (not just the
     // top N representative) — same readable block layout, just exhaustive.
     let detailLines: ReadonlyArray<string>;
+    // Offsets within `detailLines` where each top-error block begins, to pace
+    // the reveal between errors. Empty in verbose (lists every rule, not top-N).
+    let topErrorBlockOffsets: ReadonlyArray<number> = [];
     if (!isVerbose) {
-      detailLines = buildTopErrorsLines(diagnostics, resolveSourceRoot, rulePriority);
+      const topErrors = buildTopErrorsSection(diagnostics, resolveSourceRoot, rulePriority);
+      detailLines = topErrors.lines;
+      topErrorBlockOffsets = topErrors.blockOffsets;
     } else {
       const sortedRuleGroups = buildSortedRuleGroups(diagnostics, rulePriority);
       // Warnings share one padded name column so their `×N` badges align;
@@ -575,7 +780,7 @@ export const printDiagnostics = (
       });
     }
 
-    const lines = joinSections(
+    const { lines, sectionStarts } = joinSections(
       buildCategoryBreakdownLines(diagnostics, rulePriority),
       buildCountsSummaryLines(diagnostics),
       detailLines,
@@ -583,8 +788,20 @@ export const printDiagnostics = (
       // warning roll-up is non-verbose only.
       isVerbose ? [] : buildWarningsListLines(diagnostics, rulePriority),
     );
+
+    // `detailLines` is the 3rd section; map its block offsets to absolute line
+    // indices so the beat plays just before each block.
+    const detailStart = sectionStarts[2];
+    const pauseBeforeLineIndices =
+      detailStart == null
+        ? new Set<number>()
+        : new Set(topErrorBlockOffsets.map((offset) => detailStart + offset));
+
+    let lineIndex = 0;
     for (const line of lines) {
+      if (pauseBeforeLineIndices.has(lineIndex)) yield* sectionPause;
       yield* Console.log(line);
+      lineIndex++;
     }
   });
 

@@ -26,6 +26,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { OUTPUT_DETAIL_WRAP_WIDTH_CHARS } from "@react-doctor/core";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 import { printDiagnostics } from "../../src/cli/utils/render-diagnostics.js";
+import { printInspectReport } from "../../src/cli/utils/render-report.js";
 import { printSummary, printVerboseTip } from "../../src/cli/utils/render-summary.js";
 import { setupReactProject } from "../regressions/_helpers.js";
 import { renderInTerminal } from "../helpers/render-in-terminal.js";
@@ -181,6 +182,29 @@ describe("in-process render across terminal widths and render modes", () => {
       verbose: boolean;
     }): Promise<string> =>
       captureConsoleBytes(async () => {
+        // The default (non-verbose) run with issues uses the reordered
+        // single-project report; verbose and clean runs keep the classic
+        // diagnostics + summary sequence, mirroring the CLI's own branches.
+        if (!options.verbose && options.diagnostics.length > 0) {
+          await Effect.runPromise(
+            printInspectReport({
+              diagnostics: options.diagnostics,
+              score: options.scoreResult,
+              potentialScore: null,
+              projectName: SHARE_ONLY_PROJECT_NAME,
+              sourceRoot: projectDirectory,
+              outputSurface: "cli",
+              demotedDiagnosticCount: 0,
+              noScoreMessage: "Score unavailable.",
+              isOffline: true,
+              hasSkippedChecks: false,
+              skippedChecks: [],
+              verbose: false,
+              isNonInteractiveEnvironment: false,
+            }),
+          );
+          return;
+        }
         await Effect.runPromise(
           printDiagnostics(options.diagnostics, options.verbose, projectDirectory),
         );
@@ -279,7 +303,8 @@ describe("in-process render across terminal widths and render modes", () => {
     // emulator consumes those escapes and exposes the plain text the user
     // actually sees.
     const rendered = await renderInTerminal(defaultScenarioBytes, { cols: 120 });
-    expect(rendered.text).toContain("errors you should fix");
+    // The headline count anchors the report; the top-error blocks follow it.
+    expect(rendered.text).toContain("5 issues");
     // The code frame caret line is the load-bearing visual element.
     expect(rendered.text).toContain("setCount(0)");
   });
@@ -450,7 +475,7 @@ describe.skipIf(!hasBuiltCli)("built CLI subprocess visual smoke", () => {
 
     expect(typeof exitCode === "number").toBe(true);
     expect(stdout).toContain("React Doctor");
-    expect(stdout).toContain("error you should fix");
+    expect(stdout).toContain("Bugs");
     // The top-error headline shows the rule's human title (not the id).
     expect(stdout).toContain("State synced to a prop inside an effect");
     // The inline code frame is rendered from the actual fixture file.
@@ -470,7 +495,7 @@ describe.skipIf(!hasBuiltCli)("built CLI subprocess visual smoke", () => {
     const visualRegion = stdout.split("Agent guidance")[0];
     const rendered = await renderInTerminal(toTerminalStream(visualRegion), { cols: 120 });
 
-    expect(rendered.text).toContain("error you should fix");
+    expect(rendered.text).toContain("Bugs");
     expect(rendered.overflowed).toBe(false);
   }, 60_000);
 });

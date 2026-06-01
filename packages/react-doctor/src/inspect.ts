@@ -38,9 +38,19 @@ import {
   isCodingAgentEnvironment,
 } from "./cli/utils/is-ci-environment.js";
 import { computeProjectedScore } from "./cli/utils/compute-score-projection.js";
+import { hasReactDoctorWorkflow } from "./cli/utils/has-react-doctor-workflow.js";
 import { buildRulePriorityMap } from "./cli/utils/diagnostic-grouping.js";
 import { printDiagnostics } from "./cli/utils/render-diagnostics.js";
+import { printInspectReport } from "./cli/utils/render-report.js";
 import { isNonInteractiveEnvironment } from "./cli/utils/is-non-interactive-environment.js";
+import {
+  canAnimateOnboarding,
+  isOnboardingForced,
+  ONBOARDING_SECTION_DELAY_FAST_MS,
+  onboardingSectionPause,
+  shouldPaceOnboardingSections,
+} from "./cli/utils/onboarding-pacing.js";
+import { hasCompletedOnboarding, markOnboardingComplete } from "./cli/utils/onboarding-state.js";
 import { printProjectDetection } from "./cli/utils/render-project-detection.js";
 import {
   printBrandingOnlyHeader,
@@ -330,8 +340,21 @@ const runInspectWithRuntime = async (
   const score = didLintFail ? null : output.score;
 
   const elapsedMilliseconds = performance.now() - startTime;
+  // Stagger sections only on a user's first interactive run: nothing to pace for
+  // silent/score-only/suppressed renders; CI, agents, and non-TTY are gated out;
+  // and the persisted marker (read last) limits it to the very first attempt.
+  // `REACT_DOCTOR_FORCE_ONBOARDING` replays the first-run experience on demand.
+  const forceOnboarding = isOnboardingForced();
+  const paceOnboardingSections =
+    !options.silent &&
+    !options.scoreOnly &&
+    !options.suppressRendering &&
+    shouldPaceOnboardingSections({ isCiOrCodingAgent: options.isCiOrCodingAgentEnvironment }) &&
+    (forceOnboarding || !hasCompletedOnboarding());
   const finalizeInput: FinalizeInput = {
     options,
+    paceOnboardingSections,
+    forceOnboarding,
     elapsedMilliseconds,
     diagnostics: inspectDiagnostics,
     score,
@@ -352,6 +375,11 @@ const runInspectWithRuntime = async (
       options.silent ? Effect.provideService(Console.Console, silentConsole) : (program) => program,
     ),
   );
+  // Record the marker after a paced render so later runs print instantly. A
+  // forced run is a demo, so it stays replayable and never burns the marker.
+  if (paceOnboardingSections && !forceOnboarding) {
+    markOnboardingComplete();
+  }
   recordScanMetrics({
     result,
     mode: isDiffMode ? "diff" : "full",
@@ -372,6 +400,8 @@ const runInspectWithRuntime = async (
 
 interface FinalizeInput {
   options: ResolvedInspectOptions;
+  paceOnboardingSections: boolean;
+  forceOnboarding: boolean;
   elapsedMilliseconds: number;
   diagnostics: ReadonlyArray<Diagnostic>;
   score: ScoreResult | null;
@@ -392,6 +422,8 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
   Effect.gen(function* () {
     const {
       options,
+      paceOnboardingSections,
+      forceOnboarding,
       elapsedMilliseconds,
       diagnostics,
       score,
@@ -444,6 +476,9 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       return buildResult();
     }
 
+    // Onboarding beat before each section below (no-op off onboarding).
+    const pause = onboardingSectionPause(paceOnboardingSections);
+
     const surfaceDiagnostics = filterDiagnosticsForSurface(
       [...diagnostics],
       options.outputSurface,
@@ -454,6 +489,7 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
     const lintSourceFileCount = isDiffMode ? options.includePaths.length : project.sourceFileCount;
 
     if (surfaceDiagnostics.length === 0) {
+      yield* pause;
       if (hasSkippedChecks) {
         const skippedLabel = skippedChecks.join(" and ");
         yield* Console.warn(
@@ -471,6 +507,7 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
         yield* Console.log(highlighter.success("No issues found!"));
       }
       yield* Console.log("");
+      yield* pause;
       if (hasSkippedChecks) {
         yield* printBrandingOnlyHeader;
         yield* Console.log(highlighter.gray("  Score not shown — some checks could not complete."));
@@ -482,58 +519,117 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       return buildResult();
     }
 
-    yield* Console.log("");
-    yield* printDiagnostics(
-      [...surfaceDiagnostics],
-      options.verbose,
-      directory,
-      buildRulePriorityMap([score]),
-      isCodingAgentEnvironment(),
-    );
-    if (options.isNonInteractiveEnvironment && options.outputSurface !== "prComment") {
-      yield* printAgentGuidance();
-    }
+    // Re-score with the top errors removed to show the payoff as the bar's ghost
+    // gain. Verbose has no projection, so it skips this extra score-API call.
+    const potentialScore =
+      score && !options.verbose
+        ? yield* Effect.promise(() =>
+            computeProjectedScore([...surfaceDiagnostics], [...surfaceDiagnostics], score),
+          )
+        : null;
+    const shouldShowShareLink = !options.noScore && options.share && !options.isCi;
+    const showCiCdTip = !hasReactDoctorWorkflow(directory);
 
-    if (demotedDiagnosticCount > 0) {
-      yield* Console.log(
-        highlighter.gray(
-          `  ${demotedDiagnosticCount} demoted from the ${options.outputSurface} surface (e.g. design cleanup) — run \`npx react-doctor@latest .\` locally for the full list.`,
-        ),
+    if (options.verbose) {
+      // Verbose is a focused review: full errors + warnings list, score bar, and
+      // a one-line agent tip — no projection, share, docs, CI/CD tip, or top-3.
+      yield* Console.log("");
+      yield* printDiagnostics(
+        [...surfaceDiagnostics],
+        true,
+        directory,
+        buildRulePriorityMap([score]),
+        isCodingAgentEnvironment(),
       );
       yield* Console.log("");
+      if (hasSkippedChecks) {
+        yield* printBrandingOnlyHeader;
+        yield* Console.log(highlighter.gray("  Score not shown — some checks could not complete."));
+      } else if (score) {
+        yield* printScoreHeader(score);
+      } else {
+        yield* printNoScoreHeader(noScoreMessage);
+      }
+      yield* Console.log(
+        highlighter.dim("  Tip: Ask an agent like Claude Code or Codex to fix these issues."),
+      );
+      return buildResult();
     }
 
-    // Re-score with the displayed top errors removed so the score bar can
-    // show the payoff as a ghost gain segment.
-    const potentialScore = score
-      ? yield* Effect.promise(() =>
-          computeProjectedScore([...surfaceDiagnostics], [...surfaceDiagnostics], score),
-        )
-      : null;
+    if (options.isNonInteractiveEnvironment && !forceOnboarding) {
+      // Non-interactive runs (CI, git hooks, agents) keep the classic layout
+      // (diagnostics + agent guidance first), unless onboarding is forced.
+      yield* pause;
+      yield* Console.log("");
+      yield* printDiagnostics(
+        [...surfaceDiagnostics],
+        false,
+        directory,
+        buildRulePriorityMap([score]),
+        isCodingAgentEnvironment(),
+        pause,
+      );
+      if (options.outputSurface !== "prComment") {
+        yield* printAgentGuidance();
+      }
+      if (demotedDiagnosticCount > 0) {
+        yield* pause;
+        yield* Console.log(
+          highlighter.gray(
+            `  ${demotedDiagnosticCount} demoted from the ${options.outputSurface} surface (e.g. design cleanup) — run \`npx react-doctor@latest .\` locally for the full list.`,
+          ),
+        );
+        yield* Console.log("");
+      }
+      yield* pause;
+      yield* printSummary({
+        diagnostics: [...surfaceDiagnostics],
+        elapsedMilliseconds,
+        scoreResult: score,
+        potentialScore,
+        projectName: project.projectName,
+        totalSourceFileCount: lintSourceFileCount,
+        noScoreMessage,
+        isOffline: !shouldShowShareLink,
+        verbose: false,
+      });
+      if (hasSkippedChecks) {
+        yield* pause;
+        const skippedLabel = skippedChecks.join(" and ");
+        yield* Console.log("");
+        yield* Console.warn(
+          highlighter.warn(`  Note: ${skippedLabel} checks failed — score may be incomplete.`),
+        );
+      }
+      yield* pause;
+      yield* printVerboseTip([...surfaceDiagnostics], false);
+      yield* printDocsNote(showCiCdTip);
+      return buildResult();
+    }
 
-    const shouldShowShareLink = !options.noScore && options.share && !options.isCi;
-    yield* printSummary({
+    yield* printInspectReport({
       diagnostics: [...surfaceDiagnostics],
-      elapsedMilliseconds,
-      scoreResult: score,
+      score,
       potentialScore,
       projectName: project.projectName,
-      totalSourceFileCount: lintSourceFileCount,
+      sourceRoot: directory,
+      rulePriority: buildRulePriorityMap([score]),
+      outputSurface: options.outputSurface,
+      demotedDiagnosticCount,
       noScoreMessage,
       isOffline: !shouldShowShareLink,
-      verbose: options.verbose,
+      hasSkippedChecks,
+      skippedChecks,
+      verbose: false,
+      isNonInteractiveEnvironment: options.isNonInteractiveEnvironment,
+      sectionPause: pause,
+      sectionPauseFast: onboardingSectionPause(
+        paceOnboardingSections,
+        ONBOARDING_SECTION_DELAY_FAST_MS,
+      ),
+      animateCountUp: paceOnboardingSections && canAnimateOnboarding(process.stdout),
+      showCiCdTip,
     });
-
-    if (hasSkippedChecks) {
-      const skippedLabel = skippedChecks.join(" and ");
-      yield* Console.log("");
-      yield* Console.warn(
-        highlighter.warn(`  Note: ${skippedLabel} checks failed — score may be incomplete.`),
-      );
-    }
-
-    yield* printVerboseTip([...surfaceDiagnostics], options.verbose);
-    yield* printDocsNote();
 
     return buildResult();
   });

@@ -25,7 +25,6 @@ export interface HandoffToAgentInput {
 }
 
 const CLIPBOARD_CHOICE = "clipboard";
-const PRINT_CHOICE = "print";
 const SKIP_CHOICE = "skip";
 
 const printPayload = (payload: string): void => {
@@ -58,7 +57,7 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
     {
       type: "select",
       name: "handoffTarget",
-      message: "Hand these issues to an agent?",
+      message: "Would you like to spawn an agent to fix these issues?",
       choices: [
         ...launchableAgents.map((agentId) => ({
           title: getSkillAgentConfig(agentId).displayName,
@@ -70,7 +69,6 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
           description: "Paste into any agent or chat",
           value: CLIPBOARD_CHOICE,
         },
-        { title: "Print prompt", description: "Show the prompt below", value: PRINT_CHOICE },
         { title: "Skip", description: "Don't hand off", value: SKIP_CHOICE },
       ],
       initial: 0,
@@ -79,11 +77,10 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
   );
 
   // Count the fix-loop outcome (the core activation moment): did the user launch
-  // an agent (any agent id), copy/print the prompt, or skip/cancel?
+  // an agent (any agent id), copy the prompt, or skip/cancel?
   let handoffOutcome = "launch";
   if (handoffTarget === undefined) handoffOutcome = "cancel";
   else if (handoffTarget === SKIP_CHOICE) handoffOutcome = "skip";
-  else if (handoffTarget === PRINT_CHOICE) handoffOutcome = "print";
   else if (handoffTarget === CLIPBOARD_CHOICE) handoffOutcome = "clipboard";
   recordCount(METRIC.agentHandoff, 1, {
     outcome: handoffOutcome,
@@ -99,10 +96,6 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
     projectName: input.projectName,
   });
 
-  if (handoffTarget === PRINT_CHOICE) {
-    printPayload(payload);
-    return;
-  }
   if (handoffTarget === CLIPBOARD_CHOICE) {
     const didCopy = await copyToClipboard(payload);
     if (didCopy) logger.log("Copied the prompt to your clipboard.");

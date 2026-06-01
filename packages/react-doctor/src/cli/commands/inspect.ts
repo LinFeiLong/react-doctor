@@ -36,8 +36,11 @@ import {
   writeJsonErrorReport,
   writeJsonReport,
 } from "../utils/json-mode.js";
+import { canAnimateOnboarding, isOnboardingForced } from "../utils/onboarding-pacing.js";
+import { hasCompletedOnboarding } from "../utils/onboarding-state.js";
 import { printAnnotations } from "../utils/print-annotations.js";
 import { printBrandedHeader } from "../utils/print-branded-header.js";
+import { playWelcomeScene } from "../utils/render-welcome.js";
 import { reportErrorToSentry } from "../utils/report-error.js";
 import { readChangedFilesFrom } from "../utils/read-changed-files-from.js";
 import { printMultiProjectSummary } from "../utils/render-multi-project-summary.js";
@@ -201,7 +204,15 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
     }
 
     if (!isQuiet) {
-      Effect.runSync(printBrandedHeader);
+      // First-run (or forced) onboarding opens with the animated welcome scene
+      // in place of the static branded header; everything else keeps the header.
+      const showWelcome =
+        (isOnboardingForced() || !hasCompletedOnboarding()) && canAnimateOnboarding(process.stdout);
+      if (showWelcome) {
+        await Effect.runPromise(playWelcomeScene());
+      } else {
+        Effect.runSync(printBrandedHeader);
+      }
     }
 
     const scanOptions = resolveCliInspectOptions(flags, userConfig);
@@ -389,9 +400,14 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
 
     // After the results print, offer to hand the issues to a coding agent
     // — an interactive select (no flag). Skipped for quiet, skip-prompts,
-    // non-TTY, and agent/CI runs (those get the install hint below).
+    // non-TTY, and agent/CI runs (those get the install hint below). Verbose
+    // is a static review and prints its own "ask an agent" tip instead.
     const canPromptInteractively =
-      !isQuiet && !skipPrompts && process.stdout.isTTY === true && !isCiOrCodingAgentEnvironment();
+      !isQuiet &&
+      !skipPrompts &&
+      !flags.verbose &&
+      process.stdout.isTTY === true &&
+      !isCiOrCodingAgentEnvironment();
     if (canPromptInteractively && surfaceDiagnostics.length > 0) {
       await handoffToAgent({
         diagnostics: surfaceDiagnostics,
