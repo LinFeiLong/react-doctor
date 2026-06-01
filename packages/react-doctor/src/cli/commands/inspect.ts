@@ -9,6 +9,7 @@ import {
   findLegacyConfig,
   getDiffInfo,
   highlighter,
+  isReactDoctorError,
   resolveScanTarget,
   toRelativePath,
 } from "@react-doctor/core";
@@ -25,7 +26,7 @@ import { METRIC, STAGED_FILES_TEMP_DIR_PREFIX } from "../utils/constants.js";
 import { recordCount } from "../utils/record-metric.js";
 import { getStagedSourceFiles, materializeStagedFiles } from "../utils/get-staged-files.js";
 import type { InspectFlags } from "../utils/inspect-flags.js";
-import { handleError } from "../utils/handle-error.js";
+import { handleError, handleUserError } from "../utils/handle-error.js";
 import { handoffToAgent } from "../utils/handoff-to-agent.js";
 import { migrateLegacyConfig } from "../utils/migrate-legacy-config.js";
 import {
@@ -421,10 +422,22 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
       }
     }
   } catch (error) {
-    const sentryEventId = await reportErrorToSentry(error);
+    // A bad `--diff` value (or an unfetched base branch) is the user's
+    // input, not a react-doctor bug: skip Sentry and the "open a prefilled
+    // issue" block so it doesn't become triage noise. Dispatch on the tagged
+    // reason inline (AGENTS.md: don't add new error-shape helpers).
+    const isUserError =
+      isReactDoctorError(error) &&
+      (error.reason._tag === "GitBaseBranchInvalid" ||
+        error.reason._tag === "GitBaseBranchMissing");
+    const sentryEventId = isUserError ? undefined : await reportErrorToSentry(error);
     if (isJsonMode) {
       writeJsonErrorReport(error);
       process.exitCode = 1;
+      return;
+    }
+    if (isUserError) {
+      handleUserError(error);
       return;
     }
     handleError(error, { sentryEventId });
