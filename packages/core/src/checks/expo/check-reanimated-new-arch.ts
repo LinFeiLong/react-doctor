@@ -14,8 +14,9 @@ const FIRST_NEW_ARCH_ONLY_REANIMATED_MAJOR = 4;
 // app config, so that combination is a guaranteed startup crash. We treat
 // `react-native-worklets` (Reanimated 4's split-out worklet runtime) as an
 // equivalent v4 signal. Only a statically-readable `newArchEnabled: false`
-// trips this; a value set exclusively in a dynamic `app.config.js` is a
-// documented false-negative (we never execute user config).
+// (in `app.json` / `app.config.json`) trips this; a value set exclusively in a
+// dynamic `app.config.{js,ts}` is a documented false-negative (we never
+// execute user config).
 export const checkExpoReanimatedNewArch = (context: ExpoCheckContext): Diagnostic[] => {
   const reanimatedSpec =
     context.packageJson.dependencies?.[REANIMATED_PACKAGE] ??
@@ -28,16 +29,14 @@ export const checkExpoReanimatedNewArch = (context: ExpoCheckContext): Diagnosti
   if (!isReanimatedV4Plus) return [];
 
   const appConfig = readExpoAppConfig(context.rootDirectory);
-  const newArchDisabledInJson =
-    getNestedConfigValue(appConfig.config, ["newArchEnabled"]) === false;
-  const newArchDisabledInText = /newArchEnabled\s*:\s*false\b/.test(appConfig.text);
-  if (!newArchDisabledInJson && !newArchDisabledInText) return [];
+  if (getNestedConfigValue(appConfig.config, ["newArchEnabled"]) !== false) return [];
 
   return [
     buildExpoDiagnostic({
       rule: "expo-reanimated-v4-requires-new-arch",
+      filePath: appConfig.configFile ?? "app.json",
       message:
-        "react-native-reanimated v4 supports only the New Architecture, but `newArchEnabled: false` is set in your app config — the app will crash on first launch.",
+        "react-native-reanimated v4 supports only the New Architecture, but `newArchEnabled: false` is set in your app config, so the app will crash on first launch.",
       help: "Remove `newArchEnabled: false` from your app config (the New Architecture is the default on SDK 52+), or pin react-native-reanimated to v3 if you must stay on the legacy architecture.",
     }),
   ];

@@ -66,4 +66,10 @@ describe("expo-no-non-inlined-env", () => {
     const result = runRule(expoNoNonInlinedEnv, code, { filename: "src/Home.test.ts" });
     expect(result.diagnostics).toHaveLength(0);
   });
+
+  it("does NOT flag in server-only modules (*.server.*)", () => {
+    const code = `const value = process.env[key];`;
+    const result = runRule(expoNoNonInlinedEnv, code, { filename: "src/lib/db.server.ts" });
+    expect(result.diagnostics).toHaveLength(0);
+  });
 });

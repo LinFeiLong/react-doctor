@@ -9,18 +9,19 @@ import type { RuleVisitors } from "../../utils/rule-visitors.js";
 
 const EMPTY_VISITORS: RuleVisitors = {};
 
-// Node/build-time files legitimately read `process.env` dynamically (they
-// run in Node, not the bundled client, so Metro never inlines them). The
-// OSS corpus showed nearly every computed / destructured `process.env`
-// access lives in exactly these files — config, scripts/tooling, Expo
-// Router server routes (`*+api`), and tests — so excluding them is what
-// keeps this rule low-noise.
+// Node/build-time and server files legitimately read `process.env`
+// dynamically (they run in Node, not the bundled client, so Metro never
+// inlines them). The OSS corpus showed nearly every computed / destructured
+// `process.env` access lives in exactly these files — config, scripts/tooling,
+// Expo Router server routes (`*+api`), `*.server.*` modules, and tests — so
+// excluding them is what keeps this rule low-noise.
 const NODE_OR_BUILD_FILE =
-  /(\.config\.[cm]?[jt]sx?$)|((^|\/)(scripts|tools|tooling)\/)|(\+(api|html)\.[cm]?[jt]sx?$)|(\.(test|spec)\.[cm]?[jt]sx?$)|((^|\/)__tests__\/)|(\.e2e\.[cm]?[jt]sx?$)/;
+  /(\.config\.[cm]?[jt]sx?$)|((^|\/)(scripts|tools|tooling)\/)|(\+(api|html)\.[cm]?[jt]sx?$)|(\.server\.[cm]?[jt]sx?$)|(\.(test|spec)\.[cm]?[jt]sx?$)|((^|\/)__tests__\/)|(\.e2e\.[cm]?[jt]sx?$)/;
 
 // True for the `process.env` member access (`process` . `env`, static).
+// `isNodeOfType` null-guards, so a null/undefined node is handled without an
+// extra `Boolean(node)` check.
 const isProcessEnv = (node: EsTreeNode | null | undefined): boolean =>
-  !!node &&
   isNodeOfType(node, "MemberExpression") &&
   !node.computed &&
   isNodeOfType(node.object, "Identifier") &&
