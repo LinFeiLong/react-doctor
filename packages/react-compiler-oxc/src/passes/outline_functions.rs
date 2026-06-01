@@ -130,7 +130,7 @@ fn to_identifier(input: &str) -> String {
 /// components produced by `OutlineJSX`, which runs first and shares the env's
 /// `#outlinedFunctions` list) are preserved, and their generated names seed the
 /// allocator so a fresh closure does not collide with an already-claimed `_temp`.
-pub fn outline_functions(
+pub(crate) fn outline_functions(
     func: &mut HirFunction,
     fbt_operands: &HashSet<IdentifierId>,
     allocator: &mut UidAllocator,

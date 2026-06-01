@@ -7,6 +7,7 @@
 pub mod build_hir;
 pub mod codegen;
 pub mod compile;
+pub mod diagnostic;
 pub mod environment;
 pub mod gating;
 pub mod hir;
@@ -18,6 +19,10 @@ pub mod suppression;
 pub mod type_inference;
 
 pub use codegen::{canonicalize, codegen, compile_module, print_program};
+pub use diagnostic::{
+    BabelPosition, BabelSourceLocation, Diagnostic, Diagnostics, ErrorCategory, ErrorSeverity,
+    LintRule, LintRulePreset, PositionResolver, lint_rules, rule_for_category,
+};
 pub use compile::{
     CompilationMode, CompiledReactive, DynamicGatingOptions, ExternalFunction, LoweredFn,
     ModuleOptions, PanicThreshold, compile_to_reactive, compile_to_reactive_with_options,
