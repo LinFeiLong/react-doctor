@@ -71,10 +71,8 @@ export interface PrintSummaryInput {
   // Score reachable by fixing the top errors, rendered as the bar's ghost
   // gain segment. Omitted when there's nothing to project.
   readonly potentialScore?: number | null;
-  readonly projectName: string;
   readonly totalSourceFileCount: number;
   readonly noScoreMessage: string;
-  readonly isOffline: boolean;
   readonly verbose?: boolean;
 }
 

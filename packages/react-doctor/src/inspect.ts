@@ -517,10 +517,8 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
       elapsedMilliseconds,
       scoreResult: score,
       potentialScore,
-      projectName: project.projectName,
       totalSourceFileCount: lintSourceFileCount,
       noScoreMessage,
-      isOffline: !shouldShowShareLink,
       verbose: options.verbose,
     });
 

@@ -173,10 +173,8 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
       elapsedMilliseconds: totalElapsedMilliseconds,
       scoreResult: aggregateScore,
       potentialScore,
-      projectName: completedScans.map((scan) => scan.result.project.projectName).join(", "),
       totalSourceFileCount,
       noScoreMessage: "Score unavailable.",
-      isOffline: true,
       verbose,
     });
 
