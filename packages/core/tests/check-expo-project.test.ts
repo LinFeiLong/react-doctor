@@ -52,6 +52,17 @@ const buildExpoProject = (
   sourceFileCount: 10,
 });
 
+const writeAppJson = (projectDirectory: string, expoConfig: Record<string, unknown>): void => {
+  fs.writeFileSync(
+    path.join(projectDirectory, "app.json"),
+    JSON.stringify({ expo: expoConfig }, null, 2),
+  );
+};
+
+const writeFile = (projectDirectory: string, fileName: string, contents: string): void => {
+  fs.writeFileSync(path.join(projectDirectory, fileName), contents);
+};
+
 const rulesOf = (diagnostics: ReadonlyArray<Diagnostic>): string[] =>
   diagnostics.map((diagnostic) => diagnostic.rule);
 
@@ -410,5 +421,122 @@ describe("checkExpoProject — gitignore (.expo / local modules)", () => {
     expect(
       rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory))),
     ).toContain("expo-gitignore");
+  });
+});
+
+describe("checkExpoProject — reanimated v4 requires new architecture", () => {
+  it("flags reanimated v4 with newArchEnabled: false as an error", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-reanimated": "~4.0.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x", newArchEnabled: false });
+    const diagnostics = checkExpoProject(
+      projectDirectory,
+      buildExpoProject(projectDirectory, "~52.0.0"),
+    );
+    const hit = diagnostics.find((d) => d.rule === "expo-reanimated-v4-requires-new-arch");
+    expect(hit).toBeDefined();
+    // A guaranteed first-launch crash must surface by default (errors aren't hidden).
+    expect(hit?.severity).toBe("error");
+  });
+
+  it("flags when react-native-worklets is present with newArchEnabled: false", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-worklets": "^0.1.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x", newArchEnabled: false });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).toContain("expo-reanimated-v4-requires-new-arch");
+  });
+
+  it("does NOT flag reanimated v3 with newArchEnabled: false", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-reanimated": "~3.10.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x", newArchEnabled: false });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-reanimated-v4-requires-new-arch");
+  });
+
+  it("does NOT flag reanimated v4 when newArchEnabled is not disabled", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-reanimated": "~4.0.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x" });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-reanimated-v4-requires-new-arch");
+  });
+
+  // Regression (Bugbot): a dynamic app.config.{js,ts} can override app.json, so
+  // a stale `newArchEnabled: false` in app.json must NOT trip the check when a
+  // dynamic config is present (we can't evaluate it offline).
+  it("does NOT flag when a dynamic app.config.js may override a stale app.json", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, {
+      name: "expo-app",
+      dependencies: { expo: "~52.0.0", "react-native-reanimated": "~4.0.0" },
+    });
+    writeAppJson(projectDirectory, { name: "x", newArchEnabled: false });
+    writeFile(
+      projectDirectory,
+      "app.config.js",
+      "module.exports = ({ config }) => ({ ...config, newArchEnabled: true });\n",
+    );
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-reanimated-v4-requires-new-arch");
+  });
+});
+
+describe("checkExpoProject — unsafe updates production config", () => {
+  it("flags updates.disableAntiBrickingMeasures: true as an error", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, { name: "expo-app", dependencies: { expo: "~52.0.0" } });
+    writeAppJson(projectDirectory, {
+      name: "x",
+      updates: { disableAntiBrickingMeasures: true },
+    });
+    const diagnostics = checkExpoProject(
+      projectDirectory,
+      buildExpoProject(projectDirectory, "~52.0.0"),
+    );
+    const hit = diagnostics.find((d) => d.rule === "expo-updates-no-unsafe-production-config");
+    expect(hit).toBeDefined();
+    // Can permanently brick installed apps — must surface by default.
+    expect(hit?.severity).toBe("error");
+  });
+
+  it("does NOT flag when the flag is absent", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, { name: "expo-app", dependencies: { expo: "~52.0.0" } });
+    writeAppJson(projectDirectory, { name: "x", updates: { fallbackToCacheTimeout: 0 } });
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-updates-no-unsafe-production-config");
+  });
+
+  // Regression (Bugbot): a dynamic config may override a stale app.json value.
+  it("does NOT flag disableAntiBrickingMeasures from app.json when a dynamic config exists", () => {
+    const projectDirectory = makeProjectDirectory();
+    writePackageJson(projectDirectory, { name: "expo-app", dependencies: { expo: "~52.0.0" } });
+    writeAppJson(projectDirectory, {
+      name: "x",
+      updates: { disableAntiBrickingMeasures: true },
+    });
+    writeFile(projectDirectory, "app.config.ts", "export default ({ config }) => config;\n");
+    expect(
+      rulesOf(checkExpoProject(projectDirectory, buildExpoProject(projectDirectory, "~52.0.0"))),
+    ).not.toContain("expo-updates-no-unsafe-production-config");
   });
 });
