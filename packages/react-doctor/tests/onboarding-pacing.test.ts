@@ -12,6 +12,7 @@ import {
   ONBOARDING_SECTION_DELAY_MS,
   onboardingSectionPause,
   shouldPaceOnboardingSections,
+  shouldRecordOnboarding,
 } from "../src/cli/utils/onboarding-pacing.js";
 
 describe("shouldPaceOnboardingSections", () => {
@@ -110,6 +111,37 @@ describe("isOnboardingForced", () => {
     expect(isOnboardingForced({ [FORCE_ONBOARDING_ENV_VAR]: "0" })).toBe(false);
     expect(isOnboardingForced({ [FORCE_ONBOARDING_ENV_VAR]: "false" })).toBe(false);
     expect(isOnboardingForced({ [FORCE_ONBOARDING_ENV_VAR]: "" })).toBe(false);
+  });
+});
+
+describe("shouldRecordOnboarding", () => {
+  const baseInput = {
+    paceOnboardingSections: true,
+    forceOnboarding: false,
+    verbose: false,
+    isNonInteractiveEnvironment: false,
+  };
+
+  it("records after an interactive onboarding reveal", () => {
+    expect(shouldRecordOnboarding(baseInput)).toBe(true);
+  });
+
+  it("does not record when pacing was off (no reveal)", () => {
+    expect(shouldRecordOnboarding({ ...baseInput, paceOnboardingSections: false })).toBe(false);
+  });
+
+  it("does not record a forced demo, so it stays replayable", () => {
+    expect(shouldRecordOnboarding({ ...baseInput, forceOnboarding: true })).toBe(false);
+  });
+
+  it("does not record a verbose run (static review, no reveal)", () => {
+    expect(shouldRecordOnboarding({ ...baseInput, verbose: true })).toBe(false);
+  });
+
+  it("does not record a non-interactive run that paced but used the classic layout", () => {
+    // Regression: a git hook with a TTY (GIT_DIR set) leaves pacing's TTY probe
+    // true while routing to the classic layout, so it must not burn the marker.
+    expect(shouldRecordOnboarding({ ...baseInput, isNonInteractiveEnvironment: true })).toBe(false);
   });
 });
 

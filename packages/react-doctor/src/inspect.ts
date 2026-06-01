@@ -49,6 +49,7 @@ import {
   ONBOARDING_SECTION_DELAY_FAST_MS,
   onboardingSectionPause,
   shouldPaceOnboardingSections,
+  shouldRecordOnboarding,
 } from "./cli/utils/onboarding-pacing.js";
 import { hasCompletedOnboarding, markOnboardingComplete } from "./cli/utils/onboarding-state.js";
 import { printProjectDetection } from "./cli/utils/render-project-detection.js";
@@ -376,9 +377,17 @@ const runInspectWithRuntime = async (
       options.silent ? Effect.provideService(Console.Console, silentConsole) : (program) => program,
     ),
   );
-  // Record the marker after a paced render so later runs print instantly. A
-  // forced run is a demo, so it stays replayable and never burns the marker.
-  if (paceOnboardingSections && !forceOnboarding) {
+  // Burn the first-run marker only when the onboarding reveal was actually shown
+  // (the interactive layout branch below) — not for verbose, the classic
+  // non-interactive layout, or a forced demo. See `shouldRecordOnboarding`.
+  if (
+    shouldRecordOnboarding({
+      paceOnboardingSections,
+      forceOnboarding,
+      verbose: options.verbose,
+      isNonInteractiveEnvironment: options.isNonInteractiveEnvironment,
+    })
+  ) {
     markOnboardingComplete();
   }
   recordScanMetrics({

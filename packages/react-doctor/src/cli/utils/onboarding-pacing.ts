@@ -43,6 +43,29 @@ export const onboardingSectionPause = (
   delayMs: number = ONBOARDING_SECTION_DELAY_MS,
 ): Effect.Effect<void> => (shouldPace ? Effect.sleep(delayMs) : Effect.void);
 
+export interface OnboardingRecordInput {
+  // Section pacing was enabled for this run (TTY, first-run, not CI/agent).
+  readonly paceOnboardingSections: boolean;
+  // The run forces onboarding for a demo (replayable; never consumes the marker).
+  readonly forceOnboarding: boolean;
+  // The run is `--verbose` (a static review, no onboarding reveal).
+  readonly verbose: boolean;
+  // The run is non-interactive (CI, git hook, agent) and uses the classic layout.
+  readonly isNonInteractiveEnvironment: boolean;
+}
+
+// Whether a completed render should burn the first-run onboarding marker: only
+// when the interactive onboarding reveal actually ran. Verbose and the classic
+// non-interactive layout (e.g. a git hook with a TTY, where GIT_DIR marks the
+// run non-interactive while pacing still sees a TTY) pace section beats but
+// never show the welcome scene / animated report, so they leave the first run
+// intact. A forced demo replays every time and never consumes the marker.
+export const shouldRecordOnboarding = (input: OnboardingRecordInput): boolean =>
+  input.paceOnboardingSections &&
+  !input.forceOnboarding &&
+  !input.verbose &&
+  !input.isNonInteractiveEnvironment;
+
 // Whether onboarding animations can drive the stream — they need a real TTY.
 // A forced demo animates even under an agent/CI shell (which `isSpinnerInteractive` rejects).
 export const canAnimateOnboarding = (stream: NodeJS.WriteStream = process.stdout): boolean => {
