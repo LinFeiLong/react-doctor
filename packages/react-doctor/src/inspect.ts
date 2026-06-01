@@ -61,6 +61,7 @@ import { printDocsNote, printSummary, printVerboseTip } from "./cli/utils/render
 import { resolveOxlintNode } from "./cli/utils/resolve-oxlint-node.js";
 import { isSpinnerSilent, setSpinnerSilent } from "./cli/utils/spinner.js";
 import { VERSION } from "./cli/utils/version.js";
+import { writeDiagnosticsDirectory } from "./cli/utils/write-diagnostics-directory.js";
 
 const silentConsole = makeNoopConsole();
 
@@ -541,6 +542,16 @@ const finalizeAndRender = (input: FinalizeInput): Effect.Effect<InspectResult> =
         buildRulePriorityMap([score]),
         isCodingAgentEnvironment(),
       );
+      // Verbose is the deep-dive mode: point to the full diagnostics dump on disk.
+      const diagnosticsDirectory = yield* Effect.try({
+        try: () => writeDiagnosticsDirectory([...surfaceDiagnostics]),
+        catch: (cause) => cause,
+      }).pipe(Effect.orElseSucceed(() => null as string | null));
+      if (diagnosticsDirectory !== null) {
+        yield* Console.log(
+          highlighter.gray(`  Full diagnostics written to ${diagnosticsDirectory}`),
+        );
+      }
       yield* Console.log("");
       if (hasSkippedChecks) {
         yield* printBrandingOnlyHeader;

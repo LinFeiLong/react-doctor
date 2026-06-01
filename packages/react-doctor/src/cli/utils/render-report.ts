@@ -4,7 +4,7 @@ import { highlighter } from "@react-doctor/core";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 import {
   buildCountsSummaryLines,
-  buildIssueCountLabel,
+  buildIssueCountText,
   buildMergedOverflowLine,
   buildTopErrorBlocks,
   printCategoryBreakdown,
@@ -64,7 +64,7 @@ export const printInspectReport = (input: InspectReportInput): Effect.Effect<voi
     const fastPause = input.sectionPauseFast ?? pause;
     const { diagnostics, rulePriority } = input;
     const animate = input.animateCountUp ?? false;
-    const issueLabel = buildIssueCountLabel(diagnostics);
+    const issueLabel = buildIssueCountText(diagnostics);
 
     yield* pause;
     yield* printCategoryBreakdown(diagnostics, rulePriority, animate);

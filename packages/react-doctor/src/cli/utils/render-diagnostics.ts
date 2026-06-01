@@ -17,6 +17,11 @@ import type { Diagnostic } from "@react-doctor/core";
 import { boxText } from "./box-text.js";
 import { buildCodeFrame } from "./build-code-frame.js";
 import {
+  CATEGORY_COUNTUP_FRAME_COUNT,
+  CATEGORY_COUNTUP_FRAME_DELAY_MS,
+  WARNING_TYPEWRITER_FRAME_DELAY_MS,
+} from "./constants.js";
+import {
   buildSortedRuleGroups,
   compareByRulePriority,
   formatFixRecipeLine,
@@ -545,9 +550,6 @@ const formatCategoryTallyLine = (
   return `  ${highlighter.bold(tally.category)} ${highlighter.dim(POINTER)} ${parts.join(highlighter.dim(", "))}`;
 };
 
-const CATEGORY_COUNTUP_FRAME_COUNT = 16;
-const CATEGORY_COUNTUP_FRAME_DELAY_MS = 45;
-
 // The category tally. When `animate`, the counts count up from zero in parallel
 // (first-run onboarding on a TTY); else the final lines print at once. Counts
 // only grow, so frames never shrink — no per-line clear needed.
@@ -604,15 +606,24 @@ const joinSections = (
   return { lines, sectionStarts };
 };
 
-// The colored "N issues" label (no indent), or null when there are none.
-export const buildIssueCountLabel = (diagnostics: Diagnostic[]): string | null => {
+// The plain "N issues" text (no color, no indent), or null when there are none.
+export const buildIssueCountText = (diagnostics: Diagnostic[]): string | null => {
   const totalIssueCount = diagnostics.length;
   if (totalIssueCount === 0) return null;
+  return `${totalIssueCount} ${totalIssueCount === 1 ? "issue" : "issues"}`;
+};
+
+// The "N issues" label colored by severity (red with errors, yellow with only
+// warnings, else dim), for the standalone count line. The inline score-line
+// suffix instead colors it by score, to match the bar — see `buildScoreLine`.
+export const buildIssueCountLabel = (diagnostics: Diagnostic[]): string | null => {
+  const text = buildIssueCountText(diagnostics);
+  if (text === null) return null;
   const errorCount = diagnostics.filter((diagnostic) => diagnostic.severity === "error").length;
-  const warningCount = totalIssueCount - errorCount;
+  const warningCount = diagnostics.length - errorCount;
   const issueCountColor =
     errorCount > 0 ? highlighter.error : warningCount > 0 ? highlighter.warn : highlighter.dim;
-  return issueCountColor(`${totalIssueCount} ${totalIssueCount === 1 ? "issue" : "issues"}`);
+  return issueCountColor(text);
 };
 
 export const buildCountsSummaryLines = (diagnostics: Diagnostic[]): ReadonlyArray<string> => {
@@ -635,8 +646,6 @@ export const buildTopErrorBlocks = (
       ...buildRuleDetailBlock(ruleKey, ruleDiagnostics, resolveSourceRoot, false),
     ]);
 };
-
-const WARNING_TYPEWRITER_FRAME_DELAY_MS = 14;
 
 // The compact `⚠ rule ×N` warning list (capped); no header, no overflow (folded
 // into the merged line above). ⚠ sits at col 2 so the error blocks keep the

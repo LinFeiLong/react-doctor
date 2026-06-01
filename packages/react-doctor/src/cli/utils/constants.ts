@@ -22,6 +22,18 @@ export const SCORE_HEADER_ANIMATION_FRAME_DELAY_MS = 50;
 export const PERFECT_SCORE_RAINBOW_FRAME_COUNT = 16;
 export const PERFECT_SCORE_RAINBOW_FRAME_DELAY_MS = 50;
 
+// First-run onboarding animation cadences: welcome typewriter + holds, the
+// category count-up, the warning roll-up typewriter, and the score projection.
+export const WELCOME_TYPEWRITER_CHAR_DELAY_MS = 32;
+export const WELCOME_INTER_LINE_DELAY_MS = 500;
+export const WELCOME_EXPLANATION_HOLD_MS = 2000;
+export const WELCOME_HOLD_MS = 1000;
+export const CATEGORY_COUNTUP_FRAME_COUNT = 16;
+export const CATEGORY_COUNTUP_FRAME_DELAY_MS = 45;
+export const WARNING_TYPEWRITER_FRAME_DELAY_MS = 14;
+export const SCORE_PROJECTION_FRAME_COUNT = 16;
+export const SCORE_PROJECTION_FRAME_DELAY_MS = 35;
+
 // Last-resort fallback when buildJsonReportError itself throws — keeps
 // stdout valid JSON so downstream parsers don't see a half-written report.
 export const INTERNAL_ERROR_JSON_FALLBACK =

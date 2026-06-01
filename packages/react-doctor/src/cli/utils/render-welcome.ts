@@ -1,11 +1,12 @@
 import * as Effect from "effect/Effect";
 import { highlighter } from "@react-doctor/core";
+import {
+  WELCOME_EXPLANATION_HOLD_MS,
+  WELCOME_HOLD_MS,
+  WELCOME_INTER_LINE_DELAY_MS,
+  WELCOME_TYPEWRITER_CHAR_DELAY_MS,
+} from "./constants.js";
 import { writeStdout } from "./write-stdout.js";
-
-const TYPEWRITER_CHAR_DELAY_MS = 32;
-const INTER_LINE_DELAY_MS = 500;
-const EXPLANATION_HOLD_MS = 2000;
-const WELCOME_HOLD_MS = 1000;
 
 const HAPPY_FACE_LINES = ["┌─────┐", "│ ◠ ◠ │", "│  ▽  │", "└─────┘"] as const;
 
@@ -20,7 +21,7 @@ const typeLine = (
     const characters = [...text];
     for (let length = 1; length <= characters.length; length += 1) {
       yield* writeStdout(`\r${linePrefix}${style(characters.slice(0, length).join(""))}\x1b[K`);
-      yield* Effect.sleep(TYPEWRITER_CHAR_DELAY_MS);
+      yield* Effect.sleep(WELCOME_TYPEWRITER_CHAR_DELAY_MS);
     }
   });
 
@@ -41,7 +42,7 @@ export const playWelcomeScene = (): Effect.Effect<void> =>
     );
 
     // Down to the mouth row; type the tagline.
-    yield* Effect.sleep(INTER_LINE_DELAY_MS);
+    yield* Effect.sleep(WELCOME_INTER_LINE_DELAY_MS);
     yield* writeStdout("\x1b[1B");
     yield* typeLine(
       mouthPrefix,
@@ -50,7 +51,7 @@ export const playWelcomeScene = (): Effect.Effect<void> =>
     );
 
     // Hold, then overwrite the mouth line in place with the closing line.
-    yield* Effect.sleep(EXPLANATION_HOLD_MS);
+    yield* Effect.sleep(WELCOME_EXPLANATION_HOLD_MS);
     yield* typeLine(mouthPrefix, "Let's scan your codebase...", (fragment) =>
       highlighter.dim(fragment),
     );

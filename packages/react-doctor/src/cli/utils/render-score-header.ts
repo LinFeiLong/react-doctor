@@ -14,6 +14,8 @@ import {
   PERFECT_SCORE_RAINBOW_FRAME_DELAY_MS,
   SCORE_HEADER_ANIMATION_FRAME_COUNT,
   SCORE_HEADER_ANIMATION_FRAME_DELAY_MS,
+  SCORE_PROJECTION_FRAME_COUNT,
+  SCORE_PROJECTION_FRAME_DELAY_MS,
 } from "./constants.js";
 import { easeOutCubic } from "./ease-out-cubic.js";
 import { isSpinnerInteractive } from "./is-spinner-interactive.js";
@@ -181,7 +183,9 @@ const buildScoreLine = (
 ): string => {
   const scoreNumber = colorizeByScore(`${displayScore}`, finalScore);
   const scoreLabel = colorizeByScore(label, finalScore);
-  const suffix = scoreLineSuffix.length > 0 ? `   ${scoreLineSuffix}` : "";
+  // The issue-count suffix matches the score color so it reads as one status.
+  const suffix =
+    scoreLineSuffix.length > 0 ? `   ${colorizeByScore(scoreLineSuffix, finalScore)}` : "";
   return `${scoreNumber} ${highlighter.dim(`/ ${PERFECT_SCORE}`)} ${scoreLabel}${suffix}`;
 };
 
@@ -375,9 +379,6 @@ export const printScoreHeader = (
       yield* writeStdout("\x1b[3B");
     }
   });
-
-const SCORE_PROJECTION_FRAME_COUNT = 16;
-const SCORE_PROJECTION_FRAME_DELAY_MS = 35;
 
 // Grows the score bar's projected "ghost gain" (▓) in, eased, synced with the
 // "you could improve" line. `linesBelowBar` is the cursor's distance beneath the
