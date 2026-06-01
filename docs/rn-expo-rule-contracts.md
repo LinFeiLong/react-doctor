@@ -32,18 +32,18 @@ help, line, column, category }`.
 
 ## Tier-1 contracts at a glance
 
-| # | Rule | Surface | Detector precision |
-|---|---|---|---|
-| 1 | `rn-no-deep-imports` | AST (import/re-export source) | syntax-only |
-| 2 | `rn-no-set-native-props` | AST (member call shape) | syntax-only |
-| 3 | `rn-no-metro-babel-preset` | project-level (babel config) | config text/regex |
-| 4 | `expo-reanimated-v4-requires-new-arch` | project-level (package.json + app config) | manifest + config |
-| 5 | `rn-no-panresponder` | AST (import specifier) | scope-aware |
-| 6 | `rn-no-image-children` | AST (JSX) | scope-aware + JSX |
-| 7 | `expo-no-non-inlined-env` | AST (`process.env`) + file-scope | syntax + file-scope |
-| 8 | `expo-updates-no-unsafe-production-config` | project-level (app config) | config parse/regex |
-| 9 | `rn-detox-missing-await` | AST (e2e test files) | path/shape-aware |
-| 10 | `rn-library-react-in-dependencies` | project-level (package.json) | manifest |
+| #   | Rule                                       | Surface                                   | Detector precision  |
+| --- | ------------------------------------------ | ----------------------------------------- | ------------------- |
+| 1   | `rn-no-deep-imports`                       | AST (import/re-export source)             | syntax-only         |
+| 2   | `rn-no-set-native-props`                   | AST (member call shape)                   | syntax-only         |
+| 3   | `rn-no-metro-babel-preset`                 | project-level (babel config)              | config text/regex   |
+| 4   | `expo-reanimated-v4-requires-new-arch`     | project-level (package.json + app config) | manifest + config   |
+| 5   | `rn-no-panresponder`                       | AST (import specifier)                    | scope-aware         |
+| 6   | `rn-no-image-children`                     | AST (JSX)                                 | scope-aware + JSX   |
+| 7   | `expo-no-non-inlined-env`                  | AST (`process.env`) + file-scope          | syntax + file-scope |
+| 8   | `expo-updates-no-unsafe-production-config` | project-level (app config)                | config parse/regex  |
+| 9   | `rn-detox-missing-await`                   | AST (e2e test files)                      | path/shape-aware    |
+| 10  | `rn-library-react-in-dependencies`         | project-level (package.json)              | manifest            |
 
 ---
 
@@ -217,7 +217,7 @@ file-scope. (Ports eslint-plugin-expo `no-dynamic-env-var` + `no-env-var-destruc
 - **False-positive traps:** Node/build/server files — `*.config.*`, `metro.config`, `babel.config`,
   `app.config`, `scripts/`, and Expo Router API routes (`*+api.ts`) read dynamic env legitimately →
   exclude via file classification (+ an explicit `+api` exclusion); aliased `const e = process.env;
-  e[x]` → false-negative (accepted, matches upstream); static `process.env.NAME` → not flagged.
+e[x]` → false-negative (accepted, matches upstream); static `process.env.NAME` → not flagged.
 - **In scope v1:** computed access + object-pattern/spread destructuring, in Expo client/unknown files.
 - **Out of scope v1:** non-Expo RN env handling; alias tracking.
 - **Test seeds:** invalid = computed access + destructuring in a client file; valid = static dotted
@@ -235,7 +235,7 @@ file-scope. (Ports eslint-plugin-expo `no-dynamic-env-var` + `no-env-var-destruc
 - **Runtime reason:** disabling anti-bricking measures can leave installed apps permanently
   bricked; the docs state it must never be used in production.
 - **Detector:** `app.json`/`app.config.json` → JSON parse `expo.updates.disableAntiBrickingMeasures
-  === true`; `app.config.{js,ts}` → regex `/disableAntiBrickingMeasures["']?\s*:\s*true/`.
+=== true`; `app.config.{js,ts}` → regex `/disableAntiBrickingMeasures["']?\s*:\s*true/`.
 - **Strong positives:** `"updates": { "disableAntiBrickingMeasures": true }` in `app.json`.
 - **False-positive traps:** none meaningful (the flag is non-production by definition);
   fully-dynamic `app.config.js` value → false-negative, accepted.
@@ -249,7 +249,7 @@ file-scope. (Ports eslint-plugin-expo `no-dynamic-env-var` + `no-env-var-destruc
 ## 9. `rn-detox-missing-await`
 
 **Surface:** AST rule scoped to e2e files, `rules/react-native/`, `severity: warn`. **Detector
-precision:** path/shape-aware (statement-level await check). *Most complex of the set.*
+precision:** path/shape-aware (statement-level await check). _Most complex of the set._
 
 - **Rule definition:** catches an un-awaited Detox action/expectation used as a bare statement.
 - **Runtime reason:** Detox actions, `waitFor` chains, and `expect(...)` matchers return promises
@@ -259,8 +259,8 @@ precision:** path/shape-aware (statement-level await check). *Most complex of th
   `ExpressionStatement` whose expression is a Detox **terminal** call and is not wrapped in
   `await` / `return` / `.then(...)` / `Promise.all([...])` / an assignment. Terminal calls:
   - an action method (`tap, multiTap, longPress, longPressAndDrag, swipe, scroll, scrollTo,
-    scrollToIndex, typeText, replaceText, clearText, tapReturnKey, pinch, setColumnToValue,
-    performAccessibilityAction`) on an `element(...)` chain;
+scrollToIndex, typeText, replaceText, clearText, tapReturnKey, pinch, setColumnToValue,
+performAccessibilityAction`) on an `element(...)` chain;
   - a `waitFor(...)....withTimeout(...)` chain;
   - an `expect(element(...))....<matcher>()` chain (require the argument to `expect` to be an
     `element(...)`/`web(...)`/`by`-chain so Jest `expect(value)` is excluded).
@@ -311,18 +311,18 @@ Ran the **implemented** rules (built react-doctor) over the RN/Expo OSS cache
 harness invokes `--json --offline --full` with **no `--warnings`**, so a plain harness run surfaces
 only the one `error`-severity rule; see the harness note below).
 
-| Rule | Hits | Verdict |
-|---|---|---|
-| `rn-no-set-native-props` | 44 | ✅ TP (spot-checked polarsource/polar `scrollRef.current?.setNativeProps(...)`; matches the `.current(?.)` ref shape) |
-| `rn-no-metro-babel-preset` | 14 | ✅ TP (gitpoint/berty/rainbow/react-native-config real `module:metro-react-native-babel-preset`; Expensify's comment correctly NOT flagged) |
-| `rn-no-panresponder` | 12 | ✅ TP (joplin/berty/storybook/cometchat named `PanResponder` imports) |
-| `rn-detox-missing-await` | 5 | ✅ TP (react-native-screens `Test432.e2e.ts`: real un-awaited `waitFor(...).toBeVisible()` the author missed — every other action is awaited) |
-| `rn-no-image-children` | 3 | ✅ TP (febobo RN `<Image>` wrapping a `<Video>`; import-resolved to react-native) |
-| `rn-no-deep-imports` | 3 | ⚠️ 2 TP (berty `NewAppScreen`, Grashjs `ScrollView/ScrollView` type) + **1 FP fixed** |
-| `rn-library-react-in-dependencies` | 1 | ❌ **FP fixed** (fired on `react-native-rag/example`) |
-| `expo-no-non-inlined-env` | 0 | ✅ no hits — consistent with idea-validation (client-code violations rare; the dynamic `process.env` lives in config/scripts, which the rule excludes) |
-| `expo-reanimated-v4-requires-new-arch` | 0 | ✅ guardrail — no corpus project pairs reanimated v4 with `newArchEnabled:false` |
-| `expo-updates-no-unsafe-production-config` | 0 | ✅ guardrail — no corpus app sets `disableAntiBrickingMeasures` |
+| Rule                                       | Hits | Verdict                                                                                                                                                |
+| ------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `rn-no-set-native-props`                   | 44   | ✅ TP (spot-checked polarsource/polar `scrollRef.current?.setNativeProps(...)`; matches the `.current(?.)` ref shape)                                  |
+| `rn-no-metro-babel-preset`                 | 14   | ✅ TP (gitpoint/berty/rainbow/react-native-config real `module:metro-react-native-babel-preset`; Expensify's comment correctly NOT flagged)            |
+| `rn-no-panresponder`                       | 12   | ✅ TP (joplin/berty/storybook/cometchat named `PanResponder` imports)                                                                                  |
+| `rn-detox-missing-await`                   | 5    | ✅ TP (react-native-screens `Test432.e2e.ts`: real un-awaited `waitFor(...).toBeVisible()` the author missed — every other action is awaited)          |
+| `rn-no-image-children`                     | 3    | ✅ TP (febobo RN `<Image>` wrapping a `<Video>`; import-resolved to react-native)                                                                      |
+| `rn-no-deep-imports`                       | 3    | ⚠️ 2 TP (berty `NewAppScreen`, Grashjs `ScrollView/ScrollView` type) + **1 FP fixed**                                                                  |
+| `rn-library-react-in-dependencies`         | 1    | ❌ **FP fixed** (fired on `react-native-rag/example`)                                                                                                  |
+| `expo-no-non-inlined-env`                  | 0    | ✅ no hits — consistent with idea-validation (client-code violations rare; the dynamic `process.env` lives in config/scripts, which the rule excludes) |
+| `expo-reanimated-v4-requires-new-arch`     | 0    | ✅ guardrail — no corpus project pairs reanimated v4 with `newArchEnabled:false`                                                                       |
+| `expo-updates-no-unsafe-production-config` | 0    | ✅ guardrail — no corpus app sets `disableAntiBrickingMeasures`                                                                                        |
 
 ### Two false positives found and fixed (with regression tests)
 
@@ -362,17 +362,17 @@ since the rules aren't implemented yet.
 > **import source** (for `Image`/`PanResponder`/etc.) or **JSX element → import**, and rely on
 > react-doctor's real framework detection rather than a package.json grep.
 
-| Rule | Corpus prevalence | False-positive traps found in real code | Revised verdict |
-|---|---|---|---|
-| `rn-no-deep-imports` | 230 import/re-export hits across ~26 repos | **Dominated by valid patterns:** Codegen specs (`TurboModule/RCTExport`, `Types/CodegenTypes`, `Utilities/codegenNativeComponent`), **type-only** imports of types not root-exported (`StyleSheet/StyleSheetTypes`, `Types/CoreEventTypes`), RN-library internals (Skia, gesture-handler, screens). Plus 61 `jest.mock` (excluded by design) and 20 `InitializeCore` (allowlisted). | **NARROW substantially** (see revised contract below). The broad "anything under `Libraries/`" is too noisy. |
-| `rn-no-set-native-props` | 128 call sites across 22 repos | Many use **optional chaining** `ref.current?.setNativeProps(` (Uniswap, Expensify, cometchat) — the `.current.` regex misses these. Many are `TextInput` `selection`/`text` (a known Fabric-interop holdout). | **Solid** — but the detector MUST handle `.current?.` (ChainExpression). Keep `warn`. |
-| `rn-no-panresponder` | Imported from `react-native` in ~15 repos | Mostly real; appears in libraries/examples (gesture-handler legacy demo, cometchat). | **Solid.** |
-| `expo-no-non-inlined-env` | 256 computed + 31 destructured across ~19 / 8 expo repos | **~All in `scripts/`, `tests/`, `babel.config.js`, CLI apps, webpack/rspack config, `server.ts`, expo `tools/`.** Genuine client-code violations were rare. | **Conditional → file-scoping is the whole rule.** Low noise *iff* scoped to Expo client files; **low recall** (few real client violations). |
-| `rn-detox-missing-await` | 587 `element(by.` calls across 12 real Detox repos | **`.e2e.` filename gate is insufficient** — 907 `.e2e.` files / 41 repos, but many are **backend** e2e (lobe-chat CLI, midday/openstatus API), not Detox. Line-based "bare `element(`" proxy (62) is mostly **multiline-call arguments**, not un-awaited statements. | **Conditional / intricate** — requires a Detox-signal gate (globals/import/config, not just `.e2e.`) **and** AST statement+await ancestry analysis. Real but the hardest of the set. |
-| `rn-no-metro-babel-preset` | 12 repos (gitpoint, berty, ReactNativeSchool, rgommezz, …) | Expensify has the string **inside a comment** → match the `module:`-prefixed quoted form, not the bare substring. | **Solid** — refine to `module:metro-react-native-babel-preset`. |
-| `expo-reanimated-v4-requires-new-arch` | reanimated v4 in ~8 repos (RocketChat, gesture-handler, screens, storybook, better-auth, Bangumi) | **Zero conflicts:** every v4 adopter sets `newArchEnabled: true` (or omits it). `newArchEnabled: false` exists (bluesky, reactotron) but on non-v4 projects. | **Guardrail** — ~0 noise, recall unproven (people who adopt v4 already enable new arch). Ship as cheap insurance. |
-| `expo-updates-no-unsafe-production-config` | **0 real app configs** (41 hits, all inside `expo/expo`'s own source/schema/docs) | None in user code. | **Guardrail, rare-by-design** — scope to `app.json`/`app.config.*` (never matches in practice unless someone really does it). |
-| `rn-library-react-in-dependencies` | 43 builder-bob library `package.json`s | **Only 1** put `react`/`react-native` in `dependencies` — and it was an **`example/` app**, the exact FP trap. | **Solid but rare** — the **example-app exclusion is the entire correctness story**; near-zero real positives (maintained libs already do it right). |
+| Rule                                       | Corpus prevalence                                                                                 | False-positive traps found in real code                                                                                                                                                                                                                                                                                                                                             | Revised verdict                                                                                                                                                                      |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `rn-no-deep-imports`                       | 230 import/re-export hits across ~26 repos                                                        | **Dominated by valid patterns:** Codegen specs (`TurboModule/RCTExport`, `Types/CodegenTypes`, `Utilities/codegenNativeComponent`), **type-only** imports of types not root-exported (`StyleSheet/StyleSheetTypes`, `Types/CoreEventTypes`), RN-library internals (Skia, gesture-handler, screens). Plus 61 `jest.mock` (excluded by design) and 20 `InitializeCore` (allowlisted). | **NARROW substantially** (see revised contract below). The broad "anything under `Libraries/`" is too noisy.                                                                         |
+| `rn-no-set-native-props`                   | 128 call sites across 22 repos                                                                    | Many use **optional chaining** `ref.current?.setNativeProps(` (Uniswap, Expensify, cometchat) — the `.current.` regex misses these. Many are `TextInput` `selection`/`text` (a known Fabric-interop holdout).                                                                                                                                                                       | **Solid** — but the detector MUST handle `.current?.` (ChainExpression). Keep `warn`.                                                                                                |
+| `rn-no-panresponder`                       | Imported from `react-native` in ~15 repos                                                         | Mostly real; appears in libraries/examples (gesture-handler legacy demo, cometchat).                                                                                                                                                                                                                                                                                                | **Solid.**                                                                                                                                                                           |
+| `expo-no-non-inlined-env`                  | 256 computed + 31 destructured across ~19 / 8 expo repos                                          | **~All in `scripts/`, `tests/`, `babel.config.js`, CLI apps, webpack/rspack config, `server.ts`, expo `tools/`.** Genuine client-code violations were rare.                                                                                                                                                                                                                         | **Conditional → file-scoping is the whole rule.** Low noise _iff_ scoped to Expo client files; **low recall** (few real client violations).                                          |
+| `rn-detox-missing-await`                   | 587 `element(by.` calls across 12 real Detox repos                                                | **`.e2e.` filename gate is insufficient** — 907 `.e2e.` files / 41 repos, but many are **backend** e2e (lobe-chat CLI, midday/openstatus API), not Detox. Line-based "bare `element(`" proxy (62) is mostly **multiline-call arguments**, not un-awaited statements.                                                                                                                | **Conditional / intricate** — requires a Detox-signal gate (globals/import/config, not just `.e2e.`) **and** AST statement+await ancestry analysis. Real but the hardest of the set. |
+| `rn-no-metro-babel-preset`                 | 12 repos (gitpoint, berty, ReactNativeSchool, rgommezz, …)                                        | Expensify has the string **inside a comment** → match the `module:`-prefixed quoted form, not the bare substring.                                                                                                                                                                                                                                                                   | **Solid** — refine to `module:metro-react-native-babel-preset`.                                                                                                                      |
+| `expo-reanimated-v4-requires-new-arch`     | reanimated v4 in ~8 repos (RocketChat, gesture-handler, screens, storybook, better-auth, Bangumi) | **Zero conflicts:** every v4 adopter sets `newArchEnabled: true` (or omits it). `newArchEnabled: false` exists (bluesky, reactotron) but on non-v4 projects.                                                                                                                                                                                                                        | **Guardrail** — ~0 noise, recall unproven (people who adopt v4 already enable new arch). Ship as cheap insurance.                                                                    |
+| `expo-updates-no-unsafe-production-config` | **0 real app configs** (41 hits, all inside `expo/expo`'s own source/schema/docs)                 | None in user code.                                                                                                                                                                                                                                                                                                                                                                  | **Guardrail, rare-by-design** — scope to `app.json`/`app.config.*` (never matches in practice unless someone really does it).                                                        |
+| `rn-library-react-in-dependencies`         | 43 builder-bob library `package.json`s                                                            | **Only 1** put `react`/`react-native` in `dependencies` — and it was an **`example/` app**, the exact FP trap.                                                                                                                                                                                                                                                                      | **Solid but rare** — the **example-app exclusion is the entire correctness story**; near-zero real positives (maintained libs already do it right).                                  |
 
 ### Revised contract: `rn-no-deep-imports` (post-RDE narrowing)
 
@@ -382,8 +382,8 @@ code are legitimate. Narrow v1 to the high-confidence subset:
 - **Exclude type-only imports** (`import type … from "react-native/Libraries/..."`). Many of those
   types (`ViewStyle`, `DimensionValue`, `GestureResponderEvent`) are **not** re-exported from the
   `react-native` root, so "import from `react-native`" would be wrong advice. (`node.importKind ===
-  "type"` and `ExportNamedDeclaration` type specifiers → skip.)
-- **Allowlist the Codegen/New-Arch authoring surface** (these are the *documented* deep paths and
+"type"` and `ExportNamedDeclaration` type specifiers → skip.)
+- **Allowlist the Codegen/New-Arch authoring surface** (these are the _documented_ deep paths and
   RFC 0894 keeps them): any source containing `TurboModule/`, `Types/CodegenTypes`,
   `Utilities/codegenNativeComponent`, `Renderer/shims/`, plus `Core/InitializeCore`.
 - **Prefer a curated denylist of value-import internals** that have a known public root re-export
@@ -391,8 +391,8 @@ code are legitimate. Narrow v1 to the high-confidence subset:
   vetted set), rather than flagging the whole `Libraries/` tree. Expand the denylist with evidence.
 - This trades recall for precision (the skill's rule: false positives are correctness bugs). Keep
   `warn`, value-imports only, with the Codegen allowlist + type-import exclusion.
-- **Open question for v1:** ship as the *narrow denylist* (lowest noise, lowest recall) or the
-  *broad-minus-allowlist* (higher recall, needs the type-import exclusion to be airtight)? RDE leans
+- **Open question for v1:** ship as the _narrow denylist_ (lowest noise, lowest recall) or the
+  _broad-minus-allowlist_ (higher recall, needs the type-import exclusion to be airtight)? RDE leans
   **denylist** for a clean v1.
 
 ### Detector implications carried into stage 2 (rule-writing)
@@ -411,7 +411,7 @@ code are legitimate. Narrow v1 to the high-confidence subset:
 ## Cross-cutting findings from this stage
 
 - **Drop `rn-no-dynamic-require` (was T2):** `bundle-size/no-dynamic-import-path` **already**
-  flags `require(variable)` and `` require(`./${x}`) `` (and dynamic `import()`). Only the
+  flags `require(variable)` and ``require(`./${x}`)`` (and dynamic `import()`). Only the
   RN-specific message ("Metro can't bundle the asset → missing at runtime") differs — consider
   enriching that rule's message for RN instead of adding a new rule.
 - **`expo-no-non-inlined-env` is net-new:** the only existing `process.env` handling is
