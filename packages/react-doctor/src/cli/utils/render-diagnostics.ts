@@ -327,37 +327,40 @@ const selectTopErrorRuleGroups = (
   rulePriority?: ReadonlyMap<string, number>,
 ): [string, Diagnostic[]][] => selectErrorRuleGroups(diagnostics, rulePriority).slice(0, limit);
 
-const countHiddenErrorRuleGroups = (
-  diagnostics: Diagnostic[],
-  rulePriority?: ReadonlyMap<string, number>,
-): number =>
-  Math.max(0, selectErrorRuleGroups(diagnostics, rulePriority).length - TOP_ERRORS_DISPLAY_COUNT);
-
-const countHiddenWarningRuleGroups = (
-  diagnostics: Diagnostic[],
-  rulePriority?: ReadonlyMap<string, number>,
-): number => {
-  const warningDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "warning");
-  return buildSortedRuleGroups(warningDiagnostics, rulePriority).length;
-};
-
+// The non-verbose run only shows one representative site per top error rule
+// group and no warnings at all, so anything past that — extra error rule
+// groups, the other sites of a shown rule, or any warning — only appears
+// under `--verbose`. The line surfaces that pointer whenever detail is
+// hidden, with `+N more rules` counting hidden error groups (the unit the
+// top-errors block uses) and `+N optional warnings` counting individual
+// warnings (matching the overview's per-category and total tallies).
 const buildOverflowSummaryLine = (
-  hiddenErrorRuleCount: number,
-  hiddenWarningRuleCount: number,
+  diagnostics: Diagnostic[],
+  rulePriority?: ReadonlyMap<string, number>,
 ): string | undefined => {
+  const errorRuleGroups = selectErrorRuleGroups(diagnostics, rulePriority);
+  const shownErrorRuleCount = Math.min(TOP_ERRORS_DISPLAY_COUNT, errorRuleGroups.length);
+  if (diagnostics.length <= shownErrorRuleCount) return undefined;
+
+  const hiddenErrorRuleCount = errorRuleGroups.length - shownErrorRuleCount;
+  const warningCount = diagnostics.filter((diagnostic) => diagnostic.severity === "warning").length;
+
   const parts: string[] = [];
   if (hiddenErrorRuleCount > 0) {
     const ruleNoun = hiddenErrorRuleCount === 1 ? "rule" : "rules";
     parts.push(highlighter.bold(highlighter.error(`+${hiddenErrorRuleCount} more ${ruleNoun}`)));
   }
-  if (hiddenWarningRuleCount > 0) {
-    const warningNoun = hiddenWarningRuleCount === 1 ? "warning" : "warnings";
-    parts.push(
-      highlighter.bold(highlighter.warn(`+${hiddenWarningRuleCount} optional ${warningNoun}`)),
-    );
+  if (warningCount > 0) {
+    const warningNoun = warningCount === 1 ? "warning" : "warnings";
+    parts.push(highlighter.bold(highlighter.warn(`+${warningCount} optional ${warningNoun}`)));
   }
-  if (parts.length === 0) return undefined;
-  return `  ${parts.join(highlighter.dim(" and "))} ${highlighter.dim("— run")} ${highlighter.bold(highlighter.info("npx react-doctor@latest --verbose"))} ${highlighter.dim("for details")}`;
+
+  const command = highlighter.bold(highlighter.info("npx react-doctor@latest --verbose"));
+  const lead =
+    parts.length > 0
+      ? `${parts.join(highlighter.dim(" and "))} ${highlighter.dim("— run")}`
+      : highlighter.dim("Run");
+  return `  ${lead} ${command} ${highlighter.dim("for details")}`;
 };
 
 // The exact rule keys surfaced in the top-errors block — the set the
@@ -479,10 +482,7 @@ export const printDiagnostics = (
 
     const overflowLine = isVerbose
       ? undefined
-      : buildOverflowSummaryLine(
-          countHiddenErrorRuleGroups(diagnostics, rulePriority),
-          countHiddenWarningRuleGroups(diagnostics, rulePriority),
-        );
+      : buildOverflowSummaryLine(diagnostics, rulePriority);
 
     const lines = joinSections(
       buildCategoryBreakdownLines(diagnostics, rulePriority),
