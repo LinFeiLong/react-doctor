@@ -11,6 +11,8 @@ import {
 import { highlighter, SKILL_NAME } from "@react-doctor/core";
 import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
+import { METRIC } from "./constants.js";
+import { recordCount } from "./record-metric.js";
 import {
   DOCTOR_PACKAGE_NAME,
   findNearestPackageDirectory,
@@ -274,7 +276,7 @@ const formatDependencyInstallMessage = (result: InstallReactDoctorDependencyResu
 const installReactDoctorPackageSetup = async (
   projectRoot: string,
   dependencyRunner?: (input: InstallReactDoctorDependencyRunnerInput) => void | Promise<void>,
-): Promise<void> => {
+): Promise<InstallReactDoctorDependencyResult> => {
   const scriptSpinner = spinner("Installing React Doctor package script...").start();
   try {
     const scriptResult = installDoctorScript({ projectRoot });
@@ -290,11 +292,19 @@ const installReactDoctorPackageSetup = async (
       projectRoot,
       runner: dependencyRunner,
     });
+    // Conversion + supply-chain-trust friction: did the local dev-dep install
+    // land, already exist, or get skipped (and why)?
+    recordCount(METRIC.installDependency, 1, {
+      status: dependencyResult.dependencyStatus,
+      reason: dependencyResult.dependencyReason ?? null,
+      packageManager: detectPackageManager(projectRoot),
+    });
     if (dependencyResult.dependencyStatus === "skipped") {
       dependencySpinner.fail(formatDependencyInstallMessage(dependencyResult));
-      return;
+      return dependencyResult;
     }
     dependencySpinner.succeed(formatDependencyInstallMessage(dependencyResult));
+    return dependencyResult;
   } catch (error) {
     dependencySpinner.fail("Failed to install React Doctor package.");
     throw error;
@@ -609,7 +619,10 @@ export const runInstallReactDoctor = async (
     logger.dim("  Skipped bundled sibling skills (install error).");
   }
 
-  await installReactDoctorPackageSetup(projectRoot, options.installDependencyRunner);
+  const dependencyResult = await installReactDoctorPackageSetup(
+    projectRoot,
+    options.installDependencyRunner,
+  );
 
   if (shouldInstallGitHook && gitHookTarget !== null && gitHookTarget !== undefined) {
     const hookSpinner = spinner("Installing React Doctor pre-commit hook...").start();
@@ -621,6 +634,7 @@ export const runInstallReactDoctor = async (
         hooksPathConfig: gitHookTarget.hooksPathConfig,
       });
       hookSpinner.succeed(formatGitHookInstallMessage(hookResult));
+      recordCount(METRIC.installGitHook, 1, { kind: hookResult.kind });
     } catch (error) {
       hookSpinner.fail("Failed to install React Doctor pre-commit hook.");
       throw error;
@@ -640,6 +654,9 @@ export const runInstallReactDoctor = async (
         hookSpinner.succeed(
           `React Doctor agent hooks installed for ${hookResult.installedAgents.map((agent) => getSkillAgentConfig(agent).displayName).join(", ")}.`,
         );
+        recordCount(METRIC.installAgentHooks, 1, {
+          agentsCount: hookResult.installedAgents.length,
+        });
       }
     } catch (error) {
       hookSpinner.fail("Failed to install React Doctor agent hooks.");
@@ -657,9 +674,25 @@ export const runInstallReactDoctor = async (
       workflowSpinner.succeed(
         `GitHub Actions workflow added at ${path.relative(projectRoot, workflowTargetPath)}.`,
       );
+      recordCount(METRIC.installWorkflow, 1);
     } catch (error) {
       workflowSpinner.fail("Failed to add GitHub Actions workflow.");
       throw error;
     }
+  }
+
+  // Activation summary for a real (non-dry-run) install: how many agents, which
+  // optional integrations, and the dependency outcome. `install.agent` breaks
+  // the agent set down so per-agent adoption is queryable.
+  recordCount(METRIC.installCompleted, 1, {
+    agentsCount: selectedAgents.length,
+    gitHook: shouldInstallGitHook,
+    agentHooks: shouldInstallAgentHooks,
+    workflow: shouldInstallWorkflow,
+    dependencyStatus: dependencyResult.dependencyStatus,
+    packageManager: detectPackageManager(projectRoot),
+  });
+  for (const agent of selectedAgents) {
+    recordCount(METRIC.installAgent, 1, { agent });
   }
 };

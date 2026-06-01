@@ -21,7 +21,8 @@ import type {
   ReactDoctorConfig,
 } from "@react-doctor/core";
 import { cliLogger as logger } from "../utils/cli-logger.js";
-import { STAGED_FILES_TEMP_DIR_PREFIX } from "../utils/constants.js";
+import { METRIC, STAGED_FILES_TEMP_DIR_PREFIX } from "../utils/constants.js";
+import { recordCount } from "../utils/record-metric.js";
 import { getStagedSourceFiles, materializeStagedFiles } from "../utils/get-staged-files.js";
 import type { InspectFlags } from "../utils/inspect-flags.js";
 import { handleError } from "../utils/handle-error.js";
@@ -158,6 +159,7 @@ const maybeMigrateLegacyConfig = (
 };
 
 export const inspectAction = async (directory: string, flags: InspectFlags): Promise<void> => {
+  recordCount(METRIC.cliInvoked, 1, { command: "inspect" });
   const isScoreOnly = Boolean(flags.score);
   const isJsonMode = Boolean(flags.json);
   const isQuiet = isScoreOnly || isJsonMode;
@@ -413,6 +415,7 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
         })
       ) {
         printAgentInstallHint();
+        recordCount(METRIC.agentInstallHintShown, 1);
       }
     }
   } catch (error) {

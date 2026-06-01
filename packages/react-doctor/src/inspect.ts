@@ -19,6 +19,9 @@ import {
   withSentryRunSpan,
 } from "./cli/utils/with-sentry-run-span.js";
 import type { SentryRootSpan } from "./cli/utils/with-sentry-run-span.js";
+import { METRIC } from "./cli/utils/constants.js";
+import { recordCount } from "./cli/utils/record-metric.js";
+import { recordScanMetrics } from "./cli/utils/record-scan-metrics.js";
 import type {
   Diagnostic,
   DiagnosticSurface,
@@ -253,9 +256,11 @@ const runInspectWithRuntime = async (
       beforeLint: (projectInfo, lintIncludePaths) =>
         Effect.gen(function* () {
           // Attach the discovered project shape to Sentry as early as possible
-          // (this hook fires right after project discovery) so crashes and the
-          // run transaction carry it. No-op when Sentry/tracing is off.
+          // (this hook fires right after project discovery) so crashes, the run
+          // transaction, and every subsequent metric carry it. No-op when
+          // Sentry/tracing is off.
           recordSentryProjectContext(projectInfo, rootSentrySpan);
+          recordCount(METRIC.projectDetected, 1);
           if (options.scoreOnly || options.suppressRendering) return;
           const lintSourceFileCount = lintIncludePaths?.length ?? projectInfo.sourceFileCount;
           yield* printProjectDetection({
@@ -342,11 +347,27 @@ const runInspectWithRuntime = async (
     scannedFilePaths: output.scannedFilePaths,
     scanElapsedMilliseconds: output.scanElapsedMilliseconds,
   };
-  return await Effect.runPromise(
+  const result = await Effect.runPromise(
     finalizeAndRender(finalizeInput).pipe(
       options.silent ? Effect.provideService(Console.Console, silentConsole) : (program) => program,
     ),
   );
+  recordScanMetrics({
+    result,
+    mode: isDiffMode ? "diff" : "full",
+    parallel: options.concurrency !== undefined,
+    workerCount: options.concurrency,
+    lint: options.lint,
+    deadCode: options.deadCode,
+    scoreOnly: options.scoreOnly,
+    noScore: options.noScore,
+    didLintFail,
+    lintFailureReasonKind: lintBindingMissing
+      ? "native-binding-missing"
+      : output.lintFailureReasonKind,
+    didDeadCodeFail: output.didDeadCodeFail,
+  });
+  return result;
 };
 
 interface FinalizeInput {

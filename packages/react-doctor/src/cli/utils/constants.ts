@@ -64,3 +64,35 @@ export const TRACE_FLAG_SAMPLED = 1;
 // Nanoseconds per second, for converting Effect's epoch-nanosecond span clock
 // into the `[seconds, nanosRemainder]` HrTime tuple Sentry/OTel expect.
 export const NANOSECONDS_PER_SECOND = 1_000_000_000n;
+
+// Sentry Application Metric names. Centralized so emit sites can't drift on a
+// typo'd string and the full counter surface stays greppable in one place.
+// Dotted, domain-grouped names (Sentry convention); high-cardinality
+// dimensions (rule id, package manager, ...) go in attributes, never the name.
+export const METRIC = {
+  cliInvoked: "cli.invoked",
+  cliError: "cli.error",
+  projectDetected: "project.detected",
+  scanCompleted: "scan.completed",
+  scanDuration: "scan.duration",
+  scanPhaseDuration: "scan.phase_duration",
+  scanFiles: "scan.files",
+  scanScore: "scan.score",
+  scanClean: "scan.clean",
+  scanCheckSkipped: "scan.check_skipped",
+  ruleFired: "rule.fired",
+  lintFailed: "lint.failed",
+  deadCodeFailed: "deadcode.failed",
+  scoreUnavailable: "score.unavailable",
+  oxlintWorkers: "oxlint.workers",
+  agentHandoff: "agent.handoff",
+  agentInstallHintShown: "agent.install_hint_shown",
+  installCompleted: "install.completed",
+  installAgent: "install.agent",
+  installGitHook: "install.git_hook",
+  installWorkflow: "install.workflow",
+  installAgentHooks: "install.agent_hooks",
+  installDependency: "install.dependency",
+  rulesChanged: "rules.changed",
+  rulesQueried: "rules.queried",
+} as const;

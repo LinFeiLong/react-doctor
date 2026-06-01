@@ -1,34 +1,6 @@
 import type { Event } from "@sentry/node";
-import { isPlainObject, redactSensitiveText } from "@react-doctor/core";
+import { anonymizeInPlace, anonymizeText } from "./anonymize-text.js";
 import { scrubSensitivePaths } from "./scrub-sensitive-text.js";
-
-// Free-text fields can carry both a home-directory path (the OS username) and a
-// secret/email echoed from user code, so run both scrubbers: strip the username
-// from paths, then mask any known credential/PII shape.
-const anonymizeText = (text: string): string => redactSensitiveText(scrubSensitivePaths(text));
-
-/**
- * Recursively rewrites every string within an arbitrary value (object / array /
- * primitive) through {@link anonymizeText}, mutating in place. Used to sweep the
- * unstructured corners of an event (contexts, extra, tags, breadcrumb data,
- * span attributes) where a path or secret could hide.
- */
-const anonymizeInPlace = (value: unknown): void => {
-  if (Array.isArray(value)) {
-    for (let index = 0; index < value.length; index += 1) {
-      const item = value[index];
-      if (typeof item === "string") value[index] = anonymizeText(item);
-      else anonymizeInPlace(item);
-    }
-    return;
-  }
-  if (!isPlainObject(value)) return;
-  for (const key of Object.keys(value)) {
-    const inner = value[key];
-    if (typeof inner === "string") value[key] = anonymizeText(inner);
-    else anonymizeInPlace(inner);
-  }
-};
 
 /**
  * Anonymizes a Sentry event (error or transaction) before it leaves the

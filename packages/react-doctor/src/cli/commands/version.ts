@@ -1,3 +1,5 @@
+import { METRIC } from "../utils/constants.js";
+import { recordCount } from "../utils/record-metric.js";
 import { VERSION } from "../utils/version.js";
 
 /**
@@ -11,5 +13,6 @@ export const buildVersionString = (): string =>
   `react-doctor/${VERSION} ${process.platform}-${process.arch} node-${process.version}`;
 
 export const versionAction = (): void => {
+  recordCount(METRIC.cliInvoked, 1, { command: "version" });
   process.stdout.write(`${buildVersionString()}\n`);
 };

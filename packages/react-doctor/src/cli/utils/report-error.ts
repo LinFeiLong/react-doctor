@@ -1,7 +1,9 @@
 import * as Sentry from "@sentry/node";
+import { isReactDoctorError } from "@react-doctor/core";
 import { getActiveRunTrace } from "./active-run-trace.js";
 import { buildSentryScope } from "./build-sentry-scope.js";
-import { SENTRY_FLUSH_TIMEOUT_MS } from "./constants.js";
+import { METRIC, SENTRY_FLUSH_TIMEOUT_MS } from "./constants.js";
+import { recordCount } from "./record-metric.js";
 
 /**
  * Sends an error to Sentry — enriched with a fresh snapshot of the current run
@@ -22,6 +24,18 @@ export const reportErrorToSentry = async (error: unknown): Promise<string | unde
   if (!Sentry.isInitialized()) return undefined;
   try {
     const { tags, contexts } = buildSentryScope();
+
+    // Count the failure as a metric too — a clean, alertable error rate keyed by
+    // command + the tagged `ReactDoctorError` reason (or the legacy thrown
+    // class name), complementing the captured Sentry issue.
+    let reason = "unknown";
+    if (isReactDoctorError(error)) reason = error.reason._tag;
+    else if (error instanceof Error) reason = error.name;
+    recordCount(METRIC.cliError, 1, {
+      command: typeof tags.command === "string" ? tags.command : undefined,
+      reason,
+    });
+
     const runTrace = getActiveRunTrace();
     const eventId = Sentry.withScope((scope) => {
       for (const [name, context] of Object.entries(contexts)) scope.setContext(name, context);

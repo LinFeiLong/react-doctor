@@ -73,5 +73,11 @@ export const recordSentryProjectContext = (
   rootSpan: SentryRootSpan,
 ): void => {
   setSentryProjectInfo(projectInfo);
-  rootSpan?.setAttributes(toSpanAttributes(buildSentryProjectContext(projectInfo).tags));
+  const projectAttributes = toSpanAttributes(buildSentryProjectContext(projectInfo).tags);
+  rootSpan?.setAttributes(projectAttributes);
+  // The same project shape also rides every metric emitted after discovery
+  // (`project.detected`, `scan.completed`, `rule.fired`, ...): scope attributes
+  // feed metrics, the root-span attributes above feed the transaction. No-op
+  // when Sentry is disabled.
+  if (Sentry.isInitialized()) Sentry.getGlobalScope().setAttributes(projectAttributes);
 };
