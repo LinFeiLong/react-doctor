@@ -11,6 +11,7 @@ import { colorizeByScore } from "./colorize-by-score.js";
 import { computeProjectedScore } from "./compute-score-projection.js";
 import { buildRulePriorityMap } from "./diagnostic-grouping.js";
 import { isCodingAgentEnvironment } from "./is-ci-environment.js";
+import { canAnimateOnboarding } from "./onboarding-pacing.js";
 import { formatElapsedTime, printDiagnostics } from "./render-diagnostics.js";
 import { printFooter, printSummary } from "./render-summary.js";
 
@@ -86,6 +87,11 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
   Effect.gen(function* () {
     const { completedScans, userConfig, verbose, isOffline, projectName } = input;
 
+    // Report animations (category count-up + score-projection ghost gain) play
+    // on every interactive aggregate render, mirroring the single-project path
+    // in `inspect.ts`. The first-run section pacing stays single-project-only.
+    const animateRender = !verbose && canAnimateOnboarding(process.stdout);
+
     const allDiagnostics: Diagnostic[] = completedScans.flatMap((scan) => scan.result.diagnostics);
     const surfaceDiagnostics = filterDiagnosticsForSurface(allDiagnostics, "cli", userConfig);
 
@@ -141,6 +147,7 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
         resolveDiagnosticSourceRoot,
         buildRulePriorityMap(completedScans.map((scan) => scan.result.score)),
         isCodingAgentEnvironment(),
+        { animateCountUp: animateRender },
       );
     }
 
@@ -176,6 +183,7 @@ export const printMultiProjectSummary = (input: MultiProjectSummaryInput): Effec
       totalSourceFileCount,
       noScoreMessage: "Score unavailable.",
       verbose,
+      animateProjection: animateRender,
     });
 
     const entries: ProjectScanEntry[] = completedScans.map((scan) => {

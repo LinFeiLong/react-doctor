@@ -10,7 +10,7 @@ describe("buildRuleDocsUrl", () => {
 
   it("preserves non-react-doctor plugin namespaces", () => {
     expect(buildRuleDocsUrl("jsx-a11y", "anchor-is-valid")).toBe(
-      "https://www.react.doctor/docs/rules/jsx-a11y/anchor-is-valid",
+      "https://react.doctor/docs/rules/jsx-a11y/anchor-is-valid",
     );
   });
 });

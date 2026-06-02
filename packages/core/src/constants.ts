@@ -80,7 +80,7 @@ export const SHARE_BASE_URL = "https://react.doctor/share";
 // Root of the documentation site. Guides for CI/CD setup, config files (to
 // suppress rules), and diff/PR scanning live under it; the CLI links here
 // from its closing "learn more" note.
-export const DOCS_URL = "https://www.react.doctor/docs";
+export const DOCS_URL = "https://react.doctor/docs";
 
 // Base URL for the per-rule documentation pages. The canonical,
 // human-readable fix recipe for one rule lives at `<base>/<plugin>/<rule>`

@@ -1,5 +1,45 @@
 # react-doctor
 
+## 0.2.18
+
+### Patch Changes
+
+- [#640](https://github.com/millionco/react-doctor/pull/640) [`b336f54`](https://github.com/millionco/react-doctor/commit/b336f54d664bf49e0c7b9575b7dcd374eebfd9c6) Thanks [@aidenybai](https://github.com/aidenybai)! - The interactive category breakdown now reveals issues one at a time — a category's errors before its warnings, top to bottom — instead of every count easing up in parallel, holds for a beat once it settles, and finally plays on monorepo (multi-project) scans too.
+
+  Previously the count-up only animated on single-project scans; the multi-project aggregate report rendered the breakdown (and the score projection) statically. Both now share the same interactive reveal, gated on the same real-TTY predicate, so a monorepo's report animates like a single project's. Small and medium breakdowns step one issue per frame; very large ones grow the per-step increment so the reveal still resolves quickly.
+
+- [#643](https://github.com/millionco/react-doctor/pull/643) [`0c8b797`](https://github.com/millionco/react-doctor/commit/0c8b797d18d7d8d0b347fbea0da111b38075eb5d) Thanks [@rayhanadev](https://github.com/rayhanadev)! - react-doctor no longer crashes when `git` isn't installed.
+
+  During a normal scan, diff auto-detection reads the current branch first. When the `git` binary couldn't be spawned (e.g. a bare container with no git on `PATH`), that best-effort read threw instead of degrading, crashing the scan and reporting an environment issue to Sentry (REACT-DOCTOR-F). It now degrades to "unknown branch" — matching how a non-zero `git` exit was already handled — so the scan continues without git context.
+
+- [#642](https://github.com/millionco/react-doctor/pull/642) [`2aa96f3`](https://github.com/millionco/react-doctor/commit/2aa96f39b56555722b7121569a5bbd9caa10dc44) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Expected, user-actionable failures are no longer reported to Sentry or rendered as crashes.
+
+  When react-doctor exits because of the user's project or invocation — not a bug — it now prints a clean, single-line message and exits non-zero, instead of the generic "Something went wrong, open a prefilled issue" block. These cases are also no longer sent to Sentry or counted in the alertable error-rate metric. This was flooding crash reporting with non-bugs from CI, coding agents, and sandboxes.
+
+  Covered cases:
+
+  - **No React / no project / missing path** — every project-discovery failure (`NoReactDependencyError`, `ProjectNotFoundError`, `PackageJsonNotFoundError`, `NotADirectoryError`, `AmbiguousProjectError`) is now treated as a clean user error (REACT-DOCTOR-1, -4, -6, -7). When the scan target simply doesn't exist on disk, the message now says the path doesn't exist instead of the misleading "Expected a package.json…" guidance.
+  - **CLI invocation mistakes** — a malformed `<file>:<line>` argument, mutually exclusive flags (e.g. `--yes` + `--full`), and an unknown `--project` name now render as clean errors (REACT-DOCTOR-B, -D, -G, -H).
+  - **Read-only config directory** — react-doctor no longer crashes when it can't create/read its global setup-prompt store on a locked-down or read-only filesystem; it degrades gracefully (REACT-DOCTOR-E).
+
+  The fix is enforced centrally in `reportErrorToSentry`, so the CLI entry point, `inspect`, and `install` all benefit.
+
+- Updated dependencies []:
+  - oxlint-plugin-react-doctor@0.2.18
+
+## 0.2.17
+
+### Patch Changes
+
+- [#638](https://github.com/millionco/react-doctor/pull/638) [`114893e`](https://github.com/millionco/react-doctor/commit/114893e07d83d143aa3cdddc9fb178137b786f47) Thanks [@aidenybai](https://github.com/aidenybai)! - Redesigned the interactive scan report and added a first-run onboarding reveal.
+
+  The default single-project report now reads top-to-bottom the way a human scans it: the category tally, then the score box (with the total issue count inline on the score line, e.g. `7 / 100 Critical   295 issues`), the projection, the top fixes one by one, the warning roll-up, a single merged `+N more errors and +N more warnings` overflow line, and finally Share / Docs / Tip. The per-section `+N more rules` lines, the `N warnings` sub-header, and the `Top N errors you should fix` header were removed for a cleaner read. CI, coding-agent, git-hook, and verbose runs keep the classic information-dense layout (diagnostics first, then agent guidance and score).
+
+  On a user's first interactive run it plays as an onboarding sequence: a happy React Doctor "welcome" scene opens, the scan runs, the category tallies count up from zero in parallel, and then each section — and each of the top errors — reveals on an ~850ms beat (quickening to ~680ms once the score lands) instead of a wall of text. It runs only once (a marker persisted in the global config records that it was shown), and is skipped entirely in CI, under coding agents, and on any non-TTY / score-only / JSON run.
+
+- Updated dependencies []:
+  - oxlint-plugin-react-doctor@0.2.17
+
 ## 0.2.16
 
 ### Patch Changes
