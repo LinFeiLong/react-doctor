@@ -4,6 +4,7 @@ import { CI_URL, highlighter } from "@react-doctor/core";
 import { buildHandoffPayload } from "./build-handoff-payload.js";
 import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
+import { findNearestPackageDirectory } from "./install-doctor-script.js";
 import { installReactDoctorPackageSetup } from "./install-react-doctor.js";
 import { installReactDoctorWorkflow } from "./install-github-workflow.js";
 import { reportWorkflowResult } from "./report-workflow-result.js";
@@ -40,18 +41,28 @@ const printPayload = (payload: string): void => {
 
 // Sets React Doctor up to scan every pull request: installs the dev
 // dependency + `doctor` script and writes the GitHub Actions workflow, then
-// pitches the value + links the guide. `installReactDoctorPackageSetup` throws
-// on a read-only / permission-denied FS, so it's guarded: a failed CI setup
-// must never crash a scan that already succeeded.
+// pitches the value + links the guide. Resolves the nearest package root first
+// (mirroring `install`) so a nested scan directory doesn't drop the workflow in
+// the wrong place. `installReactDoctorPackageSetup` throws on a read-only /
+// permission-denied FS, so it's guarded: a failed CI setup must never crash a
+// scan that already succeeded.
 const setUpCi = async (rootDirectory: string): Promise<void> => {
+  const projectRoot = findNearestPackageDirectory(rootDirectory) ?? rootDirectory;
   try {
-    await installReactDoctorPackageSetup(rootDirectory);
+    await installReactDoctorPackageSetup(projectRoot);
   } catch {}
 
   const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
-  reportWorkflowResult(workflowSpinner, installReactDoctorWorkflow(rootDirectory), rootDirectory);
+  const workflowResult = installReactDoctorWorkflow(projectRoot);
+  reportWorkflowResult(workflowSpinner, workflowResult, projectRoot);
 
   logger.break();
+  if (workflowResult.status === "failed") {
+    logger.log(
+      `Couldn't set up CI automatically. Add React Doctor to your pull requests with the guide: ${highlighter.dim(CI_URL)}`,
+    );
+    return;
+  }
   logger.log(
     `React Doctor scans every pull request in CI, used by teams at ${CI_TRUST_COMPANIES}.`,
   );

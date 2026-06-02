@@ -640,9 +640,14 @@ export const runInstallReactDoctor = async (
     }
   }
 
+  let didInstallWorkflow = false;
   if (shouldInstallWorkflow) {
     const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
-    reportWorkflowResult(workflowSpinner, installReactDoctorWorkflow(projectRoot), projectRoot);
+    didInstallWorkflow = reportWorkflowResult(
+      workflowSpinner,
+      installReactDoctorWorkflow(projectRoot),
+      projectRoot,
+    );
   }
 
   // Activation summary for a real (non-dry-run) install: how many agents, which
@@ -652,7 +657,7 @@ export const runInstallReactDoctor = async (
     agentsCount: selectedAgents.length,
     gitHook: shouldInstallGitHook,
     agentHooks: shouldInstallAgentHooks,
-    workflow: shouldInstallWorkflow,
+    workflow: didInstallWorkflow,
     dependencyStatus: dependencyResult.dependencyStatus,
     packageManager: detectPackageManager(projectRoot),
   });
