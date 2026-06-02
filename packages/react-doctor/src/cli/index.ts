@@ -30,9 +30,10 @@ initializeSentry();
 process.on("SIGINT", exitGracefully);
 process.on("SIGTERM", exitGracefully);
 unrefStdin();
-// Catch `read EIO` (and kin) from a terminal that vanishes while an
-// interactive prompt is reading stdin, so a hangup exits cleanly instead of
-// crashing as an uncaught exception. Armed before any command runs.
+// HACK: a terminal that vanishes while an interactive prompt is reading
+// stdin makes Node raise `read EIO` on the raw-mode handle; with no listener
+// it escalates to a fatal uncaught exception. Guard it so a hangup exits
+// cleanly (mirrors the stdout EPIPE guard below). Armed before any command.
 guardStdin();
 
 const formatExampleLines = (
