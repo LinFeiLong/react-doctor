@@ -16,6 +16,7 @@ import {
 import { versionAction } from "./commands/version.js";
 import { applyColorPreference } from "./utils/apply-color-preference.js";
 import { exitGracefully } from "./utils/exit-gracefully.js";
+import { guardStdin } from "./utils/guard-stdin.js";
 import { handleError } from "./utils/handle-error.js";
 import { isJsonModeActive, writeJsonErrorReport } from "./utils/json-mode.js";
 import { normalizeHelpInvocation } from "./utils/normalize-help-command.js";
@@ -29,6 +30,10 @@ initializeSentry();
 process.on("SIGINT", exitGracefully);
 process.on("SIGTERM", exitGracefully);
 unrefStdin();
+// Catch `read EIO` (and kin) from a terminal that vanishes while an
+// interactive prompt is reading stdin, so a hangup exits cleanly instead of
+// crashing as an uncaught exception. Armed before any command runs.
+guardStdin();
 
 const formatExampleLines = (
   examples: ReadonlyArray<readonly [command: string, description: string]>,

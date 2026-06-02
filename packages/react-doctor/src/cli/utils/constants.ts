@@ -2,6 +2,12 @@
 // (128 + signal number). Used by exit-gracefully.ts on SIGINT/SIGTERM.
 export const SIGINT_EXIT_CODE = 130;
 
+// Exit code for a terminal hangup, per POSIX (128 + SIGHUP = 129). Used by
+// guard-stdin.ts when the TTY backing an interactive prompt goes away
+// mid-read (`read EIO`), so the CLI exits like an interrupted run instead of
+// crashing on the uncaught stdin stream error.
+export const TERMINAL_HANGUP_EXIT_CODE = 129;
+
 // Length of the `[node, script]` prefix that precedes user arguments in
 // `process.argv`. Shared by the argv processors (flag stripping, help
 // normalization, the `-V` alias).
