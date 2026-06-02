@@ -16,6 +16,7 @@ import {
 import { versionAction } from "./commands/version.js";
 import { applyColorPreference } from "./utils/apply-color-preference.js";
 import { exitGracefully } from "./utils/exit-gracefully.js";
+import { guardStdin } from "./utils/guard-stdin.js";
 import { handleError, handleUserError } from "./utils/handle-error.js";
 import { isExpectedUserError } from "./utils/is-expected-user-error.js";
 import { isJsonModeActive, writeJsonErrorReport } from "./utils/json-mode.js";
@@ -30,6 +31,11 @@ initializeSentry();
 process.on("SIGINT", exitGracefully);
 process.on("SIGTERM", exitGracefully);
 unrefStdin();
+// HACK: a terminal that vanishes while an interactive prompt is reading
+// stdin makes Node raise `read EIO` on the raw-mode handle; with no listener
+// it escalates to a fatal uncaught exception. Guard it so a hangup exits
+// cleanly (mirrors the stdout EPIPE guard below). Armed before any command.
+guardStdin();
 
 const formatExampleLines = (
   examples: ReadonlyArray<readonly [command: string, description: string]>,
