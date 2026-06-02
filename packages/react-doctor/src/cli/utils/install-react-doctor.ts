@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -20,6 +20,10 @@ import {
   installDoctorScript,
 } from "./install-doctor-script.js";
 import { installReactDoctorAgentHooks } from "./install-agent-hooks.js";
+import {
+  getReactDoctorWorkflowPath,
+  installReactDoctorWorkflow,
+} from "./install-github-workflow.js";
 import { isRecord, readPackageJson } from "./git-hook-shared.js";
 import { GitHookKind, type GitHookTarget } from "./git-hook-types.js";
 import { detectGitHookTarget, installReactDoctorGitHook } from "./install-git-hook.js";
@@ -273,7 +277,7 @@ const formatDependencyInstallMessage = (result: InstallReactDoctorDependencyResu
   return "Skipped dev dependency install: package.json missing or invalid.";
 };
 
-const installReactDoctorPackageSetup = async (
+export const installReactDoctorPackageSetup = async (
   projectRoot: string,
   dependencyRunner?: (input: InstallReactDoctorDependencyRunnerInput) => void | Promise<void>,
 ): Promise<InstallReactDoctorDependencyResult> => {
@@ -384,32 +388,6 @@ const installBundledSiblingSkills = async (
 const canInstallNativeAgentHooks = (agents: readonly SkillAgentType[]): boolean =>
   agents.some((agent) => agent === "claude-code" || agent === "cursor");
 
-const buildWorkflowContent = (): string =>
-  [
-    "name: React Doctor",
-    "",
-    "on:",
-    "  pull_request:",
-    "    types: [opened, synchronize, reopened, ready_for_review]",
-    "",
-    "permissions:",
-    "  contents: read",
-    "  pull-requests: write",
-    "  issues: write",
-    "",
-    "concurrency:",
-    "  group: react-doctor-${{ github.event.pull_request.number || github.ref }}",
-    "  cancel-in-progress: true",
-    "",
-    "jobs:",
-    "  react-doctor:",
-    "    runs-on: ubuntu-latest",
-    "    steps:",
-    "      - uses: actions/checkout@v5",
-    "      - uses: millionco/react-doctor@main",
-    "",
-  ].join("\n");
-
 export const runInstallReactDoctor = async (
   options: InstallReactDoctorOptions = {},
 ): Promise<void> => {
@@ -468,9 +446,7 @@ export const runInstallReactDoctor = async (
 
   if (selectedAgents.length === 0) return;
 
-  const workflowsDirectory = path.join(projectRoot, ".github", "workflows");
-  const workflowTargetPath = path.join(workflowsDirectory, "react-doctor.yml");
-  const hasExistingWorkflows = existsSync(workflowsDirectory);
+  const workflowTargetPath = getReactDoctorWorkflowPath(projectRoot);
   const canInstallWorkflow = !existsSync(workflowTargetPath);
   const setupActionChoices = [
     ...(gitHookPath === null || gitHookPath === undefined
@@ -499,7 +475,7 @@ export const runInstallReactDoctor = async (
             title: "GitHub Actions workflow",
             description: "Scan pull requests in CI",
             value: SETUP_OPTION_WORKFLOW,
-            selected: hasExistingWorkflows,
+            selected: true,
           },
         ]
       : []),
@@ -546,10 +522,11 @@ export const runInstallReactDoctor = async (
     Boolean(options.agentHooks) ||
     (!didSkipOptionalSetup && selectedSetupActions.includes(SETUP_OPTION_AGENT_HOOKS));
   const shouldInstallWorkflow =
-    !skipPrompts &&
-    !didSkipOptionalSetup &&
     canInstallWorkflow &&
-    selectedSetupActions.includes(SETUP_OPTION_WORKFLOW);
+    (Boolean(options.yes) ||
+      (!skipPrompts &&
+        !didSkipOptionalSetup &&
+        selectedSetupActions.includes(SETUP_OPTION_WORKFLOW)));
 
   if (options.dryRun) {
     logger.log(`Dry run — would install ${SKILL_NAME} skill for:`);
@@ -665,19 +642,15 @@ export const runInstallReactDoctor = async (
   }
 
   if (shouldInstallWorkflow) {
-    if (!hasExistingWorkflows) {
-      mkdirSync(workflowsDirectory, { recursive: true });
-    }
     const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
-    try {
-      writeFileSync(workflowTargetPath, buildWorkflowContent());
+    const workflowResult = installReactDoctorWorkflow(projectRoot);
+    if (workflowResult.status === "failed") {
+      workflowSpinner.fail("Failed to add GitHub Actions workflow.");
+    } else {
       workflowSpinner.succeed(
-        `GitHub Actions workflow added at ${path.relative(projectRoot, workflowTargetPath)}.`,
+        `GitHub Actions workflow added at ${path.relative(projectRoot, workflowResult.workflowPath)}.`,
       );
       recordCount(METRIC.installWorkflow, 1);
-    } catch (error) {
-      workflowSpinner.fail("Failed to add GitHub Actions workflow.");
-      throw error;
     }
   }
 
