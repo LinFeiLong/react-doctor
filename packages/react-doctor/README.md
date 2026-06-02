@@ -1,4 +1,4 @@
-<picture>
+<picture> 
   <source media="(prefers-color-scheme: dark)" srcset="./assets/react-doctor-readme-logo-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="./assets/react-doctor-readme-logo-light.svg">
   <img alt="React Doctor" src="./assets/react-doctor-readme-logo-light.svg" width="134" height="36">
