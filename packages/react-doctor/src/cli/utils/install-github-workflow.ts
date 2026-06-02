@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-export interface InstallGithubWorkflowResult {
+export interface InstallGitHubWorkflowResult {
   readonly status: "created" | "exists" | "failed";
   readonly workflowPath: string;
 }
@@ -9,7 +9,7 @@ export interface InstallGithubWorkflowResult {
 // The action is pinned to the floating major `@v1` (never `@main`, per the
 // supply-chain guidance in AGENTS.md): `@main` would run whatever HEAD points
 // to with `pull-requests: write` granted.
-export const buildWorkflowContent = (): string =>
+const buildWorkflowContent = (): string =>
   [
     "name: React Doctor",
     "",
@@ -42,7 +42,7 @@ export const getReactDoctorWorkflowPath = (projectRoot: string): string =>
 // directory if needed. Returns "exists" without overwriting a workflow that's
 // already there, and "failed" (rather than throwing) so callers can degrade to
 // printing manual setup instructions.
-export const installReactDoctorWorkflow = (projectRoot: string): InstallGithubWorkflowResult => {
+export const installReactDoctorWorkflow = (projectRoot: string): InstallGitHubWorkflowResult => {
   const workflowPath = getReactDoctorWorkflowPath(projectRoot);
   if (existsSync(workflowPath)) return { status: "exists", workflowPath };
 

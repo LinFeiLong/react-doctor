@@ -24,6 +24,7 @@ import {
   getReactDoctorWorkflowPath,
   installReactDoctorWorkflow,
 } from "./install-github-workflow.js";
+import { reportWorkflowResult } from "./report-workflow-result.js";
 import { isRecord, readPackageJson } from "./git-hook-shared.js";
 import { GitHookKind, type GitHookTarget } from "./git-hook-types.js";
 import { detectGitHookTarget, installReactDoctorGitHook } from "./install-git-hook.js";
@@ -524,9 +525,7 @@ export const runInstallReactDoctor = async (
   const shouldInstallWorkflow =
     canInstallWorkflow &&
     (Boolean(options.yes) ||
-      (!skipPrompts &&
-        !didSkipOptionalSetup &&
-        selectedSetupActions.includes(SETUP_OPTION_WORKFLOW)));
+      (!didSkipOptionalSetup && selectedSetupActions.includes(SETUP_OPTION_WORKFLOW)));
 
   if (options.dryRun) {
     logger.log(`Dry run — would install ${SKILL_NAME} skill for:`);
@@ -643,15 +642,7 @@ export const runInstallReactDoctor = async (
 
   if (shouldInstallWorkflow) {
     const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
-    const workflowResult = installReactDoctorWorkflow(projectRoot);
-    if (workflowResult.status === "failed") {
-      workflowSpinner.fail("Failed to add GitHub Actions workflow.");
-    } else {
-      workflowSpinner.succeed(
-        `GitHub Actions workflow added at ${path.relative(projectRoot, workflowResult.workflowPath)}.`,
-      );
-      recordCount(METRIC.installWorkflow, 1);
-    }
+    reportWorkflowResult(workflowSpinner, installReactDoctorWorkflow(projectRoot), projectRoot);
   }
 
   // Activation summary for a real (non-dry-run) install: how many agents, which

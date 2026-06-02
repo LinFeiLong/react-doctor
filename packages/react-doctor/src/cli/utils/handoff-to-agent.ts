@@ -6,6 +6,7 @@ import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
 import { installReactDoctorPackageSetup } from "./install-react-doctor.js";
 import { installReactDoctorWorkflow } from "./install-github-workflow.js";
+import { reportWorkflowResult } from "./report-workflow-result.js";
 import { installReactDoctorSkillForAgent } from "./install-skill-for-agent.js";
 import { isCommandAvailable } from "./is-command-available.js";
 import { CI_TRUST_COMPANIES, METRIC } from "./constants.js";
@@ -38,20 +39,17 @@ const printPayload = (payload: string): void => {
 };
 
 // Sets React Doctor up to scan every pull request: installs the dev
-// dependency + `doctor` script (best-effort, degrades on its own) and writes
-// the GitHub Actions workflow, then pitches the value + links the guide.
+// dependency + `doctor` script and writes the GitHub Actions workflow, then
+// pitches the value + links the guide. `installReactDoctorPackageSetup` throws
+// on a read-only / permission-denied FS, so it's guarded: a failed CI setup
+// must never crash a scan that already succeeded.
 const setUpCi = async (rootDirectory: string): Promise<void> => {
-  await installReactDoctorPackageSetup(rootDirectory);
+  try {
+    await installReactDoctorPackageSetup(rootDirectory);
+  } catch {}
 
   const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
-  const workflowResult = installReactDoctorWorkflow(rootDirectory);
-  if (workflowResult.status === "created") {
-    workflowSpinner.succeed("GitHub Actions workflow added at .github/workflows/react-doctor.yml.");
-  } else if (workflowResult.status === "exists") {
-    workflowSpinner.succeed("GitHub Actions workflow already configured.");
-  } else {
-    workflowSpinner.fail("Couldn't write the GitHub Actions workflow.");
-  }
+  reportWorkflowResult(workflowSpinner, installReactDoctorWorkflow(rootDirectory), rootDirectory);
 
   logger.break();
   logger.log(
