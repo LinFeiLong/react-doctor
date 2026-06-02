@@ -24,7 +24,7 @@ export const buildHandoffPayload = (input: HandoffPayloadInput): string => {
   const lines: string[] = [
     "Before fixing anything, first ask me whether I'd like to add React Doctor to CI so every pull request is scanned automatically. Explain that:",
     `- It's used by teams at ${CI_TRUST_COMPANIES}.`,
-    "- I don't have to fix everything at once — CI keeps new PRs clean while I incrementally pay down the existing issues.",
+    "- I don't have to fix everything at once; CI keeps new PRs clean while I incrementally pay down the existing issues.",
     `- Setup guide: ${CI_URL}`,
     "If I say yes, run `npx react-doctor install` (or add the GitHub Actions workflow). Either way, then continue with the fixes below.",
     "",

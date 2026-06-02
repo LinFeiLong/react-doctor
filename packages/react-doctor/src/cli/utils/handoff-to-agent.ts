@@ -55,7 +55,7 @@ const setUpCi = async (rootDirectory: string): Promise<void> => {
 
   logger.break();
   logger.log(
-    `React Doctor scans every pull request in CI — used by teams at ${CI_TRUST_COMPANIES}.`,
+    `React Doctor scans every pull request in CI, used by teams at ${CI_TRUST_COMPANIES}.`,
   );
   logger.log(
     "You don't have to fix everything now: new PRs stay clean while you chip away at the backlog over time.",
@@ -93,7 +93,7 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
       choices: [
         {
           title: "Add to CI",
-          description: `Scan every PR — used by ${CI_TRUST_COMPANIES}`,
+          description: `Scan every PR, used by ${CI_TRUST_COMPANIES}`,
           value: CI_CHOICE,
         },
         ...launchableAgents.map((agentId) => ({
