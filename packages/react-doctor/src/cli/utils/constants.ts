@@ -36,7 +36,7 @@ export const PERFECT_SCORE_RAINBOW_FRAME_DELAY_MS = 50;
 // category count-up, and the score projection.
 export const WELCOME_TYPEWRITER_CHAR_DELAY_MS = 32;
 export const WELCOME_INTER_LINE_DELAY_MS = 500;
-export const WELCOME_EXPLANATION_HOLD_MS = 2000;
+export const WELCOME_EXPLANATION_HOLD_MS = 800;
 export const WELCOME_HOLD_MS = 1000;
 // The category breakdown reveals one issue at a time (errors then warnings,
 // category by category). Small/medium breakdowns step by a single unit per

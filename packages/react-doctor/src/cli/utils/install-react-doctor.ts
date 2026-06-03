@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -154,17 +155,13 @@ const buildInstallCommand = (projectRoot: string): InstallReactDoctorDependencyR
   };
 };
 
-const defaultInstallDependencyRunner = (input: InstallReactDoctorDependencyRunnerInput): void => {
-  // Capture (don't inherit) so a failure doesn't dump the package
-  // manager's raw output. pnpm in particular prints an alarming
-  // "ERR_PNPM_TRUST_DOWNGRADE … possible package takeover / supply chain
-  // incident" block when its trust policy rejects a beta dependency
-  // (e.g. `effect`), which looks like a security breach but isn't. On
-  // failure the caller surfaces a calm, tailored message and the exact
-  // manual command instead.
-  execFileSync(input.command, [...input.args], {
+const execFileAsync = promisify(execFile);
+
+const defaultInstallDependencyRunner = async (
+  input: InstallReactDoctorDependencyRunnerInput,
+): Promise<void> => {
+  await execFileAsync(input.command, [...input.args], {
     cwd: input.cwd,
-    stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, REACT_DOCTOR_INSTALL: "1" },
     shell: process.platform === "win32",
   });
