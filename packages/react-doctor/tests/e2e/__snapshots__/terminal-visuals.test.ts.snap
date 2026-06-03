@@ -67,7 +67,7 @@ exports[`in-process render across terminal widths and render modes > matches the
   GitHub: https://github.com/millionco/react-doctor
   Report issues and star the repository!
 
-  CI: https://react.doctor/ci
+  GitHub Actions: https://react.doctor/ci
   Scan every pull request: new PRs stay clean while you fix the backlog
   Used by teams at PayPal, Rippling, and Alibaba"
 `;

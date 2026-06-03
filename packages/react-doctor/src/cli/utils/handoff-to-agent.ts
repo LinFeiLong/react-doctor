@@ -50,15 +50,15 @@ const printPayload = (payload: string): void => {
 // pinned local copy go through the `react-doctor install` command. Resolves the
 // nearest package root first (mirroring `install`) so a nested scan directory
 // doesn't drop the workflow in the wrong place. The script step throws on a
-// read-only / permission-denied FS, so it's guarded: a failed CI setup must
+// read-only / permission-denied FS, so it's guarded: a failed setup must
 // never crash a scan that already succeeded.
 //
-// The post-pick message is intentionally lean: the scan-report footer's `CI:`
-// entry (`printFooter`) already made the case for CI before the user clicked,
-// so repeating the social-proof + backlog talking points here would be
-// redundant noise. Confirm what changed, link the guide for deeper reading,
-// done.
-const setUpCi = (rootDirectory: string): void => {
+// The post-pick message is intentionally lean: the scan-report footer's
+// `GitHub Actions:` entry (`printFooter`) already made the case before the
+// user clicked, so repeating the social-proof + backlog talking points here
+// would be redundant noise. Confirm what changed, link the guide for deeper
+// reading, done.
+const setUpGitHubActions = (rootDirectory: string): void => {
   const projectRoot = findNearestPackageDirectory(rootDirectory) ?? rootDirectory;
   try {
     installReactDoctorScriptStep(projectRoot);
@@ -71,7 +71,7 @@ const setUpCi = (rootDirectory: string): void => {
   logger.break();
   if (workflowResult.status === "failed") {
     logger.log(
-      `Couldn't set up CI automatically. Add React Doctor to your pull requests with the guide: ${highlighter.dim(CI_URL)}`,
+      `Couldn't set up GitHub Actions automatically. Add React Doctor to your pull requests with the guide: ${highlighter.dim(CI_URL)}`,
     );
     return;
   }
@@ -102,12 +102,15 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
 
   logger.break();
 
-  // The scan-report footer already pitched CI ("CI: https://react.doctor/ci"
-  // with the social-proof + backlog framing). Here we just gate the choice's
-  // `(recommended)` tag on whether the workflow is already in place — users
-  // who already have CI don't get the nudge again.
+  // The scan-report footer already pitched GitHub Actions (`GitHub Actions:
+  // https://react.doctor/ci` with the social-proof + backlog framing). Here
+  // we just gate the choice's title-state tag on whether the workflow is
+  // already in place: `(recommended)` when missing, `(already configured)`
+  // when present. Keeping the state in the title (where `(recommended)` also
+  // lives) lets the description always describe what picking the option does,
+  // not the project's current state.
   const projectRootForCi = findNearestPackageDirectory(input.rootDirectory) ?? input.rootDirectory;
-  const isCiAlreadyConfigured = isReactDoctorWorkflowInstalled(projectRootForCi);
+  const isGitHubActionsConfigured = isReactDoctorWorkflowInstalled(projectRootForCi);
 
   const launchableAgents = await detectLaunchableAgents();
   const { handoffTarget } = await prompts<"handoffTarget">(
@@ -117,10 +120,10 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
       message: "What would you like to do next?",
       choices: [
         {
-          title: isCiAlreadyConfigured ? "Add to CI" : "Add to CI (recommended)",
-          description: isCiAlreadyConfigured
-            ? "GitHub Actions workflow + doctor package script (already configured)"
-            : "Set up the GitHub Actions workflow + doctor package script",
+          title: isGitHubActionsConfigured
+            ? "Add to GitHub Actions (already configured)"
+            : "Add to GitHub Actions (recommended)",
+          description: "Set up the workflow file + the doctor package script",
           value: CI_CHOICE,
         },
         ...launchableAgents.map((agentId) => ({
@@ -140,8 +143,10 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
     { onCancel: () => true },
   );
 
-  // Count the fix-loop outcome (the core activation moment): did the user set up
-  // CI, launch an agent (any agent id), copy the prompt, or skip/cancel?
+  // Count the fix-loop outcome (the core activation moment): did the user set
+  // up GitHub Actions, launch an agent (any agent id), copy the prompt, or
+  // skip/cancel? The outcome value stays `"ci"` for metric-history continuity
+  // with prior releases — only the user-facing wording changed.
   let handoffOutcome = "launch";
   if (handoffTarget === undefined) handoffOutcome = "cancel";
   else if (handoffTarget === CI_CHOICE) handoffOutcome = "ci";
@@ -157,7 +162,7 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
   if (handoffTarget === undefined || handoffTarget === SKIP_CHOICE) return;
 
   if (handoffTarget === CI_CHOICE) {
-    setUpCi(input.rootDirectory);
+    setUpGitHubActions(input.rootDirectory);
     return;
   }
 
