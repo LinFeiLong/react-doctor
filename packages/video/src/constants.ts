@@ -11,6 +11,12 @@ export const RED_COLOR = "#f87171";
 export const GREEN_COLOR = "#4ade80";
 export const YELLOW_COLOR = "#eab308";
 
+export const BUTTON_GREEN_COLOR = "#1F883D";
+export const BUTTON_BORDER_COLOR = "#1F232826";
+export const BUTTON_TEXT_COLOR = "#ffffff";
+export const BUTTON_FONT_FAMILY = "'Mona Sans', system-ui, sans-serif";
+export const BUTTON_SHADOW = "#1F23280A 0px 6px 6px, #1F232808 0px 6px 12px";
+
 export const ERROR_ROW_BACKGROUND_COLOR = "rgba(127, 29, 29, 0.28)";
 export const ERROR_BADGE_BACKGROUND_COLOR = "#dc2626";
 export const ERROR_BADGE_TEXT_COLOR = "#fafafa";
@@ -31,17 +37,7 @@ export const OVERLAY_GRADIENT_BOTTOM_ALPHA = 0.96;
 export const OVERLAY_GRADIENT_MIDDLE_ALPHA = 0.85;
 export const OVERLAY_GRADIENT_MIDDLE_STOP_PERCENT = 50;
 
-export const COMMAND = "npx react-doctor@latest";
-export const REACT_DOCTOR_URL = "https://react.doctor";
-export const CONTENT_WIDTH_PX = 1400;
-
-export const TYPING_FONT_SIZE_PX = 100;
-export const TYPING_CHAR_WIDTH_PX = 60;
-export const CHAR_FRAMES = 1;
-export const CURSOR_BLINK_FRAMES = 16;
-export const TYPING_INITIAL_DELAY_FRAMES = 10;
-export const TYPING_POST_PAUSE_FRAMES = 24;
-export const TYPING_PAN_THRESHOLD_PX = CONTENT_WIDTH_PX * 0.6;
+export const REACT_DOCTOR_URL = "react.doctor/ci";
 
 export const FILE_SCAN_FONT_SIZE_PX = 48;
 export const FRAMES_PER_FILE = 2;
@@ -143,15 +139,18 @@ export const DIAGNOSTICS = SCANNED_ISSUES.filter(
 export const FRAMES_PER_FIX = 20;
 export const FIX_INITIAL_DELAY_FRAMES = 15;
 
-export const SCENE_TYPING_DURATION_FRAMES = 115;
+export const SCENE_ADD_TO_CI_DURATION_FRAMES = 90;
 export const SCENE_FILE_SCAN_DURATION_FRAMES = 160;
 export const SCENE_DIAGNOSE_AND_FIX_DURATION_FRAMES = 175;
 export const SCENE_SCORE_REVEAL_DURATION_FRAMES = 110;
 export const TRANSITION_DURATION_FRAMES = 15;
 
-export const TOTAL_DURATION =
-  SCENE_TYPING_DURATION_FRAMES +
+export const MAIN_FLOW_DURATION_FRAMES =
   SCENE_FILE_SCAN_DURATION_FRAMES +
   SCENE_DIAGNOSE_AND_FIX_DURATION_FRAMES +
-  SCENE_SCORE_REVEAL_DURATION_FRAMES -
-  TRANSITION_DURATION_FRAMES * 2;
+  SCENE_SCORE_REVEAL_DURATION_FRAMES;
+
+export const TOTAL_DURATION =
+  SCENE_ADD_TO_CI_DURATION_FRAMES +
+  MAIN_FLOW_DURATION_FRAMES -
+  TRANSITION_DURATION_FRAMES;

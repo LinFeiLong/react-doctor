@@ -1,6 +1,8 @@
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import {
   BACKGROUND_COLOR,
+  VIDEO_HEIGHT_PX,
+  VIDEO_WIDTH_PX,
   DIAGNOSTICS,
   ERROR_BADGE_BACKGROUND_COLOR,
   ERROR_BADGE_TEXT_COLOR,
@@ -26,6 +28,7 @@ import {
   WARNING_BADGE_BACKGROUND_COLOR,
 } from "../constants";
 import { DoctorFace } from "../components/doctor-face";
+import { ChecksCard } from "../components/commit-result-cards";
 import { fontFamily } from "../utils/font";
 import { getDoctorMood, getScoreColor, getScoreLabel } from "../utils/score-display";
 
@@ -34,8 +37,6 @@ const HERO_NUMBER_FONT_SIZE_PX = 140;
 const HERO_LABEL_FONT_SIZE_PX = 56;
 const HERO_BAR_FONT_SIZE_PX = 48;
 const HERO_GAP_PX = 48;
-const HERO_TOP_PX = 348;
-const HERO_LEFT_PX = 200;
 const SCORE_BAR_PIXEL_WIDTH_PX = 640;
 
 const BADGE_FACE_FONT_SIZE_PX = 0;
@@ -66,6 +67,9 @@ const FIX_START_FRAME = 106;
 const FIX_INTERVAL_FRAMES = 0.6;
 const FIX_FADE_FRAMES = 3;
 const ALL_FIXED_FADE_FRAMES = 8;
+
+const CHECKS_EDGE_PADDING_PX = 80;
+const SPINNER_DEG_PER_FRAME = 14;
 
 const SCENE_HORIZONTAL_PADDING_PX = 80;
 const SCENE_TOP_PADDING_PX = 60;
@@ -128,8 +132,9 @@ export const DiagnoseAndFix = () => {
     },
   );
 
-  const scoreTopPx = lerpSize(HERO_TOP_PX, BADGE_TOP_PX, transitionProgress);
-  const scoreLeftPx = lerpSize(HERO_LEFT_PX, BADGE_LEFT_PX, transitionProgress);
+  const scoreLeftPx = lerpSize(VIDEO_WIDTH_PX / 2, BADGE_LEFT_PX, transitionProgress);
+  const scoreTopPx = lerpSize(VIDEO_HEIGHT_PX / 2, BADGE_TOP_PX, transitionProgress);
+  const scoreAnchorPercent = lerpSize(-50, 0, transitionProgress);
   const faceFontSize = lerpSize(
     HERO_FACE_FONT_SIZE_PX,
     BADGE_FACE_FONT_SIZE_PX,
@@ -217,6 +222,9 @@ export const DiagnoseAndFix = () => {
       TARGET_SCORE +
       Math.round((PERFECT_SCORE - TARGET_SCORE) * (fixedDiagnosticCount / DIAGNOSTICS.length));
   }
+  const checksState = allFixed ? "pending" : "fail";
+  const spinnerRotationDeg = frame * SPINNER_DEG_PER_FRAME;
+
   const scoreColor = getScoreColor(displayScore);
   const doctorMood = getDoctorMood(displayScore);
   const filledBarCount = Math.round((displayScore / PERFECT_SCORE) * SCORE_BAR_WIDTH);
@@ -346,7 +354,7 @@ export const DiagnoseAndFix = () => {
         }}
       >
         <span style={{ color: MUTED_COLOR }}>❯ </span>
-        <span style={{ color: "white" }}>fix my React Native code</span>
+        <span style={{ color: "white" }}>get React Doctor comments from CI and fix</span>
       </div>
 
       <div
@@ -482,6 +490,7 @@ export const DiagnoseAndFix = () => {
           position: "absolute",
           left: scoreLeftPx,
           top: scoreTopPx,
+          transform: `translate(${scoreAnchorPercent}%, ${scoreAnchorPercent}%)`,
           display: "flex",
           gap: scoreGap,
           alignItems: "flex-start",
@@ -503,7 +512,7 @@ export const DiagnoseAndFix = () => {
           />
         </div>
         <div>
-          <div>
+          <div style={{ whiteSpace: "nowrap" }}>
             <span
               style={{
                 color: scoreColor,
@@ -560,6 +569,18 @@ export const DiagnoseAndFix = () => {
           </div>
         </div>
       </div>
+
+      <AbsoluteFill
+        style={{
+          justifyContent: "flex-end",
+          alignItems: "flex-end",
+          padding: CHECKS_EDGE_PADDING_PX,
+          pointerEvents: "none",
+          zIndex: 100,
+        }}
+      >
+        <ChecksCard state={checksState} spinnerRotationDeg={spinnerRotationDeg} />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

@@ -5,19 +5,21 @@ import {
   MUTED_COLOR,
   PERFECT_SCORE,
   REACT_DOCTOR_URL,
-  SCORE_BAR_WIDTH,
   YELLOW_COLOR,
 } from "../constants";
+import { CommitResultCards } from "../components/commit-result-cards";
 import { DoctorFace } from "../components/doctor-face";
 import { fontFamily } from "../utils/font";
 import { getDoctorMood, getScoreColor, getScoreLabel } from "../utils/score-display";
 
-const SCORE_ANIMATION_FRAMES = 50;
-const SCORE_FONT_SIZE_PX = 96;
-const SCORE_FACE_FONT_SIZE_PX = 72;
-const SCORE_LABEL_FONT_SIZE_PX = 56;
-const SCORE_BAR_FONT_SIZE_PX = 44;
-const URL_FONT_SIZE_PX = 52;
+const CARDS_RISE_PX = 40;
+const CARDS_FADE_IN_FRAMES = 12;
+const CONFETTI_START_FRAME = 6;
+const URL_FONT_SIZE_PX = 44;
+const SCORE_NUMBER_FONT_SIZE_PX = 96;
+const SCORE_LABEL_FONT_SIZE_PX = 52;
+const SCORE_FACE_SIZE_PX = 200;
+const SCORE_ROW_GAP_PX = 36;
 
 const CONFETTI_COUNT = 500;
 const CONFETTI_WAVES = 4;
@@ -46,19 +48,20 @@ const confettiParticles = Array.from({ length: CONFETTI_COUNT }).map((_, particl
 export const ScoreReveal = () => {
   const frame = useCurrentFrame();
 
-  const scoreProgress = interpolate(frame, [0, SCORE_ANIMATION_FRAMES], [0, 1], {
+  const cardsOpacity = interpolate(frame, [0, CARDS_FADE_IN_FRAMES], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.linear,
+    easing: Easing.out(Easing.cubic),
+  });
+  const cardsTranslateY = interpolate(frame, [0, CARDS_FADE_IN_FRAMES], [CARDS_RISE_PX, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
   });
 
-  const currentScore = Math.round(scoreProgress * PERFECT_SCORE);
-  const scoreColor = getScoreColor(currentScore);
-  const mood = getDoctorMood(currentScore);
-  const filledBarCount = Math.round((currentScore / PERFECT_SCORE) * SCORE_BAR_WIDTH);
-  const emptyBarCount = SCORE_BAR_WIDTH - filledBarCount;
+  const confettiProgress = Math.max(0, frame - CONFETTI_START_FRAME);
 
-  const confettiProgress = Math.max(0, frame - SCORE_ANIMATION_FRAMES);
+  const scoreColor = getScoreColor(PERFECT_SCORE);
 
   return (
     <AbsoluteFill
@@ -66,6 +69,8 @@ export const ScoreReveal = () => {
         backgroundColor: BACKGROUND_COLOR,
         justifyContent: "center",
         alignItems: "center",
+        flexDirection: "column",
+        gap: 48,
       }}
     >
       {confettiProgress > 0 &&
@@ -100,88 +105,43 @@ export const ScoreReveal = () => {
             />
           );
         })}
+
       <div
         style={{
           display: "flex",
-          gap: 48,
-          alignItems: "flex-start",
+          alignItems: "center",
+          gap: SCORE_ROW_GAP_PX,
+          opacity: cardsOpacity,
+          transform: `translateY(${cardsTranslateY}px)`,
         }}
       >
-        <DoctorFace
-          size={SCORE_FACE_FONT_SIZE_PX * 3.5}
-          color={scoreColor}
-          mood={mood}
-        />
-
-        <div>
-          <div>
-            <span
-              style={{
-                color: scoreColor,
-                fontWeight: 500,
-                fontSize: SCORE_FONT_SIZE_PX,
-                fontFamily,
-                display: "inline-block",
-                minWidth: "3ch",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {currentScore}
-            </span>
-            <span
-              style={{
-                color: MUTED_COLOR,
-                fontSize: SCORE_LABEL_FONT_SIZE_PX,
-                fontFamily,
-              }}
-            >
-              {` / ${PERFECT_SCORE}  `}
-            </span>
-            <span
-              style={{
-                color: scoreColor,
-                fontSize: SCORE_LABEL_FONT_SIZE_PX,
-                fontFamily,
-              }}
-            >
-              {getScoreLabel(currentScore)}
-            </span>
-          </div>
-          <div
-            style={{
-              marginTop: 8,
-              display: "flex",
-              gap: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 1000,
-                height: SCORE_BAR_FONT_SIZE_PX * 1.5,
-                backgroundColor: "#525252",
-                display: "flex",
-              }}
-            >
-              <div
-                style={{
-                  width: `${(filledBarCount / SCORE_BAR_WIDTH) * 100}%`,
-                  height: "100%",
-                  backgroundColor: scoreColor,
-                }}
-              />
-            </div>
-          </div>
-          <div
-            style={{
-              marginTop: 16,
-              fontSize: URL_FONT_SIZE_PX,
-              fontFamily,
-              color: MUTED_COLOR,
-            }}
-          >
-            {REACT_DOCTOR_URL}
-          </div>
+        <DoctorFace size={SCORE_FACE_SIZE_PX} color={scoreColor} mood={getDoctorMood(PERFECT_SCORE)} />
+        <div style={{ fontFamily }}>
+          <span style={{ color: scoreColor, fontWeight: 500, fontSize: SCORE_NUMBER_FONT_SIZE_PX }}>
+            {PERFECT_SCORE}
+          </span>
+          <span style={{ color: MUTED_COLOR, fontSize: SCORE_LABEL_FONT_SIZE_PX }}>
+            {` / ${PERFECT_SCORE}  `}
+          </span>
+          <span style={{ color: scoreColor, fontSize: SCORE_LABEL_FONT_SIZE_PX }}>
+            {getScoreLabel(PERFECT_SCORE)}
+          </span>
         </div>
+      </div>
+
+      <div style={{ opacity: cardsOpacity, transform: `translateY(${cardsTranslateY}px)` }}>
+        <CommitResultCards />
+      </div>
+
+      <div
+        style={{
+          fontFamily,
+          fontSize: URL_FONT_SIZE_PX,
+          color: MUTED_COLOR,
+          opacity: cardsOpacity,
+        }}
+      >
+        {REACT_DOCTOR_URL}
       </div>
     </AbsoluteFill>
   );

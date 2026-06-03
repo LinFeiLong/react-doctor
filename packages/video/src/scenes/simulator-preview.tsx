@@ -20,6 +20,7 @@ import {
   WARNING_BADGE_BACKGROUND_COLOR,
 } from "../constants";
 import { getBottomOverlayGradient } from "../utils/get-bottom-overlay-gradient";
+import { ChecksCard } from "../components/commit-result-cards";
 import { fontFamily } from "../utils/font";
 
 const LINE_HEIGHT_MULTIPLIER = 1.6;
@@ -38,6 +39,13 @@ const TITLE_FADE_IN_FRAMES = 12;
 const TITLE_LOGO_SIZE_PX = 96;
 const TITLE_LOGO_GAP_PX = 24;
 
+const CHECKS_ENTRANCE_START_FRAME = 24;
+const CHECKS_ENTRANCE_FRAMES = 16;
+const CHECKS_FAIL_FRAME = 105;
+const CHECKS_RISE_PX = 40;
+const CHECKS_EDGE_PADDING_PX = 80;
+const SPINNER_DEG_PER_FRAME = 14;
+
 export const SimulatorPreview = () => {
   const frame = useCurrentFrame();
 
@@ -53,6 +61,21 @@ export const SimulatorPreview = () => {
       easing: Easing.out(Easing.cubic),
     },
   );
+
+  const checksOpacity = interpolate(
+    frame,
+    [CHECKS_ENTRANCE_START_FRAME, CHECKS_ENTRANCE_START_FRAME + CHECKS_ENTRANCE_FRAMES],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) },
+  );
+  const checksTranslateY = interpolate(
+    frame,
+    [CHECKS_ENTRANCE_START_FRAME, CHECKS_ENTRANCE_START_FRAME + CHECKS_ENTRANCE_FRAMES],
+    [CHECKS_RISE_PX, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) },
+  );
+  const checksState = frame >= CHECKS_FAIL_FRAME ? "fail" : "pending";
+  const spinnerRotationDeg = frame * SPINNER_DEG_PER_FRAME;
 
   return (
     <AbsoluteFill style={{ backgroundColor: BACKGROUND_COLOR, overflow: "hidden" }}>
@@ -125,6 +148,20 @@ export const SimulatorPreview = () => {
         </div>
       </div>
 
+      <AbsoluteFill
+        style={{
+          justifyContent: "flex-end",
+          alignItems: "flex-end",
+          padding: CHECKS_EDGE_PADDING_PX,
+          pointerEvents: "none",
+          zIndex: 100,
+        }}
+      >
+        <div style={{ opacity: checksOpacity, transform: `translateY(${checksTranslateY}px)` }}>
+          <ChecksCard state={checksState} spinnerRotationDeg={spinnerRotationDeg} />
+        </div>
+      </AbsoluteFill>
+
       <AbsoluteFill style={{ justifyContent: "flex-start", pointerEvents: "none" }}>
         <div
           style={{
@@ -155,15 +192,15 @@ export const SimulatorPreview = () => {
               gap: TITLE_LOGO_GAP_PX,
             }}
           >
-            <span>Scan your</span>
             <span style={{ display: "inline-flex", alignItems: "center", gap: TITLE_LOGO_GAP_PX }}>
+              Catch
               <Img
                 src={staticFile("react-native-logo.png")}
                 style={{ width: TITLE_LOGO_SIZE_PX, height: TITLE_LOGO_SIZE_PX, objectFit: "contain" }}
               />
-              React Native
+              React
             </span>
-            <span>app</span>
+            <span>bugs in CI</span>
           </div>
         </div>
       </AbsoluteFill>
