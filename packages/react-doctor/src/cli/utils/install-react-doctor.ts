@@ -267,7 +267,7 @@ const formatDependencyInstallMessage = (result: InstallReactDoctorDependencyResu
     return "Local install skipped by your package manager's supply-chain trust policy (safe to ignore for pre-release packages).";
   }
   if (result.dependencyReason === "install-command-failed") {
-    return "Local install failed — your package manager rejected the command.";
+    return "Local install failed: your package manager rejected the command.";
   }
   return "Skipped dev dependency install: package.json missing or invalid.";
 };

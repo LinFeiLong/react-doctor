@@ -82,7 +82,7 @@ export const printFooter = (input: PrintFooterInput): Effect.Effect<void> =>
     // `OUTPUT_DETAIL_WRAP_WIDTH_CHARS` (88) so neither soft-wraps at 100c.
     yield* Console.log(`  ${highlighter.bold("CI:")} ${highlighter.info(CI_URL)}`);
     yield* Console.log(
-      highlighter.dim("  Scan every pull request — new PRs stay clean while you fix the backlog"),
+      highlighter.dim("  Scan every pull request: new PRs stay clean while you fix the backlog"),
     );
     yield* Console.log(highlighter.dim(`  Used by teams at ${CI_TRUST_COMPANIES}`));
   });
