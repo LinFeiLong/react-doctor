@@ -1,37 +1,61 @@
 import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import {
   BACKGROUND_COLOR,
-  ERROR_BADGE_BACKGROUND_COLOR,
-  ERROR_BADGE_TEXT_COLOR,
-  ERROR_ROW_BACKGROUND_COLOR,
-  FILE_ROW_GAP_PX,
-  FILE_ROW_HORIZONTAL_PADDING_PX,
-  FILE_ROW_VERTICAL_PADDING_PX,
-  FILE_SCAN_FONT_SIZE_PX,
-  GREEN_COLOR,
-  MUTED_COLOR,
   OVERLAY_GRADIENT_BOTTOM_PADDING_PX,
   OVERLAY_GRADIENT_HEIGHT_PX,
   OVERLAY_GRADIENT_HORIZONTAL_PADDING_PX,
-  SCANNED_ISSUES,
-  SEVERITY_BADGE_RADIUS_PX,
-  SEVERITY_BADGE_SIZE_PX,
-  TEXT_COLOR,
-  WARNING_BADGE_BACKGROUND_COLOR,
 } from "../constants";
 import { getBottomOverlayGradient } from "../utils/get-bottom-overlay-gradient";
 import { ChecksCard } from "../components/commit-result-cards";
+import { GithubComment } from "../components/github-comment";
 import { fontFamily } from "../utils/font";
 
-const LINE_HEIGHT_MULTIPLIER = 1.6;
-const ROW_HEIGHT_PX =
-  FILE_SCAN_FONT_SIZE_PX * LINE_HEIGHT_MULTIPLIER + FILE_ROW_VERTICAL_PADDING_PX * 2;
-const TOTAL_LIST_HEIGHT_PX = SCANNED_ISSUES.length * ROW_HEIGHT_PX;
-const SCROLL_PX_PER_FRAME = (TOTAL_LIST_HEIGHT_PX * 0.15) / 40;
-const SCROLL_START_FRAME = 20;
-const FRAMES_PER_ISSUE = 2;
-const FADE_IN_FRAMES = 6;
-const CONTENT_PADDING_PX = 40;
+const COMMENT_WIDTH_PX = 1280;
+const COMMENT_RISE_PX = 40;
+const COMMENT_FADE_IN_START_FRAME = 10;
+const COMMENT_FADE_IN_FRAMES = 14;
+const COMMENT_GAP_PX = 48;
+const COMMENT_STACK_TOP_PX = 300;
+const COMMENT_SCROLL_START_FRAME = 0;
+const COMMENT_SCROLL_PX_PER_FRAME = 9;
+
+const REVIEW_COMMENTS = [
+  {
+    file: "FeedScreen.tsx:63",
+    message:
+      "This list re-renders every row on each state change, which is causing the dropped frames while scrolling. Memoize the row and pass a stable keyExtractor.",
+    suggestionRemoved: "<FlatList data={items} renderItem={renderRow} />",
+    suggestionAdded: "<FlatList data={items} renderItem={renderRow} keyExtractor={keyExtractor} />",
+  },
+  {
+    file: "ProductCard.tsx:31",
+    message:
+      "Raw text rendered outside a <Text> component crashes on React Native. Wrap the value in <Text>.",
+    suggestionRemoved: "{product.title}",
+    suggestionAdded: "<Text>{product.title}</Text>",
+  },
+  {
+    file: "Avatar.tsx:11",
+    message:
+      "react-native's <Image> has no caching, so avatars reload on every scroll. Switch to expo-image for disk and memory caching.",
+    suggestionRemoved: "import { Image } from 'react-native'",
+    suggestionAdded: "import { Image } from 'expo-image'",
+  },
+  {
+    file: "Button.tsx:14",
+    message:
+      "TouchableOpacity is in legacy maintenance. Use <Pressable> for flexible, modern press feedback.",
+    suggestionRemoved: "<TouchableOpacity onPress={onPress}>",
+    suggestionAdded: "<Pressable onPress={onPress}>",
+  },
+  {
+    file: "SplashScreen.tsx:24",
+    message:
+      "Animated from react-native runs on the JS thread and stutters. Drive this with react-native-reanimated so it runs on the UI thread.",
+    suggestionRemoved: "import { Animated } from 'react-native'",
+    suggestionAdded: "import Animated from 'react-native-reanimated'",
+  },
+];
 
 const TITLE_FONT_SIZE_PX = 88;
 const TITLE_FADE_IN_START_FRAME = 5;
@@ -49,7 +73,18 @@ const SPINNER_DEG_PER_FRAME = 14;
 export const SimulatorPreview = () => {
   const frame = useCurrentFrame();
 
-  const scrollY = frame > SCROLL_START_FRAME ? (frame - SCROLL_START_FRAME) * SCROLL_PX_PER_FRAME : 0;
+  const commentOpacity = interpolate(
+    frame,
+    [COMMENT_FADE_IN_START_FRAME, COMMENT_FADE_IN_START_FRAME + COMMENT_FADE_IN_FRAMES],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) },
+  );
+  const commentTranslateY = interpolate(
+    frame,
+    [COMMENT_FADE_IN_START_FRAME, COMMENT_FADE_IN_START_FRAME + COMMENT_FADE_IN_FRAMES],
+    [COMMENT_RISE_PX, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) },
+  );
 
   const titleOpacity = interpolate(
     frame,
@@ -77,76 +112,42 @@ export const SimulatorPreview = () => {
   const checksState = frame >= CHECKS_FAIL_FRAME ? "fail" : "pending";
   const spinnerRotationDeg = frame * SPINNER_DEG_PER_FRAME;
 
+  const commentScrollY = Math.max(0, (frame - COMMENT_SCROLL_START_FRAME) * COMMENT_SCROLL_PX_PER_FRAME);
+
   return (
     <AbsoluteFill style={{ backgroundColor: BACKGROUND_COLOR, overflow: "hidden" }}>
-      <div
+      <AbsoluteFill
         style={{
-          width: "100%",
-          height: "100%",
           overflow: "hidden",
-          padding: `${CONTENT_PADDING_PX}px 60px`,
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%)",
         }}
       >
-        <div style={{ transform: `translateY(-${scrollY}px)` }}>
-          {SCANNED_ISSUES.map((issue, issueIndex) => {
-            const issueOpacity = interpolate(
-              frame,
-              [issueIndex * FRAMES_PER_ISSUE, issueIndex * FRAMES_PER_ISSUE + FADE_IN_FRAMES],
-              [0, 1],
-              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-            );
-            const isError = issue.severity === "error";
-            const isWarning = issue.severity === "warning";
-            const isOk = issue.severity === "ok";
-            return (
-              <div
-                key={`${issue.message}-${issue.file}`}
-                style={{
-                  opacity: issueOpacity,
-                  fontFamily,
-                  fontSize: FILE_SCAN_FONT_SIZE_PX,
-                  lineHeight: LINE_HEIGHT_MULTIPLIER,
-                  color: isOk ? MUTED_COLOR : TEXT_COLOR,
-                  whiteSpace: "nowrap",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: FILE_ROW_GAP_PX,
-                  padding: `${FILE_ROW_VERTICAL_PADDING_PX}px ${FILE_ROW_HORIZONTAL_PADDING_PX}px`,
-                  backgroundColor: isError ? ERROR_ROW_BACKGROUND_COLOR : "transparent",
-                  borderRadius: 6,
-                }}
-              >
-                <span
-                  style={{
-                    width: SEVERITY_BADGE_SIZE_PX,
-                    height: SEVERITY_BADGE_SIZE_PX,
-                    flexShrink: 0,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: SEVERITY_BADGE_RADIUS_PX,
-                    backgroundColor: isError
-                      ? ERROR_BADGE_BACKGROUND_COLOR
-                      : isWarning
-                        ? WARNING_BADGE_BACKGROUND_COLOR
-                        : "transparent",
-                    color: isOk ? GREEN_COLOR : ERROR_BADGE_TEXT_COLOR,
-                    fontSize: FILE_SCAN_FONT_SIZE_PX * 0.7,
-                    fontWeight: 700,
-                    lineHeight: 1,
-                  }}
-                >
-                  {isOk ? "✓" : "!"}
-                </span>
-                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{issue.message}</span>
-                <span style={{ color: MUTED_COLOR, flexShrink: 0, fontSize: FILE_SCAN_FONT_SIZE_PX * 0.75 }}>
-                  {issue.file}
-                </span>
-              </div>
-            );
-          })}
+        <div
+          style={{
+            position: "absolute",
+            top: COMMENT_STACK_TOP_PX,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            opacity: commentOpacity,
+            transform: `translateY(${commentTranslateY - commentScrollY}px)`,
+          }}
+        >
+          <div style={{ width: COMMENT_WIDTH_PX, display: "flex", flexDirection: "column", gap: COMMENT_GAP_PX }}>
+            {REVIEW_COMMENTS.map((comment) => (
+              <GithubComment
+                key={comment.file}
+                file={comment.file}
+                message={comment.message}
+                suggestionRemoved={comment.suggestionRemoved}
+                suggestionAdded={comment.suggestionAdded}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      </AbsoluteFill>
 
       <AbsoluteFill
         style={{
@@ -162,7 +163,7 @@ export const SimulatorPreview = () => {
         </div>
       </AbsoluteFill>
 
-      <AbsoluteFill style={{ justifyContent: "flex-start", pointerEvents: "none" }}>
+      <AbsoluteFill style={{ justifyContent: "flex-start", pointerEvents: "none", zIndex: 50 }}>
         <div
           style={{
             width: "100%",

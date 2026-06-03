@@ -35,8 +35,9 @@ const CLICK_DEPTH_SCALE = 0.92;
 const CURSOR_PRESS_NUDGE_PX = 10;
 const ZOOM_START_FRAME = 60;
 const ZOOM_END_FRAME = 76;
-const ZOOM_TARGET_SCALE = 16;
-const ZOOM_MAX_BLUR_PX = 28;
+const ZOOM_TARGET_SCALE = 8;
+const ZOOM_MAX_BLUR_PX = 14;
+const ZOOM_MAX_DARKEN_OPACITY = 0.7;
 const CURSOR_FADE_START_FRAME = 50;
 const CURSOR_FADE_END_FRAME = 58;
 
@@ -61,6 +62,13 @@ export const AddToCi = () => {
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
+
+  const zoomDarkenOpacity = interpolate(
+    frame,
+    [ZOOM_START_FRAME, ZOOM_END_FRAME],
+    [0, ZOOM_MAX_DARKEN_OPACITY],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.cubic) },
+  );
 
   const buttonScale = clickScale;
 
@@ -147,6 +155,10 @@ export const AddToCi = () => {
       >
         <Cursor widthPx={CURSOR_WIDTH_PX} />
       </div>
+
+      <AbsoluteFill
+        style={{ backgroundColor: BACKGROUND_COLOR, opacity: zoomDarkenOpacity, pointerEvents: "none" }}
+      />
     </AbsoluteFill>
   );
 };

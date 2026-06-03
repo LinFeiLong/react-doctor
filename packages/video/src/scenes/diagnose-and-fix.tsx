@@ -6,23 +6,12 @@ import {
   DIAGNOSTICS,
   ERROR_BADGE_BACKGROUND_COLOR,
   ERROR_BADGE_TEXT_COLOR,
-  ERROR_ROW_BACKGROUND_COLOR,
-  FILE_ROW_GAP_PX,
-  FILE_ROW_HORIZONTAL_PADDING_PX,
-  FILE_ROW_VERTICAL_PADDING_PX,
-  FILE_SCAN_FONT_SIZE_PX,
-  FILE_SCAN_INITIAL_DELAY_FRAMES,
-  FRAMES_PER_FILE,
   GREEN_COLOR,
   MUTED_COLOR,
   PERFECT_SCORE,
-  RED_COLOR,
-  SCANNED_ISSUES,
-  SCENE_FILE_SCAN_DURATION_FRAMES,
   SCORE_ANIMATION_FRAMES,
   SCORE_BAR_WIDTH,
   SEVERITY_BADGE_RADIUS_PX,
-  SEVERITY_BADGE_SIZE_PX,
   TARGET_SCORE,
   TEXT_COLOR,
   WARNING_BADGE_BACKGROUND_COLOR,
@@ -91,23 +80,6 @@ const CLAUDE_LOGO_COLOR = "#d77757";
 const SPINNER_CHARS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const SPINNER_SPEED = 3;
 const SPINNER_COLOR = "#d77757";
-
-const BACKGROUND_LINE_HEIGHT = 1.6;
-const BACKGROUND_ROW_HEIGHT_PX =
-  FILE_SCAN_FONT_SIZE_PX * BACKGROUND_LINE_HEIGHT + FILE_ROW_VERTICAL_PADDING_PX * 2;
-const BACKGROUND_TOTAL_HEIGHT_PX = SCANNED_ISSUES.length * BACKGROUND_ROW_HEIGHT_PX;
-const BACKGROUND_OPACITY = 0.07;
-const SCROLL_PX_PER_FRAME = (BACKGROUND_TOTAL_HEIGHT_PX * 0.15) / 40;
-
-const VIEWPORT_HEIGHT_PX = 1080;
-const CONTENT_PADDING_PX = 40;
-const USABLE_HEIGHT_PX = VIEWPORT_HEIGHT_PX - CONTENT_PADDING_PX * 2;
-const VISIBLE_ROW_COUNT = Math.floor(USABLE_HEIGHT_PX / BACKGROUND_ROW_HEIGHT_PX);
-const FILE_SCAN_MAX_SCROLL_PX = Math.max(0, BACKGROUND_TOTAL_HEIGHT_PX - USABLE_HEIGHT_PX);
-const FILE_SCAN_SCROLL_START = FILE_SCAN_INITIAL_DELAY_FRAMES + VISIBLE_ROW_COUNT * FRAMES_PER_FILE;
-const FILE_SCAN_SCROLL_END = FILE_SCAN_INITIAL_DELAY_FRAMES + SCANNED_ISSUES.length * FRAMES_PER_FILE;
-const FILE_SCAN_END_PROGRESS = Math.min(1, (SCENE_FILE_SCAN_DURATION_FRAMES - FILE_SCAN_SCROLL_START) / (FILE_SCAN_SCROLL_END - FILE_SCAN_SCROLL_START));
-const BACKGROUND_SCROLL_OFFSET_PX = FILE_SCAN_MAX_SCROLL_PX * Easing.inOut(Easing.quad)(Math.max(0, FILE_SCAN_END_PROGRESS));
 
 const lerpSize = (heroSize: number, smallSize: number, progress: number) =>
   heroSize + (smallSize - heroSize) * progress;
@@ -232,86 +204,6 @@ export const DiagnoseAndFix = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: BACKGROUND_COLOR }}>
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflow: "hidden",
-          opacity: BACKGROUND_OPACITY * interpolate(frame, [HERO_HOLD_END_FRAME, TRANSITION_END_FRAME], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
-          padding: "40px 60px",
-        }}
-      >
-        <div
-          style={{
-            transform: `translateY(-${BACKGROUND_SCROLL_OFFSET_PX + frame * SCROLL_PX_PER_FRAME}px)`,
-          }}
-        >
-          {[...SCANNED_ISSUES, ...SCANNED_ISSUES, ...SCANNED_ISSUES].map((issue, repeatIndex) => {
-            const isError = issue.severity === "error";
-            const isWarning = issue.severity === "warning";
-            const isOk = issue.severity === "ok";
-            return (
-              <div
-                key={`${issue.message}-${repeatIndex}`}
-                style={{
-                  fontFamily,
-                  fontSize: FILE_SCAN_FONT_SIZE_PX,
-                  lineHeight: BACKGROUND_LINE_HEIGHT,
-                  color: isOk ? MUTED_COLOR : TEXT_COLOR,
-                  whiteSpace: "nowrap",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: FILE_ROW_GAP_PX,
-                  padding: `${FILE_ROW_VERTICAL_PADDING_PX}px ${FILE_ROW_HORIZONTAL_PADDING_PX}px`,
-                  backgroundColor: isError ? ERROR_ROW_BACKGROUND_COLOR : "transparent",
-                  borderRadius: 6,
-                }}
-              >
-                <span
-                  style={{
-                    width: SEVERITY_BADGE_SIZE_PX,
-                    height: SEVERITY_BADGE_SIZE_PX,
-                    flexShrink: 0,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: SEVERITY_BADGE_RADIUS_PX,
-                    backgroundColor: isError
-                      ? ERROR_BADGE_BACKGROUND_COLOR
-                      : isWarning
-                        ? WARNING_BADGE_BACKGROUND_COLOR
-                        : "transparent",
-                    color: isOk ? GREEN_COLOR : ERROR_BADGE_TEXT_COLOR,
-                    fontSize: FILE_SCAN_FONT_SIZE_PX * 0.7,
-                    fontWeight: 700,
-                    lineHeight: 1,
-                  }}
-                >
-                  {isOk ? "✓" : "!"}
-                </span>
-
-                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {issue.message}
-                </span>
-
-                <span
-                  style={{
-                    color: MUTED_COLOR,
-                    flexShrink: 0,
-                    fontSize: FILE_SCAN_FONT_SIZE_PX * 0.75,
-                  }}
-                >
-                  {issue.file}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       <div
         style={{
           position: "absolute",
