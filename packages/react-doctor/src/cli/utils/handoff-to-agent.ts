@@ -5,7 +5,7 @@ import { buildHandoffPayload } from "./build-handoff-payload.js";
 import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
 import { findNearestPackageDirectory } from "./install-doctor-script.js";
-import { installReactDoctorPackageSetup } from "./install-react-doctor.js";
+import { installReactDoctorScriptStep } from "./install-react-doctor.js";
 import { installReactDoctorWorkflow } from "./install-github-workflow.js";
 import { reportWorkflowResult } from "./report-workflow-result.js";
 import { installReactDoctorSkillForAgent } from "./install-skill-for-agent.js";
@@ -39,17 +39,20 @@ const printPayload = (payload: string): void => {
   logger.log(highlighter.dim("──────────────────────"));
 };
 
-// Sets React Doctor up to scan every pull request: installs the dev
-// dependency + `doctor` script and writes the GitHub Actions workflow, then
-// pitches the value + links the guide. Resolves the nearest package root first
-// (mirroring `install`) so a nested scan directory doesn't drop the workflow in
-// the wrong place. `installReactDoctorPackageSetup` throws on a read-only /
-// permission-denied FS, so it's guarded: a failed CI setup must never crash a
-// scan that already succeeded.
-const setUpCi = async (rootDirectory: string): Promise<void> => {
+// Sets React Doctor up to scan every pull request: writes the GitHub Actions
+// workflow + adds a `doctor` package script (which runs `npx react-doctor@latest`,
+// no local dep required). The local dev-dep install isn't called from this path:
+// nothing here needs it, and on pnpm with a beta channel it noisily trips the
+// supply-chain trust guard for zero user benefit. Users who actually want a
+// pinned local copy go through the `react-doctor install` command. Resolves the
+// nearest package root first (mirroring `install`) so a nested scan directory
+// doesn't drop the workflow in the wrong place. The script step throws on a
+// read-only / permission-denied FS, so it's guarded: a failed CI setup must
+// never crash a scan that already succeeded.
+const setUpCi = (rootDirectory: string): void => {
   const projectRoot = findNearestPackageDirectory(rootDirectory) ?? rootDirectory;
   try {
-    await installReactDoctorPackageSetup(projectRoot);
+    installReactDoctorScriptStep(projectRoot);
   } catch {}
 
   const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
@@ -139,7 +142,7 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
   if (handoffTarget === undefined || handoffTarget === SKIP_CHOICE) return;
 
   if (handoffTarget === CI_CHOICE) {
-    await setUpCi(input.rootDirectory);
+    setUpCi(input.rootDirectory);
     return;
   }
 
