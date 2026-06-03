@@ -1,8 +1,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { existsSync, readdirSync } from "node:fs";
-import path from "node:path";
+import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import * as fs from "node:fs";
 import {
   getSkillAgentConfig,
   installSkillsFromSource,
@@ -88,7 +88,7 @@ const findNearestFileDirectory = (
 ): string | null => {
   let currentDirectory = path.resolve(startDirectory);
   while (true) {
-    if (fileNames.some((fileName) => existsSync(path.join(currentDirectory, fileName)))) {
+    if (fileNames.some((fileName) => fs.existsSync(path.join(currentDirectory, fileName)))) {
       return currentDirectory;
     }
     const parentDirectory = path.dirname(currentDirectory);
@@ -123,13 +123,13 @@ const detectPackageManager = (projectRoot: string): PackageManager => {
   );
   const matchedLockfile = PACKAGE_MANAGER_LOCKFILES.find(
     (lockfile) =>
-      lockfileDirectory !== null && existsSync(path.join(lockfileDirectory, lockfile.fileName)),
+      lockfileDirectory !== null && fs.existsSync(path.join(lockfileDirectory, lockfile.fileName)),
   );
   return matchedLockfile?.packageManager ?? "npm";
 };
 
 const packageManagerNeedsWorkspaceFlag = (projectRoot: string): boolean =>
-  existsSync(path.join(projectRoot, "pnpm-workspace.yaml")) ||
+  fs.existsSync(path.join(projectRoot, "pnpm-workspace.yaml")) ||
   findNearestFileDirectory(projectRoot, ["pnpm-workspace.yaml"]) !== null;
 
 const buildInstallCommand = (projectRoot: string): InstallReactDoctorDependencyRunnerInput => {
@@ -376,15 +376,15 @@ interface BundledSiblingSkill {
 // the real bundled layout produces siblings.
 const findBundledSiblingSkills = (primarySkillDir: string): BundledSiblingSkill[] => {
   const skillsParent = path.dirname(primarySkillDir);
-  if (!existsSync(skillsParent)) return [];
+  if (!fs.existsSync(skillsParent)) return [];
   const resolvedPrimary = path.resolve(primarySkillDir);
-  return readdirSync(skillsParent, { withFileTypes: true })
+  return fs.readdirSync(skillsParent, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => ({ name: entry.name, source: path.join(skillsParent, entry.name) }))
     .filter(
       (sibling) =>
         path.resolve(sibling.source) !== resolvedPrimary &&
-        existsSync(path.join(sibling.source, SKILL_MANIFEST_FILE)),
+        fs.existsSync(path.join(sibling.source, SKILL_MANIFEST_FILE)),
     );
 };
 
@@ -423,7 +423,7 @@ export const runInstallReactDoctor = async (
   const projectRoot = findNearestPackageDirectory(requestedProjectRoot) ?? requestedProjectRoot;
   const sourceDir = options.sourceDir ?? getSkillSourceDirectory();
 
-  if (!existsSync(path.join(sourceDir, SKILL_MANIFEST_FILE))) {
+  if (!fs.existsSync(path.join(sourceDir, SKILL_MANIFEST_FILE))) {
     logger.error(`Could not locate the ${SKILL_NAME} skill bundled with this package.`);
     process.exitCode = 1;
     return;

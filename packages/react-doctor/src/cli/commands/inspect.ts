@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import path from "node:path";
+import * as path from "node:path";
 import { performance } from "node:perf_hooks";
 import * as Effect from "effect/Effect";
+import * as fs from "node:fs";
 import {
   buildJsonReport,
   filterDiagnosticsForSurface,
@@ -252,7 +252,7 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
         logger.break();
       }
 
-      const tempDirectory = mkdtempSync(path.join(tmpdir(), STAGED_FILES_TEMP_DIR_PREFIX));
+      const tempDirectory = fs.mkdtempSync(path.join(tmpdir(), STAGED_FILES_TEMP_DIR_PREFIX));
       // If materialization throws before `snapshot.cleanup` is wired up,
       // remove the temp dir we just created so it can't leak.
       const snapshot = await materializeStagedFiles(
@@ -260,7 +260,7 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
         stagedFiles,
         tempDirectory,
       ).catch((error: unknown) => {
-        rmSync(tempDirectory, { recursive: true, force: true });
+        fs.rmSync(tempDirectory, { recursive: true, force: true });
         throw error;
       });
       try {
