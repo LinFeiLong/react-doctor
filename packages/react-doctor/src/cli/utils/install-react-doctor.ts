@@ -24,6 +24,7 @@ import { installReactDoctorAgentHooks } from "./install-agent-hooks.js";
 import {
   getReactDoctorWorkflowPath,
   installReactDoctorWorkflow,
+  isReactDoctorWorkflowInstalled,
 } from "./install-github-workflow.js";
 import { reportWorkflowResult } from "./report-workflow-result.js";
 import { isRecord, readPackageJson } from "./git-hook-shared.js";
@@ -474,7 +475,7 @@ export const runInstallReactDoctor = async (
   if (selectedAgents.length === 0) return;
 
   const workflowTargetPath = getReactDoctorWorkflowPath(projectRoot);
-  const canInstallWorkflow = !existsSync(workflowTargetPath);
+  const canInstallWorkflow = !isReactDoctorWorkflowInstalled(projectRoot);
   const setupActionChoices = [
     ...(gitHookPath === null || gitHookPath === undefined
       ? []

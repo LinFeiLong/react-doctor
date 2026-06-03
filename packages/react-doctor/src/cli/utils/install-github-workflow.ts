@@ -38,6 +38,9 @@ const buildWorkflowContent = (): string =>
 export const getReactDoctorWorkflowPath = (projectRoot: string): string =>
   path.join(projectRoot, ".github", "workflows", "react-doctor.yml");
 
+export const isReactDoctorWorkflowInstalled = (projectRoot: string): boolean =>
+  existsSync(getReactDoctorWorkflowPath(projectRoot));
+
 // Writes `.github/workflows/react-doctor.yml`, creating the workflows
 // directory if needed. Returns "exists" without overwriting a workflow that's
 // already there, and "failed" (rather than throwing) so callers can degrade to

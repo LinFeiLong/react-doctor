@@ -6,7 +6,10 @@ import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
 import { findNearestPackageDirectory } from "./install-doctor-script.js";
 import { installReactDoctorScriptStep } from "./install-react-doctor.js";
-import { installReactDoctorWorkflow } from "./install-github-workflow.js";
+import {
+  installReactDoctorWorkflow,
+  isReactDoctorWorkflowInstalled,
+} from "./install-github-workflow.js";
 import { reportWorkflowResult } from "./report-workflow-result.js";
 import { installReactDoctorSkillForAgent } from "./install-skill-for-agent.js";
 import { isCommandAvailable } from "./is-command-available.js";
@@ -39,6 +42,20 @@ const printPayload = (payload: string): void => {
   logger.log(highlighter.dim("──────────────────────"));
 };
 
+// Makes the case for the "Add to CI" choice before the user clicks. Shown
+// only when the workflow isn't already in place — users with CI configured
+// don't get pitched something they already have. The points mirror the
+// react.doctor/ci guide and the agent-handoff payload: incremental backlog
+// rollout, social proof, and "one click, runs everywhere from now on".
+const printCiPitch = (): void => {
+  logger.log(highlighter.bold("Add React Doctor to CI — scan every pull request, automatically."));
+  logger.log("  • New PRs stay clean while you chip away at existing issues over time.");
+  logger.log(`  • Used by teams at ${CI_TRUST_COMPANIES}.`);
+  logger.log("  • One-time setup, runs on every PR via GitHub Actions.");
+  logger.log(highlighter.dim(`  Learn more: ${CI_URL}`));
+  logger.break();
+};
+
 // Sets React Doctor up to scan every pull request: writes the GitHub Actions
 // workflow + adds a `doctor` package script (which runs `npx react-doctor@latest`,
 // no local dep required). The local dev-dep install isn't called from this path:
@@ -49,6 +66,11 @@ const printPayload = (payload: string): void => {
 // doesn't drop the workflow in the wrong place. The script step throws on a
 // read-only / permission-denied FS, so it's guarded: a failed CI setup must
 // never crash a scan that already succeeded.
+//
+// The post-pick message is intentionally lean: the pre-prompt pitch
+// (`printCiPitch`) already made the case for CI, so repeating the social-proof
+// + backlog talking points here would be redundant noise. Confirm what changed,
+// link the guide for deeper reading, done.
 const setUpCi = (rootDirectory: string): void => {
   const projectRoot = findNearestPackageDirectory(rootDirectory) ?? rootDirectory;
   try {
@@ -66,12 +88,9 @@ const setUpCi = (rootDirectory: string): void => {
     );
     return;
   }
-  logger.log(
-    `React Doctor scans every pull request in CI, used by teams at ${CI_TRUST_COMPANIES}.`,
-  );
-  logger.log(
-    "You don't have to fix everything now: new PRs stay clean while you chip away at the backlog over time.",
-  );
+  if (workflowResult.status === "created") {
+    logger.log("React Doctor will now scan every new pull request automatically.");
+  }
   logger.log(`Learn more: ${highlighter.dim(CI_URL)}`);
 };
 
@@ -96,6 +115,15 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
 
   logger.break();
 
+  // Pitch CI before the prompt — but only when the workflow isn't already
+  // installed, so users who have it set up don't get pitched something they
+  // already own. Resolves the workflow path against the same package root
+  // `setUpCi` will write to, so the pitch and the install agree on what
+  // "configured" means.
+  const projectRootForCi = findNearestPackageDirectory(input.rootDirectory) ?? input.rootDirectory;
+  const isCiAlreadyConfigured = isReactDoctorWorkflowInstalled(projectRootForCi);
+  if (!isCiAlreadyConfigured) printCiPitch();
+
   const launchableAgents = await detectLaunchableAgents();
   const { handoffTarget } = await prompts<"handoffTarget">(
     {
@@ -104,8 +132,10 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
       message: "What would you like to do next?",
       choices: [
         {
-          title: "Add to CI",
-          description: `Scan every PR, used by ${CI_TRUST_COMPANIES}`,
+          title: isCiAlreadyConfigured ? "Add to CI" : "Add to CI (recommended)",
+          description: isCiAlreadyConfigured
+            ? "GitHub Actions workflow + doctor package script (already configured)"
+            : "Set up the GitHub Actions workflow + doctor package script",
           value: CI_CHOICE,
         },
         ...launchableAgents.map((agentId) => ({
