@@ -42,20 +42,6 @@ const printPayload = (payload: string): void => {
   logger.log(highlighter.dim("──────────────────────"));
 };
 
-// Makes the case for the "Add to CI" choice before the user clicks. Shown
-// only when the workflow isn't already in place — users with CI configured
-// don't get pitched something they already have. The points mirror the
-// react.doctor/ci guide and the agent-handoff payload: incremental backlog
-// rollout, social proof, and "one click, runs everywhere from now on".
-const printCiPitch = (): void => {
-  logger.log(highlighter.bold("Add React Doctor to CI — scan every pull request, automatically."));
-  logger.log("  • New PRs stay clean while you chip away at existing issues over time.");
-  logger.log(`  • Used by teams at ${CI_TRUST_COMPANIES}.`);
-  logger.log("  • One-time setup, runs on every PR via GitHub Actions.");
-  logger.log(highlighter.dim(`  Learn more: ${CI_URL}`));
-  logger.break();
-};
-
 // Sets React Doctor up to scan every pull request: writes the GitHub Actions
 // workflow + adds a `doctor` package script (which runs `npx react-doctor@latest`,
 // no local dep required). The local dev-dep install isn't called from this path:
@@ -67,10 +53,11 @@ const printCiPitch = (): void => {
 // read-only / permission-denied FS, so it's guarded: a failed CI setup must
 // never crash a scan that already succeeded.
 //
-// The post-pick message is intentionally lean: the pre-prompt pitch
-// (`printCiPitch`) already made the case for CI, so repeating the social-proof
-// + backlog talking points here would be redundant noise. Confirm what changed,
-// link the guide for deeper reading, done.
+// The post-pick message is intentionally lean: the scan-report footer's `CI:`
+// entry (`printFooter`) already made the case for CI before the user clicked,
+// so repeating the social-proof + backlog talking points here would be
+// redundant noise. Confirm what changed, link the guide for deeper reading,
+// done.
 const setUpCi = (rootDirectory: string): void => {
   const projectRoot = findNearestPackageDirectory(rootDirectory) ?? rootDirectory;
   try {
@@ -115,14 +102,12 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
 
   logger.break();
 
-  // Pitch CI before the prompt — but only when the workflow isn't already
-  // installed, so users who have it set up don't get pitched something they
-  // already own. Resolves the workflow path against the same package root
-  // `setUpCi` will write to, so the pitch and the install agree on what
-  // "configured" means.
+  // The scan-report footer already pitched CI ("CI: https://react.doctor/ci"
+  // with the social-proof + backlog framing). Here we just gate the choice's
+  // `(recommended)` tag on whether the workflow is already in place — users
+  // who already have CI don't get the nudge again.
   const projectRootForCi = findNearestPackageDirectory(input.rootDirectory) ?? input.rootDirectory;
   const isCiAlreadyConfigured = isReactDoctorWorkflowInstalled(projectRootForCi);
-  if (!isCiAlreadyConfigured) printCiPitch();
 
   const launchableAgents = await detectLaunchableAgents();
   const { handoffTarget } = await prompts<"handoffTarget">(

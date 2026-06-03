@@ -61,6 +61,10 @@ exports[`in-process render across terminal widths and render modes > matches the
 
   ────────────────────────────────────────────────────────────
 
+  CI: https://react.doctor/ci
+  Scan every pull request — new PRs stay clean while you fix the backlog
+  Used by teams at PayPal, Rippling, and Alibaba
+
   Docs: https://react.doctor/docs
   Learn more about fixing issues, setting up CI/CD, and configuring rules with a config file
 

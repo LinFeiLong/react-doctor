@@ -2,11 +2,13 @@ import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import {
   CANONICAL_GITHUB_URL,
+  CI_URL,
   DOCS_URL,
   highlighter,
   SHARE_BASE_URL,
   TOP_ERRORS_DISPLAY_COUNT,
 } from "@react-doctor/core";
+import { CI_TRUST_COMPANIES } from "./constants.js";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 import { buildSectionDivider } from "./build-section-divider.js";
 import { colorizeByScore } from "./colorize-by-score.js";
@@ -49,6 +51,21 @@ export const printFooter = (input: PrintFooterInput): Effect.Effect<void> =>
   Effect.gen(function* () {
     yield* Console.log("");
     yield* Console.log(buildSectionDivider());
+    yield* Console.log("");
+    // CI leads the footer because it's the highest-leverage action a user can
+    // take after reading the report — set it up once and React Doctor runs on
+    // every PR forever. The pitch matches the other footer items' shape
+    // (bold label : URL + one dim description line) so the report stays
+    // visually consistent, while the description carries the "why": new PRs
+    // stay clean while existing issues get chipped away, and there's social
+    // proof from teams already running it. The post-scan agent handoff that
+    // appears below this footer references the same `Add to CI (recommended)`
+    // choice, so reading the footer makes the prompt's recommendation legible.
+    yield* Console.log(`  ${highlighter.bold("CI:")} ${highlighter.info(CI_URL)}`);
+    yield* Console.log(
+      highlighter.dim("  Scan every pull request — new PRs stay clean while you fix the backlog"),
+    );
+    yield* Console.log(highlighter.dim(`  Used by teams at ${CI_TRUST_COMPANIES}`));
     yield* Console.log("");
     if (!input.isOffline) {
       const shareUrl = buildShareUrl(input.diagnostics, input.scoreResult, input.projectName);
