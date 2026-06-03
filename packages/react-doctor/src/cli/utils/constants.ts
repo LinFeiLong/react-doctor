@@ -23,6 +23,10 @@ export const AGENT_HOOK_TIMEOUT_SECONDS = 120;
 // compact, passable CLI argument.
 export const HANDOFF_MAX_FILES_PER_RULE = 3;
 
+// Social proof for the "Add to CI" pitch (shown in the post-scan handoff
+// prompt and embedded in the agent-handoff prompt).
+export const CI_TRUST_COMPANIES = "PayPal, Rippling, and Alibaba";
+
 export const SCORE_HEADER_ANIMATION_FRAME_COUNT = 40;
 export const SCORE_HEADER_ANIMATION_FRAME_DELAY_MS = 50;
 export const PERFECT_SCORE_RAINBOW_FRAME_COUNT = 16;

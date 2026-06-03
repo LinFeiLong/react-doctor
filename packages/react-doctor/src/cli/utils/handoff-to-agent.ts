@@ -1,12 +1,16 @@
 import { getSkillAgentConfig } from "agent-install";
 import type { Diagnostic } from "@react-doctor/core";
-import { highlighter } from "@react-doctor/core";
+import { CI_URL, highlighter } from "@react-doctor/core";
 import { buildHandoffPayload } from "./build-handoff-payload.js";
 import { cliLogger as logger } from "./cli-logger.js";
 import { detectAvailableAgents } from "./detect-agents.js";
+import { findNearestPackageDirectory } from "./install-doctor-script.js";
+import { installReactDoctorPackageSetup } from "./install-react-doctor.js";
+import { installReactDoctorWorkflow } from "./install-github-workflow.js";
+import { reportWorkflowResult } from "./report-workflow-result.js";
 import { installReactDoctorSkillForAgent } from "./install-skill-for-agent.js";
 import { isCommandAvailable } from "./is-command-available.js";
-import { METRIC } from "./constants.js";
+import { CI_TRUST_COMPANIES, METRIC } from "./constants.js";
 import { recordCount } from "./record-metric.js";
 import {
   CLI_AGENT_BINARIES,
@@ -24,6 +28,7 @@ export interface HandoffToAgentInput {
   readonly interactive: boolean;
 }
 
+const CI_CHOICE = "ci";
 const CLIPBOARD_CHOICE = "clipboard";
 const SKIP_CHOICE = "skip";
 
@@ -32,6 +37,39 @@ const printPayload = (payload: string): void => {
   logger.log(highlighter.dim("──── Agent prompt ────"));
   logger.log(payload);
   logger.log(highlighter.dim("──────────────────────"));
+};
+
+// Sets React Doctor up to scan every pull request: installs the dev
+// dependency + `doctor` script and writes the GitHub Actions workflow, then
+// pitches the value + links the guide. Resolves the nearest package root first
+// (mirroring `install`) so a nested scan directory doesn't drop the workflow in
+// the wrong place. `installReactDoctorPackageSetup` throws on a read-only /
+// permission-denied FS, so it's guarded: a failed CI setup must never crash a
+// scan that already succeeded.
+const setUpCi = async (rootDirectory: string): Promise<void> => {
+  const projectRoot = findNearestPackageDirectory(rootDirectory) ?? rootDirectory;
+  try {
+    await installReactDoctorPackageSetup(projectRoot);
+  } catch {}
+
+  const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
+  const workflowResult = installReactDoctorWorkflow(projectRoot);
+  reportWorkflowResult(workflowSpinner, workflowResult, projectRoot);
+
+  logger.break();
+  if (workflowResult.status === "failed") {
+    logger.log(
+      `Couldn't set up CI automatically. Add React Doctor to your pull requests with the guide: ${highlighter.dim(CI_URL)}`,
+    );
+    return;
+  }
+  logger.log(
+    `React Doctor scans every pull request in CI, used by teams at ${CI_TRUST_COMPANIES}.`,
+  );
+  logger.log(
+    "You don't have to fix everything now: new PRs stay clean while you chip away at the backlog over time.",
+  );
+  logger.log(`Learn more: ${highlighter.dim(CI_URL)}`);
 };
 
 // CLI agents we can launch: detected as installed by `agent-install`
@@ -60,8 +98,13 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
     {
       type: "select",
       name: "handoffTarget",
-      message: "Would you like to spawn an agent to fix these issues?",
+      message: "What would you like to do next?",
       choices: [
+        {
+          title: "Add to CI",
+          description: `Scan every PR, used by ${CI_TRUST_COMPANIES}`,
+          value: CI_CHOICE,
+        },
         ...launchableAgents.map((agentId) => ({
           title: getSkillAgentConfig(agentId).displayName,
           description: `Open ${CLI_AGENT_BINARIES[agentId]} here with the top issues as a prompt`,
@@ -79,10 +122,11 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
     { onCancel: () => true },
   );
 
-  // Count the fix-loop outcome (the core activation moment): did the user launch
-  // an agent (any agent id), copy the prompt, or skip/cancel?
+  // Count the fix-loop outcome (the core activation moment): did the user set up
+  // CI, launch an agent (any agent id), copy the prompt, or skip/cancel?
   let handoffOutcome = "launch";
   if (handoffTarget === undefined) handoffOutcome = "cancel";
+  else if (handoffTarget === CI_CHOICE) handoffOutcome = "ci";
   else if (handoffTarget === SKIP_CHOICE) handoffOutcome = "skip";
   else if (handoffTarget === CLIPBOARD_CHOICE) handoffOutcome = "clipboard";
   recordCount(METRIC.agentHandoff, 1, {
@@ -93,6 +137,11 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
 
   // Cancel (Esc / Ctrl-C) or "Skip" exits without writing the prompt/files.
   if (handoffTarget === undefined || handoffTarget === SKIP_CHOICE) return;
+
+  if (handoffTarget === CI_CHOICE) {
+    await setUpCi(input.rootDirectory);
+    return;
+  }
 
   const payload = buildHandoffPayload({
     diagnostics: input.diagnostics,
