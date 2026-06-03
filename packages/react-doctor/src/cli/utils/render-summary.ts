@@ -52,21 +52,6 @@ export const printFooter = (input: PrintFooterInput): Effect.Effect<void> =>
     yield* Console.log("");
     yield* Console.log(buildSectionDivider());
     yield* Console.log("");
-    // CI leads the footer because it's the highest-leverage action a user can
-    // take after reading the report — set it up once and React Doctor runs on
-    // every PR forever. The pitch matches the other footer items' shape
-    // (bold label : URL + one dim description line) so the report stays
-    // visually consistent, while the description carries the "why": new PRs
-    // stay clean while existing issues get chipped away, and there's social
-    // proof from teams already running it. The post-scan agent handoff that
-    // appears below this footer references the same `Add to CI (recommended)`
-    // choice, so reading the footer makes the prompt's recommendation legible.
-    yield* Console.log(`  ${highlighter.bold("CI:")} ${highlighter.info(CI_URL)}`);
-    yield* Console.log(
-      highlighter.dim("  Scan every pull request — new PRs stay clean while you fix the backlog"),
-    );
-    yield* Console.log(highlighter.dim(`  Used by teams at ${CI_TRUST_COMPANIES}`));
-    yield* Console.log("");
     if (!input.isOffline) {
       const shareUrl = buildShareUrl(input.diagnostics, input.scoreResult, input.projectName);
       yield* Console.log(`  ${highlighter.bold("Share:")} ${highlighter.info(shareUrl)}`);
@@ -84,6 +69,22 @@ export const printFooter = (input: PrintFooterInput): Effect.Effect<void> =>
       `  ${highlighter.bold("GitHub:")} ${highlighter.info(CANONICAL_GITHUB_URL)}`,
     );
     yield* Console.log(highlighter.dim("  Report issues and star the repository!"));
+    yield* Console.log("");
+    // CI closes the footer because it's the highest-leverage action a user can
+    // take after reading the report — set it up once and React Doctor runs on
+    // every PR forever — and sitting last in the footer makes it the final
+    // thing they read before the handoff prompt that follows (recency wins
+    // over primacy here, since the prompt itself references the same
+    // recommendation). The pitch matches the other footer items' shape (bold
+    // label : URL + dim description) while carrying the "why" in two lines:
+    // incremental backlog rollout, then social proof from teams already
+    // running it. The two-line split keeps each description under
+    // `OUTPUT_DETAIL_WRAP_WIDTH_CHARS` (88) so neither soft-wraps at 100c.
+    yield* Console.log(`  ${highlighter.bold("CI:")} ${highlighter.info(CI_URL)}`);
+    yield* Console.log(
+      highlighter.dim("  Scan every pull request — new PRs stay clean while you fix the backlog"),
+    );
+    yield* Console.log(highlighter.dim(`  Used by teams at ${CI_TRUST_COMPANIES}`));
   });
 
 export interface PrintSummaryInput {
