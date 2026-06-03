@@ -102,13 +102,11 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
 
   logger.break();
 
-  // The scan-report footer already pitched GitHub Actions (`GitHub Actions:
-  // https://react.doctor/ci` with the social-proof + backlog framing). Here
-  // we just gate the choice's title-state tag on whether the workflow is
-  // already in place: `(recommended)` when missing, `(already configured)`
-  // when present. Keeping the state in the title (where `(recommended)` also
-  // lives) lets the description always describe what picking the option does,
-  // not the project's current state.
+  // Drop the "Add to GitHub Actions" choice entirely when the workflow file
+  // is already present: picking it would be a no-op, and listing an option
+  // whose only outcome is "✔ GitHub Actions workflow already configured" is
+  // clutter. The scan-report footer's `GitHub Actions:` entry still appears
+  // for those users as an informational link to the docs + social proof.
   const projectRootForCi = findNearestPackageDirectory(input.rootDirectory) ?? input.rootDirectory;
   const isGitHubActionsConfigured = isReactDoctorWorkflowInstalled(projectRootForCi);
 
@@ -119,13 +117,15 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
       name: "handoffTarget",
       message: "What would you like to do next?",
       choices: [
-        {
-          title: isGitHubActionsConfigured
-            ? "Add to GitHub Actions (already configured)"
-            : "Add to GitHub Actions (recommended)",
-          description: "Set up the workflow file + the doctor package script",
-          value: CI_CHOICE,
-        },
+        ...(isGitHubActionsConfigured
+          ? []
+          : [
+              {
+                title: "Add to GitHub Actions (recommended)",
+                description: "Set up the workflow file + the doctor package script",
+                value: CI_CHOICE,
+              },
+            ]),
         ...launchableAgents.map((agentId) => ({
           title: getSkillAgentConfig(agentId).displayName,
           description: `Open ${CLI_AGENT_BINARIES[agentId]} here with the top issues as a prompt`,
