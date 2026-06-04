@@ -147,10 +147,8 @@ runs:
         # running a diff scan despite the user asking for a full one.
         SCOPE="$(printf '%s' "$INPUT_SCOPE" | tr '[:upper:]' '[:lower:]')"
         if [ "$SCOPE" = "full" ]; then
-          # `--diff false` forces a full-project scan: it disables baseline/diff
-          # mode and overrides any `diff` value in the project's config. The
-          # pr-files step is skipped under this scope, so no --changed-files-from
-          # competes with it.
+          # `--diff false` scans the whole project. It turns off diff mode and
+          # ignores any `diff` value set in the project's config.
           FLAGS+=("--diff" "false")
         elif [ -n "$CHANGED_FILES_FROM" ]; then
           FLAGS+=("--changed-files-from" "$CHANGED_FILES_FROM")
