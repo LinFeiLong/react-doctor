@@ -11,6 +11,9 @@ inputs:
   project:
     description: 'Workspace project(s) to scan (comma-separated). Use "*" to scan every discovered project.'
     default: "*"
+  scope:
+    description: "On pull requests, what to scan: 'changed' (only files changed in the PR, the default baseline/diff behavior) or 'full' (the entire project, reporting every finding). Non-PR events always scan the full project."
+    default: "changed"
   blocking:
     description: "Severity that fails the workflow: error (default), warning, or none (advisory — report findings but always exit 0)."
     default: "error"
@@ -56,7 +59,7 @@ runs:
         package-manager-cache: false
 
     - id: pr-files
-      if: ${{ github.event_name == 'pull_request' }}
+      if: ${{ github.event_name == 'pull_request' && inputs.scope != 'full' }}
       uses: actions/github-script@v8
       env:
         REACT_DOCTOR_CHANGED_FILES: ${{ runner.temp }}/react-doctor-changed-files.txt
@@ -89,7 +92,7 @@ runs:
           core.setOutput("path", outputPath);
 
     - id: base
-      if: ${{ github.event_name == 'pull_request' }}
+      if: ${{ github.event_name == 'pull_request' && inputs.scope != 'full' }}
       shell: bash
       env:
         INPUT_DIRECTORY: ${{ inputs.directory }}
@@ -111,6 +114,7 @@ runs:
         NO_COLOR: "1"
         INPUT_DIRECTORY: ${{ inputs.directory }}
         INPUT_PROJECT: ${{ inputs.project }}
+        INPUT_SCOPE: ${{ inputs.scope }}
         INPUT_BLOCKING: ${{ inputs.blocking }}
         INPUT_VERSION: ${{ inputs.version }}
         CHANGED_FILES_FROM: ${{ steps.pr-files.outputs.path }}
@@ -135,7 +139,20 @@ runs:
         FLAGS=("--json" "--json-compact")
         if [ -n "$INPUT_BLOCKING" ]; then FLAGS+=("--blocking" "$INPUT_BLOCKING"); fi
         if [ -n "$INPUT_PROJECT" ]; then FLAGS+=("--project" "$INPUT_PROJECT"); fi
-        if [ -n "$CHANGED_FILES_FROM" ]; then FLAGS+=("--changed-files-from" "$CHANGED_FILES_FROM"); fi
+
+        # Lowercase the scope so this bash test matches the case-insensitive
+        # comparison the pr-files/base steps' `inputs.scope != 'full'`
+        # expressions use. Without this, `scope: Full` would skip those steps
+        # (GHA matches) yet fall through to changed-files here (bash wouldn't),
+        # running a diff scan despite the user asking for a full one.
+        SCOPE="$(printf '%s' "$INPUT_SCOPE" | tr '[:upper:]' '[:lower:]')"
+        if [ "$SCOPE" = "full" ]; then
+          # `--diff false` scans the whole project. It turns off diff mode and
+          # ignores any `diff` value set in the project's config.
+          FLAGS+=("--diff" "false")
+        elif [ -n "$CHANGED_FILES_FROM" ]; then
+          FLAGS+=("--changed-files-from" "$CHANGED_FILES_FROM")
+        fi
 
         if [[ "$INPUT_VERSION" = ./* || "$INPUT_VERSION" = ../* || "$INPUT_VERSION" = /* ]]; then
           PACKAGE_SPEC="$INPUT_VERSION"
