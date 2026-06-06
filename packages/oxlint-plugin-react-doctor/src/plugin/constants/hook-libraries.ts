@@ -63,7 +63,7 @@ export const HOOK_LIBRARY_MAP: ReadonlyMap<string, HookLibraryAvailability> =
     ["useLocalStorage", { reactUse: true, usehooksTs: true }],
     ["useSessionStorage", { reactUse: true, usehooksTs: true }],
     ["useReadLocalStorage", { reactUse: false, usehooksTs: true }],
-    ["useCookie", { reactUse: true, usehooksTs: false }],
+    // ["useCookie", { reactUse: true, usehooksTs: false }], // not needed (human decided)
 
     // Lifecycle helpers
     ["useMount", { reactUse: true, usehooksTs: false }],
@@ -83,7 +83,7 @@ export const HOOK_LIBRARY_MAP: ReadonlyMap<string, HookLibraryAvailability> =
     ["useFirstMountState", { reactUse: true, usehooksTs: false }],
     ["useIsFirstRender", { reactUse: false, usehooksTs: true }],
     ["useIsClient", { reactUse: false, usehooksTs: true }],
-    ["useSsr", { reactUse: false, usehooksTs: true }],
+    // ["useSsr", { reactUse: false, usehooksTs: true }], // not needed (human decided)
 
     // Previous / latest value
     ["usePrevious", { reactUse: true, usehooksTs: false }],
