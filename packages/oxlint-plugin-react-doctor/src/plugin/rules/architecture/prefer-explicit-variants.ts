@@ -4,6 +4,7 @@ import { isBooleanPrefixedPropName } from "../../utils/is-boolean-prefixed-prop-
 import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isComponentDeclaration } from "../../utils/is-component-declaration.js";
 import { isInlineFunctionExpression } from "../../utils/is-inline-function-expression.js";
+import { isJsxElementOrFragment } from "../../utils/is-jsx-element-or-fragment.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import { walkAst } from "../../utils/walk-ast.js";
@@ -11,15 +12,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
-
-// Strips parens / TS wrappers first: Prettier wraps multi-line JSX ternary
-// arms in parentheses (`cond ? (<A />) : (<B />)`), which the parser surfaces
-// as a `ParenthesizedExpression` wrapping the JSXElement.
-const isJsxElementOrFragment = (node: EsTreeNode | null | undefined): boolean => {
-  if (!node) return false;
-  const inner = stripParenExpression(node);
-  return isNodeOfType(inner, "JSXElement") || isNodeOfType(inner, "JSXFragment");
-};
 
 // Resolve a ternary `test` to the local binding name when it is a bare
 // boolean prop (`isEditing ? …`) or its negation (`!isEditing ? …`), and
@@ -125,10 +117,12 @@ const collectVariantBranchProps = (
     const propName = resolveBooleanPropTestName(current.test, booleanPropBindings);
     if (!propName) return;
     // Both arms must be JSX: a two-sided component swap, not a visibility
-    // toggle (`isOpen ? <Panel /> : null`) or a value pick.
-    if (!isJsxElementOrFragment(current.consequent) || !isJsxElementOrFragment(current.alternate)) {
-      return;
-    }
+    // toggle (`isOpen ? <Panel /> : null`) or a value pick. Strip parens
+    // first — Prettier wraps multi-line ternary arms in parentheses, which
+    // the parser surfaces as a `ParenthesizedExpression` around the JSX.
+    const consequent = stripParenExpression(current.consequent);
+    const alternate = stripParenExpression(current.alternate);
+    if (!isJsxElementOrFragment(consequent) || !isJsxElementOrFragment(alternate)) return;
     variantBranchProps.add(propName);
   });
   return variantBranchProps;
