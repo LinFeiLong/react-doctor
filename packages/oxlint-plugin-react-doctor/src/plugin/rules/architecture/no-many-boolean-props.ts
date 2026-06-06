@@ -1,5 +1,6 @@
 import { BOOLEAN_PROP_THRESHOLD } from "../../constants/thresholds.js";
 import { defineRule } from "../../utils/define-rule.js";
+import { isBooleanPrefixedPropName } from "../../utils/is-boolean-prefixed-prop-name.js";
 import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isComponentDeclaration } from "../../utils/is-component-declaration.js";
 import { isInlineFunctionExpression } from "../../utils/is-inline-function-expression.js";
@@ -9,8 +10,6 @@ import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-
-const BOOLEAN_PROP_PREFIX_PATTERN = /^(?:is|has|should|can|show|hide|enable|disable|with)[A-Z]/;
 
 const collectBooleanLikePropsFromBody = (
   componentBody: EsTreeNode | undefined,
@@ -24,7 +23,7 @@ const collectBooleanLikePropsFromBody = (
     if (!isNodeOfType(child.object, "Identifier")) return;
     if (child.object.name !== propsParamName) return;
     if (!isNodeOfType(child.property, "Identifier")) return;
-    if (!BOOLEAN_PROP_PREFIX_PATTERN.test(child.property.name)) return;
+    if (!isBooleanPrefixedPropName(child.property.name)) return;
     found.add(child.property.name);
   });
   return found;
@@ -72,7 +71,7 @@ export const noManyBooleanProps = defineRule<Rule>({
           if (!isNodeOfType(property, "Property")) continue;
           const keyName = isNodeOfType(property.key, "Identifier") ? property.key.name : null;
           if (!keyName) continue;
-          if (BOOLEAN_PROP_PREFIX_PATTERN.test(keyName)) {
+          if (isBooleanPrefixedPropName(keyName)) {
             booleanLikePropNames.push(keyName);
           }
         }
