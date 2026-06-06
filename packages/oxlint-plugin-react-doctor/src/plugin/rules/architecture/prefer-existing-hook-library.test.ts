@@ -316,6 +316,30 @@ describe("prefer-existing-hook-library", () => {
       expect(result.diagnostics).toEqual([]);
     });
 
+    // Regression: `useDarkMode` is intentionally NOT in HOOK_LIBRARY_MAP.
+    // The name is overloaded in the wild — most codebases ship a void
+    // DOM-effect hook (tldraw / shadcn-style design systems), which is
+    // semantically incompatible with usehooks-ts's `{ isDarkMode, toggle, … }`
+    // state hook. Keeping it out keeps the FP rate down. Don't add it back
+    // without first checking the v2 mitigations in `hook-libraries.ts`.
+    it("does not flag a `useDarkMode` hook (intentionally excluded from map)", () => {
+      const result = runRule(
+        preferExistingHookLibrary,
+        `
+        import { useEffect } from "react";
+
+        export function useDarkMode() {
+          const colorMode = useColorMode();
+          useEffect(() => {
+            document.documentElement.classList.toggle("dark", colorMode === "dark");
+          }, [colorMode]);
+        }
+        `
+      );
+
+      expect(result.diagnostics).toEqual([]);
+    });
+
     it("does not flag a PascalCase same-name binding", () => {
       const result = runRule(
         preferExistingHookLibrary,

@@ -37,6 +37,14 @@ export interface HookLibraryAvailability {
 // HACK: `useEventCallback` is omitted — both React-experimental and
 // usehooks-ts use the name with different semantics. We don't want to
 // recommend a swap on a hook that may be the React-native one.
+//
+// HACK: `useDarkMode` is omitted — the name is overloaded in the wild. The
+// usehooks-ts version returns `{ isDarkMode, toggle, enable, disable, set }`,
+// but most codebases that ship a `useDarkMode` hook use it as a void
+// DOM-side-effect hook that applies theme classes (observed in tldraw,
+// shadcn-style design systems, …). Same name, incompatible API → high FP
+// rate. Users who do want the toggle version typically already import it
+// directly from usehooks-ts.
 export const HOOK_LIBRARY_MAP: ReadonlyMap<string, HookLibraryAvailability> =
   new Map([
     // Side-effects / timing
@@ -165,7 +173,6 @@ export const HOOK_LIBRARY_MAP: ReadonlyMap<string, HookLibraryAvailability> =
     ["useTitle", { reactUse: true, usehooksTs: false }],
     ["useDocumentTitle", { reactUse: false, usehooksTs: true }],
     ["useFavicon", { reactUse: true, usehooksTs: false }],
-    ["useDarkMode", { reactUse: false, usehooksTs: true }],
     ["useTernaryDarkMode", { reactUse: false, usehooksTs: true }],
 
     // Clipboard / loading / scripts
