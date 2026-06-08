@@ -426,10 +426,8 @@ describe("non-verbose overflow summary line", () => {
   });
 });
 
-// Regression for issue #690: unused-dependency warnings all report at the
-// same line-less location (`package.json:0`), so the dim location header
-// collapsed every finding into one line and dropped every package name. The
-// verbose warning tail must instead enumerate each name.
+// Regression for #690: unused deps all report at `package.json:0`, so the
+// shared location used to collapse them and drop every name.
 describe("verbose warning tail names every collapsed-location site", () => {
   const dependencyDirectory = path.join(tempRoot, "unused-deps");
 
@@ -460,9 +458,7 @@ describe("verbose warning tail names every collapsed-location site", () => {
       makeDependencyDiagnostic("vitest", true),
     ]);
 
-    // The shared, line-less location still anchors the block.
     expect(text).toContain("package.json");
-    // Every name survives the grouping (the bug collapsed them to one line).
     for (const name of [...names, "vitest"]) {
       expect(text, name).toContain(name);
     }
@@ -474,8 +470,6 @@ describe("verbose warning tail names every collapsed-location site", () => {
   });
 
   it("does not enumerate per-site messages for distinct navigable locations", async () => {
-    // Unused exports carry real `file:line` locations, so they stay on the
-    // compact location-only listing — no behavior change for them.
     const unusedExport = (name: string, line: number): Diagnostic =>
       ({
         filePath: "src/index.ts",

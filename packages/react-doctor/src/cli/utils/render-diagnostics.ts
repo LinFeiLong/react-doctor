@@ -204,14 +204,8 @@ const TOP_ERROR_DETAIL_INDENT = "    ";
 const pickRepresentativeDiagnostic = (ruleDiagnostics: Diagnostic[]): Diagnostic =>
   ruleDiagnostics.find((diagnostic) => diagnostic.line > 0) ?? ruleDiagnostics[0];
 
-// True when every site in a rule group reports at the same line-less
-// location, so the dim location header can't tell them apart — e.g. every
-// unused dependency lands on `package.json` with no line, collapsing N
-// findings into one location line. The per-site message is then the only
-// place each finding's name appears, so the block lists every distinct
-// message (see `buildRuleDetailBlock`) instead of just the representative.
-// Rules whose sites carry distinct or navigable locations (unused files,
-// exports) fail this check and keep the single per-rule impact line.
+// True when a rule's sites all share one line-less location (e.g. every unused
+// dependency reports at `package.json:0`), so only their messages tell them apart.
 const hasIndistinctSiteLocations = (ruleDiagnostics: Diagnostic[]): boolean => {
   const firstDiagnostic = ruleDiagnostics[0];
   if (firstDiagnostic === undefined) return false;
@@ -359,13 +353,8 @@ const buildRuleDetailBlock = (
     }
   }
 
-  // The description is the load-bearing "what and why" prose, shown once per
-  // rule (not per site) so users keep the impact explanation when they ask
-  // for every location. A warning group whose sites all collapse to one
-  // line-less location (every unused dependency reports at `package.json`)
-  // is the exception: the shared location header below can't tell the sites
-  // apart, so each finding's name lives only in its message — list every
-  // distinct message here so no name is lost to the grouping (#690).
+  // Impact prose, once per rule — except a warning group collapsed to one
+  // line-less location lists every distinct message so each name shows (#690).
   const impactMessages =
     severity === "warning" && hasIndistinctSiteLocations(ruleDiagnostics)
       ? [...new Set(ruleDiagnostics.map((diagnostic) => diagnostic.message))]
