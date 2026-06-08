@@ -201,21 +201,17 @@ const printCategoryCountUp = (tallies: ReadonlyArray<CategoryTally>): Effect.Eff
 
 const TOP_ERROR_DETAIL_INDENT = "    ";
 
-// One level deeper than the location line, so each enumerated warning
-// message nests visibly under its shared location header.
-const SITE_MESSAGE_INDENT = `${TOP_ERROR_DETAIL_INDENT}  `;
-
 const pickRepresentativeDiagnostic = (ruleDiagnostics: Diagnostic[]): Diagnostic =>
   ruleDiagnostics.find((diagnostic) => diagnostic.line > 0) ?? ruleDiagnostics[0];
 
 // True when every site in a rule group reports at the same line-less
 // location, so the dim location header can't tell them apart — e.g. every
 // unused dependency lands on `package.json` with no line, collapsing N
-// findings into one location line. Such a group's per-site messages carry
-// the only distinguishing detail (the package name), so they're enumerated
-// in place of the code frame warnings never get. Rules whose sites carry
-// distinct or navigable locations (unused files, exports) fail this check
-// and keep the compact location-only listing.
+// findings into one location line. The per-site message is then the only
+// place each finding's name appears, so the block lists every distinct
+// message (see `buildRuleDetailBlock`) instead of just the representative.
+// Rules whose sites carry distinct or navigable locations (unused files,
+// exports) fail this check and keep the single per-rule impact line.
 const hasIndistinctSiteLocations = (ruleDiagnostics: Diagnostic[]): boolean => {
   const firstDiagnostic = ruleDiagnostics[0];
   if (firstDiagnostic === undefined) return false;
@@ -296,10 +292,6 @@ const buildDiagnosticClusterLines = (
   cluster: DiagnosticCluster,
   resolveSourceRoot: SourceRootResolver,
   renderCodeFrame: boolean,
-  // When true, list every site's message under the location instead of
-  // letting the sites collapse to a single header — used for warning groups
-  // whose sites share one line-less location (see `hasIndistinctSiteLocations`).
-  enumerateSiteMessages: boolean,
 ): ReadonlyArray<string> => {
   const lead = cluster.diagnostics[0]!;
   const isMultiSite = cluster.diagnostics.length > 1;
@@ -321,18 +313,6 @@ const buildDiagnosticClusterLines = (
       TOP_ERROR_DETAIL_INDENT.length + BOX_BORDER_WIDTH_CHARS,
     );
     lines.push(indentMultilineText(boxText(codeFrame, boxInnerWidth), TOP_ERROR_DETAIL_INDENT));
-  }
-  if (enumerateSiteMessages) {
-    const seenMessages = new Set<string>();
-    for (const diagnostic of cluster.diagnostics) {
-      if (seenMessages.has(diagnostic.message)) continue;
-      seenMessages.add(diagnostic.message);
-      for (const messageLine of wrapTextToWidth(diagnostic.message, OUTPUT_MEASURE_WIDTH_CHARS, {
-        breakLongWords: false,
-      })) {
-        lines.push(`${SITE_MESSAGE_INDENT}${messageLine}`);
-      }
-    }
   }
   const seenHints = new Set<string>();
   for (const diagnostic of cluster.diagnostics) {
@@ -379,15 +359,25 @@ const buildRuleDetailBlock = (
     }
   }
 
-  // The description is the load-bearing "what and why" prose. Verbose still
-  // prints it once per rule (not per site), so users do not lose the impact
-  // explanation when they ask for every location.
-  for (const explanationLine of wrapTextToWidth(
-    representative.message,
-    resolveMeasureWidth(TOP_ERROR_DETAIL_INDENT.length),
-    { breakLongWords: false },
-  )) {
-    lines.push(`${TOP_ERROR_DETAIL_INDENT}${explanationLine}`);
+  // The description is the load-bearing "what and why" prose, shown once per
+  // rule (not per site) so users keep the impact explanation when they ask
+  // for every location. A warning group whose sites all collapse to one
+  // line-less location (every unused dependency reports at `package.json`)
+  // is the exception: the shared location header below can't tell the sites
+  // apart, so each finding's name lives only in its message — list every
+  // distinct message here so no name is lost to the grouping (#690).
+  const impactMessages =
+    severity === "warning" && hasIndistinctSiteLocations(ruleDiagnostics)
+      ? [...new Set(ruleDiagnostics.map((diagnostic) => diagnostic.message))]
+      : [representative.message];
+  for (const impactMessage of impactMessages) {
+    for (const explanationLine of wrapTextToWidth(
+      impactMessage,
+      resolveMeasureWidth(TOP_ERROR_DETAIL_INDENT.length),
+      { breakLongWords: false },
+    )) {
+      lines.push(`${TOP_ERROR_DETAIL_INDENT}${explanationLine}`);
+    }
   }
 
   // The fix/recommendation, wrapped under the impact (a full sentence is
@@ -415,23 +405,9 @@ const buildRuleDetailBlock = (
   // drown the report. Warnings keep their `file:line` locations so they're
   // still navigable, just without the inline source preview.
   const renderCodeFrame = severity === "error";
-  // A warning group whose sites all collapse to one line-less location
-  // (every unused dependency reports at `package.json`) would otherwise lose
-  // each finding's name to the shared header — enumerate the per-site
-  // messages so each name survives. Verbose only: the default surface shows
-  // no warning detail block at all.
-  const enumerateSiteMessages =
-    renderEverySite && severity === "warning" && hasIndistinctSiteLocations(ruleDiagnostics);
   const sites = renderEverySite ? ruleDiagnostics : [representative];
   for (const cluster of clusterNearbyDiagnostics(sites)) {
-    lines.push(
-      ...buildDiagnosticClusterLines(
-        cluster,
-        resolveSourceRoot,
-        renderCodeFrame,
-        enumerateSiteMessages,
-      ),
-    );
+    lines.push(...buildDiagnosticClusterLines(cluster, resolveSourceRoot, renderCodeFrame));
   }
 
   return lines;
