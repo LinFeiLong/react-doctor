@@ -1,156 +1,196 @@
-import type { ScannedIssue } from "./types";
+import type { CheckItem, ChecksTiming } from "./types";
 
 export const VIDEO_WIDTH_PX = 1920;
 export const VIDEO_HEIGHT_PX = 1080;
 export const VIDEO_FPS = 30;
 
-export const BACKGROUND_COLOR = "#0a0a0a";
-export const TEXT_COLOR = "#d4d4d8";
-export const MUTED_COLOR = "#737373";
-export const RED_COLOR = "#f87171";
-export const GREEN_COLOR = "#4ade80";
-export const YELLOW_COLOR = "#eab308";
+export const GH_BACKGROUND_COLOR = "#010409";
+export const GH_CANVAS_COLOR = "#0d1117";
+export const GH_HEADER_BG_COLOR = "#161b22";
+export const GH_BORDER_COLOR = "#30363d";
+export const GH_TEXT_COLOR = "#e6edf3";
+export const GH_MUTED_COLOR = "#8b949e";
+export const GH_LINK_COLOR = "#4493f8";
+export const GH_SUCCESS_GREEN_COLOR = "#238636";
+export const GH_SUCCESS_RING_COLOR = "#3fb950";
+export const GH_PENDING_AMBER_COLOR = "#d29922";
+export const GH_CHECK_MARK_COLOR = "#ffffff";
 
-export const BUTTON_GREEN_COLOR = "#1F883D";
-export const BUTTON_BORDER_COLOR = "#1F232826";
-export const BUTTON_TEXT_COLOR = "#ffffff";
-export const BUTTON_FONT_FAMILY = "'Mona Sans', system-ui, sans-serif";
-export const BUTTON_SHADOW = "#1F23280A 0px 6px 6px, #1F232808 0px 6px 12px";
+export const GH_FONT_FAMILY =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
 
-export const ERROR_ROW_BACKGROUND_COLOR = "rgba(127, 29, 29, 0.28)";
-export const ERROR_BADGE_BACKGROUND_COLOR = "#dc2626";
-export const ERROR_BADGE_TEXT_COLOR = "#fafafa";
-export const WARNING_BADGE_BACKGROUND_COLOR = "#a16207";
+export const PR_NUMBER = "#726";
+export const PR_BADGE_TEXT_COLOR = "#3fb950";
+export const PR_BADGE_BG_COLOR = "#21262d";
+export const PR_BADGE_ICON_SIZE_PX = 40;
+export const PR_BADGE_FONT_SIZE_PX = 42;
 
-export const FILE_ROW_HORIZONTAL_PADDING_PX = 24;
-export const FILE_ROW_VERTICAL_PADDING_PX = 4;
-export const FILE_ROW_GAP_PX = 24;
-export const LINE_NUMBER_COLUMN_WIDTH_PX = 90;
-export const SEVERITY_BADGE_SIZE_PX = 44;
-export const SEVERITY_BADGE_RADIUS_PX = 6;
-export const POINTS_LOST_COLUMN_WIDTH_PX = 140;
-export const OVERLAY_GRADIENT_RGB = "10, 10, 10";
-export const OVERLAY_GRADIENT_HEIGHT_PX = 400;
-export const OVERLAY_GRADIENT_HORIZONTAL_PADDING_PX = 120;
-export const OVERLAY_GRADIENT_BOTTOM_PADDING_PX = 80;
-export const OVERLAY_GRADIENT_BOTTOM_ALPHA = 0.96;
-export const OVERLAY_GRADIENT_MIDDLE_ALPHA = 0.85;
-export const OVERLAY_GRADIENT_MIDDLE_STOP_PERCENT = 50;
-
-export const REACT_DOCTOR_URL = "react.doctor/ci";
-
-export const FILE_SCAN_FONT_SIZE_PX = 48;
-export const FRAMES_PER_FILE = 2;
-export const FILE_SCAN_INITIAL_DELAY_FRAMES = 5;
-export const FILE_SCAN_VISIBLE_ROWS = 14;
-export const SCANNED_ISSUES: ScannedIssue[] = [
-  { message: "Fix crash from unwrapped text", severity: "error", pointsLost: 5, file: "ProductCard.tsx:31" },
-  { message: "Fix slow list scrolling", severity: "warning", pointsLost: 2, file: "SearchResults.tsx:18" },
-  { message: "Fix janky animation", severity: "warning", pointsLost: 2, file: "SplashScreen.tsx:24" },
-  { message: "Fix crash from rendering 0", severity: "error", pointsLost: 5, file: "CartScreen.tsx:47" },
-  { message: "Fix slow list rendering", severity: "warning", pointsLost: 2, file: "InboxScreen.tsx:52" },
-  { message: "Fix missing shadow", severity: "warning", pointsLost: 2, file: "ProductCard.tsx:9" },
-  { message: "Fix laggy scrolling", severity: "error", pointsLost: 5, file: "FeedScreen.tsx:63" },
-  { message: "Fix outdated button", severity: "warning", pointsLost: 2, file: "Button.tsx:14" },
-  { message: "Fix slow list updates", severity: "warning", pointsLost: 2, file: "HomeScreen.tsx:71" },
-  { message: "Fix crash from removed module", severity: "error", pointsLost: 5, file: "storage.ts:3" },
-  { message: "Fix slow row rendering", severity: "warning", pointsLost: 2, file: "FeedScreen.tsx:58" },
-  { message: "Fix slow image loading", severity: "warning", pointsLost: 2, file: "Avatar.tsx:11" },
-  { message: "Fix extra layout nesting", severity: "warning", pointsLost: 2, file: "Screen.tsx:6" },
-  { message: "Fix janky animation", severity: "error", pointsLost: 5, file: "Drawer.tsx:88" },
-  { message: "Fix slow scrolling", severity: "warning", pointsLost: 2, file: "Notifications.tsx:33" },
-  { message: "Fix slow list handlers", severity: "warning", pointsLost: 2, file: "ChatScreen.tsx:46" },
-  { message: "Fix outdated dependency", severity: "warning", pointsLost: 2, file: "package.json:1" },
-  { message: "Fix slow screen load", severity: "warning", pointsLost: 2, file: "IconButton.tsx:27" },
-  { message: "Fix janky press feedback", severity: "warning", pointsLost: 2, file: "LikeButton.tsx:19" },
-  { message: "Fix wasteful styling", severity: "warning", pointsLost: 2, file: "Row.tsx:12" },
-  { message: "Fix broken rotation layout", severity: "warning", pointsLost: 2, file: "useLayout.ts:5" },
-  { message: "Fix broken list rows", severity: "warning", pointsLost: 2, file: "Timeline.tsx:41" },
-  { message: "Fix dead code in list", severity: "warning", pointsLost: 2, file: "ProductList.tsx:22" },
-  { message: "Fix missing shadow", severity: "warning", pointsLost: 2, file: "ModalCard.tsx:17" },
-  { message: "Fix non-native bottom sheet", severity: "warning", pointsLost: 2, file: "BottomSheet.tsx:13" },
-  { message: "Fix non-native navigation", severity: "warning", pointsLost: 2, file: "App.tsx:29" },
-  { message: "Fix stale animation value", severity: "warning", pointsLost: 2, file: "Parallax.tsx:36" },
-  { message: "Fix list layout jump", severity: "warning", pointsLost: 2, file: "ScrollScreen.tsx:21" },
-  { message: "Fix collapsing scroll view", severity: "warning", pointsLost: 2, file: "ScrollScreen.tsx:24" },
-  { message: "Fix crash from unwrapped text", severity: "error", pointsLost: 5, file: "Badge.tsx:8" },
-  { message: "Fix slow list scrolling", severity: "warning", pointsLost: 2, file: "Timeline.tsx:41" },
-  { message: "Fix slow list rendering", severity: "warning", pointsLost: 2, file: "Followers.tsx:30" },
-  { message: "Fix crash from rendering 0", severity: "error", pointsLost: 5, file: "Counter.tsx:15" },
-  { message: "Fix janky animation", severity: "warning", pointsLost: 2, file: "Toast.tsx:22" },
-  { message: "Fix outdated button", severity: "warning", pointsLost: 2, file: "TabBar.tsx:40" },
-  { message: "Fix broken rotation layout", severity: "warning", pointsLost: 2, file: "Carousel.tsx:18" },
-  { message: "Fix slow list updates", severity: "warning", pointsLost: 2, file: "Explore.tsx:44" },
-  { message: "Fix slow row rendering", severity: "warning", pointsLost: 2, file: "Gallery.tsx:27" },
-  { message: "Fix crash from removed module", severity: "error", pointsLost: 5, file: "clipboard.ts:2" },
-  { message: "Fix wasteful styling", severity: "warning", pointsLost: 2, file: "Divider.tsx:7" },
-  { message: "Fix janky press feedback", severity: "warning", pointsLost: 2, file: "Heart.tsx:21" },
-  { message: "Fix dead code in list", severity: "warning", pointsLost: 2, file: "Followers.tsx:30" },
-  { message: "Fix non-native navigation", severity: "warning", pointsLost: 2, file: "RootNavigator.tsx:11" },
-  { message: "Fix janky animation", severity: "error", pointsLost: 5, file: "Accordion.tsx:52" },
-  { message: "Fix missing shadow", severity: "warning", pointsLost: 2, file: "Card.tsx:14" },
-  { message: "Fix slow list handlers", severity: "warning", pointsLost: 2, file: "Comments.tsx:38" },
-  { message: "Fix broken list rows", severity: "warning", pointsLost: 2, file: "Explore.tsx:44" },
-  { message: "Fix laggy scrolling", severity: "error", pointsLost: 5, file: "Header.tsx:34" },
-  { message: "Fix slow screen load", severity: "warning", pointsLost: 2, file: "CloseButton.tsx:16" },
-  { message: "Fix slow image loading", severity: "warning", pointsLost: 2, file: "Poster.tsx:13" },
-  { message: "Fix slow scrolling", severity: "warning", pointsLost: 2, file: "Settings.tsx:48" },
-  { message: "Fix non-native bottom sheet", severity: "warning", pointsLost: 2, file: "FilterSheet.tsx:9" },
-  { message: "Fix stale animation value", severity: "warning", pointsLost: 2, file: "ScrollSync.tsx:25" },
-  { message: "Fix missing shadow", severity: "warning", pointsLost: 2, file: "Sheet.tsx:31" },
-  { message: "Fix crash from rendering 0", severity: "error", pointsLost: 5, file: "Inbox.tsx:19" },
-  { message: "Fix list layout jump", severity: "warning", pointsLost: 2, file: "Feed.tsx:21" },
-  { message: "Fix slow list scrolling", severity: "warning", pointsLost: 2, file: "Mentions.tsx:18" },
-  { message: "Fix outdated button", severity: "warning", pointsLost: 2, file: "ListItem.tsx:22" },
-  { message: "Fix crash from unwrapped text", severity: "error", pointsLost: 5, file: "PriceTag.tsx:11" },
-  { message: "Fix slow list rendering", severity: "warning", pointsLost: 2, file: "Activity.tsx:35" },
-  { message: "Fix wasteful styling", severity: "warning", pointsLost: 2, file: "Spacer.tsx:5" },
-  { message: "Fix crash from removed module", severity: "error", pointsLost: 5, file: "netinfo.ts:4" },
-  { message: "Fix slow row rendering", severity: "warning", pointsLost: 2, file: "Comments.tsx:38" },
-  { message: "Fix broken rotation layout", severity: "warning", pointsLost: 2, file: "Lightbox.tsx:14" },
-  { message: "Fix janky animation", severity: "warning", pointsLost: 2, file: "Ripple.tsx:18" },
-  { message: "Fix dead code in list", severity: "warning", pointsLost: 2, file: "Activity.tsx:35" },
-  { message: "Fix slow list updates", severity: "warning", pointsLost: 2, file: "Discover.tsx:51" },
-  { message: "Fix slow screen load", severity: "warning", pointsLost: 2, file: "BackButton.tsx:13" },
-  { message: "Fix janky press feedback", severity: "warning", pointsLost: 2, file: "Bookmark.tsx:21" },
+export const CHECKS: CheckItem[] = [
+  {
+    name: "React Security",
+    durationLabel: "2s",
+    passScore: 96,
+    failScore: 38,
+    issues: [
+      { path: "CartScreen.tsx", note: "unsanitized dangerouslySetInnerHTML" },
+      { path: "auth/token.ts", note: "secret logged to console" },
+      { path: "api/client.ts", note: "request sent over http" },
+      { path: "LoginForm.tsx", note: "password kept in plain state" },
+      { path: "share.ts", note: "eval on user input" },
+    ],
+    cleanFiles: [
+      { path: "CartScreen.tsx", note: "HTML sanitized" },
+      { path: "auth/token.ts", note: "no secrets logged" },
+      { path: "api/client.ts", note: "https enforced" },
+      { path: "LoginForm.tsx", note: "no plaintext secrets" },
+      { path: "share.ts", note: "no eval on input" },
+      { path: "Checkout.tsx", note: "no card data in state" },
+      { path: "Webhook.ts", note: "signature verified" },
+    ],
+  },
+  {
+    name: "React Performance",
+    durationLabel: "3s",
+    passScore: 89,
+    failScore: 51,
+    issues: [
+      { path: "FeedScreen.tsx", note: "list re-renders every row" },
+      { path: "Avatar.tsx", note: "images reload on scroll" },
+      { path: "Timeline.tsx", note: "O(n^2) filter in render" },
+      { path: "Explore.tsx", note: "long list not virtualized" },
+      { path: "Drawer.tsx", note: "animation runs on JS thread" },
+      { path: "Comments.tsx", note: "handler recreated each render" },
+      { path: "Search.tsx", note: "no debounce on input" },
+      { path: "Home.tsx", note: "blocking work on mount" },
+    ],
+    cleanFiles: [
+      { path: "FeedScreen.tsx", note: "list memoized" },
+      { path: "Avatar.tsx", note: "images cached" },
+      { path: "Timeline.tsx", note: "no O(n^2) in render" },
+      { path: "Explore.tsx", note: "list virtualized" },
+      { path: "Drawer.tsx", note: "animation on UI thread" },
+      { path: "Comments.tsx", note: "stable handlers" },
+      { path: "Search.tsx", note: "debounced input" },
+    ],
+  },
+  {
+    name: "React Slop check",
+    durationLabel: "1s",
+    passScore: 94,
+    failScore: 36,
+    issues: [
+      { path: "Button.tsx", note: "AI-generated dead prop" },
+      { path: "utils/helpers.ts", note: "hallucinated import path" },
+      { path: "Feed.tsx", note: "unreachable code branch" },
+      { path: "Gallery.tsx", note: "unused state setter" },
+      { path: "Banner.tsx", note: "dead component, never imported" },
+      { path: "Profile.tsx", note: "copy-pasted stale effect" },
+      { path: "Modal.tsx", note: "magic number, no constant" },
+      { path: "Card.tsx", note: "leftover console.log" },
+      { path: "index.ts", note: "unused export" },
+      { path: "Form.tsx", note: "TODO stub left by model" },
+      { path: "Row.tsx", note: "duplicated component" },
+      { path: "Toast.tsx", note: "empty catch block" },
+    ],
+    cleanFiles: [
+      { path: "Button.tsx", note: "no dead props" },
+      { path: "utils/helpers.ts", note: "imports resolve" },
+      { path: "Feed.tsx", note: "no unreachable code" },
+      { path: "Gallery.tsx", note: "no unused state" },
+      { path: "Banner.tsx", note: "no dead components" },
+      { path: "Profile.tsx", note: "fresh effect deps" },
+      { path: "Modal.tsx", note: "no copy-paste" },
+    ],
+  },
 ];
 
-export const DIAGNOSTIC_FONT_SIZE_PX = 28;
-export const DIAGNOSTIC_LINE_HEIGHT = 1.7;
-export const FRAMES_PER_DIAGNOSTIC = 4;
-export const DIAGNOSTIC_INITIAL_DELAY_FRAMES = 15;
-export const SCORE_PAUSE_FRAMES = 18;
-export const SCORE_ANIMATION_FRAMES = 20;
-export const POST_SCORE_PAUSE_FRAMES = 21;
-export const TARGET_SCORE = 42;
-export const PERFECT_SCORE = 100;
-export const TOTAL_ERROR_COUNT = 22;
-export const AFFECTED_FILE_COUNT = 18;
-export const ELAPSED_TIME = "2.1s";
-export const SCORE_BAR_WIDTH = 30;
-export const SCORE_GOOD_THRESHOLD = 75;
-export const SCORE_OK_THRESHOLD = 50;
+export const PANEL_WIDTH_PX = 1560;
+export const PANEL_RADIUS_PX = 20;
+export const HEADER_ICON_SIZE_PX = 100;
+export const ROW_ICON_SIZE_PX = 64;
 
-export const DIAGNOSTICS = SCANNED_ISSUES.filter(
-  (issue) => issue.severity === "error" || issue.severity === "warning",
-);
+export const SPINNER_DEG_PER_FRAME = 14;
+export const ICON_POP_FRAMES = 9;
+export const ICON_POP_SCALE = 1.3;
 
+export const DETAIL_PANEL_HEIGHT_PX = 140;
+export const FILE_ROW_HEIGHT_PX = 58;
+export const DETAIL_FONT_SIZE_PX = 40;
+export const DETAIL_CHECK_COLOR = "#3fb950";
+export const GH_MONO_FONT_FAMILY = "ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
 
-export const FRAMES_PER_FIX = 20;
-export const FIX_INITIAL_DELAY_FRAMES = 15;
+export const SCORE_RING_SIZE_PX = 92;
+export const SCORE_RING_STROKE_PX = 10;
+export const SCORE_RING_TRACK_COLOR = "#30363d";
+export const SCORE_RING_COLOR = "#3fb950";
+export const SCORE_RING_FAIL_COLOR = "#f85149";
+export const SCORE_OVERALL_FONT_SIZE_PX = 46;
 
-export const SCENE_ADD_TO_CI_DURATION_FRAMES = 90;
-export const SCENE_FILE_SCAN_DURATION_FRAMES = 160;
-export const SCENE_DIAGNOSE_AND_FIX_DURATION_FRAMES = 175;
-export const SCENE_SCORE_REVEAL_DURATION_FRAMES = 110;
-export const TRANSITION_DURATION_FRAMES = 15;
+export const FAIL_RED_COLOR = "#f85149";
+export const FAIL_ROW_TINT_COLOR = "rgba(248, 81, 73, 0.08)";
 
-export const MAIN_FLOW_DURATION_FRAMES =
-  SCENE_FILE_SCAN_DURATION_FRAMES +
-  SCENE_DIAGNOSE_AND_FIX_DURATION_FRAMES +
-  SCENE_SCORE_REVEAL_DURATION_FRAMES;
+export const CLAUDE_ACCENT_COLOR = "#d77757";
+export const CLAUDE_BACKGROUND_COLOR = "#010409";
+export const CLAUDE_TEXT_COLOR = "#c9d1d9";
+export const CLAUDE_MUTED_COLOR = "#6e7681";
+export const CLAUDE_GREEN_COLOR = "#3fb950";
+export const CLAUDE_FONT_SIZE_PX = 41;
+export const CLAUDE_PROMPT = "fix the failing React Doctor checks";
+export const CLAUDE_LOGO_LINE_1 = " \u2590\u259b\u2588\u2588\u2588\u259c\u258c";
+export const CLAUDE_LOGO_LINE_2 = "\u259d\u259c\u2588\u2588\u2588\u2588\u2588\u259b\u2598";
+export const CLAUDE_LOGO_LINE_3 = "  \u2598\u2598 \u259d\u259d";
+export const CLAUDE_FIX_ROW_HEIGHT_PX = 62;
+export const CLAUDE_VISIBLE_FIX_ROWS = 7;
+export const CLAUDE_INTRO_FRAMES = 16;
+export const CLAUDE_FIX_START_FRAME = 30;
+export const CLAUDE_FIX_STAGGER_FRAMES = 4;
+export const CLAUDE_FIX_FADE_FRAMES = 6;
+export const CLAUDE_SCORE_START = 42;
+export const CLAUDE_SCORE_END = 93;
+
+const makeChecksTiming = (
+  firstOpenFrame: number,
+  slotFrames: number,
+  scanFrames: number,
+  expandFrames: number,
+  scoreCountFrames: number,
+  holdFrames: number,
+): ChecksTiming => {
+  const headerPassFrame = firstOpenFrame + (CHECKS.length - 1) * slotFrames + scanFrames + 2;
+  return {
+    firstOpenFrame,
+    slotFrames,
+    scanFrames,
+    expandFrames,
+    scoreCountFrames,
+    headerPassFrame,
+    durationFrames: headerPassFrame + holdFrames,
+  };
+};
+
+export const CHECKS_FAIL_TIMING = makeChecksTiming(14, 46, 32, 13, 16, 44);
+export const CHECKS_PASS_TIMING = makeChecksTiming(6, 24, 14, 9, 12, 38);
+
+export const INTRO_WORDS = ["Introducing", "React", "Doctor", "for", "GitHub", "Actions"];
+export const INTRO_TAIL_START_INDEX = 3;
+export const INTRO_TITLE_FONT_SIZE_PX = 150;
+export const INTRO_WORD_GAP_PX = 32;
+export const INTRO_WORD_STAGGER_FRAMES = 5;
+export const INTRO_WORD_ANIM_FRAMES = 14;
+export const INTRO_WORD_RISE_PX = 32;
+export const INTRO_SHIFT_START_FRAME = 40;
+export const INTRO_PAN_FRAMES = 20;
+export const INTRO_PAN_START_PX = 600;
+export const INTRO_PAN_END_PX = -680;
+export const INTRO_PAN_BLUR_MAX_PX = 26;
+
+export const INTRO_INITIAL_BACKGROUND_COLOR = "#ffffff";
+export const INTRO_INITIAL_TEXT_COLOR = "#010409";
+export const INTRO_INVERTED_BACKGROUND_COLOR = "#010409";
+export const INTRO_INVERTED_TEXT_COLOR = "#e6edf3";
+
+export const SCENE_INTRO_DURATION_FRAMES = 84;
+export const SCENE_CLAUDE_DURATION_FRAMES = 162;
 
 export const TOTAL_DURATION =
-  SCENE_ADD_TO_CI_DURATION_FRAMES +
-  MAIN_FLOW_DURATION_FRAMES -
-  TRANSITION_DURATION_FRAMES;
+  CHECKS_FAIL_TIMING.durationFrames + SCENE_CLAUDE_DURATION_FRAMES + CHECKS_PASS_TIMING.durationFrames;
