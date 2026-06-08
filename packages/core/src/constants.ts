@@ -82,6 +82,11 @@ export const SHARE_BASE_URL = "https://react.doctor/share";
 // agent-handoff prompt points the agent here too.
 export const CI_URL = "https://react.doctor/ci";
 
+// Canonical GitHub Actions setup guide. The interactive "Add React Doctor to
+// GitHub Actions?" prompt's "Read docs" choice opens this directly.
+export const GITHUB_ACTIONS_SETUP_URL =
+  "https://www.react.doctor/docs/ci-and-prs/github-actions-setup";
+
 // Root of the documentation site. Guides for CI/CD setup, config files (to
 // suppress rules), and diff/PR scanning live under it; the CLI links here
 // from its closing "learn more" note.
@@ -165,6 +170,30 @@ export const STAGED_FILES_PROJECT_CONFIG_FILENAMES = [
   "doctor.config.jsonc",
   "oxlint.json",
   ".oxlintrc.json",
+] as const;
+
+export const CONFIG_FINGERPRINT_FILENAMES = [
+  "doctor.config.ts",
+  "doctor.config.mts",
+  "doctor.config.cts",
+  "doctor.config.js",
+  "doctor.config.mjs",
+  "doctor.config.cjs",
+  "doctor.config.json",
+  "doctor.config.jsonc",
+  "react-doctor.config.json",
+  "package.json",
+  "pnpm-workspace.yaml",
+  "tsconfig.json",
+  "tsconfig.base.json",
+  ".oxlintrc.json",
+  ".eslintrc.json",
+  "pnpm-lock.yaml",
+  "package-lock.json",
+  "yarn.lock",
+  "bun.lock",
+  "bun.lockb",
+  ".gitignore",
 ] as const;
 
 export const CANONICAL_GITHUB_URL = "https://github.com/millionco/react-doctor";

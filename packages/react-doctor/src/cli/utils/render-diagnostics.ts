@@ -9,7 +9,6 @@ import {
   groupBy,
   highlighter,
   MILLISECONDS_PER_SECOND,
-  OUTPUT_MEASURE_WIDTH_CHARS,
   TOP_ERRORS_DISPLAY_COUNT,
 } from "@react-doctor/core";
 import type { Diagnostic } from "@react-doctor/core";
@@ -17,6 +16,7 @@ import { boxText } from "./box-text.js";
 import { buildCodeFrame } from "./build-code-frame.js";
 import { buildSectionDivider } from "./build-section-divider.js";
 import {
+  BOX_BORDER_WIDTH_CHARS,
   CATEGORY_COUNTUP_FRAME_DELAY_MS,
   CATEGORY_COUNTUP_MAX_STEPS,
   CATEGORY_COUNTUP_SETTLE_HOLD_MS,
@@ -27,6 +27,7 @@ import {
   formatLearnMoreLine,
 } from "./diagnostic-grouping.js";
 import { indentMultilineText } from "./indent-multiline-text.js";
+import { resolveMeasureWidth } from "./resolve-measure-width.js";
 import { wrapTextToWidth } from "./wrap-indented-text.js";
 import { writeStdout } from "./write-stdout.js";
 
@@ -316,9 +317,10 @@ const buildDiagnosticClusterLines = (
       })
     : null;
   if (codeFrame) {
-    lines.push(
-      indentMultilineText(boxText(codeFrame, OUTPUT_MEASURE_WIDTH_CHARS), TOP_ERROR_DETAIL_INDENT),
+    const boxInnerWidth = resolveMeasureWidth(
+      TOP_ERROR_DETAIL_INDENT.length + BOX_BORDER_WIDTH_CHARS,
     );
+    lines.push(indentMultilineText(boxText(codeFrame, boxInnerWidth), TOP_ERROR_DETAIL_INDENT));
   }
   if (enumerateSiteMessages) {
     const seenMessages = new Set<string>();
@@ -377,29 +379,26 @@ const buildRuleDetailBlock = (
     }
   }
 
-  // Verbose lists every rule & site, so the per-rule impact prose would
-  // just repeat down the whole report — skip it there and let the boxed
-  // frames carry the detail.
-  if (!renderEverySite) {
-    for (const explanationLine of wrapTextToWidth(
-      representative.message,
-      OUTPUT_MEASURE_WIDTH_CHARS,
-      { breakLongWords: false },
-    )) {
-      // The description stays the terminal's default color (not dimmed) —
-      // it's the load-bearing "what & why", so it shouldn't read as muted
-      // secondary text like the file location / code frame below it.
-      lines.push(`${TOP_ERROR_DETAIL_INDENT}${explanationLine}`);
-    }
+  // The description is the load-bearing "what and why" prose. Verbose still
+  // prints it once per rule (not per site), so users do not lose the impact
+  // explanation when they ask for every location.
+  for (const explanationLine of wrapTextToWidth(
+    representative.message,
+    resolveMeasureWidth(TOP_ERROR_DETAIL_INDENT.length),
+    { breakLongWords: false },
+  )) {
+    lines.push(`${TOP_ERROR_DETAIL_INDENT}${explanationLine}`);
   }
 
   // The fix/recommendation, wrapped under the impact (a full sentence is
   // too long to sit at the code-frame caret). Dim `→` lead-in marks it as
   // the suggested action.
   if (representative.help) {
-    for (const fixLine of wrapTextToWidth(`→ ${representative.help}`, OUTPUT_MEASURE_WIDTH_CHARS, {
-      breakLongWords: false,
-    })) {
+    for (const fixLine of wrapTextToWidth(
+      `→ ${representative.help}`,
+      resolveMeasureWidth(TOP_ERROR_DETAIL_INDENT.length),
+      { breakLongWords: false },
+    )) {
       lines.push(highlighter.dim(`${TOP_ERROR_DETAIL_INDENT}${fixLine}`));
     }
   }
