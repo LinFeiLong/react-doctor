@@ -2,7 +2,7 @@ import type { CheckItem, ChecksTiming } from "./types";
 
 export const VIDEO_WIDTH_PX = 1920;
 export const VIDEO_HEIGHT_PX = 1080;
-export const VIDEO_FPS = 30;
+export const VIDEO_FPS = 45;
 
 export const GH_BACKGROUND_COLOR = "#010409";
 export const GH_CANVAS_COLOR = "#0d1117";
@@ -189,8 +189,21 @@ export const INTRO_INITIAL_TEXT_COLOR = "#010409";
 export const INTRO_INVERTED_BACKGROUND_COLOR = "#010409";
 export const INTRO_INVERTED_TEXT_COLOR = "#e6edf3";
 
+export const TYPING_COMMAND_PREFIX = "npx ";
+export const TYPING_COMMAND_TEXT = "react-doctor@latest";
+export const TYPING_FONT_SIZE_PX = 104;
+export const TYPING_CHAR_FRAMES = 2;
+export const TYPING_CURSOR_BLINK_FRAMES = 16;
+export const TYPING_INITIAL_DELAY_FRAMES = 6;
+export const TYPING_POST_PAUSE_FRAMES = 28;
+
 export const SCENE_INTRO_DURATION_FRAMES = 84;
+export const SCENE_TYPING_DURATION_FRAMES =
+  TYPING_INITIAL_DELAY_FRAMES + TYPING_COMMAND_TEXT.length * TYPING_CHAR_FRAMES + TYPING_POST_PAUSE_FRAMES;
 export const SCENE_CLAUDE_DURATION_FRAMES = 162;
 
 export const TOTAL_DURATION =
-  CHECKS_FAIL_TIMING.durationFrames + SCENE_CLAUDE_DURATION_FRAMES + CHECKS_PASS_TIMING.durationFrames;
+  SCENE_TYPING_DURATION_FRAMES +
+  CHECKS_FAIL_TIMING.durationFrames +
+  SCENE_CLAUDE_DURATION_FRAMES +
+  CHECKS_PASS_TIMING.durationFrames;
