@@ -418,6 +418,75 @@ describe("non-verbose overflow summary line", () => {
   });
 });
 
+// Regression for issue #690: unused-dependency warnings all report at the
+// same line-less location (`package.json:0`), so the dim location header
+// collapsed every finding into one line and dropped every package name. The
+// verbose warning tail must instead enumerate each name.
+describe("verbose warning tail names every collapsed-location site", () => {
+  const dependencyDirectory = path.join(tempRoot, "unused-deps");
+
+  const makeDependencyDiagnostic = (name: string, isDevDependency: boolean): Diagnostic =>
+    ({
+      filePath: "package.json",
+      plugin: "deslop",
+      rule: isDevDependency ? "unused-dev-dependency" : "unused-dependency",
+      severity: "warning",
+      message: `Unused ${isDevDependency ? "devDependency" : "dependency"}: \`${name}\``,
+      help: "Remove the dependency from package.json if it is genuinely unused.",
+      line: 0,
+      column: 0,
+      category: "Maintainability",
+    }) as Diagnostic;
+
+  const renderVerboseText = async (diagnostics: Diagnostic[]): Promise<string> => {
+    const bytes = await captureConsoleBytes(() =>
+      Effect.runPromise(printDiagnostics(diagnostics, true, dependencyDirectory)),
+    );
+    return (await renderInTerminal(bytes, { cols: 120 })).text;
+  };
+
+  it("lists every unused dependency and dev-dependency name, not just the first", async () => {
+    const names = ["left-pad", "moment", "is-odd"];
+    const text = await renderVerboseText([
+      ...names.map((name) => makeDependencyDiagnostic(name, false)),
+      makeDependencyDiagnostic("vitest", true),
+    ]);
+
+    // The shared, line-less location still anchors the block.
+    expect(text).toContain("package.json");
+    // Every name survives the grouping (the bug collapsed them to one line).
+    for (const name of [...names, "vitest"]) {
+      expect(text, name).toContain(name);
+    }
+  });
+
+  it("surfaces the name even for a single unused dependency", async () => {
+    const text = await renderVerboseText([makeDependencyDiagnostic("underscore", false)]);
+    expect(text).toContain("underscore");
+  });
+
+  it("does not enumerate per-site messages for distinct navigable locations", async () => {
+    // Unused exports carry real `file:line` locations, so they stay on the
+    // compact location-only listing — no behavior change for them.
+    const unusedExport = (name: string, line: number): Diagnostic =>
+      ({
+        filePath: "src/index.ts",
+        plugin: "deslop",
+        rule: "unused-export",
+        severity: "warning",
+        message: `Unused export: \`${name}\``,
+        help: "Drop the `export` keyword if no other module uses this symbol.",
+        line,
+        column: 1,
+        category: "Maintainability",
+      }) as Diagnostic;
+
+    const text = await renderVerboseText([unusedExport("alpha", 10), unusedExport("beta", 40)]);
+    expect(text).toContain("src/index.ts:10");
+    expect(text).toContain("src/index.ts:40");
+  });
+});
+
 describe("multi-project code frames resolve against each project root", () => {
   it("renders the code frame for each diagnostic from its own project's source", async () => {
     const projectA = path.join(tempRoot, "multi-proj-a");

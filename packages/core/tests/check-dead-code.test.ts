@@ -233,6 +233,17 @@ describe("checkDeadCode", () => {
     expect(
       diagnostics.find((diagnostic) => diagnostic.rule === "circular-dependency")?.message,
     ).toContain("src/a.ts → src/b.ts");
+    // The dependency name lives in the diagnostic message — the only place
+    // the warning renderer can surface it (every dep reports at
+    // `package.json:0`, so the location can't name it). See issue #690.
+    const unusedDependency = diagnostics.find(
+      (diagnostic) => diagnostic.rule === "unused-dependency",
+    );
+    expect(unusedDependency?.message).toContain("Unused dependency: `left-pad`");
+    expect(unusedDependency?.filePath).toBe("package.json");
+    expect(
+      diagnostics.find((diagnostic) => diagnostic.rule === "unused-dev-dependency")?.message,
+    ).toContain("Unused devDependency: `vitest`");
   });
 
   it("rejects malformed worker results instead of silently dropping diagnostics", async () => {

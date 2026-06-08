@@ -200,8 +200,28 @@ const printCategoryCountUp = (tallies: ReadonlyArray<CategoryTally>): Effect.Eff
 
 const TOP_ERROR_DETAIL_INDENT = "    ";
 
+// One level deeper than the location line, so each enumerated warning
+// message nests visibly under its shared location header.
+const SITE_MESSAGE_INDENT = `${TOP_ERROR_DETAIL_INDENT}  `;
+
 const pickRepresentativeDiagnostic = (ruleDiagnostics: Diagnostic[]): Diagnostic =>
   ruleDiagnostics.find((diagnostic) => diagnostic.line > 0) ?? ruleDiagnostics[0];
+
+// True when every site in a rule group reports at the same line-less
+// location, so the dim location header can't tell them apart — e.g. every
+// unused dependency lands on `package.json` with no line, collapsing N
+// findings into one location line. Such a group's per-site messages carry
+// the only distinguishing detail (the package name), so they're enumerated
+// in place of the code frame warnings never get. Rules whose sites carry
+// distinct or navigable locations (unused files, exports) fail this check
+// and keep the compact location-only listing.
+const hasIndistinctSiteLocations = (ruleDiagnostics: Diagnostic[]): boolean => {
+  const firstDiagnostic = ruleDiagnostics[0];
+  if (firstDiagnostic === undefined) return false;
+  return ruleDiagnostics.every(
+    (diagnostic) => diagnostic.line <= 0 && diagnostic.filePath === firstDiagnostic.filePath,
+  );
+};
 
 // A run of same-file sites of one rule whose individual frames would
 // overlap, rendered as a single spanning frame instead of N near-identical
@@ -275,6 +295,10 @@ const buildDiagnosticClusterLines = (
   cluster: DiagnosticCluster,
   resolveSourceRoot: SourceRootResolver,
   renderCodeFrame: boolean,
+  // When true, list every site's message under the location instead of
+  // letting the sites collapse to a single header — used for warning groups
+  // whose sites share one line-less location (see `hasIndistinctSiteLocations`).
+  enumerateSiteMessages: boolean,
 ): ReadonlyArray<string> => {
   const lead = cluster.diagnostics[0]!;
   const isMultiSite = cluster.diagnostics.length > 1;
@@ -295,6 +319,18 @@ const buildDiagnosticClusterLines = (
     lines.push(
       indentMultilineText(boxText(codeFrame, OUTPUT_MEASURE_WIDTH_CHARS), TOP_ERROR_DETAIL_INDENT),
     );
+  }
+  if (enumerateSiteMessages) {
+    const seenMessages = new Set<string>();
+    for (const diagnostic of cluster.diagnostics) {
+      if (seenMessages.has(diagnostic.message)) continue;
+      seenMessages.add(diagnostic.message);
+      for (const messageLine of wrapTextToWidth(diagnostic.message, OUTPUT_MEASURE_WIDTH_CHARS, {
+        breakLongWords: false,
+      })) {
+        lines.push(`${SITE_MESSAGE_INDENT}${messageLine}`);
+      }
+    }
   }
   const seenHints = new Set<string>();
   for (const diagnostic of cluster.diagnostics) {
@@ -380,9 +416,23 @@ const buildRuleDetailBlock = (
   // drown the report. Warnings keep their `file:line` locations so they're
   // still navigable, just without the inline source preview.
   const renderCodeFrame = severity === "error";
+  // A warning group whose sites all collapse to one line-less location
+  // (every unused dependency reports at `package.json`) would otherwise lose
+  // each finding's name to the shared header — enumerate the per-site
+  // messages so each name survives. Verbose only: the default surface shows
+  // no warning detail block at all.
+  const enumerateSiteMessages =
+    renderEverySite && severity === "warning" && hasIndistinctSiteLocations(ruleDiagnostics);
   const sites = renderEverySite ? ruleDiagnostics : [representative];
   for (const cluster of clusterNearbyDiagnostics(sites)) {
-    lines.push(...buildDiagnosticClusterLines(cluster, resolveSourceRoot, renderCodeFrame));
+    lines.push(
+      ...buildDiagnosticClusterLines(
+        cluster,
+        resolveSourceRoot,
+        renderCodeFrame,
+        enumerateSiteMessages,
+      ),
+    );
   }
 
   return lines;
