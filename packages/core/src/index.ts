@@ -37,6 +37,7 @@ export * from "./check-expo-project.js";
 export * from "./check-pnpm-hardening.js";
 export * from "./check-react-native-project.js";
 export * from "./check-reduced-motion.js";
+export * from "./check-security-posture.js";
 export * from "./collect-ignore-patterns.js";
 export * from "./compute-diagnostic-delta.js";
 export * from "./constants.js";

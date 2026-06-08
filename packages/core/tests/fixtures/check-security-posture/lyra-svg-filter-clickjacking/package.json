@@ -1,0 +1,6 @@
+{
+  "name": "lyra-svg-filter-clickjacking",
+  "dependencies": {
+    "react": "^19.0.0"
+  }
+}

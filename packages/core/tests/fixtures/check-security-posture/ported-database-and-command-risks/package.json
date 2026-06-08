@@ -1,0 +1,9 @@
+{
+  "name": "@example/ported-database-and-command-risks",
+  "private": true,
+  "dependencies": {
+    "@prisma/client": "^latest",
+    "drizzle-orm": "^latest",
+    "react": "^19.0.0"
+  }
+}

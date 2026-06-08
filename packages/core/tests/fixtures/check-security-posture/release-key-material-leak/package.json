@@ -1,0 +1,6 @@
+{
+  "name": "release-key-material-leak",
+  "dependencies": {
+    "react": "^19.0.0"
+  }
+}

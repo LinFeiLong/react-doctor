@@ -1,0 +1,6 @@
+{
+  "name": "repository-secret-files",
+  "dependencies": {
+    "react": "^19.0.0"
+  }
+}

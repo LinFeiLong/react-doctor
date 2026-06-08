@@ -1,0 +1,12 @@
+{
+  "name": "@example/electron-customer-app",
+  "private": true,
+  "scripts": {
+    "postinstall": "node scripts/generate-native-assets.js",
+    "release": "todesktop build && todesktop release"
+  },
+  "dependencies": {
+    "@todesktop/cli": "^latest",
+    "react": "^19.0.0"
+  }
+}

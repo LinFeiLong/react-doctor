@@ -1,0 +1,7 @@
+{
+  "name": "@example/public-read-private-write",
+  "private": true,
+  "dependencies": {
+    "react": "^19.0.0"
+  }
+}

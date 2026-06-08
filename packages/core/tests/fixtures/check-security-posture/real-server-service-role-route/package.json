@@ -1,0 +1,9 @@
+{
+  "name": "@example/server-service-role-route",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "next": "^16.0.0",
+    "react": "^19.0.0"
+  }
+}

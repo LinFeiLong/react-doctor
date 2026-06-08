@@ -17,6 +17,7 @@ import { checkExpoProject } from "./check-expo-project.js";
 import { checkPnpmHardening } from "./check-pnpm-hardening.js";
 import { checkReactNativeProject } from "./check-react-native-project.js";
 import { checkReducedMotion } from "./check-reduced-motion.js";
+import { checkSecurityPosture } from "./check-security-posture.js";
 import { DEFAULT_SHOW_WARNINGS } from "./constants.js";
 import { highlighter } from "./highlighter.js";
 import { computeJsxIncludePaths } from "./jsx-include-paths.js";
@@ -324,12 +325,12 @@ export const runInspect = <HooksR = never>(
         Stream.tap((diagnostic) => reporterService.emit(diagnostic)),
       );
 
-    // ── Phase: environment checks ──────────────────────────────────
     const environmentDiagnostics: ReadonlyArray<Diagnostic> = isDiffMode
       ? []
       : [
           ...checkReducedMotion(scanDirectory),
           ...checkPnpmHardening(scanDirectory),
+          ...checkSecurityPosture(scanDirectory),
           ...checkExpoProject(scanDirectory, project),
           ...checkReactNativeProject(scanDirectory, project),
         ];

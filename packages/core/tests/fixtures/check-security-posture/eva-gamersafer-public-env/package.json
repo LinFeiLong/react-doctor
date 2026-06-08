@@ -1,0 +1,11 @@
+{
+  "name": "@example/playertrust-admin",
+  "private": true,
+  "scripts": {
+    "build": "react-scripts build"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-scripts": "^latest"
+  }
+}

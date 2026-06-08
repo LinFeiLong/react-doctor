@@ -1,0 +1,6 @@
+{
+  "name": "repository-secret-examples",
+  "dependencies": {
+    "react": "^19.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@example/ported-agent-mcp-tool-risks",
+  "private": true,
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^latest",
+    "ai": "^latest",
+    "react": "^19.0.0"
+  }
+}

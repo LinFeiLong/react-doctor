@@ -1,0 +1,8 @@
+{
+  "name": "@example/ported-agent-database-safe-patterns",
+  "private": true,
+  "dependencies": {
+    "ai": "^latest",
+    "react": "^19.0.0"
+  }
+}

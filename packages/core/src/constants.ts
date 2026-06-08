@@ -210,6 +210,14 @@ export const DEAD_CODE_WORKER_TIMEOUT_MS = 120_000;
 // the child's heap so those projects complete instead of crashing.
 export const DEAD_CODE_WORKER_MAX_OLD_SPACE_MB = 8192;
 
+export const SECURITY_SCAN_MAX_FILES = 2500;
+
+export const SECURITY_SCAN_MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+
+export const SECURITY_SCAN_MAX_BUNDLE_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+
+export const SECURITY_SCAN_MAX_DIRECTORY_DEPTH = 8;
+
 // HACK: lookahead cap for JSX opener-span scanning; bounds worst-case
 // work on pathological files. Real openers stay well under this.
 export const JSX_OPENER_SCAN_MAX_LINES = 32;

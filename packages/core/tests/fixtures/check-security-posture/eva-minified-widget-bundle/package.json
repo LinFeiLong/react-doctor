@@ -1,0 +1,6 @@
+{
+  "name": "eva-minified-widget-bundle",
+  "dependencies": {
+    "react": "^19.0.0"
+  }
+}

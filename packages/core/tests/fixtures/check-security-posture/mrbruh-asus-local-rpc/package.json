@@ -1,0 +1,6 @@
+{
+  "name": "mrbruh-asus-local-rpc",
+  "dependencies": {
+    "react": "^19.0.0"
+  }
+}
