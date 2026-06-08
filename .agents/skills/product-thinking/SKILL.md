@@ -12,17 +12,17 @@ A runbook for changing anything a user interacts with. The agent defaults to bui
 
 Run the pass whenever a diff touches a surface a user — a developer running React Doctor, or their CI — depends on. Every surface is a contract: once it ships, people build on it and you can't quietly take it back. Find where the surface lives first, so you edit the right place and can search it for something to reuse before adding.
 
-| Surface | Where it lives | Why it's load-bearing |
-| --- | --- | --- |
-| CLI command / flag | `cli/index.ts`, `cli/commands/*.ts`, `cli/utils/inspect-flags.ts` | Every flag is forever — it has to be parsed, documented, tested, and kept working across releases. |
-| 0–100 score | `core/src/calculate-score.ts`, `core/src/constants.ts` | The number people screenshot and gate CI on; changing the math silently moves every user's score. |
-| Config option | `core/src/types/config.ts`, `core/src/services/config.ts` | A long-lived contract that interacts with existing precedence; a new knob is rarely removable later. |
-| JSON report field | `core/src/schemas.ts`, `core/src/build-json-report.ts` | A wire format other tools parse; a shape change breaks integrations unless `schemaVersion` is handled. |
-| Package API / exit code | `react-doctor/src/inspect.ts`, `api/src/diagnose.ts` | Programmatic consumers pin to it, so changes are semver-breaking and need a changeset. |
-| GitHub Action input/output | `action.yml` | Versioned independently (`vN`); workflows in other repos break when an input or output changes. |
-| Terminal output / UX | `cli/utils/` renderers | The first impression and the daily experience; noise or confusion here is what makes people stop running it. |
+| Surface                    | Where it lives                                                    | Why it's load-bearing                                                                                        |
+| -------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| CLI command / flag         | `cli/index.ts`, `cli/commands/*.ts`, `cli/utils/inspect-flags.ts` | Every flag is forever — it has to be parsed, documented, tested, and kept working across releases.           |
+| 0–100 score                | `core/src/calculate-score.ts`, `core/src/constants.ts`            | The number people screenshot and gate CI on; changing the math silently moves every user's score.            |
+| Config option              | `core/src/types/config.ts`, `core/src/services/config.ts`         | A long-lived contract that interacts with existing precedence; a new knob is rarely removable later.         |
+| JSON report field          | `core/src/schemas.ts`, `core/src/build-json-report.ts`            | A wire format other tools parse; a shape change breaks integrations unless `schemaVersion` is handled.       |
+| Package API / exit code    | `react-doctor/src/inspect.ts`, `api/src/diagnose.ts`              | Programmatic consumers pin to it, so changes are semver-breaking and need a changeset.                       |
+| GitHub Action input/output | `action.yml`                                                      | Versioned independently (`vN`); workflows in other repos break when an input or output changes.              |
+| Terminal output / UX       | `cli/utils/` renderers                                            | The first impression and the daily experience; noise or confusion here is what makes people stop running it. |
 
-**Not here:** lint rules go through the `rule-research` → `rule-writing` → `rule-validate` pipeline, and rule configuration through `doctor-explain` — this pass is for the surface *around* the rules, not the rules themselves. Internal-only changes (the engine, private `core` types, tests, tooling) skip the pass entirely; note in one line why the change is internal and move on.
+**Not here:** lint rules go through the `rule-research` → `rule-writing` → `rule-validate` pipeline, and rule configuration through `doctor-explain` — this pass is for the surface _around_ the rules, not the rules themselves. Internal-only changes (the engine, private `core` types, tests, tooling) skip the pass entirely; note in one line why the change is internal and move on.
 
 ## Steps
 
@@ -63,7 +63,7 @@ Read the top matches before writing anything. Extend an existing surface when it
 
 ### 3. Wire exactly one metric
 
-You can't manage a surface you can't see, so a change isn't done until it emits a signal. Decide that signal *before* you build — if you can't describe which number would move, you don't yet know what success means. CLI telemetry is anonymized Sentry and is already a no-op for the `@react-doctor/api` library, tests, and `--no-score`, so all you wire is the emit:
+You can't manage a surface you can't see, so a change isn't done until it emits a signal. Decide that signal _before_ you build — if you can't describe which number would move, you don't yet know what success means. CLI telemetry is anonymized Sentry and is already a no-op for the `@react-doctor/api` library, tests, and `--no-score`, so all you wire is the emit:
 
 - **Adoption count** — is anyone using it? Add a name to the `METRIC` map in `cli/utils/constants.ts` and emit it via `cli/utils/record-metric.ts`. Use this for "did people turn this flag on".
 - **Per-scan outcome** — what happened on this run? Add an attribute to the wide event in `cli/utils/build-run-event.ts` (a run-level dimension goes on `cli/utils/build-sentry-scope.ts`). Prefer one rich wide-event attribute over a pile of narrow counters — it stays queryable after the fact without new code.
@@ -74,7 +74,7 @@ North-star to judge against: the one durable metric is **CI cohort retention** �
 
 ### 4. Pick the default and add the compatibility artifacts
 
-The default is a product decision, not an implementation detail — most users never change it, so the default *is* the behavior for almost everyone. Pick one that preserves today's behavior and make anything risky opt-in. Then ship the artifacts that keep existing users from breaking:
+The default is a product decision, not an implementation detail — most users never change it, so the default _is_ the behavior for almost everyone. Pick one that preserves today's behavior and make anything risky opt-in. Then ship the artifacts that keep existing users from breaking:
 
 - **Published-package behavior changed** → add a changeset (`nr changeset`) so the change is versioned and lands in the changelog.
 - **JSON report shape changed** → edit `core/src/schemas.ts`, preserve the existing shape or bump `schemaVersion`, and run `nr smoke:json-report`. CI pipelines parse this output, so an unannounced shape change breaks them silently.
@@ -135,5 +135,5 @@ Tie-breakers when a step is ambiguous — when two options both seem fine, pick 
 3. **Evidence > assertions.** Show the proof — the code, the measurement, the reason — rather than asking the user to take the tool's word for it.
 4. **Actionability > correctness.** A fixable issue with a clear next step beats a technically perfect finding nobody knows what to do with.
 5. **Workflows > dashboards.** Meet developers where they already work — the CLI, PRs, the editor — instead of sending them to a separate surface.
-6. **Education > diagnostics.** Explain *why* something is a problem so the user learns, not just *that* it is one.
+6. **Education > diagnostics.** Explain _why_ something is a problem so the user learns, not just _that_ it is one.
 7. **Trust > detection coverage.** The best finding is one the user believes and acts on; one false positive costs more trust than a missed issue costs coverage.
