@@ -396,6 +396,60 @@ describe("checkSecurityPosture", () => {
     });
   });
 
+  it("uses concrete locations for env leak shapes and public env secret names", () => {
+    writeFile(
+      "dist/assets/app.js.map",
+      `window.__ENV__ = {\n  DATABASE_URL: "postgres://user:pass@example.com/app"\n};`,
+    );
+    writeFile(".env", "NEXT_PUBLIC_SECRET_TOKEN=placeholder\n");
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          rule: "artifact-env-leak",
+          line: 2,
+          column: 3,
+        }),
+        expect.objectContaining({
+          rule: "repository-secret-file",
+          line: 1,
+          column: 1,
+        }),
+      ]),
+    );
+  });
+
+  it("reports postMessage handlers at the unsafe handler location", () => {
+    writeFile(
+      "src/message-listener.ts",
+      `window.addEventListener("message", (event) => {\n  if (event.origin !== "https://example.com") return;\n  window.dispatchEvent(new CustomEvent("safe", { detail: event.data }));\n});\nwindow.addEventListener("message", (event) => {\n  window.dispatchEvent(new CustomEvent("unsafe", { detail: event.data }));\n});\n`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([
+      expect.objectContaining({
+        rule: "postmessage-origin-risk",
+        line: 5,
+        column: 1,
+      }),
+    ]);
+  });
+
+  it("keeps unrelated redirect options quiet while scanning got shorthand calls", () => {
+    writeFile(
+      "app/api/config/route.ts",
+      `const defaultOptions = { redirect: "follow" };\nexport const GET = async () => fetch("https://example.com", defaultOptions);\n`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
+
+    writeFile(
+      "app/api/proxy/route.ts",
+      `export const GET = async (request) => {\n  const targetUrl = request.nextUrl.searchParams.get("targetUrl");\n  return got.get(targetUrl);\n};\n`,
+    );
+
+    expect(rulesOf(checkSecurityPosture(temporaryRoot))).toContain("untrusted-redirect-following");
+  });
+
   it("does not treat server-only Next build output as a browser artifact", () => {
     writeFile(
       ".next/server/app/page.js",

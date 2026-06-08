@@ -47,6 +47,11 @@ interface DirectoryStackEntry {
   readonly depth: number;
 }
 
+interface SourceLocation {
+  readonly line: number;
+  readonly column: number;
+}
+
 interface AstNode {
   readonly type?: string;
   readonly start?: number;
@@ -117,6 +122,12 @@ const SECRET_VALUE_PATTERNS = [
 const PUBLIC_ENV_SECRET_NAME_PATTERN =
   /\b(?:NEXT_PUBLIC|VITE|REACT_APP|EXPO_PUBLIC)_[A-Z0-9_]*(?:SECRET|TOKEN|PASSWORD|PRIVATE|DATABASE_URL|SERVICE_ROLE|AWS_ACCESS_KEY|AWS_SECRET)[A-Z0-9_]*\b/i;
 
+const FULL_ENV_LEAK_CONTEXT_PATTERN =
+  /\b(?:process\.env|import\.meta\.env|window\.__[A-Z0-9_]*ENV[A-Z0-9_]*__|__[A-Z0-9_]*ENV[A-Z0-9_]*__)\b/;
+
+const FULL_ENV_LEAK_SECRET_NAME_PATTERN =
+  /\b(?:DATABASE_URL|AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID|MAILGUN_API_KEY|SALESFORCE_CLIENT_SECRET|OKTA_CLIENT_SECRET|SESSION_SECRET|COOKIE_SECRET|PRIVATE_KEY|SERVICE_ROLE)\b/;
+
 const SENSITIVE_AUTH_FIELD_PATTERN =
   /\b(?:ownerId|ownerID|creatorId|creatorID|userId|userID|uid|providerId|providerID|orgId|orgID|tenantId|tenantID|teamId|teamID|workspaceId|workspaceID|ghostOrg|role|roles|isAdmin|admin)\b/;
 
@@ -134,8 +145,6 @@ const BAAS_CLIENT_CONFIG_PATTERN =
 
 const BAAS_AUTHORITY_SURFACE_PATTERN =
   /\b(?:collection\s*\(\s*["'](?:boosts|sessions|sessions_admin|users|orgs|candidateJobs|conversations|documents|profiles)|from\s*\(\s*["'](?:users|profiles|documents|organizations|memberships)|creatorID|creatorId|providerId|ghostOrg|ownerId|orgId|tenantId|workspaceId|role|roles|isAdmin|SuperAdmin)\b/i;
-
-const POSTMESSAGE_HANDLER_PATTERN = /addEventListener\s*\(\s*["']message["']|\.onmessage\s*=/;
 
 const POSTMESSAGE_ORIGIN_CHECK_PATTERN =
   /(?:event|e)\.origin|\.origin\s*[!=]==?|origin.*(?:check|valid|allow|trust)|(?:check|valid|allow|trust).*origin/i;
@@ -264,11 +273,9 @@ const isPublicDebugArtifactPath = (relativePath: string): boolean =>
     relativePath,
   );
 
-const getMatchLocation = (
-  content: string,
-  pattern: RegExp | undefined,
-): { readonly line: number; readonly column: number } => {
-  const matchIndex = pattern === undefined ? -1 : content.search(pattern);
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const getLocationAtIndex = (content: string, matchIndex: number): SourceLocation => {
   if (matchIndex < 0) return { line: 0, column: 0 };
   const prefix = content.slice(0, matchIndex);
   const lines = prefix.split(/\r?\n/);
@@ -277,6 +284,12 @@ const getMatchLocation = (
     column: (lines[lines.length - 1]?.length ?? 0) + 1,
   };
 };
+
+const getMatchLocation = (content: string, pattern: RegExp | undefined): SourceLocation =>
+  getLocationAtIndex(content, pattern === undefined ? -1 : content.search(pattern));
+
+const getNodeLocation = (content: string, node: AstNode): SourceLocation =>
+  getLocationAtIndex(content, node.start ?? -1);
 
 const buildDiagnostic = (input: SecurityDiagnosticInput): Diagnostic => {
   const location =
@@ -452,18 +465,21 @@ const collectScannedFiles = (rootDirectory: string): ScannedFile[] => {
 const hasSecretValue = (content: string): boolean =>
   SECRET_VALUE_PATTERNS.some((pattern) => pattern.test(content));
 
+const findSuspiciousPublicEnvSecretNamePattern = (content: string): RegExp | undefined => {
+  for (const match of content.matchAll(new RegExp(PUBLIC_ENV_SECRET_NAME_PATTERN.source, "gi"))) {
+    const value = match[0] ?? "";
+    if (!TRUSTED_PUBLIC_SECRET_NAME_PATTERN.test(value)) {
+      return new RegExp(escapeRegExp(value));
+    }
+  }
+  return undefined;
+};
+
 const hasSuspiciousPublicEnvSecretName = (content: string): boolean =>
-  [...content.matchAll(new RegExp(PUBLIC_ENV_SECRET_NAME_PATTERN.source, "gi"))].some(
-    (match) => !TRUSTED_PUBLIC_SECRET_NAME_PATTERN.test(match[0] ?? ""),
-  );
+  findSuspiciousPublicEnvSecretNamePattern(content) !== undefined;
 
 const hasFullEnvLeakShape = (content: string): boolean =>
-  /\b(?:process\.env|import\.meta\.env|window\.__[A-Z0-9_]*ENV[A-Z0-9_]*__|__[A-Z0-9_]*ENV[A-Z0-9_]*__)\b/.test(
-    content,
-  ) &&
-  /\b(?:DATABASE_URL|AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID|MAILGUN_API_KEY|SALESFORCE_CLIENT_SECRET|OKTA_CLIENT_SECRET|SESSION_SECRET|COOKIE_SECRET|PRIVATE_KEY|SERVICE_ROLE)\b/.test(
-    content,
-  );
+  FULL_ENV_LEAK_CONTEXT_PATTERN.test(content) && FULL_ENV_LEAK_SECRET_NAME_PATTERN.test(content);
 
 const scannerDefinitions: ReadonlyArray<SecurityScanner> = [
   {
@@ -636,7 +652,11 @@ const scanArtifactSecrets = (
     );
   }
 
-  if (hasSuspiciousPublicEnvSecretName(file.content) || hasFullEnvLeakShape(file.content)) {
+  const envLeakPattern =
+    findSuspiciousPublicEnvSecretNamePattern(file.content) ??
+    (hasFullEnvLeakShape(file.content) ? FULL_ENV_LEAK_SECRET_NAME_PATTERN : undefined);
+
+  if (envLeakPattern !== undefined) {
     addDiagnostic(
       diagnostics,
       seen,
@@ -649,7 +669,7 @@ const scanArtifactSecrets = (
           "A browser artifact contains server-secret environment names or a full environment dump shape.",
         help: "Treat public env prefixes as publication, not secrecy; keep secret env vars server-only and rebuild after rotating leaked keys.",
         content: file.content,
-        pattern: PUBLIC_ENV_SECRET_NAME_PATTERN,
+        pattern: envLeakPattern,
       }),
     );
   }
@@ -789,6 +809,10 @@ const scanRepositorySecretFile = (
   if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
   if (!hasSecretValue(file.content) && !hasSuspiciousPublicEnvSecretName(file.content)) return;
 
+  const pattern =
+    SECRET_VALUE_PATTERNS.find((candidate) => candidate.test(file.content)) ??
+    findSuspiciousPublicEnvSecretNamePattern(file.content);
+
   addDiagnostic(
     diagnostics,
     seen,
@@ -800,7 +824,7 @@ const scanRepositorySecretFile = (
       message: "A repository credential/config file contains secret-looking values.",
       help: "Remove committed env files, service-account credentials, npm auth tokens, and webhook URLs; rotate exposed values and keep only redacted examples in source.",
       content: file.content,
-      pattern: SECRET_VALUE_PATTERNS.find((pattern) => pattern.test(file.content)),
+      pattern,
     }),
   );
 };
@@ -931,6 +955,8 @@ const scanPostMessageOriginRisk = (
     if (!isMessageHandler) return;
     if (POSTMESSAGE_ORIGIN_CHECK_PATTERN.test(nodeText)) return;
 
+    const location = getNodeLocation(file.content, node);
+
     addDiagnostic(
       diagnostics,
       seen,
@@ -943,9 +969,8 @@ const scanPostMessageOriginRisk = (
           "A message event handler reads cross-window messages without an obvious origin check.",
         help: "Validate `event.origin` against an exact allowlist before using `event.data`, especially when an iframe or parent window can be attacker-controlled.",
         content: file.content,
-        line: getMatchLocation(file.content, undefined).line || undefined,
-        column: getMatchLocation(file.content, undefined).column || undefined,
-        pattern: POSTMESSAGE_HANDLER_PATTERN,
+        line: location.line,
+        column: location.column,
       }),
     );
   });
@@ -962,22 +987,16 @@ const scanUntrustedRedirectFollowing = (
   ) {
     return;
   }
-  if (!/\bfetch\s*\(|\baxios\b|\bgot\s*\(/.test(file.content)) return;
+  if (!OUTBOUND_FETCH_CALL_PATTERN.test(file.content)) return;
 
   const lines = file.content.split("\n");
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex] ?? "";
-    const explicitFollow = /\bredirect\s*:\s*["']follow["']/.test(line);
     const fetchMatch = line.match(OUTBOUND_FETCH_CALL_PATTERN);
-    if (
-      !explicitFollow &&
-      (!fetchMatch || !CALLER_STYLE_URL_NAME_PATTERN.test(fetchMatch[1] ?? ""))
-    ) {
-      continue;
-    }
+    if (!fetchMatch || !CALLER_STYLE_URL_NAME_PATTERN.test(fetchMatch[1] ?? "")) continue;
 
     const fetchWindow = lines.slice(lineIndex, lineIndex + 5).join("\n");
-    if (!explicitFollow && SAFE_REDIRECT_MODE_PATTERN.test(fetchWindow)) continue;
+    if (SAFE_REDIRECT_MODE_PATTERN.test(fetchWindow)) continue;
 
     addDiagnostic(
       diagnostics,
