@@ -484,13 +484,17 @@ export const checkDeadCode = async (options: CheckDeadCodeOptions): Promise<Diag
 
   for (const unusedDependency of result.unusedDependencies) {
     const label = unusedDependency.isDevDependency ? "devDependency" : "dependency";
+    // Every unused dependency reports at `package.json` with no line, so the
+    // renderer lists all of them under one location. Keep the per-item message
+    // to just the name and carry the shared rationale in `help` (shown once)
+    // rather than repeating the same sentence for each name.
     diagnostics.push({
       filePath: "package.json",
       plugin: DEAD_CODE_PLUGIN,
       rule: unusedDependency.isDevDependency ? "unused-dev-dependency" : "unused-dependency",
       severity: "warning",
-      message: `Unused ${label}: \`${unusedDependency.name}\` is not imported by the project, so it adds install time and supply-chain surface without being used.`,
-      help: "Remove the dependency from package.json if it is genuinely unused.",
+      message: `Unused ${label}: \`${unusedDependency.name}\``,
+      help: `An unused ${label} adds install time and supply-chain surface without being used; remove it from package.json if it is genuinely unused.`,
       line: 0,
       column: 0,
       category: DEAD_CODE_CATEGORY,
