@@ -7,10 +7,10 @@ export interface InstallGitHubWorkflowResult {
 }
 
 // Self-documenting workflow file. The inline YAML comments give a new user
-// one-line explanations of each trigger and the permissions block, without
-// forcing them off to the docs site to learn the basics. The action itself
-// is pinned to the floating major `@v2` (never `@main`, per the supply-chain
-// guidance in AGENTS.md): `@main` would run whatever HEAD points to with
+// one-line explanations of each trigger, without forcing them off to the
+// docs site to learn the basics. The action itself is pinned to the
+// floating major `@v2` (never `@main`, per the supply-chain guidance in
+// AGENTS.md): `@main` would run whatever HEAD points to with
 // `pull-requests: write` granted.
 const buildWorkflowContent =
   (): string => `# React Doctor — finds security, performance, correctness, accessibility,
@@ -29,7 +29,6 @@ on:
   push:
     branches: [main]
 
-# Needed to check out the repo, scope the scan to the PR's changed files, post/update the sticky summary + inline review comments, and publish the commit status with the score.
 permissions:
   contents: read
   pull-requests: write
