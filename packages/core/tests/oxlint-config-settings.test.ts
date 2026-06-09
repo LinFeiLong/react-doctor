@@ -50,24 +50,29 @@ describe("createOxlintConfig settings", () => {
     expect(config.settings["react-doctor"]).not.toHaveProperty("shopifyFlashListMajorVersion");
   });
 
-  it("enables security posture detections as normal react-doctor rules", () => {
+  it("never registers security posture rules (they run as a core environment check)", () => {
     const config = createOxlintConfig({
       pluginPath: "/tmp/plugin.js",
       project: buildProject({ framework: "vite", hasReactNativeWorkspace: false }),
     });
 
-    expect(config.rules["react-doctor/artifact-secret-leak"]).toBe("error");
-    expect(config.rules["react-doctor/raw-sql-injection-risk"]).toBe("warn");
+    expect(config.rules).not.toHaveProperty("react-doctor/artifact-secret-leak");
+    expect(config.rules).not.toHaveProperty("react-doctor/raw-sql-injection-risk");
   });
 
-  it("honors the security-posture tag when enabling normal rules", () => {
+  it("excludes security posture rules even when severity controls opt them in", () => {
     const config = createOxlintConfig({
       pluginPath: "/tmp/plugin.js",
       project: buildProject({ framework: "vite", hasReactNativeWorkspace: false }),
-      ignoredTags: new Set(["security-posture"]),
+      severityControls: {
+        rules: {
+          "react-doctor/artifact-secret-leak": "error",
+          "react-doctor/raw-sql-injection-risk": "error",
+        },
+      },
     });
 
-    expect(config.rules["react-doctor/artifact-secret-leak"]).toBeUndefined();
-    expect(config.rules["react-doctor/raw-sql-injection-risk"]).toBeUndefined();
+    expect(config.rules).not.toHaveProperty("react-doctor/artifact-secret-leak");
+    expect(config.rules).not.toHaveProperty("react-doctor/raw-sql-injection-risk");
   });
 });

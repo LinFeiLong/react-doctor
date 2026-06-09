@@ -3,7 +3,6 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
-import reactDoctorPlugin, { checkSecurityPosture } from "oxlint-plugin-react-doctor";
 import type { Diagnostic, ProjectInfo, ReactDoctorConfig } from "../types/index.js";
 import { OxlintSpawnFailed, ReactDoctorError } from "../errors.js";
 import { OxlintConcurrency, OxlintOutputMaxBytes, OxlintSpawnTimeoutMs } from "../refs.js";
@@ -53,19 +52,6 @@ const ensureReactDoctorError = (cause: unknown): ReactDoctorError =>
   cause instanceof ReactDoctorError
     ? cause
     : new ReactDoctorError({ reason: new OxlintSpawnFailed({ cause }) });
-
-const isSecurityPostureDiagnosticEnabled = (
-  diagnostic: Diagnostic,
-  ignoredTags: ReadonlySet<string> | undefined,
-): boolean => {
-  const rule = reactDoctorPlugin.rules[diagnostic.rule];
-  if (!rule) return true;
-  if (!rule.tags) return true;
-  for (const tag of rule.tags) {
-    if (ignoredTags?.has(tag)) return false;
-  }
-  return true;
-};
 
 /**
  * `Linter` is the cross-backend service for "produce diagnostics for
@@ -121,7 +107,7 @@ export class Linter extends Context.Service<
             const outputMaxBytes = yield* OxlintOutputMaxBytes;
             const concurrency = yield* OxlintConcurrency;
             const collectedFailures: string[] = [];
-            const oxlintDiagnostics = yield* Effect.tryPromise({
+            const diagnostics = yield* Effect.tryPromise({
               try: () =>
                 runOxlint({
                   rootDirectory: input.rootDirectory,
@@ -144,15 +130,6 @@ export class Linter extends Context.Service<
                 }),
               catch: ensureReactDoctorError,
             });
-            const diagnostics =
-              input.includePaths === undefined
-                ? [
-                    ...oxlintDiagnostics,
-                    ...checkSecurityPosture(input.rootDirectory).filter((diagnostic) =>
-                      isSecurityPostureDiagnosticEnabled(diagnostic, input.ignoredTags),
-                    ),
-                  ]
-                : oxlintDiagnostics;
             if (collectedFailures.length > 0) {
               yield* Ref.update(partialFailures, (existing) => [...existing, ...collectedFailures]);
             }

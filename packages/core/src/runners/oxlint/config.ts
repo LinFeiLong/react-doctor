@@ -115,6 +115,9 @@ export const createOxlintConfig = ({
   for (const registryEntry of REACT_DOCTOR_RULES) {
     const rule = reactDoctorPlugin.rules[registryEntry.id];
     if (!rule) continue;
+    // Posture rules run via core's check-security-posture environment
+    // check, not oxlint — registering them would only add dead visitors.
+    if (rule.scan !== undefined) continue;
     // `customRulesOnly` mirrors the historical behavior of the pre-port
     // builtin-react / builtin-a11y gate — skip everything ported 1:1
     // from upstream OXC plugins.
