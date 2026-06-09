@@ -27,6 +27,22 @@ interface CacheEntry {
   readonly program: EsTreeNode | null;
 }
 
+export const parseSourceText = (filename: string, sourceText: string): EsTreeNode | null => {
+  try {
+    const result = parseSync(filename, sourceText, {
+      astType: "ts",
+      lang: resolveLang(filename),
+    });
+    const hasFatalError = result.errors.some((parseError) => parseError.severity === "Error");
+    if (hasFatalError) return null;
+    const parsedProgram = result.program as unknown as EsTreeNode;
+    attachParentReferences(parsedProgram);
+    return parsedProgram;
+  } catch {
+    return null;
+  }
+};
+
 // Module-level cache of parsed Programs keyed by absolute file path.
 // Each entry stores the file's mtime + byte size at parse time so a
 // changed file invalidates the cache automatically. Storing `null`
@@ -87,22 +103,7 @@ export const parseSourceFile = (absoluteFilePath: string): EsTreeNode | null => 
     return null;
   }
 
-  let parsedProgram: EsTreeNode | null = null;
-  try {
-    const result = parseSync(absoluteFilePath, sourceText, {
-      astType: "ts",
-      lang: resolveLang(absoluteFilePath),
-    });
-    // Treat fatal parse errors as a parse failure (returns null).
-    // Recoverable warnings still produce a usable AST.
-    const hasFatalError = result.errors.some((parseError) => parseError.severity === "Error");
-    if (!hasFatalError) {
-      parsedProgram = result.program as unknown as EsTreeNode;
-      attachParentReferences(parsedProgram);
-    }
-  } catch {
-    parsedProgram = null;
-  }
+  const parsedProgram = parseSourceText(absoluteFilePath, sourceText);
 
   parseCache.set(absoluteFilePath, {
     mtimeMs: fileStat.mtimeMs,

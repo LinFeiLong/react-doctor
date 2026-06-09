@@ -12,7 +12,7 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.j
 export default defineConfig({
   pack: [
     {
-      entry: { index: "./src/index.ts" },
+      entry: { ast: "./src/ast.ts", index: "./src/index.ts" },
       deps: {
         // HACK: oxc-parser loads a platform-specific NAPI binding via
         // require("@oxc-parser/binding-<platform>"). Rollup inlines the

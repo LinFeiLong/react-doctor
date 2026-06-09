@@ -1,6 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseSync, visitorKeys } from "oxc-parser";
+import { visitorKeys } from "oxc-parser";
+import { isAstNode, isNodeOfType, parseSourceText } from "oxlint-plugin-react-doctor/ast";
+import type { EsTreeNode, EsTreeNodeOfType } from "oxlint-plugin-react-doctor/ast";
 import {
   GENERATED_BUNDLE_FILE_PATTERN,
   SECURITY_SCAN_MAX_BUNDLE_FILE_SIZE_BYTES,
@@ -52,13 +54,6 @@ interface SourceLocation {
   readonly column: number;
 }
 
-interface AstNode {
-  readonly type?: string;
-  readonly start?: number;
-  readonly end?: number;
-  readonly [propertyName: string]: unknown;
-}
-
 type ScanBucket = "priority" | "artifact" | "other";
 
 const SKIPPED_DIRECTORY_NAMES = new Set([
@@ -75,13 +70,23 @@ const TEXT_FILE_PATTERN =
 
 const DOTENV_FILE_PATTERN = /(?:^|\/)\.env(?:\.|$)/;
 
-const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?|mdx?)$/i;
+const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/i;
+
+const SCRIPT_SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?|py|php)$/i;
+
+const DATABASE_SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?|py)$/i;
 
 const SERVER_CONTEXT_PATTERN =
   /(?:^|\/)(?:api|backend|server|servers|middleware|route|routes|functions|lambdas|workers)(?:\/|$)|(?:^|\/)[^/]+\.server\.[cm]?[jt]sx?$/i;
 
 const TEST_CONTEXT_PATTERN =
   /(?:^|\/)(?:__fixtures__|__mocks__|__tests__|fixtures|mocks|test|tests)(?:\/|$)|\.(?:test|spec|fixture|fixtures|stories|story)\.[cm]?[jt]sx?$/i;
+
+const DOCUMENTATION_CONTEXT_PATTERN =
+  /(?:^|\/)(?:README|CHANGELOG|CONTRIBUTING|PUBLISHING|DOCS)\.mdx?$|\.mdx?$/i;
+
+const GENERATED_SOURCE_CONTEXT_PATTERN =
+  /(?:^|\/)(?:generated|__generated__|dist|build|coverage|out|storybook-static)(?:\/|$)|(?:^|\/)\.next\/|(?:^|\/)public\/(?:chunks?|assets?|build|dist|static)\/|(?:generated|\.gen)\.[cm]?[jt]sx?$/i;
 
 const BROWSER_ARTIFACT_PATH_PATTERNS = [
   /(?:^|\/)\.next\/static\//,
@@ -211,7 +216,10 @@ const WEBHOOK_SIGNATURE_VERIFICATION_PATTERN =
   /verifySignature|verify.*signature|constructEvent|createHmac|timingSafeEqual|svix|webhookSecret|stripe\.webhooks/i;
 
 const INSECURE_CRYPTO_PATTERN =
-  /createHash\s*\(\s*["'](?:md5|sha1)["']|createCipher\s*\(|\b(?:DES|RC4|Blowfish)\b|\bmd5\s*\(|(?:===?|!==?)\s*.{0,40}\b(?:hmac|digest|signature)\b|\b(?:hmac|digest|signature)\b.{0,40}(?:===?|!==?)/i;
+  /createHash\s*\(\s*["'](?:md5|sha1)["']|createCipher\s*\(|\b(?:DES|RC4|Blowfish)\b|\bmd5\s*\(|(?:===?|!==?)\s*.{0,40}\b(?:hmac|digest)\b|\b(?:hmac|digest)\b.{0,40}(?:===?|!==?)/i;
+
+const UNSAFE_SIGNATURE_COMPARISON_PATTERN =
+  /[A-Za-z_$][\w$.]*signature[\w$]*(?:\([^)]*\))?\s*(?:===?|!==?)\s*[A-Za-z_$][\w$.]*(?:\([^)]*\))?|[A-Za-z_$][\w$.]*(?:\([^)]*\))?\s*(?:===?|!==?)\s*[A-Za-z_$][\w$.]*signature[\w$]*(?:\([^)]*\))?/i;
 
 const SECURITY_RANDOM_CONTEXT_PATTERN =
   /\b(?:token|secret|key|password|nonce|salt|session|csrf|auth|credential|hash)\b/i;
@@ -244,17 +252,34 @@ const isBrowserArtifactPath = (relativePath: string, isGeneratedBundle: boolean)
 };
 
 const isClientSourcePath = (relativePath: string): boolean => {
-  if (!SOURCE_FILE_PATTERN.test(relativePath)) return false;
+  if (!isProductionSourcePath(relativePath)) return false;
   if (SERVER_CONTEXT_PATTERN.test(relativePath)) return false;
-  if (TEST_CONTEXT_PATTERN.test(relativePath)) return false;
   return true;
 };
 
 const isServerRouteSourcePath = (relativePath: string): boolean => {
-  if (!SOURCE_FILE_PATTERN.test(relativePath)) return false;
+  if (!isProductionSourcePath(relativePath)) return false;
   if (SERVER_CONTEXT_PATTERN.test(relativePath)) return true;
   return /(?:^|\/)(?:middleware|route)\.[cm]?[jt]sx?$/.test(relativePath);
 };
+
+const isProductionFilePath = (relativePath: string, sourceFilePattern: RegExp): boolean => {
+  if (!sourceFilePattern.test(relativePath)) return false;
+  if (TEST_CONTEXT_PATTERN.test(relativePath)) return false;
+  if (DOCUMENTATION_CONTEXT_PATTERN.test(relativePath)) return false;
+  if (GENERATED_SOURCE_CONTEXT_PATTERN.test(relativePath)) return false;
+  return true;
+};
+
+const isProductionSourcePath = (relativePath: string): boolean => {
+  return isProductionFilePath(relativePath, SOURCE_FILE_PATTERN);
+};
+
+const isProductionScriptSourcePath = (relativePath: string): boolean =>
+  isProductionFilePath(relativePath, SCRIPT_SOURCE_FILE_PATTERN);
+
+const isProductionDatabaseSourcePath = (relativePath: string): boolean =>
+  isProductionFilePath(relativePath, DATABASE_SOURCE_FILE_PATTERN);
 
 const isConfigOrCiPath = (relativePath: string): boolean =>
   /(?:^|\/)(?:package\.json|Dockerfile|docker-compose\.ya?ml|\.github\/workflows\/[^/]+\.ya?ml|vercel\.json|next\.config\.[cm]?[jt]s|netlify\.toml)$/i.test(
@@ -288,8 +313,20 @@ const getLocationAtIndex = (content: string, matchIndex: number): SourceLocation
 const getMatchLocation = (content: string, pattern: RegExp | undefined): SourceLocation =>
   getLocationAtIndex(content, pattern === undefined ? -1 : content.search(pattern));
 
-const getNodeLocation = (content: string, node: AstNode): SourceLocation =>
-  getLocationAtIndex(content, node.start ?? -1);
+const getNodeStartIndex = (node: EsTreeNode): number => {
+  if (node.range !== undefined) return node.range[0];
+  if ("start" in node && typeof node.start === "number") return node.start;
+  return -1;
+};
+
+const getNodeEndIndex = (node: EsTreeNode): number => {
+  if (node.range !== undefined) return node.range[1];
+  if ("end" in node && typeof node.end === "number") return node.end;
+  return -1;
+};
+
+const getNodeLocation = (content: string, node: EsTreeNode): SourceLocation =>
+  getLocationAtIndex(content, getNodeStartIndex(node));
 
 const buildDiagnostic = (input: SecurityDiagnosticInput): Diagnostic => {
   const location =
@@ -321,30 +358,21 @@ const addDiagnostic = (
   diagnostics.push(diagnostic);
 };
 
-const isAstNode = (value: unknown): value is AstNode =>
-  typeof value === "object" && value !== null && "type" in value;
-
-const parseSourceAst = (file: ScannedFile): AstNode | null => {
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return null;
-  try {
-    return parseSync(file.relativePath, file.content, {
-      sourceType: "unambiguous",
-      range: false,
-    }).program as unknown as AstNode;
-  } catch {
-    return null;
-  }
+const parseSourceAst = (file: ScannedFile): EsTreeNode | null => {
+  if (!isProductionSourcePath(file.relativePath)) return null;
+  return parseSourceText(file.absolutePath, file.content);
 };
 
-const walkAst = (root: AstNode, visit: (node: AstNode) => void): void => {
-  const stack: AstNode[] = [root];
+const walkAst = (root: EsTreeNode, visit: (node: EsTreeNode) => void): void => {
+  const stack: EsTreeNode[] = [root];
   while (stack.length > 0) {
     const node = stack.pop();
     if (node === undefined) continue;
     visit(node);
-    const keys = node.type === undefined ? [] : (visitorKeys[node.type] ?? []);
+    const keys = visitorKeys[node.type] ?? [];
+    const nodeRecord = node as unknown as Record<string, unknown>;
     for (let keyIndex = keys.length - 1; keyIndex >= 0; keyIndex -= 1) {
-      const child = node[keys[keyIndex]];
+      const child = nodeRecord[keys[keyIndex]];
       if (Array.isArray(child)) {
         for (let childIndex = child.length - 1; childIndex >= 0; childIndex -= 1) {
           const item = child[childIndex];
@@ -357,20 +385,22 @@ const walkAst = (root: AstNode, visit: (node: AstNode) => void): void => {
   }
 };
 
-const getNodeText = (file: ScannedFile, node: AstNode | undefined): string => {
-  if (node?.start === undefined || node.end === undefined) return "";
-  return file.content.slice(node.start, node.end);
+const getNodeText = (file: ScannedFile, node: EsTreeNode | undefined): string => {
+  if (node === undefined) return "";
+  const startIndex = getNodeStartIndex(node);
+  const endIndex = getNodeEndIndex(node);
+  if (startIndex < 0 || endIndex < 0) return "";
+  return file.content.slice(startIndex, endIndex);
 };
 
-const getCalleeText = (file: ScannedFile, node: AstNode): string => {
-  const callee = node.callee;
-  return isAstNode(callee) ? getNodeText(file, callee) : "";
+const getCalleeText = (file: ScannedFile, node: EsTreeNodeOfType<"CallExpression">): string => {
+  return isAstNode(node.callee) ? getNodeText(file, node.callee) : "";
 };
 
-const getStringLiteralValue = (node: AstNode | undefined): string | null => {
+const getStringLiteralValue = (node: EsTreeNode | undefined): string | null => {
   if (!node) return null;
-  if (node.type === "Literal" && typeof node.value === "string") return node.value;
-  if (node.type === "StringLiteral" && typeof node.value === "string") return node.value;
+  if (!isNodeOfType(node, "Literal")) return null;
+  if (typeof node.value === "string") return node.value;
   return null;
 };
 
@@ -499,7 +529,7 @@ const scannerDefinitions: ReadonlyArray<SecurityScanner> = [
     severity: "error",
     shouldScan: (file) => isClientSourcePath(file.relativePath),
     pattern:
-      /\b(?:setDoc|updateDoc|addDoc|\.set|\.update|\.add)\s*\([\s\S]{0,700}\b(?:ownerId|ownerID|creatorId|creatorID|providerId|providerID|orgId|orgID|tenantId|tenantID|workspaceId|workspaceID|ghostOrg|role|roles|isAdmin)\b/i,
+      /(?:\b(?:setDoc|updateDoc|addDoc)\s*\(|(?:\b(?:firebase|firestore|getFirestore)\b|\bcollection\s*\(|\.collection\s*\()[\s\S]{0,500}\.(?:set|update|add)\s*\()[\s\S]{0,700}\b(?:ownerId|ownerID|creatorId|creatorID|providerId|providerID|orgId|orgID|tenantId|tenantID|workspaceId|workspaceID|ghostOrg|role|roles|isAdmin)\b/i,
     message:
       "Client code writes an ownership, tenant, or role field that should be server-owned and immutable.",
     help: "Derive authority fields on the server or enforce them in Firebase/Supabase rules; never trust client-provided owner, org, or role values.",
@@ -530,7 +560,7 @@ const scannerDefinitions: ReadonlyArray<SecurityScanner> = [
     rule: "mdx-ssr-execution-risk",
     title: "Server-rendered MDX can execute code",
     severity: "warning",
-    shouldScan: (file) => SOURCE_FILE_PATTERN.test(file.relativePath),
+    shouldScan: (file) => isProductionSourcePath(file.relativePath),
     pattern:
       /\b(?:@mdx-js\/mdx|next-mdx-remote|MDXRemote|compileMDX|evaluate|compile)\b[\s\S]{0,700}\b(?:mdx|markdown|content|source|body|repo|customer|tenant|cache|process\.env|rehypeRaw|allowDangerousHtml)\b/i,
     message:
@@ -541,9 +571,9 @@ const scannerDefinitions: ReadonlyArray<SecurityScanner> = [
     rule: "local-rpc-native-bridge-risk",
     title: "Weak localhost native bridge boundary",
     severity: "warning",
-    shouldScan: (file) => SOURCE_FILE_PATTERN.test(file.relativePath),
+    shouldScan: (file) => isProductionSourcePath(file.relativePath),
     pattern:
-      /\b(?:127\.0\.0\.1|localhost|Origin|Access-Control-Allow-Origin|websocket|WebSocket)\b[\s\S]{0,700}\b(?:includes|indexOf|endsWith|UpdateApp|InstallApp|install|update|exec|spawn)\b/i,
+      /\b(?:127\.0\.0\.1|localhost|Access-Control-Allow-Origin|websocket|WebSocket)\b[\s\S]{0,700}\b(?:includes|indexOf|endsWith|UpdateApp|InstallApp|install|update|exec|spawn)\b/i,
     message:
       "Code appears to bridge browser code to localhost/native capabilities with weak origin or update/install checks.",
     help: "Use exact origin allowlists after URL parsing, per-request nonces, narrow methods, and never expose install/update commands to arbitrary web pages.",
@@ -563,7 +593,7 @@ const scannerDefinitions: ReadonlyArray<SecurityScanner> = [
     title: "Redirect or frame boundary risk",
     severity: "warning",
     shouldScan: (file) =>
-      SOURCE_FILE_PATTERN.test(file.relativePath) || isConfigOrCiPath(file.relativePath),
+      isProductionSourcePath(file.relativePath) || isConfigOrCiPath(file.relativePath),
     pattern:
       /\bredirect\s*\([^)]*(?:searchParams\.get|nextUrl\.searchParams|returnTo|continue|next)\b|<iframe\b[\s\S]{0,700}\b(?:next=|continue=|redirect|userstoinvite|sharingaction|role=|\.\.)|frame-ancestors\s+(?:\*|'self'\s+\*)|X-Frame-Options["']?\s*:\s*["']?ALLOW/i,
     message:
@@ -574,7 +604,7 @@ const scannerDefinitions: ReadonlyArray<SecurityScanner> = [
     rule: "svg-filter-clickjacking-risk",
     title: "SVG-filtered iframe clickjacking primitive",
     severity: "warning",
-    shouldScan: (file) => SOURCE_FILE_PATTERN.test(file.relativePath),
+    shouldScan: (file) => isProductionSourcePath(file.relativePath),
     pattern:
       /<iframe\b[\s\S]{0,700}\bfilter\s*:\s*["']?url\(#|filter\s*:\s*url\(#.*[\s\S]{0,700}<iframe\b|<fe(?:DisplacementMap|ColorMatrix|Composite|Tile|Morphology)\b[\s\S]{0,700}<iframe\b/i,
     message:
@@ -585,9 +615,9 @@ const scannerDefinitions: ReadonlyArray<SecurityScanner> = [
     rule: "import-metadata-execution-risk",
     title: "Imported metadata reaches code execution",
     severity: "error",
-    shouldScan: (file) => SOURCE_FILE_PATTERN.test(file.relativePath),
+    shouldScan: (file) => isProductionSourcePath(file.relativePath),
     pattern:
-      /\b(?:eval|new Function|vm\.runIn|script|Lua|python|exec|spawn)\b[\s\S]{0,700}\b(?:exif|metadata|manifest|preset|plugin|upload|drop|archive|zip|import|restore)\b/i,
+      /(?:\b(?:eval|new Function|vm\.runIn|Lua|python|exec|spawn)\b|<script\b)[\s\S]{0,700}\b(?:exif|metadata|manifest|preset|plugin|upload|drop|archive|zip|import|restore)\b/i,
     message: "Imported metadata, uploads, or plugin manifests appear to reach code execution.",
     help: "Parse imported metadata as data with strict schemas; do not evaluate EXIF, manifests, presets, dropped files, or archives.",
   },
@@ -596,9 +626,9 @@ const scannerDefinitions: ReadonlyArray<SecurityScanner> = [
     title: "Plugin or updater trust boundary risk",
     severity: "warning",
     shouldScan: (file) =>
-      SOURCE_FILE_PATTERN.test(file.relativePath) || isConfigOrCiPath(file.relativePath),
+      isProductionSourcePath(file.relativePath) || isConfigOrCiPath(file.relativePath),
     pattern:
-      /\b(?:plugin|repoUrl|updateUrl|UpdateApp|InstallApp|auto.?update|download|installer|curl|wget)\b[\s\S]{0,700}\b(?:https?:\/\/|\binstall(?:er)?\b|\bupdate\b|\bbinary\b|\.zip\b|\.exe\b|\.dmg\b|\.appimage\b)/i,
+      /\b(?:repoUrl|updateUrl|UpdateApp|InstallApp|auto.?update|download|installer|curl|wget)\b[\s\S]{0,700}\b(?:https?:\/\/|\binstall(?:er)?\b|\bupdate\b|\bbinary\b|\.zip\b|\.exe\b|\.dmg\b|\.appimage\b)/i,
     message:
       "Code appears to download, install, update, or execute plugin/updater content across a trust boundary.",
     help: "Require signed updates/plugins, pin trusted repositories, verify hashes before execution, and keep custom repository installs behind explicit warnings.",
@@ -618,7 +648,7 @@ const scannerDefinitions: ReadonlyArray<SecurityScanner> = [
     title: "Broad cookie or credentialed CORS trust",
     severity: "warning",
     shouldScan: (file) =>
-      SOURCE_FILE_PATTERN.test(file.relativePath) || isConfigOrCiPath(file.relativePath),
+      isProductionSourcePath(file.relativePath) || isConfigOrCiPath(file.relativePath),
     pattern:
       /Access-Control-Allow-Credentials["']?\s*[:,]\s*["']?true[\s\S]{0,700}Access-Control-Allow-Origin["']?\s*[:,]\s*["']?(?:\*|https:\/\/docs\.|https:\/\/.*mintlify)|\b(?:session|auth|token|jwt)[^=\n]{0,80}\bDomain=\./i,
     message:
@@ -751,7 +781,7 @@ const scanActiveStaticAssets = (
     return;
   }
 
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath) && !isConfigOrCiPath(file.relativePath)) return;
+  if (!isProductionSourcePath(file.relativePath) && !isConfigOrCiPath(file.relativePath)) return;
 
   const dangerousAllowSvgPattern = /dangerouslyAllowSVG\s*:\s*true/i;
   const executableSvgEmbedPattern =
@@ -930,8 +960,7 @@ const scanPostMessageOriginRisk = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionSourcePath(file.relativePath)) return;
   const ast = parseSourceAst(file);
   if (ast === null) return;
 
@@ -1022,8 +1051,7 @@ const scanDangerousHtmlSink = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionSourcePath(file.relativePath)) return;
   if (!DANGEROUS_HTML_PATTERN.test(file.content)) return;
 
   const lines = file.content.split("\n");
@@ -1059,8 +1087,7 @@ const scanAgentToolCapabilityRisk = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionSourcePath(file.relativePath)) return;
   if (
     !/(?:^|\/)(?:agents?|tools?|mcp)(?:\/|$)|(?:agent|tool|mcp)[^/]*\.[cm]?[jt]sx?$/i.test(
       file.relativePath,
@@ -1093,8 +1120,7 @@ const scanMcpToolCapabilityRisk = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionSourcePath(file.relativePath)) return;
   if (!MCP_IMPORT_PATTERN.test(file.content)) return;
   if (!MCP_TOOL_SURFACE_PATTERN.test(file.content)) return;
   if (!AGENT_TOOL_DANGEROUS_CAPABILITY_PATTERN.test(file.content)) return;
@@ -1117,8 +1143,7 @@ const scanMcpToolCapabilityRisk = (
 };
 
 const scanRawSqlRisk = (file: ScannedFile, diagnostics: Diagnostic[], seen: Set<string>): void => {
-  if (!/\.(?:[cm]?[jt]sx?|py|php)$/.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionScriptSourcePath(file.relativePath)) return;
   const pattern = RAW_SQL_RISK_PATTERNS.find((candidate) => candidate.test(file.content));
   if (pattern === undefined) return;
 
@@ -1144,8 +1169,7 @@ const scanNoSqlInjectionRisk = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!/\.(?:[cm]?[jt]sx?|py)$/.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionDatabaseSourcePath(file.relativePath)) return;
   if (!NOSQL_INJECTION_RISK_PATTERN.test(file.content)) return;
 
   addDiagnostic(
@@ -1169,8 +1193,7 @@ const scanCommandExecutionInputRisk = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!/\.(?:[cm]?[jt]sx?|py|php)$/.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionScriptSourcePath(file.relativePath)) return;
   if (!COMMAND_EXECUTION_INPUT_RISK_PATTERN.test(file.content)) return;
 
   addDiagnostic(
@@ -1195,8 +1218,7 @@ const scanPathTraversalRisk = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionSourcePath(file.relativePath)) return;
   if (!PATH_TRAVERSAL_RISK_PATTERN.test(file.content)) return;
 
   addDiagnostic(
@@ -1221,8 +1243,7 @@ const scanGitProviderUrlInjectionRisk = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionSourcePath(file.relativePath)) return;
   if (!GIT_PROVIDER_URL_INJECTION_PATTERN.test(file.content)) return;
 
   addDiagnostic(
@@ -1247,8 +1268,7 @@ const scanWebhookSignatureRisk = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
+  if (!isProductionSourcePath(file.relativePath)) return;
   if (
     !WEBHOOK_HANDLER_PATTERN.test(file.relativePath) &&
     !WEBHOOK_HANDLER_PATTERN.test(file.content)
@@ -1279,12 +1299,20 @@ const scanInsecureCryptoRisk = (
   diagnostics: Diagnostic[],
   seen: Set<string>,
 ): void => {
-  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return;
-  if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return;
-  const hasInsecurePrimitive = INSECURE_CRYPTO_PATTERN.test(file.content);
+  if (!isProductionSourcePath(file.relativePath)) return;
+  const hasInsecurePrimitive =
+    INSECURE_CRYPTO_PATTERN.test(file.content) ||
+    UNSAFE_SIGNATURE_COMPARISON_PATTERN.test(file.content);
   const hasSecurityRandom =
     SECURITY_RANDOM_CONTEXT_PATTERN.test(file.content) && /Math\.random\s*\(/.test(file.content);
   if (!hasInsecurePrimitive && !hasSecurityRandom) return;
+
+  let pattern = /Math\.random\s*\(/;
+  if (INSECURE_CRYPTO_PATTERN.test(file.content)) {
+    pattern = INSECURE_CRYPTO_PATTERN;
+  } else if (UNSAFE_SIGNATURE_COMPARISON_PATTERN.test(file.content)) {
+    pattern = UNSAFE_SIGNATURE_COMPARISON_PATTERN;
+  }
 
   addDiagnostic(
     diagnostics,
@@ -1298,7 +1326,7 @@ const scanInsecureCryptoRisk = (
         "Code uses weak hashes, deprecated ciphers, timing-unsafe comparisons, or Math.random in a security-shaped context.",
       help: "Use modern primitives, `crypto.randomBytes` / Web Crypto randomness, and timing-safe comparisons for signatures, digests, tokens, and auth material.",
       content: file.content,
-      pattern: hasInsecurePrimitive ? INSECURE_CRYPTO_PATTERN : /Math\.random\s*\(/,
+      pattern,
     }),
   );
 };

@@ -607,4 +607,109 @@ describe("checkSecurityPosture", () => {
 
     expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
   });
+
+  it("keeps docs examples out of source-only scanners", () => {
+    writeFile(
+      "README.md",
+      `Install the plugin with npm, then render examples with dangerouslySetInnerHTML in docs.`,
+    );
+    writeFile(
+      "docs/security.md",
+      `window.addEventListener("message", (event) => console.log(event.data)); localhost update notes.`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
+  });
+
+  it("still reports private key material in docs", () => {
+    writeFile("README.md", "-----BEGIN OPENSSH PRIVATE KEY-----\nreal-key-material\n");
+
+    expect(rulesOf(checkSecurityPosture(temporaryRoot))).toContain("key-lifecycle-risk");
+  });
+
+  it("keeps generated source examples quiet", () => {
+    writeFile(
+      "src/generated/icons.ts",
+      `// @generated\nexport const icons = ["javascript", "python", "zip", "svg", "import"];`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
+  });
+
+  it("still scans top-level public scripts as browser source", () => {
+    writeFile(
+      "public/widget.js",
+      `window.addEventListener("message", (event) => window.dispatchEvent(new CustomEvent("unsafe", { detail: event.data })));`,
+    );
+
+    expect(rulesOf(checkSecurityPosture(temporaryRoot))).toContain("postmessage-origin-risk");
+  });
+
+  it("keeps generated public chunk scripts quiet for source-only scanners", () => {
+    writeFile(
+      "public/chunks/widget.js",
+      `window.addEventListener("message", (event) => window.dispatchEvent(new CustomEvent("unsafe", { detail: event.data })));`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
+  });
+
+  it("keeps Vite browser config probes quiet", () => {
+    writeFile(
+      "vite.config.ts",
+      `import react from "@vitejs/plugin-react"; export default { plugins: [react()], define: { BRAVE_BINARY: "browser" } };`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
+  });
+
+  it("still reports timing-unsafe signature comparisons", () => {
+    writeFile(
+      "src/webhook-crypto.ts",
+      `if (signature !== expectedSignature) throw new Error("bad");`,
+    );
+
+    expect(rulesOf(checkSecurityPosture(temporaryRoot))).toContain("insecure-crypto-risk");
+  });
+
+  it("keeps placeholder signature comparisons quiet outside security-shaped code", () => {
+    writeFile("src/git-status.ts", `if (signature === "0") throw new Error("empty");`);
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
+  });
+
+  it("keeps signature string literal comparisons quiet", () => {
+    writeFile("src/event-kind.ts", `if (kind === "signature") return "signed";`);
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
+  });
+
+  it("keeps gesture origin variable names quiet", () => {
+    writeFile(
+      "src/gesture.ts",
+      `const { origin, distance } = getOriginAndDistance(touches[0], touches[1]); updatePinchState(false);`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
+  });
+
+  it("keeps non-Firebase immutable map writes quiet", () => {
+    writeFile(
+      "src/immutable-map.ts",
+      `class ImmutableMap { __ownerID = "owner"; set(key: string, value: string) { return [key, value]; } }`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([]);
+  });
+
+  it("still reports Firebase compat writes to authorization fields", () => {
+    writeFile(
+      "src/firebase-compat.ts",
+      `firebase.firestore().collection("documents").doc(id).set({ ownerId: user.uid, role: "admin" });`,
+    );
+
+    expect(rulesOf(checkSecurityPosture(temporaryRoot))).toContain(
+      "firebase-client-owned-authz-field",
+    );
+  });
 });

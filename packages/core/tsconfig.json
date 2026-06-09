@@ -1,6 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "paths": {
+      "oxlint-plugin-react-doctor/ast": ["../oxlint-plugin-react-doctor/src/ast.ts"]
+    },
     "noEmit": true,
     "types": ["node"]
   },
