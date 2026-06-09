@@ -25,9 +25,11 @@ export {
   REACT_NATIVE_DEPENDENCY_PREFIXES,
   isReactNativeDependencyName,
 } from "./react-native-dependency-names.js";
+export { checkSecurityPosture } from "./security-posture.js";
 
 export type { OxlintRuleSeverity } from "./types.js";
 export type { EsTreeNode } from "./plugin/utils/es-tree-node.js";
 export type { Rule, RuleFramework, RuleSeverity } from "./plugin/utils/rule.js";
 export type { RulePlugin } from "./plugin/utils/rule-plugin.js";
 export type { RuleVisitors } from "./plugin/utils/rule-visitors.js";
+export type { SecurityPostureDiagnostic } from "./security-posture.js";

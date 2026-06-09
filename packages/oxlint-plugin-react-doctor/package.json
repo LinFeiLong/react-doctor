@@ -42,6 +42,10 @@
     "./ast": {
       "types": "./dist/ast.d.ts",
       "default": "./dist/ast.js"
+    },
+    "./security-posture": {
+      "types": "./dist/security-posture.d.ts",
+      "default": "./dist/security-posture.js"
     }
   },
   "scripts": {
