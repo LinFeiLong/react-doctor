@@ -243,6 +243,52 @@ function reducer(state, action) {
 
 Do not report this. The mutation path returns a new object. The `return state` path is a no-op.
 
+### Posture Rules (Project-Level Scans)
+
+Most rules are per-file AST rules. Use a posture rule when the signal lives in the file system, not in source syntax:
+
+- The target files are never linted: shipped bundles, `.env` and config files, SQL, Firebase rules, repository secret files.
+- Path context (`public/`, build output, repository layout) matters more than code shape.
+- A content scan over a whole-tree file walk is the right precision.
+
+If the bug is a JavaScript/TypeScript code shape in linted source, write a normal AST rule instead.
+
+Posture rules live in `packages/oxlint-plugin-react-doctor/src/plugin/rules/security-posture/` and use `definePostureRule`. A real example (`firebase-permissive-rules.ts`):
+
+```ts
+export const firebasePermissiveRules = definePostureRule({
+  id: "firebase-permissive-rules",
+  title: "Permissive Firebase security rule",
+  severity: "error",
+  recommendation:
+    "Bind every read/write to `request.auth.uid`, immutable ownership, and tenant membership instead of treating sign-in as authorization.",
+  scan: scanByPattern({
+    shouldScan: (file) => isFirebaseRulesPath(file.relativePath),
+    pattern: /allow\s+(?:read|write|...)\s*:\s*if\s+(?:true|request\.auth\s*!=\s*null)/i,
+    message: "Firebase rules grant broad access to everyone or to any signed-in user.",
+  }),
+});
+```
+
+The scan contract:
+
+- `scan(file: ScannedFile): PostureFinding[]` replaces AST visitors.
+- `ScannedFile` carries `absolutePath`, `relativePath`, `content`, and `isGeneratedBundle`.
+- Each `PostureFinding` has `message`, `line`, `column`, and optional `severity`/`title`/`help` fields that override the rule's registry metadata per finding (for example, `public-debug-artifact` escalates to `"error"` when the artifact contains a secret value). Omit them to inherit the rule's `severity`/`title`/`recommendation`.
+
+Registration, tags, and severity flow identically to normal rules:
+
+- Codegen picks the rule up like any other: the `security-posture` bucket auto-applies the `Security` category and the `security-posture` tag.
+- `id:` and `severity:` must stay literal fields in the rule file — `scripts/generate-rule-registry.mjs` regex-parses them.
+- Capability gating, `disabledBy`, user severity overrides, inline disables, and `ignore.tags` apply the same as for AST rules.
+
+Execution is different: posture rules never appear in generated oxlint configs or ESLint presets. `@react-doctor/core`'s `check-security-posture` environment check runs every registered `scan` over one bounded whole-tree walk; diff/staged scans skip it like the other whole-project checks.
+
+To test:
+
+- Unit-test one rule with the in-memory harness in `packages/oxlint-plugin-react-doctor/src/test-utils/run-posture-rule.ts` (build a `ScannedFile`, assert the findings) in a co-located test file.
+- End-to-end coverage runs through `packages/core/tests/check-security-posture.test.ts` against fixture trees in `packages/core/tests/fixtures/check-security-posture/`.
+
 ### V1 Scope
 
 Do not mix adjacent rule ideas into v1.

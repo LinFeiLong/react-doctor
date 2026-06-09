@@ -35,13 +35,9 @@ describe("rule tag registration", () => {
     }
   });
 
-  it('tags every security posture rule with "security-posture"', () => {
-    const securityPostureRuleIds = [
-      "artifact-secret-leak",
-      "public-env-secret-name",
-      "raw-sql-injection-risk",
-      "webhook-signature-risk",
-    ];
+  it('tags every security posture rule (every rule carrying a scan) with "security-posture"', () => {
+    const securityPostureRuleIds = collectRuleIdsMatching((rule) => rule.scan !== undefined);
+    expect(securityPostureRuleIds.length).toBeGreaterThan(0);
     for (const ruleId of securityPostureRuleIds) {
       expect(getRuleTags(ruleId)).toContain("security-posture");
     }

@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { checkSecurityPosture } from "@react-doctor/core";
 import type { Diagnostic } from "@react-doctor/core";
+import { REACT_DOCTOR_RULES } from "oxlint-plugin-react-doctor";
 
 const FIXTURES_DIRECTORY = path.resolve(import.meta.dirname, "fixtures", "check-security-posture");
 
@@ -753,5 +754,44 @@ describe("checkSecurityPosture", () => {
     expect(rulesOf(checkSecurityPosture(temporaryRoot))).toContain(
       "firebase-client-owned-authz-field",
     );
+  });
+
+  it("flags secret-like values committed in package metadata", () => {
+    expect(
+      checkSecurityPosture(path.join(FIXTURES_DIRECTORY, "package-metadata-secret-leak")),
+    ).toEqual([
+      expect.objectContaining({
+        rule: "package-metadata-secret",
+        filePath: "package.json",
+        message: "Package metadata contains secret-like values or public env secret names.",
+      }),
+    ]);
+  });
+
+  it("disables every posture rule when the security-posture tag is ignored", () => {
+    expect(
+      checkSecurityPosture(path.join(FIXTURES_DIRECTORY, "eva-todesktop-release-pipeline"), {
+        ignoredTags: new Set(["security-posture"]),
+      }),
+    ).toEqual([]);
+  });
+
+  it("single-sources diagnostic metadata from the registry rule", () => {
+    const entry = REACT_DOCTOR_RULES.find(
+      (candidate) => candidate.id === "build-pipeline-secret-boundary",
+    );
+    if (entry === undefined) throw new Error("build-pipeline-secret-boundary not in registry");
+
+    const diagnostics = checkSecurityPosture(
+      path.join(FIXTURES_DIRECTORY, "eva-todesktop-release-pipeline"),
+    );
+
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({
+      rule: "build-pipeline-secret-boundary",
+      title: entry.rule.title,
+      help: entry.rule.recommendation,
+      severity: entry.rule.severity === "warn" ? "warning" : "error",
+    });
   });
 });

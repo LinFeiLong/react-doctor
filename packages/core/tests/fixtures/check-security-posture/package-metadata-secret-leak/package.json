@@ -1,0 +1,9 @@
+{
+  "name": "package-metadata-secret-leak",
+  "dependencies": {
+    "react": "^19.0.0"
+  },
+  "config": {
+    "registryToken": "ghp_abcdefghijklmnopqrstuvwxyz123456"
+  }
+}
