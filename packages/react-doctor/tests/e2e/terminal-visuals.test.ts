@@ -438,7 +438,7 @@ describe("verbose warning tail names every collapsed-location site", () => {
       rule: isDevDependency ? "unused-dev-dependency" : "unused-dependency",
       severity: "warning",
       message: `Unused ${isDevDependency ? "devDependency" : "dependency"}: \`${name}\``,
-      help: "Remove the dependency from package.json if it is genuinely unused.",
+      help: "Remove it from package.json if it is genuinely unused.",
       line: 0,
       column: 0,
       category: "Maintainability",
@@ -451,22 +451,35 @@ describe("verbose warning tail names every collapsed-location site", () => {
     return (await renderInTerminal(bytes, { cols: 120 })).text;
   };
 
-  it("lists every unused dependency and dev-dependency name, not just the first", async () => {
+  it("lists every name and drops the redundant package.json location line", async () => {
     const names = ["left-pad", "moment", "is-odd"];
     const text = await renderVerboseText([
       ...names.map((name) => makeDependencyDiagnostic(name, false)),
       makeDependencyDiagnostic("vitest", true),
     ]);
 
-    expect(text).toContain("package.json");
     for (const name of [...names, "vitest"]) {
       expect(text, name).toContain(name);
     }
+    // `package.json` stays in the help sentence, but the bare location line
+    // that used to dangle below the names is gone (#690).
+    expect(text).not.toMatch(/^\s*package\.json\s*$/m);
   });
 
-  it("surfaces the name even for a single unused dependency", async () => {
-    const text = await renderVerboseText([makeDependencyDiagnostic("underscore", false)]);
-    expect(text).toContain("underscore");
+  it("keeps the location line when the path is the finding's subject", async () => {
+    const unusedFile = {
+      filePath: "src/orphan.ts",
+      plugin: "deslop",
+      rule: "unused-file",
+      severity: "warning",
+      message: "Unused file is not reachable from any entry point.",
+      help: "Delete the file if it is truly unreachable, or import it from an entry point.",
+      line: 0,
+      column: 0,
+      category: "Maintainability",
+    } as Diagnostic;
+    const text = await renderVerboseText([unusedFile]);
+    expect(text).toContain("src/orphan.ts");
   });
 
   it("does not enumerate per-site messages for distinct navigable locations", async () => {

@@ -355,10 +355,11 @@ const buildRuleDetailBlock = (
 
   // Impact prose, once per rule — except a warning group collapsed to one
   // line-less location lists every distinct message so each name shows (#690).
-  const impactMessages =
-    severity === "warning" && hasIndistinctSiteLocations(ruleDiagnostics)
-      ? [...new Set(ruleDiagnostics.map((diagnostic) => diagnostic.message))]
-      : [representative.message];
+  const isCollapsedWarningGroup =
+    severity === "warning" && hasIndistinctSiteLocations(ruleDiagnostics);
+  const impactMessages = isCollapsedWarningGroup
+    ? [...new Set(ruleDiagnostics.map((diagnostic) => diagnostic.message))]
+    : [representative.message];
   for (const impactMessage of impactMessages) {
     for (const explanationLine of wrapTextToWidth(
       impactMessage,
@@ -395,8 +396,16 @@ const buildRuleDetailBlock = (
   // still navigable, just without the inline source preview.
   const renderCodeFrame = severity === "error";
   const sites = renderEverySite ? ruleDiagnostics : [representative];
-  for (const cluster of clusterNearbyDiagnostics(sites)) {
-    lines.push(...buildDiagnosticClusterLines(cluster, resolveSourceRoot, renderCodeFrame));
+  // A collapsed group's sites share one line-less location. When the help
+  // already names it ("remove it from package.json"), the bare location line
+  // would just dangle — no frame, no line to navigate to — so skip it. Rules
+  // whose location is the subject (unused files) keep it: their help names no path.
+  const skipSharedLocation =
+    isCollapsedWarningGroup && representative.help.includes(representative.filePath);
+  if (!skipSharedLocation) {
+    for (const cluster of clusterNearbyDiagnostics(sites)) {
+      lines.push(...buildDiagnosticClusterLines(cluster, resolveSourceRoot, renderCodeFrame));
+    }
   }
 
   return lines;
