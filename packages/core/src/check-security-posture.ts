@@ -869,7 +869,8 @@ const scanPublicEnvSecretName = (
   seen: Set<string>,
 ): void => {
   if (!isClientSourcePath(file.relativePath)) return;
-  if (!hasSuspiciousPublicEnvSecretName(file.content)) return;
+  const pattern = findSuspiciousPublicEnvSecretNamePattern(file.content);
+  if (pattern === undefined) return;
 
   addDiagnostic(
     diagnostics,
@@ -883,7 +884,7 @@ const scanPublicEnvSecretName = (
         "Client code references a public env variable whose name looks like a secret or privileged credential.",
       help: "Public env prefixes are inlined into browser bundles. Rename public values to non-secret names, and keep tokens, passwords, private keys, and service-role credentials server-only.",
       content: file.content,
-      pattern: PUBLIC_ENV_SECRET_NAME_PATTERN,
+      pattern,
     }),
   );
 };
@@ -986,7 +987,11 @@ const scanPostMessageOriginRisk = (
     }
 
     if (!isMessageHandler) return;
-    if (POSTMESSAGE_ORIGIN_CHECK_PATTERN.test(nodeText)) return;
+    const originCheckIndex = nodeText.search(POSTMESSAGE_ORIGIN_CHECK_PATTERN);
+    const messageDataIndex = nodeText.search(/\b(?:event|e)\.data\b/);
+    if (originCheckIndex >= 0 && (messageDataIndex < 0 || originCheckIndex < messageDataIndex)) {
+      return;
+    }
 
     const location = getNodeLocation(file.content, node);
 

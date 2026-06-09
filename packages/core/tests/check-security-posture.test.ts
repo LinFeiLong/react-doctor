@@ -446,6 +446,21 @@ describe("checkSecurityPosture", () => {
     ]);
   });
 
+  it("reports postMessage handlers that read data before checking origin", () => {
+    writeFile(
+      "src/message-order.ts",
+      `window.addEventListener("message", (event) => {\n  window.dispatchEvent(new CustomEvent("unsafe", { detail: event.data }));\n  if (event.origin !== "https://example.com") return;\n});\n`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([
+      expect.objectContaining({
+        rule: "postmessage-origin-risk",
+        line: 1,
+        column: 1,
+      }),
+    ]);
+  });
+
   it("keeps unrelated redirect options quiet while scanning got shorthand calls", () => {
     writeFile(
       "app/api/config/route.ts",
@@ -503,6 +518,21 @@ describe("checkSecurityPosture", () => {
     writeFile("src/client.tsx", `export const token = process.env.NEXT_PUBLIC_SECRET_TOKEN;`);
 
     expect(rulesOf(checkSecurityPosture(temporaryRoot))).toContain("public-env-secret-name");
+  });
+
+  it("reports public env secret names at the suspicious name location", () => {
+    writeFile(
+      "src/client.tsx",
+      `export const analytics = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;\nexport const secret = process.env.NEXT_PUBLIC_SECRET_TOKEN;\n`,
+    );
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([
+      expect.objectContaining({
+        rule: "public-env-secret-name",
+        line: 2,
+        column: 35,
+      }),
+    ]);
   });
 
   it("does not report server-only public env probes as client secret exposure", () => {
