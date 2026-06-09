@@ -419,6 +419,18 @@ describe("checkSecurityPosture", () => {
     );
   });
 
+  it("uses concrete locations for package metadata secret values", () => {
+    writeFile("package.json", `{\n  "token": "ghp_abcdefghijklmnopqrstuvwxyz123456"\n}\n`);
+
+    expect(checkSecurityPosture(temporaryRoot)).toEqual([
+      expect.objectContaining({
+        rule: "package-metadata-secret",
+        line: 2,
+        column: 13,
+      }),
+    ]);
+  });
+
   it("reports postMessage handlers at the unsafe handler location", () => {
     writeFile(
       "src/message-listener.ts",

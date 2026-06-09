@@ -812,7 +812,11 @@ const scanPackageJsonSecrets = (
   seen: Set<string>,
 ): void => {
   if (!file.relativePath.endsWith("package.json")) return;
-  if (!hasSuspiciousPublicEnvSecretName(file.content) && !hasSecretValue(file.content)) return;
+  const pattern =
+    findSuspiciousPublicEnvSecretNamePattern(file.content) ??
+    SECRET_VALUE_PATTERNS.find((candidate) => candidate.test(file.content));
+  if (pattern === undefined) return;
+
   addDiagnostic(
     diagnostics,
     seen,
@@ -824,7 +828,7 @@ const scanPackageJsonSecrets = (
       message: "Package metadata contains secret-like values or public env secret names.",
       help: "Keep secrets out of package metadata and generated reports; they are often published to registries, logs, or browser artifacts.",
       content: file.content,
-      pattern: PUBLIC_ENV_SECRET_NAME_PATTERN,
+      pattern,
     }),
   );
 };
