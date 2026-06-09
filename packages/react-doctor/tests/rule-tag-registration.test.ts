@@ -35,6 +35,18 @@ describe("rule tag registration", () => {
     }
   });
 
+  it('tags every security posture rule with "security-posture"', () => {
+    const securityPostureRuleIds = [
+      "artifact-secret-leak",
+      "public-env-secret-name",
+      "raw-sql-injection-risk",
+      "webhook-signature-risk",
+    ];
+    for (const ruleId of securityPostureRuleIds) {
+      expect(getRuleTags(ruleId)).toContain("security-posture");
+    }
+  });
+
   it('tags the four migration-hint rules with "migration-hint"', () => {
     const migrationHintRuleIds = [
       "no-react19-deprecated-apis",

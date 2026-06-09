@@ -160,10 +160,12 @@ for (const bucket of fs.readdirSync(PLUGIN_RULES_ROOT, { withFileTypes: true }))
     // where the original `<[^>]+>` matcher silently failed and dropped the rule.
     // `defineRetiredRule` follows the same metadata shape but intentionally
     // emits a no-op rule for legacy config compatibility.
-    const exportMatch = source.match(
-      /export\s+const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:defineRule|defineRetiredRule)\b[^(]*\(\s*\{/,
-    );
-    if (!exportMatch) {
+    const exportMatches = [
+      ...source.matchAll(
+        /export\s+const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:defineRule|defineRetiredRule)\b[^(]*\(\s*\{([\s\S]*?)^\s*\}\);/gm,
+      ),
+    ];
+    if (exportMatches.length === 0) {
       // Fail loudly if a file clearly declares a rule export but the scanner
       // can't parse it — a silent `continue` would ship a registry missing
       // the rule with no error.
@@ -177,49 +179,52 @@ for (const bucket of fs.readdirSync(PLUGIN_RULES_ROOT, { withFileTypes: true }))
       }
       continue;
     }
-    const identifier = exportMatch[1];
-    const idMatch = source.match(/^\s*id:\s*"([^"]+)",?\s*$/m);
-    if (!idMatch) {
-      console.error(
-        `Rule file missing \`id: "..."\` field: ${path.relative(PACKAGE_ROOT, filePath)}`,
-      );
-      process.exit(1);
+    for (const exportMatch of exportMatches) {
+      const identifier = exportMatch[1];
+      const ruleSource = exportMatch[2];
+      const idMatch = ruleSource.match(/^\s*id:\s*"([^"]+)",?\s*$/m);
+      if (!idMatch) {
+        console.error(
+          `Rule file missing \`id: "..."\` field: ${path.relative(PACKAGE_ROOT, filePath)}`,
+        );
+        process.exit(1);
+      }
+      const categoryMatch = ruleSource.match(/^\s*category:\s*"([^"]+)",?\s*$/m);
+      const severityMatch = ruleSource.match(/^\s*severity:\s*"(error|warn)",?\s*$/m);
+      if (!severityMatch) {
+        console.error(
+          `Rule file missing \`severity: "error" | "warn"\` field: ${path.relative(PACKAGE_ROOT, filePath)}`,
+        );
+        process.exit(1);
+      }
+      const ruleId = idMatch[1];
+      if (RULE_IDS_TO_SKIP_REGISTRATION.has(ruleId)) continue;
+      const category = toBucket(categoryMatch ? categoryMatch[1] : defaultCategory);
+      const severity = severityMatch[1];
+      // Force POSIX separators — `path.relative()` returns backslashes on
+      // Windows, which TypeScript module resolution rejects.
+      const relativeImport =
+        "./" +
+        path
+          .relative(path.dirname(REGISTRY_OUTPUT), filePath)
+          .replaceAll(path.sep, "/")
+          .replace(/\.ts$/, ".js");
+      const autoTags = BUCKET_TO_AUTO_TAGS[bucket.name] ?? [];
+      const originallyExternal =
+        !RULES_NOT_PORTED_FROM_EXTERNAL.has(ruleId) &&
+        (BUCKETS_PORTED_FROM_EXTERNAL.has(bucket.name) ||
+          EFFECT_RULES_PORTED_FROM_EXTERNAL.has(ruleId));
+      ruleEntries.push({
+        ruleId,
+        identifier,
+        relativeImport,
+        framework,
+        category,
+        severity,
+        autoTags,
+        originallyExternal,
+      });
     }
-    const categoryMatch = source.match(/^\s*category:\s*"([^"]+)",?\s*$/m);
-    const severityMatch = source.match(/^\s*severity:\s*"(error|warn)",?\s*$/m);
-    if (!severityMatch) {
-      console.error(
-        `Rule file missing \`severity: "error" | "warn"\` field: ${path.relative(PACKAGE_ROOT, filePath)}`,
-      );
-      process.exit(1);
-    }
-    const ruleId = idMatch[1];
-    if (RULE_IDS_TO_SKIP_REGISTRATION.has(ruleId)) continue;
-    const category = toBucket(categoryMatch ? categoryMatch[1] : defaultCategory);
-    const severity = severityMatch[1];
-    // Force POSIX separators — `path.relative()` returns backslashes on
-    // Windows, which TypeScript module resolution rejects.
-    const relativeImport =
-      "./" +
-      path
-        .relative(path.dirname(REGISTRY_OUTPUT), filePath)
-        .replaceAll(path.sep, "/")
-        .replace(/\.ts$/, ".js");
-    const autoTags = BUCKET_TO_AUTO_TAGS[bucket.name] ?? [];
-    const originallyExternal =
-      !RULES_NOT_PORTED_FROM_EXTERNAL.has(ruleId) &&
-      (BUCKETS_PORTED_FROM_EXTERNAL.has(bucket.name) ||
-        EFFECT_RULES_PORTED_FROM_EXTERNAL.has(ruleId));
-    ruleEntries.push({
-      ruleId,
-      identifier,
-      relativeImport,
-      framework,
-      category,
-      severity,
-      autoTags,
-      originallyExternal,
-    });
   }
 }
 

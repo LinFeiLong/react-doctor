@@ -15,7 +15,6 @@ export default defineConfig({
       entry: {
         ast: "./src/ast.ts",
         index: "./src/index.ts",
-        "security-posture": "./src/security-posture.ts",
       },
       deps: {
         // HACK: oxc-parser loads a platform-specific NAPI binding via

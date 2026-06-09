@@ -2,8 +2,8 @@ import * as fs from "node:fs";
 import os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
+import { checkSecurityPosture } from "oxlint-plugin-react-doctor";
 import type { Diagnostic } from "@react-doctor/core";
-import { checkSecurityPosture } from "../src/check-security-posture.js";
 
 const FIXTURES_DIRECTORY = path.resolve(import.meta.dirname, "fixtures", "check-security-posture");
 

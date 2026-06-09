@@ -48,4 +48,25 @@ describe("createOxlintConfig settings", () => {
 
     expect(config.settings["react-doctor"]).not.toHaveProperty("shopifyFlashListMajorVersion");
   });
+
+  it("enables security posture detections as normal react-doctor rules", () => {
+    const config = createOxlintConfig({
+      pluginPath: "/tmp/plugin.js",
+      project: buildProject({ framework: "vite", hasReactNativeWorkspace: false }),
+    });
+
+    expect(config.rules["react-doctor/artifact-secret-leak"]).toBe("error");
+    expect(config.rules["react-doctor/raw-sql-injection-risk"]).toBe("warn");
+  });
+
+  it("honors the security-posture tag when enabling normal rules", () => {
+    const config = createOxlintConfig({
+      pluginPath: "/tmp/plugin.js",
+      project: buildProject({ framework: "vite", hasReactNativeWorkspace: false }),
+      ignoredTags: new Set(["security-posture"]),
+    });
+
+    expect(config.rules["react-doctor/artifact-secret-leak"]).toBeUndefined();
+    expect(config.rules["react-doctor/raw-sql-injection-risk"]).toBeUndefined();
+  });
 });

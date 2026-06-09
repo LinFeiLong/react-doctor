@@ -8,8 +8,10 @@
 
 import type { Rule } from "./utils/rule.js";
 
+import { activeStaticAsset } from "./rules/security/security-posture-rules.js";
 import { activityWrapsEffectHeavySubtree } from "./rules/state-and-effects/activity-wraps-effect-heavy-subtree.js";
 import { advancedEventHandlerRefs } from "./rules/state-and-effects/advanced-event-handler-refs.js";
+import { agentToolCapabilityRisk } from "./rules/security/security-posture-rules.js";
 import { altText } from "./rules/a11y/alt-text.js";
 import { anchorAmbiguousText } from "./rules/a11y/anchor-ambiguous-text.js";
 import { anchorHasContent } from "./rules/a11y/anchor-has-content.js";
@@ -19,16 +21,24 @@ import { ariaProps } from "./rules/a11y/aria-props.js";
 import { ariaProptypes } from "./rules/a11y/aria-proptypes.js";
 import { ariaRole } from "./rules/a11y/aria-role.js";
 import { ariaUnsupportedElements } from "./rules/a11y/aria-unsupported-elements.js";
+import { artifactBaasAuthoritySurface } from "./rules/security/security-posture-rules.js";
+import { artifactEnvLeak } from "./rules/security/security-posture-rules.js";
+import { artifactSecretLeak } from "./rules/security/security-posture-rules.js";
 import { asyncAwaitInLoop } from "./rules/js-performance/async-await-in-loop.js";
 import { asyncDeferAwait } from "./rules/performance/async-defer-await.js";
 import { asyncParallel } from "./rules/js-performance/async-parallel.js";
 import { autocompleteValid } from "./rules/a11y/autocomplete-valid.js";
+import { buildPipelineSecretBoundary } from "./rules/security/security-posture-rules.js";
 import { buttonHasType } from "./rules/react-builtins/button-has-type.js";
 import { checkedRequiresOnchangeOrReadonly } from "./rules/react-builtins/checked-requires-onchange-or-readonly.js";
 import { clickEventsHaveKeyEvents } from "./rules/a11y/click-events-have-key-events.js";
+import { clickjackingRedirectRisk } from "./rules/security/security-posture-rules.js";
 import { clientLocalstorageNoVersion } from "./rules/client/client-localstorage-no-version.js";
 import { clientPassiveEventListeners } from "./rules/client/client-passive-event-listeners.js";
+import { commandExecutionInputRisk } from "./rules/security/security-posture-rules.js";
 import { controlHasAssociatedLabel } from "./rules/a11y/control-has-associated-label.js";
+import { corsCookieTrustRisk } from "./rules/security/security-posture-rules.js";
+import { dangerousHtmlSink } from "./rules/security/security-posture-rules.js";
 import { noEmDashInJsxText } from "./rules/react-ui/no-em-dash-in-jsx-text.js";
 import { noRedundantPaddingAxes } from "./rules/react-ui/no-redundant-padding-axes.js";
 import { noRedundantSizeAxes } from "./rules/react-ui/no-redundant-size-axes.js";
@@ -39,10 +49,14 @@ import { displayName } from "./rules/react-builtins/display-name.js";
 import { effectNeedsCleanup } from "./rules/state-and-effects/effect-needs-cleanup.js";
 import { exhaustiveDeps } from "./rules/react-builtins/exhaustive-deps.js";
 import { expoNoNonInlinedEnv } from "./rules/react-native/expo-no-non-inlined-env.js";
+import { firebaseClientOwnedAuthzField } from "./rules/security/security-posture-rules.js";
+import { firebasePermissiveRules } from "./rules/security/security-posture-rules.js";
+import { firebaseQueryFilterAsAuth } from "./rules/security/security-posture-rules.js";
 import { forbidComponentProps } from "./rules/react-builtins/forbid-component-props.js";
 import { forbidDomProps } from "./rules/react-builtins/forbid-dom-props.js";
 import { forbidElements } from "./rules/react-builtins/forbid-elements.js";
 import { forwardRefUsesRef } from "./rules/react-builtins/forward-ref-uses-ref.js";
+import { gitProviderUrlInjectionRisk } from "./rules/security/security-posture-rules.js";
 import { headingHasContent } from "./rules/a11y/heading-has-content.js";
 import { hookUseState } from "./rules/react-builtins/hook-use-state.js";
 import { hooksNoNanInDeps } from "./rules/state-and-effects/hooks-no-nan-in-deps.js";
@@ -53,6 +67,8 @@ import { htmlNoNestedInteractive } from "./rules/correctness/html-no-nested-inte
 import { iframeHasTitle } from "./rules/a11y/iframe-has-title.js";
 import { iframeMissingSandbox } from "./rules/react-builtins/iframe-missing-sandbox.js";
 import { imgRedundantAlt } from "./rules/a11y/img-redundant-alt.js";
+import { importMetadataExecutionRisk } from "./rules/security/security-posture-rules.js";
+import { insecureCryptoRisk } from "./rules/security/security-posture-rules.js";
 import { interactiveSupportsFocus } from "./rules/a11y/interactive-supports-focus.js";
 import { jotaiDerivedAtomReturnsFreshObject } from "./rules/jotai/jotai-derived-atom-returns-fresh-object.js";
 import { jotaiSelectAtomInRenderBody } from "./rules/jotai/jotai-select-atom-in-render-body.js";
@@ -91,8 +107,12 @@ import { jsxNoUselessFragment } from "./rules/react-builtins/jsx-no-useless-frag
 import { jsxPascalCase } from "./rules/react-builtins/jsx-pascal-case.js";
 import { jsxPropsNoSpreadMulti } from "./rules/react-builtins/jsx-props-no-spread-multi.js";
 import { jsxPropsNoSpreading } from "./rules/react-builtins/jsx-props-no-spreading.js";
+import { keyLifecycleRisk } from "./rules/security/security-posture-rules.js";
 import { labelHasAssociatedControl } from "./rules/a11y/label-has-associated-control.js";
 import { lang } from "./rules/a11y/lang.js";
+import { localRpcNativeBridgeRisk } from "./rules/security/security-posture-rules.js";
+import { mcpToolCapabilityRisk } from "./rules/security/security-posture-rules.js";
+import { mdxSsrExecutionRisk } from "./rules/security/security-posture-rules.js";
 import { mediaHasCaption } from "./rules/a11y/media-has-caption.js";
 import { mouseEventsHaveKeyEvents } from "./rules/a11y/mouse-events-have-key-events.js";
 import { nextjsAsyncClientComponent } from "./rules/nextjs/nextjs-async-client-component.js";
@@ -227,7 +247,12 @@ import { noUsememoSimpleExpression } from "./rules/performance/no-usememo-simple
 import { noWideLetterSpacing } from "./rules/design/no-wide-letter-spacing.js";
 import { noWillUpdateSetState } from "./rules/react-builtins/no-will-update-set-state.js";
 import { noZIndex9999 } from "./rules/design/no-z-index9999.js";
+import { nosqlInjectionRisk } from "./rules/security/security-posture-rules.js";
 import { onlyExportComponents } from "./rules/react-builtins/only-export-components.js";
+import { packageMetadataSecret } from "./rules/security/security-posture-rules.js";
+import { pathTraversalRisk } from "./rules/security/security-posture-rules.js";
+import { pluginUpdateTrustRisk } from "./rules/security/security-posture-rules.js";
+import { postmessageOriginRisk } from "./rules/security/security-posture-rules.js";
 import { preactNoChildrenLength } from "./rules/preact/preact-no-children-length.js";
 import { preactNoReactHooksImport } from "./rules/preact/preact-no-react-hooks-import.js";
 import { preactNoRenderArguments } from "./rules/preact/preact-no-render-arguments.js";
@@ -245,6 +270,8 @@ import { preferTagOverRole } from "./rules/a11y/prefer-tag-over-role.js";
 import { preferUseEffectEvent } from "./rules/state-and-effects/prefer-use-effect-event.js";
 import { preferUseSyncExternalStore } from "./rules/state-and-effects/prefer-use-sync-external-store.js";
 import { preferUseReducer } from "./rules/state-and-effects/prefer-use-reducer.js";
+import { publicDebugArtifact } from "./rules/security/security-posture-rules.js";
+import { publicEnvSecretName } from "./rules/security/security-posture-rules.js";
 import { queryDestructureResult } from "./rules/tanstack-query/query-destructure-result.js";
 import { queryMutationMissingInvalidation } from "./rules/tanstack-query/query-mutation-missing-invalidation.js";
 import { queryNoQueryInEffect } from "./rules/tanstack-query/query-no-query-in-effect.js";
@@ -252,6 +279,7 @@ import { queryNoRestDestructuring } from "./rules/tanstack-query/query-no-rest-d
 import { queryNoUseQueryForMutation } from "./rules/tanstack-query/query-no-use-query-for-mutation.js";
 import { queryNoVoidQueryFn } from "./rules/tanstack-query/query-no-void-query-fn.js";
 import { queryStableQueryClient } from "./rules/tanstack-query/query-stable-query-client.js";
+import { rawSqlInjectionRisk } from "./rules/security/security-posture-rules.js";
 import { reactCompilerNoManualMemoization } from "./rules/architecture/react-compiler-no-manual-memoization.js";
 import { reactInJsxScope } from "./rules/react-builtins/react-in-jsx-scope.js";
 import { reduxUseselectorInlineDerivation } from "./rules/state-and-effects/redux-useselector-inline-derivation.js";
@@ -264,6 +292,7 @@ import { renderingHydrationNoFlicker } from "./rules/performance/rendering-hydra
 import { renderingScriptDeferAsync } from "./rules/performance/rendering-script-defer-async.js";
 import { renderingSvgPrecision } from "./rules/correctness/rendering-svg-precision.js";
 import { renderingUsetransitionLoading } from "./rules/performance/rendering-usetransition-loading.js";
+import { repositorySecretFile } from "./rules/security/security-posture-rules.js";
 import { requireRenderReturn } from "./rules/react-builtins/require-render-return.js";
 import { rerenderDeferReadsHook } from "./rules/state-and-effects/rerender-defer-reads-hook.js";
 import { rerenderDependencies } from "./rules/state-and-effects/rerender-dependencies.js";
@@ -324,6 +353,9 @@ import { serverNoMutableModuleState } from "./rules/server/server-no-mutable-mod
 import { serverSequentialIndependentAwait } from "./rules/server/server-sequential-independent-await.js";
 import { stateInConstructor } from "./rules/react-builtins/state-in-constructor.js";
 import { stylePropObject } from "./rules/react-builtins/style-prop-object.js";
+import { supabaseClientOwnedAuthzField } from "./rules/security/security-posture-rules.js";
+import { supabaseRlsPolicyRisk } from "./rules/security/security-posture-rules.js";
+import { svgFilterClickjackingRisk } from "./rules/security/security-posture-rules.js";
 import { tabindexNoPositive } from "./rules/a11y/tabindex-no-positive.js";
 import { tanstackStartGetMutation } from "./rules/tanstack-start/tanstack-start-get-mutation.js";
 import { tanstackStartLoaderParallelFetch } from "./rules/tanstack-start/tanstack-start-loader-parallel-fetch.js";
@@ -339,14 +371,29 @@ import { tanstackStartRedirectInTryCatch } from "./rules/tanstack-start/tanstack
 import { tanstackStartRoutePropertyOrder } from "./rules/tanstack-start/tanstack-start-route-property-order.js";
 import { tanstackStartServerFnMethodOrder } from "./rules/tanstack-start/tanstack-start-server-fn-method-order.js";
 import { tanstackStartServerFnValidateInput } from "./rules/tanstack-start/tanstack-start-server-fn-validate-input.js";
+import { tenantStaticProxyRisk } from "./rules/security/security-posture-rules.js";
+import { untrustedRedirectFollowing } from "./rules/security/security-posture-rules.js";
+import { urlPrefilledPrivilegedAction } from "./rules/security/security-posture-rules.js";
 import { useLazyMotion } from "./rules/bundle-size/use-lazy-motion.js";
 import { voidDomElementsNoChildren } from "./rules/react-builtins/void-dom-elements-no-children.js";
+import { webhookSignatureRisk } from "./rules/security/security-posture-rules.js";
 import { zodV4NoDeprecatedErrorApis } from "./rules/zod/zod-v4-no-deprecated-error-apis.js";
 import { zodV4NoDeprecatedErrorCustomization } from "./rules/zod/zod-v4-no-deprecated-error-customization.js";
 import { zodV4NoDeprecatedSchemaApis } from "./rules/zod/zod-v4-no-deprecated-schema-apis.js";
 import { zodV4PreferTopLevelStringFormats } from "./rules/zod/zod-v4-prefer-top-level-string-formats.js";
 
 export const reactDoctorRules = [
+  {
+    key: "react-doctor/active-static-asset",
+    id: "active-static-asset",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...activeStaticAsset,
+      framework: "global",
+      category: "Security",
+    },
+  },
   {
     key: "react-doctor/activity-wraps-effect-heavy-subtree",
     id: "activity-wraps-effect-heavy-subtree",
@@ -367,6 +414,17 @@ export const reactDoctorRules = [
       ...advancedEventHandlerRefs,
       framework: "global",
       category: "Performance",
+    },
+  },
+  {
+    key: "react-doctor/agent-tool-capability-risk",
+    id: "agent-tool-capability-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...agentToolCapabilityRisk,
+      framework: "global",
+      category: "Security",
     },
   },
   {
@@ -469,6 +527,39 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/artifact-baas-authority-surface",
+    id: "artifact-baas-authority-surface",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...artifactBaasAuthoritySurface,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/artifact-env-leak",
+    id: "artifact-env-leak",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...artifactEnvLeak,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/artifact-secret-leak",
+    id: "artifact-secret-leak",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...artifactSecretLeak,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/async-await-in-loop",
     id: "async-await-in-loop",
     source: "react-doctor",
@@ -513,6 +604,17 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/build-pipeline-secret-boundary",
+    id: "build-pipeline-secret-boundary",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...buildPipelineSecretBoundary,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/button-has-type",
     id: "button-has-type",
     source: "react-doctor",
@@ -546,6 +648,17 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/clickjacking-redirect-risk",
+    id: "clickjacking-redirect-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...clickjackingRedirectRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/client-localstorage-no-version",
     id: "client-localstorage-no-version",
     source: "react-doctor",
@@ -568,6 +681,17 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/command-execution-input-risk",
+    id: "command-execution-input-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...commandExecutionInputRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/control-has-associated-label",
     id: "control-has-associated-label",
     source: "react-doctor",
@@ -576,6 +700,28 @@ export const reactDoctorRules = [
       ...controlHasAssociatedLabel,
       framework: "global",
       category: "Accessibility",
+    },
+  },
+  {
+    key: "react-doctor/cors-cookie-trust-risk",
+    id: "cors-cookie-trust-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...corsCookieTrustRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/dangerous-html-sink",
+    id: "dangerous-html-sink",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...dangerousHtmlSink,
+      framework: "global",
+      category: "Security",
     },
   },
   {
@@ -690,6 +836,39 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/firebase-client-owned-authz-field",
+    id: "firebase-client-owned-authz-field",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...firebaseClientOwnedAuthzField,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/firebase-permissive-rules",
+    id: "firebase-permissive-rules",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...firebasePermissiveRules,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/firebase-query-filter-as-auth",
+    id: "firebase-query-filter-as-auth",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...firebaseQueryFilterAsAuth,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/forbid-component-props",
     id: "forbid-component-props",
     source: "react-doctor",
@@ -731,6 +910,17 @@ export const reactDoctorRules = [
       ...forwardRefUsesRef,
       framework: "global",
       category: "Maintainability",
+    },
+  },
+  {
+    key: "react-doctor/git-provider-url-injection-risk",
+    id: "git-provider-url-injection-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...gitProviderUrlInjectionRisk,
+      framework: "global",
+      category: "Security",
     },
   },
   {
@@ -841,6 +1031,28 @@ export const reactDoctorRules = [
       ...imgRedundantAlt,
       framework: "global",
       category: "Accessibility",
+    },
+  },
+  {
+    key: "react-doctor/import-metadata-execution-risk",
+    id: "import-metadata-execution-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...importMetadataExecutionRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/insecure-crypto-risk",
+    id: "insecure-crypto-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...insecureCryptoRisk,
+      framework: "global",
+      category: "Security",
     },
   },
   {
@@ -1262,6 +1474,17 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/key-lifecycle-risk",
+    id: "key-lifecycle-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...keyLifecycleRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/label-has-associated-control",
     id: "label-has-associated-control",
     source: "react-doctor",
@@ -1281,6 +1504,39 @@ export const reactDoctorRules = [
       ...lang,
       framework: "global",
       category: "Accessibility",
+    },
+  },
+  {
+    key: "react-doctor/local-rpc-native-bridge-risk",
+    id: "local-rpc-native-bridge-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...localRpcNativeBridgeRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/mcp-tool-capability-risk",
+    id: "mcp-tool-capability-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...mcpToolCapabilityRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/mdx-ssr-execution-risk",
+    id: "mdx-ssr-execution-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...mdxSsrExecutionRisk,
+      framework: "global",
+      category: "Security",
     },
   },
   {
@@ -2758,6 +3014,17 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/nosql-injection-risk",
+    id: "nosql-injection-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...nosqlInjectionRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/only-export-components",
     id: "only-export-components",
     source: "react-doctor",
@@ -2766,6 +3033,50 @@ export const reactDoctorRules = [
       ...onlyExportComponents,
       framework: "global",
       category: "Maintainability",
+    },
+  },
+  {
+    key: "react-doctor/package-metadata-secret",
+    id: "package-metadata-secret",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...packageMetadataSecret,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/path-traversal-risk",
+    id: "path-traversal-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...pathTraversalRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/plugin-update-trust-risk",
+    id: "plugin-update-trust-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...pluginUpdateTrustRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/postmessage-origin-risk",
+    id: "postmessage-origin-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...postmessageOriginRisk,
+      framework: "global",
+      category: "Security",
     },
   },
   {
@@ -2956,6 +3267,28 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/public-debug-artifact",
+    id: "public-debug-artifact",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...publicDebugArtifact,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/public-env-secret-name",
+    id: "public-env-secret-name",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...publicEnvSecretName,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/query-destructure-result",
     id: "query-destructure-result",
     source: "react-doctor",
@@ -3030,6 +3363,17 @@ export const reactDoctorRules = [
       ...queryStableQueryClient,
       framework: "tanstack-query",
       category: "Bugs",
+    },
+  },
+  {
+    key: "react-doctor/raw-sql-injection-risk",
+    id: "raw-sql-injection-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...rawSqlInjectionRisk,
+      framework: "global",
+      category: "Security",
     },
   },
   {
@@ -3162,6 +3506,17 @@ export const reactDoctorRules = [
       ...renderingUsetransitionLoading,
       framework: "global",
       category: "Performance",
+    },
+  },
+  {
+    key: "react-doctor/repository-secret-file",
+    id: "repository-secret-file",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...repositorySecretFile,
+      framework: "global",
+      category: "Security",
     },
   },
   {
@@ -3867,6 +4222,39 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/supabase-client-owned-authz-field",
+    id: "supabase-client-owned-authz-field",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...supabaseClientOwnedAuthzField,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/supabase-rls-policy-risk",
+    id: "supabase-rls-policy-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...supabaseRlsPolicyRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/svg-filter-clickjacking-risk",
+    id: "svg-filter-clickjacking-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...svgFilterClickjackingRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/tabindex-no-positive",
     id: "tabindex-no-positive",
     source: "react-doctor",
@@ -4032,6 +4420,39 @@ export const reactDoctorRules = [
     },
   },
   {
+    key: "react-doctor/tenant-static-proxy-risk",
+    id: "tenant-static-proxy-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...tenantStaticProxyRisk,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/untrusted-redirect-following",
+    id: "untrusted-redirect-following",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...untrustedRedirectFollowing,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
+    key: "react-doctor/url-prefilled-privileged-action",
+    id: "url-prefilled-privileged-action",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...urlPrefilledPrivilegedAction,
+      framework: "global",
+      category: "Security",
+    },
+  },
+  {
     key: "react-doctor/use-lazy-motion",
     id: "use-lazy-motion",
     source: "react-doctor",
@@ -4051,6 +4472,17 @@ export const reactDoctorRules = [
       ...voidDomElementsNoChildren,
       framework: "global",
       category: "Bugs",
+    },
+  },
+  {
+    key: "react-doctor/webhook-signature-risk",
+    id: "webhook-signature-risk",
+    source: "react-doctor",
+    originallyExternal: false,
+    rule: {
+      ...webhookSignatureRisk,
+      framework: "global",
+      category: "Security",
     },
   },
   {
