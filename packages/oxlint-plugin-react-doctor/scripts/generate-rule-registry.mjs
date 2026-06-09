@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 // Generates `src/plugin/rule-registry.ts` by scanning every per-rule file
-// under `src/plugin/rules/<bucket>/<rule>.ts` for its
+// under `src/plugin/rules/<bucket>/<rule>.ts` for its single
 //   export const <identifier> = defineRule<Rule>({ id: "<rule-id>", ... })
 //   export const <identifier> = defineRetiredRule({ id: "<rule-id>", ... })
-// declaration. The bucket directory determines the rule's `framework` and
-// its default `category`; the rule file may override the category with an
-// explicit field. `framework` is never on the rule itself.
+//   export const <identifier> = definePostureRule({ id: "<rule-id>", ... })
+// declaration (one rule file = one rule). The bucket directory determines
+// the rule's `framework` and its default `category`; the rule file may
+// override the category with an explicit field. `framework` is never on
+// the rule itself.
 //
 // Output is committed to git so consumers don't need to run codegen.
 // `pnpm gen` re-runs whenever a rule is added / removed / renamed.
@@ -60,6 +62,7 @@ const BUCKETS_REQUIRING_REACT = new Set([
 // inherit a bucket tag and carry its own.
 const BUCKET_TO_AUTO_TAGS = {
   "react-native": ["react-native"],
+  "security-posture": ["security-posture"],
   server: ["server-action"],
 };
 
@@ -153,6 +156,7 @@ const BUCKET_TO_DEFAULT_CATEGORY = {
   "react-native": "React Native",
   "react-ui": "Accessibility",
   security: "Security",
+  "security-posture": "Security",
   server: "Server",
   "state-and-effects": "State & Effects",
   "tanstack-query": "TanStack Query",
@@ -181,18 +185,19 @@ for (const bucket of fs.readdirSync(PLUGIN_RULES_ROOT, { withFileTypes: true }))
     // (e.g. `defineRule<Foo<Bar>>(`) and the no-generic `defineRule({` form,
     // where the original `<[^>]+>` matcher silently failed and dropped the rule.
     // `defineRetiredRule` follows the same metadata shape but intentionally
-    // emits a no-op rule for legacy config compatibility.
-    const exportMatches = [
-      ...source.matchAll(
-        /export\s+const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:defineRule|defineRetiredRule)\b[^(]*\(\s*\{([\s\S]*?)^\s*\}\);/gm,
-      ),
-    ];
-    if (exportMatches.length === 0) {
+    // emits a no-op rule for legacy config compatibility; `definePostureRule`
+    // rules carry a project-level `scan` and are excluded from oxlint configs.
+    const exportMatch = source.match(
+      /export\s+const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:defineRule|defineRetiredRule|definePostureRule)\b[^(]*\(\s*\{/,
+    );
+    if (!exportMatch) {
       // Fail loudly if a file clearly declares a rule export but the scanner
       // can't parse it — a silent `continue` would ship a registry missing
       // the rule with no error.
       if (
-        /export\s+const\s+[A-Za-z_$][\w$]*\s*=\s*(?:defineRule|defineRetiredRule)\b/.test(source)
+        /export\s+const\s+[A-Za-z_$][\w$]*\s*=\s*(?:defineRule|defineRetiredRule|definePostureRule)\b/.test(
+          source,
+        )
       ) {
         console.error(
           `Rule export present but unparseable by the registry scanner: ${path.relative(PACKAGE_ROOT, filePath)}`,
@@ -201,54 +206,51 @@ for (const bucket of fs.readdirSync(PLUGIN_RULES_ROOT, { withFileTypes: true }))
       }
       continue;
     }
-    for (const exportMatch of exportMatches) {
-      const identifier = exportMatch[1];
-      const ruleSource = exportMatch[2];
-      const idMatch = ruleSource.match(/^\s*id:\s*"([^"]+)",?\s*$/m);
-      if (!idMatch) {
-        console.error(
-          `Rule file missing \`id: "..."\` field: ${path.relative(PACKAGE_ROOT, filePath)}`,
-        );
-        process.exit(1);
-      }
-      const categoryMatch = ruleSource.match(/^\s*category:\s*"([^"]+)",?\s*$/m);
-      const severityMatch = ruleSource.match(/^\s*severity:\s*"(error|warn)",?\s*$/m);
-      if (!severityMatch) {
-        console.error(
-          `Rule file missing \`severity: "error" | "warn"\` field: ${path.relative(PACKAGE_ROOT, filePath)}`,
-        );
-        process.exit(1);
-      }
-      const ruleId = idMatch[1];
-      if (RULE_IDS_TO_SKIP_REGISTRATION.has(ruleId)) continue;
-      const category = toBucket(categoryMatch ? categoryMatch[1] : defaultCategory);
-      const severity = severityMatch[1];
-      // Force POSIX separators — `path.relative()` returns backslashes on
-      // Windows, which TypeScript module resolution rejects.
-      const relativeImport =
-        "./" +
-        path
-          .relative(path.dirname(REGISTRY_OUTPUT), filePath)
-          .replaceAll(path.sep, "/")
-          .replace(/\.ts$/, ".js");
-      const autoTags = BUCKET_TO_AUTO_TAGS[bucket.name] ?? [];
-      const requiresReact = BUCKETS_REQUIRING_REACT.has(bucket.name);
-      const originallyExternal =
-        !RULES_NOT_PORTED_FROM_EXTERNAL.has(ruleId) &&
-        (BUCKETS_PORTED_FROM_EXTERNAL.has(bucket.name) ||
-          EFFECT_RULES_PORTED_FROM_EXTERNAL.has(ruleId));
-      ruleEntries.push({
-        ruleId,
-        identifier,
-        relativeImport,
-        framework,
-        category,
-        severity,
-        autoTags,
-        requiresReact,
-        originallyExternal,
-      });
+    const identifier = exportMatch[1];
+    const idMatch = source.match(/^\s*id:\s*"([^"]+)",?\s*$/m);
+    if (!idMatch) {
+      console.error(
+        `Rule file missing \`id: "..."\` field: ${path.relative(PACKAGE_ROOT, filePath)}`,
+      );
+      process.exit(1);
     }
+    const categoryMatch = source.match(/^\s*category:\s*"([^"]+)",?\s*$/m);
+    const severityMatch = source.match(/^\s*severity:\s*"(error|warn)",?\s*$/m);
+    if (!severityMatch) {
+      console.error(
+        `Rule file missing \`severity: "error" | "warn"\` field: ${path.relative(PACKAGE_ROOT, filePath)}`,
+      );
+      process.exit(1);
+    }
+    const ruleId = idMatch[1];
+    if (RULE_IDS_TO_SKIP_REGISTRATION.has(ruleId)) continue;
+    const category = toBucket(categoryMatch ? categoryMatch[1] : defaultCategory);
+    const severity = severityMatch[1];
+    // Force POSIX separators — `path.relative()` returns backslashes on
+    // Windows, which TypeScript module resolution rejects.
+    const relativeImport =
+      "./" +
+      path
+        .relative(path.dirname(REGISTRY_OUTPUT), filePath)
+        .replaceAll(path.sep, "/")
+        .replace(/\.ts$/, ".js");
+    const autoTags = BUCKET_TO_AUTO_TAGS[bucket.name] ?? [];
+    const requiresReact = BUCKETS_REQUIRING_REACT.has(bucket.name);
+    const originallyExternal =
+      !RULES_NOT_PORTED_FROM_EXTERNAL.has(ruleId) &&
+      (BUCKETS_PORTED_FROM_EXTERNAL.has(bucket.name) ||
+        EFFECT_RULES_PORTED_FROM_EXTERNAL.has(ruleId));
+    ruleEntries.push({
+      ruleId,
+      identifier,
+      relativeImport,
+      framework,
+      category,
+      severity,
+      autoTags,
+      requiresReact,
+      originallyExternal,
+    });
   }
 }
 

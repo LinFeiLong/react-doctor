@@ -8,10 +8,10 @@
 
 import type { Rule } from "./utils/rule.js";
 
-import { activeStaticAsset } from "./rules/security/security-posture-rules.js";
+import { activeStaticAsset } from "./rules/security-posture/active-static-asset.js";
 import { activityWrapsEffectHeavySubtree } from "./rules/state-and-effects/activity-wraps-effect-heavy-subtree.js";
 import { advancedEventHandlerRefs } from "./rules/state-and-effects/advanced-event-handler-refs.js";
-import { agentToolCapabilityRisk } from "./rules/security/security-posture-rules.js";
+import { agentToolCapabilityRisk } from "./rules/security-posture/agent-tool-capability-risk.js";
 import { altText } from "./rules/a11y/alt-text.js";
 import { anchorAmbiguousText } from "./rules/a11y/anchor-ambiguous-text.js";
 import { anchorHasContent } from "./rules/a11y/anchor-has-content.js";
@@ -21,24 +21,24 @@ import { ariaProps } from "./rules/a11y/aria-props.js";
 import { ariaProptypes } from "./rules/a11y/aria-proptypes.js";
 import { ariaRole } from "./rules/a11y/aria-role.js";
 import { ariaUnsupportedElements } from "./rules/a11y/aria-unsupported-elements.js";
-import { artifactBaasAuthoritySurface } from "./rules/security/security-posture-rules.js";
-import { artifactEnvLeak } from "./rules/security/security-posture-rules.js";
-import { artifactSecretLeak } from "./rules/security/security-posture-rules.js";
+import { artifactBaasAuthoritySurface } from "./rules/security-posture/artifact-baas-authority-surface.js";
+import { artifactEnvLeak } from "./rules/security-posture/artifact-env-leak.js";
+import { artifactSecretLeak } from "./rules/security-posture/artifact-secret-leak.js";
 import { asyncAwaitInLoop } from "./rules/js-performance/async-await-in-loop.js";
 import { asyncDeferAwait } from "./rules/performance/async-defer-await.js";
 import { asyncParallel } from "./rules/js-performance/async-parallel.js";
 import { autocompleteValid } from "./rules/a11y/autocomplete-valid.js";
-import { buildPipelineSecretBoundary } from "./rules/security/security-posture-rules.js";
+import { buildPipelineSecretBoundary } from "./rules/security-posture/build-pipeline-secret-boundary.js";
 import { buttonHasType } from "./rules/react-builtins/button-has-type.js";
 import { checkedRequiresOnchangeOrReadonly } from "./rules/react-builtins/checked-requires-onchange-or-readonly.js";
 import { clickEventsHaveKeyEvents } from "./rules/a11y/click-events-have-key-events.js";
-import { clickjackingRedirectRisk } from "./rules/security/security-posture-rules.js";
+import { clickjackingRedirectRisk } from "./rules/security-posture/clickjacking-redirect-risk.js";
 import { clientLocalstorageNoVersion } from "./rules/client/client-localstorage-no-version.js";
 import { clientPassiveEventListeners } from "./rules/client/client-passive-event-listeners.js";
-import { commandExecutionInputRisk } from "./rules/security/security-posture-rules.js";
+import { commandExecutionInputRisk } from "./rules/security-posture/command-execution-input-risk.js";
 import { controlHasAssociatedLabel } from "./rules/a11y/control-has-associated-label.js";
-import { corsCookieTrustRisk } from "./rules/security/security-posture-rules.js";
-import { dangerousHtmlSink } from "./rules/security/security-posture-rules.js";
+import { corsCookieTrustRisk } from "./rules/security-posture/cors-cookie-trust-risk.js";
+import { dangerousHtmlSink } from "./rules/security-posture/dangerous-html-sink.js";
 import { noEmDashInJsxText } from "./rules/react-ui/no-em-dash-in-jsx-text.js";
 import { noRedundantPaddingAxes } from "./rules/react-ui/no-redundant-padding-axes.js";
 import { noRedundantSizeAxes } from "./rules/react-ui/no-redundant-size-axes.js";
@@ -49,14 +49,14 @@ import { displayName } from "./rules/react-builtins/display-name.js";
 import { effectNeedsCleanup } from "./rules/state-and-effects/effect-needs-cleanup.js";
 import { exhaustiveDeps } from "./rules/react-builtins/exhaustive-deps.js";
 import { expoNoNonInlinedEnv } from "./rules/react-native/expo-no-non-inlined-env.js";
-import { firebaseClientOwnedAuthzField } from "./rules/security/security-posture-rules.js";
-import { firebasePermissiveRules } from "./rules/security/security-posture-rules.js";
-import { firebaseQueryFilterAsAuth } from "./rules/security/security-posture-rules.js";
+import { firebaseClientOwnedAuthzField } from "./rules/security-posture/firebase-client-owned-authz-field.js";
+import { firebasePermissiveRules } from "./rules/security-posture/firebase-permissive-rules.js";
+import { firebaseQueryFilterAsAuth } from "./rules/security-posture/firebase-query-filter-as-auth.js";
 import { forbidComponentProps } from "./rules/react-builtins/forbid-component-props.js";
 import { forbidDomProps } from "./rules/react-builtins/forbid-dom-props.js";
 import { forbidElements } from "./rules/react-builtins/forbid-elements.js";
 import { forwardRefUsesRef } from "./rules/react-builtins/forward-ref-uses-ref.js";
-import { gitProviderUrlInjectionRisk } from "./rules/security/security-posture-rules.js";
+import { gitProviderUrlInjectionRisk } from "./rules/security-posture/git-provider-url-injection-risk.js";
 import { headingHasContent } from "./rules/a11y/heading-has-content.js";
 import { hookUseState } from "./rules/react-builtins/hook-use-state.js";
 import { hooksNoNanInDeps } from "./rules/state-and-effects/hooks-no-nan-in-deps.js";
@@ -67,8 +67,8 @@ import { htmlNoNestedInteractive } from "./rules/correctness/html-no-nested-inte
 import { iframeHasTitle } from "./rules/a11y/iframe-has-title.js";
 import { iframeMissingSandbox } from "./rules/react-builtins/iframe-missing-sandbox.js";
 import { imgRedundantAlt } from "./rules/a11y/img-redundant-alt.js";
-import { importMetadataExecutionRisk } from "./rules/security/security-posture-rules.js";
-import { insecureCryptoRisk } from "./rules/security/security-posture-rules.js";
+import { importMetadataExecutionRisk } from "./rules/security-posture/import-metadata-execution-risk.js";
+import { insecureCryptoRisk } from "./rules/security-posture/insecure-crypto-risk.js";
 import { interactiveSupportsFocus } from "./rules/a11y/interactive-supports-focus.js";
 import { jotaiDerivedAtomReturnsFreshObject } from "./rules/jotai/jotai-derived-atom-returns-fresh-object.js";
 import { jotaiSelectAtomInRenderBody } from "./rules/jotai/jotai-select-atom-in-render-body.js";
@@ -107,12 +107,12 @@ import { jsxNoUselessFragment } from "./rules/react-builtins/jsx-no-useless-frag
 import { jsxPascalCase } from "./rules/react-builtins/jsx-pascal-case.js";
 import { jsxPropsNoSpreadMulti } from "./rules/react-builtins/jsx-props-no-spread-multi.js";
 import { jsxPropsNoSpreading } from "./rules/react-builtins/jsx-props-no-spreading.js";
-import { keyLifecycleRisk } from "./rules/security/security-posture-rules.js";
+import { keyLifecycleRisk } from "./rules/security-posture/key-lifecycle-risk.js";
 import { labelHasAssociatedControl } from "./rules/a11y/label-has-associated-control.js";
 import { lang } from "./rules/a11y/lang.js";
-import { localRpcNativeBridgeRisk } from "./rules/security/security-posture-rules.js";
-import { mcpToolCapabilityRisk } from "./rules/security/security-posture-rules.js";
-import { mdxSsrExecutionRisk } from "./rules/security/security-posture-rules.js";
+import { localRpcNativeBridgeRisk } from "./rules/security-posture/local-rpc-native-bridge-risk.js";
+import { mcpToolCapabilityRisk } from "./rules/security-posture/mcp-tool-capability-risk.js";
+import { mdxSsrExecutionRisk } from "./rules/security-posture/mdx-ssr-execution-risk.js";
 import { mediaHasCaption } from "./rules/a11y/media-has-caption.js";
 import { mouseEventsHaveKeyEvents } from "./rules/a11y/mouse-events-have-key-events.js";
 import { nextjsAsyncClientComponent } from "./rules/nextjs/nextjs-async-client-component.js";
@@ -247,12 +247,12 @@ import { noUsememoSimpleExpression } from "./rules/performance/no-usememo-simple
 import { noWideLetterSpacing } from "./rules/design/no-wide-letter-spacing.js";
 import { noWillUpdateSetState } from "./rules/react-builtins/no-will-update-set-state.js";
 import { noZIndex9999 } from "./rules/design/no-z-index9999.js";
-import { nosqlInjectionRisk } from "./rules/security/security-posture-rules.js";
+import { nosqlInjectionRisk } from "./rules/security-posture/nosql-injection-risk.js";
 import { onlyExportComponents } from "./rules/react-builtins/only-export-components.js";
-import { packageMetadataSecret } from "./rules/security/security-posture-rules.js";
-import { pathTraversalRisk } from "./rules/security/security-posture-rules.js";
-import { pluginUpdateTrustRisk } from "./rules/security/security-posture-rules.js";
-import { postmessageOriginRisk } from "./rules/security/security-posture-rules.js";
+import { packageMetadataSecret } from "./rules/security-posture/package-metadata-secret.js";
+import { pathTraversalRisk } from "./rules/security-posture/path-traversal-risk.js";
+import { pluginUpdateTrustRisk } from "./rules/security-posture/plugin-update-trust-risk.js";
+import { postmessageOriginRisk } from "./rules/security-posture/postmessage-origin-risk.js";
 import { preactNoChildrenLength } from "./rules/preact/preact-no-children-length.js";
 import { preactNoReactHooksImport } from "./rules/preact/preact-no-react-hooks-import.js";
 import { preactNoRenderArguments } from "./rules/preact/preact-no-render-arguments.js";
@@ -270,8 +270,8 @@ import { preferTagOverRole } from "./rules/a11y/prefer-tag-over-role.js";
 import { preferUseEffectEvent } from "./rules/state-and-effects/prefer-use-effect-event.js";
 import { preferUseSyncExternalStore } from "./rules/state-and-effects/prefer-use-sync-external-store.js";
 import { preferUseReducer } from "./rules/state-and-effects/prefer-use-reducer.js";
-import { publicDebugArtifact } from "./rules/security/security-posture-rules.js";
-import { publicEnvSecretName } from "./rules/security/security-posture-rules.js";
+import { publicDebugArtifact } from "./rules/security-posture/public-debug-artifact.js";
+import { publicEnvSecretName } from "./rules/security-posture/public-env-secret-name.js";
 import { queryDestructureResult } from "./rules/tanstack-query/query-destructure-result.js";
 import { queryMutationMissingInvalidation } from "./rules/tanstack-query/query-mutation-missing-invalidation.js";
 import { queryNoQueryInEffect } from "./rules/tanstack-query/query-no-query-in-effect.js";
@@ -279,7 +279,7 @@ import { queryNoRestDestructuring } from "./rules/tanstack-query/query-no-rest-d
 import { queryNoUseQueryForMutation } from "./rules/tanstack-query/query-no-use-query-for-mutation.js";
 import { queryNoVoidQueryFn } from "./rules/tanstack-query/query-no-void-query-fn.js";
 import { queryStableQueryClient } from "./rules/tanstack-query/query-stable-query-client.js";
-import { rawSqlInjectionRisk } from "./rules/security/security-posture-rules.js";
+import { rawSqlInjectionRisk } from "./rules/security-posture/raw-sql-injection-risk.js";
 import { reactCompilerNoManualMemoization } from "./rules/architecture/react-compiler-no-manual-memoization.js";
 import { reactInJsxScope } from "./rules/react-builtins/react-in-jsx-scope.js";
 import { reduxUseselectorInlineDerivation } from "./rules/state-and-effects/redux-useselector-inline-derivation.js";
@@ -292,7 +292,7 @@ import { renderingHydrationNoFlicker } from "./rules/performance/rendering-hydra
 import { renderingScriptDeferAsync } from "./rules/performance/rendering-script-defer-async.js";
 import { renderingSvgPrecision } from "./rules/correctness/rendering-svg-precision.js";
 import { renderingUsetransitionLoading } from "./rules/performance/rendering-usetransition-loading.js";
-import { repositorySecretFile } from "./rules/security/security-posture-rules.js";
+import { repositorySecretFile } from "./rules/security-posture/repository-secret-file.js";
 import { requireRenderReturn } from "./rules/react-builtins/require-render-return.js";
 import { rerenderDeferReadsHook } from "./rules/state-and-effects/rerender-defer-reads-hook.js";
 import { rerenderDependencies } from "./rules/state-and-effects/rerender-dependencies.js";
@@ -353,9 +353,9 @@ import { serverNoMutableModuleState } from "./rules/server/server-no-mutable-mod
 import { serverSequentialIndependentAwait } from "./rules/server/server-sequential-independent-await.js";
 import { stateInConstructor } from "./rules/react-builtins/state-in-constructor.js";
 import { stylePropObject } from "./rules/react-builtins/style-prop-object.js";
-import { supabaseClientOwnedAuthzField } from "./rules/security/security-posture-rules.js";
-import { supabaseRlsPolicyRisk } from "./rules/security/security-posture-rules.js";
-import { svgFilterClickjackingRisk } from "./rules/security/security-posture-rules.js";
+import { supabaseClientOwnedAuthzField } from "./rules/security-posture/supabase-client-owned-authz-field.js";
+import { supabaseRlsPolicyRisk } from "./rules/security-posture/supabase-rls-policy-risk.js";
+import { svgFilterClickjackingRisk } from "./rules/security-posture/svg-filter-clickjacking-risk.js";
 import { tabindexNoPositive } from "./rules/a11y/tabindex-no-positive.js";
 import { tanstackStartGetMutation } from "./rules/tanstack-start/tanstack-start-get-mutation.js";
 import { tanstackStartLoaderParallelFetch } from "./rules/tanstack-start/tanstack-start-loader-parallel-fetch.js";
@@ -371,12 +371,12 @@ import { tanstackStartRedirectInTryCatch } from "./rules/tanstack-start/tanstack
 import { tanstackStartRoutePropertyOrder } from "./rules/tanstack-start/tanstack-start-route-property-order.js";
 import { tanstackStartServerFnMethodOrder } from "./rules/tanstack-start/tanstack-start-server-fn-method-order.js";
 import { tanstackStartServerFnValidateInput } from "./rules/tanstack-start/tanstack-start-server-fn-validate-input.js";
-import { tenantStaticProxyRisk } from "./rules/security/security-posture-rules.js";
-import { untrustedRedirectFollowing } from "./rules/security/security-posture-rules.js";
-import { urlPrefilledPrivilegedAction } from "./rules/security/security-posture-rules.js";
+import { tenantStaticProxyRisk } from "./rules/security-posture/tenant-static-proxy-risk.js";
+import { untrustedRedirectFollowing } from "./rules/security-posture/untrusted-redirect-following.js";
+import { urlPrefilledPrivilegedAction } from "./rules/security-posture/url-prefilled-privileged-action.js";
 import { useLazyMotion } from "./rules/bundle-size/use-lazy-motion.js";
 import { voidDomElementsNoChildren } from "./rules/react-builtins/void-dom-elements-no-children.js";
-import { webhookSignatureRisk } from "./rules/security/security-posture-rules.js";
+import { webhookSignatureRisk } from "./rules/security-posture/webhook-signature-risk.js";
 import { zodV4NoDeprecatedErrorApis } from "./rules/zod/zod-v4-no-deprecated-error-apis.js";
 import { zodV4NoDeprecatedErrorCustomization } from "./rules/zod/zod-v4-no-deprecated-error-customization.js";
 import { zodV4NoDeprecatedSchemaApis } from "./rules/zod/zod-v4-no-deprecated-schema-apis.js";
@@ -392,6 +392,7 @@ export const reactDoctorRules = [
       ...activeStaticAsset,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(activeStaticAsset.tags ?? [])])],
     },
   },
   {
@@ -427,6 +428,7 @@ export const reactDoctorRules = [
       ...agentToolCapabilityRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(agentToolCapabilityRisk.tags ?? [])])],
     },
   },
   {
@@ -546,6 +548,7 @@ export const reactDoctorRules = [
       ...artifactBaasAuthoritySurface,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(artifactBaasAuthoritySurface.tags ?? [])])],
     },
   },
   {
@@ -557,6 +560,7 @@ export const reactDoctorRules = [
       ...artifactEnvLeak,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(artifactEnvLeak.tags ?? [])])],
     },
   },
   {
@@ -568,6 +572,7 @@ export const reactDoctorRules = [
       ...artifactSecretLeak,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(artifactSecretLeak.tags ?? [])])],
     },
   },
   {
@@ -625,6 +630,7 @@ export const reactDoctorRules = [
       ...buildPipelineSecretBoundary,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(buildPipelineSecretBoundary.tags ?? [])])],
     },
   },
   {
@@ -672,6 +678,7 @@ export const reactDoctorRules = [
       ...clickjackingRedirectRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(clickjackingRedirectRisk.tags ?? [])])],
     },
   },
   {
@@ -707,6 +714,7 @@ export const reactDoctorRules = [
       ...commandExecutionInputRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(commandExecutionInputRisk.tags ?? [])])],
     },
   },
   {
@@ -730,6 +738,7 @@ export const reactDoctorRules = [
       ...corsCookieTrustRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(corsCookieTrustRisk.tags ?? [])])],
     },
   },
   {
@@ -741,6 +750,7 @@ export const reactDoctorRules = [
       ...dangerousHtmlSink,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(dangerousHtmlSink.tags ?? [])])],
     },
   },
   {
@@ -872,6 +882,7 @@ export const reactDoctorRules = [
       ...firebaseClientOwnedAuthzField,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(firebaseClientOwnedAuthzField.tags ?? [])])],
     },
   },
   {
@@ -883,6 +894,7 @@ export const reactDoctorRules = [
       ...firebasePermissiveRules,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(firebasePermissiveRules.tags ?? [])])],
     },
   },
   {
@@ -894,6 +906,7 @@ export const reactDoctorRules = [
       ...firebaseQueryFilterAsAuth,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(firebaseQueryFilterAsAuth.tags ?? [])])],
     },
   },
   {
@@ -953,6 +966,7 @@ export const reactDoctorRules = [
       ...gitProviderUrlInjectionRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(gitProviderUrlInjectionRisk.tags ?? [])])],
     },
   },
   {
@@ -1081,6 +1095,7 @@ export const reactDoctorRules = [
       ...importMetadataExecutionRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(importMetadataExecutionRisk.tags ?? [])])],
     },
   },
   {
@@ -1092,6 +1107,7 @@ export const reactDoctorRules = [
       ...insecureCryptoRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(insecureCryptoRisk.tags ?? [])])],
     },
   },
   {
@@ -1545,6 +1561,7 @@ export const reactDoctorRules = [
       ...keyLifecycleRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(keyLifecycleRisk.tags ?? [])])],
     },
   },
   {
@@ -1580,6 +1597,7 @@ export const reactDoctorRules = [
       ...localRpcNativeBridgeRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(localRpcNativeBridgeRisk.tags ?? [])])],
     },
   },
   {
@@ -1591,6 +1609,7 @@ export const reactDoctorRules = [
       ...mcpToolCapabilityRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(mcpToolCapabilityRisk.tags ?? [])])],
     },
   },
   {
@@ -1602,6 +1621,7 @@ export const reactDoctorRules = [
       ...mdxSsrExecutionRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(mdxSsrExecutionRisk.tags ?? [])])],
     },
   },
   {
@@ -3162,6 +3182,7 @@ export const reactDoctorRules = [
       ...nosqlInjectionRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(nosqlInjectionRisk.tags ?? [])])],
     },
   },
   {
@@ -3185,6 +3206,7 @@ export const reactDoctorRules = [
       ...packageMetadataSecret,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(packageMetadataSecret.tags ?? [])])],
     },
   },
   {
@@ -3196,6 +3218,7 @@ export const reactDoctorRules = [
       ...pathTraversalRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(pathTraversalRisk.tags ?? [])])],
     },
   },
   {
@@ -3207,6 +3230,7 @@ export const reactDoctorRules = [
       ...pluginUpdateTrustRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(pluginUpdateTrustRisk.tags ?? [])])],
     },
   },
   {
@@ -3218,6 +3242,7 @@ export const reactDoctorRules = [
       ...postmessageOriginRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(postmessageOriginRisk.tags ?? [])])],
     },
   },
   {
@@ -3424,6 +3449,7 @@ export const reactDoctorRules = [
       ...publicDebugArtifact,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(publicDebugArtifact.tags ?? [])])],
     },
   },
   {
@@ -3435,6 +3461,7 @@ export const reactDoctorRules = [
       ...publicEnvSecretName,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(publicEnvSecretName.tags ?? [])])],
     },
   },
   {
@@ -3523,6 +3550,7 @@ export const reactDoctorRules = [
       ...rawSqlInjectionRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(rawSqlInjectionRisk.tags ?? [])])],
     },
   },
   {
@@ -3675,6 +3703,7 @@ export const reactDoctorRules = [
       ...repositorySecretFile,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(repositorySecretFile.tags ?? [])])],
     },
   },
   {
@@ -4406,6 +4435,7 @@ export const reactDoctorRules = [
       ...supabaseClientOwnedAuthzField,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(supabaseClientOwnedAuthzField.tags ?? [])])],
     },
   },
   {
@@ -4417,6 +4447,7 @@ export const reactDoctorRules = [
       ...supabaseRlsPolicyRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(supabaseRlsPolicyRisk.tags ?? [])])],
     },
   },
   {
@@ -4428,6 +4459,7 @@ export const reactDoctorRules = [
       ...svgFilterClickjackingRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(svgFilterClickjackingRisk.tags ?? [])])],
     },
   },
   {
@@ -4605,6 +4637,7 @@ export const reactDoctorRules = [
       ...tenantStaticProxyRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(tenantStaticProxyRisk.tags ?? [])])],
     },
   },
   {
@@ -4616,6 +4649,7 @@ export const reactDoctorRules = [
       ...untrustedRedirectFollowing,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(untrustedRedirectFollowing.tags ?? [])])],
     },
   },
   {
@@ -4627,6 +4661,7 @@ export const reactDoctorRules = [
       ...urlPrefilledPrivilegedAction,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(urlPrefilledPrivilegedAction.tags ?? [])])],
     },
   },
   {
@@ -4661,6 +4696,7 @@ export const reactDoctorRules = [
       ...webhookSignatureRisk,
       framework: "global",
       category: "Security",
+      tags: [...new Set(["security-posture", ...(webhookSignatureRisk.tags ?? [])])],
     },
   },
   {

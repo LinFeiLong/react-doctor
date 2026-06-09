@@ -21,6 +21,11 @@ export {
 export { MOTION_LIBRARY_PACKAGES } from "./plugin/constants/style.js";
 
 export {
+  classifySecurityPostureFile,
+  shouldReadSecurityPostureContent,
+} from "./plugin/rules/security-posture/utils/classify-security-posture-file.js";
+
+export {
   REACT_NATIVE_DEPENDENCY_NAMES,
   REACT_NATIVE_DEPENDENCY_PREFIXES,
   isReactNativeDependencyName,
@@ -29,6 +34,7 @@ export { checkSecurityPosture } from "./security-posture.js";
 
 export type { OxlintRuleSeverity } from "./types.js";
 export type { EsTreeNode } from "./plugin/utils/es-tree-node.js";
+export type { PostureFinding, PostureScan, ScannedFile } from "./plugin/utils/posture-scan.js";
 export type { Rule, RuleFramework, RuleSeverity } from "./plugin/utils/rule.js";
 export type { RulePlugin } from "./plugin/utils/rule-plugin.js";
 export type { RuleVisitors } from "./plugin/utils/rule-visitors.js";

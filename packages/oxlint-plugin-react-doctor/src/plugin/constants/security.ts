@@ -56,6 +56,52 @@ export const SECRET_PATTERNS = [
   /^sk-[a-zA-Z0-9]{32,}$/,
 ];
 
+// Whole-content credential patterns for the security-posture scan rules
+// (unanchored sweep over full file contents), distinct from
+// SECRET_PATTERNS above, which anchor individual string-literal values
+// for `no-secrets-in-client-code`. Kept byte-identical to the original
+// scanner; unifying the two families is a tracked follow-up — do not
+// merge them without re-validating both consumers.
+export const SECRET_VALUE_PATTERNS = [
+  /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/,
+  /\bAWS_SECRET_ACCESS_KEY\s*[:=]\s*["']?[A-Za-z0-9/+=]{35,}["']?/,
+  /\bgithub_pat_[A-Za-z0-9_]{30,}\b/,
+  /\bgh[pousr]_[A-Za-z0-9]{30,}\b/,
+  /\bglpat-[A-Za-z0-9_-]{20,}\b/,
+  /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/,
+  /\bsk_(?:live|test)_[A-Za-z0-9]{16,}\b/,
+  /\brk_(?:live|test)_[A-Za-z0-9]{16,}\b/,
+  /\bsk-[A-Za-z0-9_-]{32,}\b/,
+  /\bsk-ant-api\d{2}-[A-Za-z0-9_-]{20,}\b/,
+  /\blin_(?:api|oauth)_[A-Za-z0-9]{20,}\b/,
+  /\bvercel_[A-Za-z0-9]{20,}\b/,
+  /\bsntrys_[A-Za-z0-9_-]{20,}\b/,
+  /\bkey-[a-f0-9]{32}\b/i,
+  /\bnpm_[A-Za-z0-9]{30,}\b/,
+  /\bSG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/,
+  /https:\/\/hooks\.slack\.com\/services\/T[A-Z0-9]+\/B[A-Z0-9]+\/[A-Za-z0-9]+/,
+  /https:\/\/discord(?:app)?\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+/,
+  /\bsb_secret_[A-Za-z0-9_]{20,}\b/,
+  /\bservice_role\b/i,
+  /"private_key"\s*:\s*"-----BEGIN PRIVATE KEY-----/,
+  /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/,
+  /\b(?:postgres|mysql|mongodb(?:\+srv)?|redis):\/\/[^:\s/@]+:[^@\s/]+@/i,
+];
+
+export const PUBLIC_ENV_SECRET_NAME_PATTERN =
+  /\b(?:NEXT_PUBLIC|VITE|REACT_APP|EXPO_PUBLIC)_[A-Z0-9_]*(?:SECRET|TOKEN|PASSWORD|PRIVATE|DATABASE_URL|SERVICE_ROLE|AWS_ACCESS_KEY|AWS_SECRET)[A-Z0-9_]*\b/i;
+
+export const FULL_ENV_LEAK_CONTEXT_PATTERN =
+  /\b(?:process\.env|import\.meta\.env|window\.__[A-Z0-9_]*ENV[A-Z0-9_]*__|__[A-Z0-9_]*ENV[A-Z0-9_]*__)\b/;
+
+export const FULL_ENV_LEAK_SECRET_NAME_PATTERN =
+  /\b(?:DATABASE_URL|AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID|MAILGUN_API_KEY|SALESFORCE_CLIENT_SECRET|OKTA_CLIENT_SECRET|SESSION_SECRET|COOKIE_SECRET|PRIVATE_KEY|SERVICE_ROLE)\b/;
+
+// TODO(follow-up): de-overfit — several vendor names here mirror specific
+// regression fixtures (TLDRAW / POSTHOG / ALGOLIA / GC_API_KEY).
+export const TRUSTED_PUBLIC_SECRET_NAME_PATTERN =
+  /(?:SENTRY_DSN|PUBLIC_KEY|PUBLISHABLE|ANON_KEY|POSTHOG_PROJECT_TOKEN|POSTHOG_KEY|TLDRAW_LICENSE_KEY|CLERK_PUBLISHABLE_KEY|ALGOLIA_SEARCH_KEY|GC_API_KEY|GOOGLE_MAPS_API_KEY|MAPBOX_TOKEN)/i;
+
 // Public, client-safe keys designed to ship in the browser, each with a
 // prefix distinct from the same vendor's secret key (RevenueCat `appl_`
 // vs `sk_`, Supabase `sb_publishable_` vs `sb_secret_`, …); a literal
