@@ -1,4 +1,4 @@
-import { GENERATED_BUNDLE_FILE_PATTERN } from "../../../constants/thresholds.js";
+import { GENERATED_BUNDLE_FILE_PATTERN } from "../../../constants/security-posture.js";
 import { isBrowserArtifactPath } from "./is-browser-artifact-path.js";
 import { isConfigOrCiPath } from "./is-config-or-ci-path.js";
 import { isFirebaseRulesPath } from "./is-firebase-rules-path.js";

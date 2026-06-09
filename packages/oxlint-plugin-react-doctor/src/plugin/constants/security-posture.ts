@@ -27,6 +27,11 @@ export const DOCUMENTATION_CONTEXT_PATTERN =
 export const GENERATED_SOURCE_CONTEXT_PATTERN =
   /(?:^|\/)(?:generated|__generated__|dist|build|coverage|out|storybook-static)(?:\/|$)|(?:^|\/)\.next\/|(?:^|\/)public\/(?:chunks?|assets?|build|dist|static)\/|(?:generated|\.gen)\.[cm]?[jt]sx?$/i;
 
+// Filename-only bundle test (the walker content-sniffs minified files
+// separately). Distinct from @react-doctor/core's same-named pattern,
+// which also matches `.mjs`.
+export const GENERATED_BUNDLE_FILE_PATTERN = /\.(iife|umd|global|min)\.js$/i;
+
 export const BROWSER_ARTIFACT_PATH_PATTERNS = [
   /(?:^|\/)\.next\/static\//,
   /(?:^|\/)\.output\/public\//,

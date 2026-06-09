@@ -28,17 +28,6 @@ export const SMALL_LITERAL_ARRAY_MAX_ELEMENTS = 8;
 export const CROSS_FILE_PARSE_MAX_BYTES = 2_000_000;
 export const CROSS_FILE_BARREL_FOLLOW_DEPTH = 4;
 
-export const GENERATED_BUNDLE_FILE_PATTERN = /\.(iife|umd|global|min)\.js$/i;
-export const MINIFIED_MAX_LINE_LENGTH_CHARS = 1000;
-export const MINIFIED_AVG_LINE_LENGTH_CHARS = 500;
-export const MINIFIED_SNIFF_BYTES = 65_536;
-export const MINIFIED_MIN_SIZE_BYTES = 20_000;
-
-export const SECURITY_SCAN_MAX_FILES = 2500;
-export const SECURITY_SCAN_MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
-export const SECURITY_SCAN_MAX_BUNDLE_FILE_SIZE_BYTES = 8 * 1024 * 1024;
-export const SECURITY_SCAN_MAX_DIRECTORY_DEPTH = 8;
-
 // Bounds for upward directory walks used by cross-file resolvers:
 // `CROSS_FILE_DIRECTORY_WALK_MAX_LEVELS` caps how many parent
 // directories we climb looking for a `tsconfig.json` (alias resolution)
