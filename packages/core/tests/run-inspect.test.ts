@@ -1,10 +1,13 @@
+import * as fs from "node:fs";
+import os from "node:os";
+import * as path from "node:path";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
-import { describe, expect, it } from "vite-plus/test";
-import type { Diagnostic, ProjectInfo } from "@react-doctor/core";
+import { afterAll, describe, expect, it } from "vite-plus/test";
+import type { Diagnostic, ProjectInfo, ReactDoctorConfig } from "@react-doctor/core";
 import {
   DeadCodeAnalysisFailed,
   GitInvocationFailed,
@@ -23,6 +26,13 @@ import { Project } from "../src/services/project.js";
 import { Reporter, ReporterCapture } from "../src/services/reporter.js";
 import { Score } from "../src/services/score.js";
 import { SupplyChain } from "../src/services/supply-chain.js";
+
+const temporaryDirectories: string[] = [];
+afterAll(() => {
+  for (const directory of temporaryDirectories) {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 const sampleProject: ProjectInfo = {
   rootDirectory: "/repo",
@@ -584,5 +594,77 @@ describe("runInspect — supply-chain in diff mode", () => {
       }).pipe(Effect.provide(layersOf({ supplyChain: [supplyChainDiagnostic] }))),
     );
     expect(output.diagnostics.map((d) => d.rule)).toContain("low-supply-chain-score");
+  });
+});
+
+describe("runInspect — security posture in the environment-checks phase", () => {
+  // Unlike the mocked Linter/DeadCode services, environment checks read
+  // the real filesystem at the resolved scan directory, so these tests
+  // scan a temp project seeded with a posture finding.
+  const makePostureProject = (): string => {
+    const rootDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "react-doctor-posture-"));
+    temporaryDirectories.push(rootDirectory);
+    fs.mkdirSync(path.join(rootDirectory, "public"), { recursive: true });
+    fs.writeFileSync(
+      path.join(rootDirectory, "public", "debug.log"),
+      "internal route dump /admin/api session=abc\n",
+    );
+    return rootDirectory;
+  };
+
+  const postureLayersOf = (rootDirectory: string, config: ReactDoctorConfig | null = null) =>
+    Layer.mergeAll(
+      Project.layerOf({ ...sampleProject, rootDirectory }),
+      Config.layerOf({ config, resolvedDirectory: rootDirectory, configSourceDirectory: null }),
+      Files.layerInMemory(new Map()),
+      Linter.layerOf([]),
+      LintPartialFailures.layerLive,
+      DeadCode.layerOf([]),
+      Git.layerOf({}),
+      Score.layerOf(null),
+      SupplyChain.layerOf([]),
+      Progress.layerNoop,
+      Reporter.layerNoop,
+    );
+
+  it("emits posture diagnostics in a full scan", async () => {
+    const rootDirectory = makePostureProject();
+    const output = await Effect.runPromise(
+      runInspect({ ...baseInput, directory: rootDirectory }).pipe(
+        Effect.provide(postureLayersOf(rootDirectory)),
+      ),
+    );
+    const posture = output.diagnostics.filter((d) => d.rule === "public-debug-artifact");
+    expect(posture).toHaveLength(1);
+    expect(posture[0]?.severity).toBe("warning");
+    expect(posture[0]?.category).toBe("Security");
+  });
+
+  it("skips the posture scan in diff mode (includePaths.length > 0)", async () => {
+    const rootDirectory = makePostureProject();
+    const output = await Effect.runPromise(
+      runInspect({
+        ...baseInput,
+        directory: rootDirectory,
+        includePaths: ["src/App.tsx"],
+      }).pipe(Effect.provide(postureLayersOf(rootDirectory))),
+    );
+    expect(output.diagnostics.map((d) => d.rule)).not.toContain("public-debug-artifact");
+  });
+
+  it("applies user severity overrides to posture diagnostics", async () => {
+    const rootDirectory = makePostureProject();
+    const output = await Effect.runPromise(
+      runInspect({ ...baseInput, directory: rootDirectory }).pipe(
+        Effect.provide(
+          postureLayersOf(rootDirectory, {
+            rules: { "react-doctor/public-debug-artifact": "error" },
+          }),
+        ),
+      ),
+    );
+    const posture = output.diagnostics.filter((d) => d.rule === "public-debug-artifact");
+    expect(posture).toHaveLength(1);
+    expect(posture[0]?.severity).toBe("error");
   });
 });

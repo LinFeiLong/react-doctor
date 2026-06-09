@@ -705,4 +705,23 @@ describe("issue #141: oxlint config must not reference unloaded plugins", () => 
       expect(recommendedRuleKeys.has(ruleKey)).toBe(false);
     }
   });
+
+  // Same bug class as #fa3d54f2 for posture (`scan`) rules: they're
+  // project-level scans executed by core's check-security-posture
+  // environment check, and their oxlint visitor is a no-op. Core's
+  // oxlint config builder skips them with its own filter (tested in
+  // core's oxlint-config-settings suite), but the ESLint preset maps
+  // are an independent code path — if `rules.ts` ever drops its
+  // posture filter, every preset would silently enable 36 no-op rules.
+  it("ESLint presets exclude security-posture (scan) rules", async () => {
+    const pluginModule = await import("oxlint-plugin-react-doctor");
+    const postureKeys = pluginModule.REACT_DOCTOR_RULES.filter(
+      (entry) => entry.rule.scan !== undefined,
+    ).map((entry) => entry.key);
+    expect(postureKeys).toHaveLength(36);
+    for (const key of postureKeys) {
+      expect(pluginModule.RECOMMENDED_RULES).not.toHaveProperty(key);
+      expect(pluginModule.ALL_REACT_DOCTOR_RULES).not.toHaveProperty(key);
+    }
+  });
 });
