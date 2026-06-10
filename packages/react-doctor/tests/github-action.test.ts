@@ -58,7 +58,7 @@ describe("GitHub Action contract", () => {
     expect(inputsBlock).toContain('    default: "true"');
     expect(inputsBlock).toContain('default: "*"');
     expect(inputsBlock).toContain('default: "24"');
-    expect(inputsBlock).toContain('default: "error"');
+    expect(inputsBlock).toContain('default: "none"');
     expect(outputsBlock).toContain("${{ steps.render.outputs.score }}");
     expect(outputsBlock).toContain("${{ steps.render.outputs.total-issues }}");
     expect(outputsBlock).toContain("${{ steps.render.outputs.affected-files }}");
@@ -68,8 +68,14 @@ describe("GitHub Action contract", () => {
     const actionYaml = readActionYaml();
     const prFilesStep = normalizeWhitespace(extractStep(actionYaml, "- id: pr-files"));
 
-    expect(actionYaml).toContain("actions/setup-node@v5");
-    expect(actionYaml).toContain("actions/github-script@v8");
+    // setup-node/github-script may be referenced by a floating major tag
+    // (v5/v8) or pinned to a full-length commit SHA with a trailing version
+    // comment — the form required by orgs that enforce GitHub's "actions pinned
+    // to a full-length commit SHA" ruleset. Accept either so the composite
+    // action stays consumable under those policies (and Dependabot can still
+    // bump the pinned SHA), while keeping the major-version floor.
+    expect(actionYaml).toMatch(/actions\/setup-node@(?:v5\b|[0-9a-f]{40} # v5\b)/);
+    expect(actionYaml).toMatch(/actions\/github-script@(?:v8\b|[0-9a-f]{40} # v8\b)/);
     expect(actionYaml).not.toContain("actions/setup-node@v4");
     expect(actionYaml).not.toContain("actions/github-script@v7");
     expect(prFilesStep).toContain("github.rest.pulls.listFiles");
@@ -177,7 +183,7 @@ describe("GitHub Action contract", () => {
     expect(commentStep).toContain("core.warning");
   });
 
-  it("defaults blocking to error and propagates the CLI exit code", () => {
+  it("defaults blocking to none (advisory) and propagates the CLI exit code", () => {
     const actionYaml = readActionYaml();
     const inputsBlock = extractBlock(actionYaml, "inputs:", "\noutputs:");
     const blockingInput = extractBlock(actionYaml, "  blocking:", "  comment:");
@@ -186,7 +192,7 @@ describe("GitHub Action contract", () => {
     );
 
     expect(inputsBlock).toContain("  blocking:");
-    expect(normalizeWhitespace(blockingInput)).toContain('default: "error"');
+    expect(normalizeWhitespace(blockingInput)).toContain('default: "none"');
     // The gate lives in the CLI exit code now; the action just propagates it.
     expect(failStep).toContain('exit "${SCAN_STATUS:-1}"');
     expect(failStep).not.toContain("INPUT_NON_BLOCKING");
