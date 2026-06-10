@@ -154,12 +154,13 @@ runs:
           # `diff` set in the project's config (flags win over config).
           FLAGS+=("--scope" "full")
         elif [ -n "$CHANGED_FILES_FROM" ]; then
-          # changed (default) | files | lines — forward the PR's changed-file
-          # list plus the matching scope. For `lines` the CLI derives the
-          # changed line ranges from the fetched base SHA.
+          # `files` / `lines` are new scopes that need a react-doctor which
+          # understands `--scope`. `changed` (the default) deliberately stays on
+          # the long-standing `--changed-files-from` alone — that already
+          # resolves to the `changed` scope — so upgrading only the action (with
+          # the default scope) keeps working against an older published CLI.
           case "$SCOPE" in
-            files | lines | changed) FLAGS+=("--scope" "$SCOPE") ;;
-            *) FLAGS+=("--scope" "changed") ;;
+            files | lines) FLAGS+=("--scope" "$SCOPE") ;;
           esac
           FLAGS+=("--changed-files-from" "$CHANGED_FILES_FROM")
         fi
