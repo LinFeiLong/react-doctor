@@ -259,6 +259,9 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
     const resolvedDirectory = scanTarget.resolvedDirectory;
     setJsonReportDirectory(resolvedDirectory);
     warnDeprecatedFailOn(flags, userConfig);
+    // Emitted on every path (including the early-returning `--staged` / `--sfw`
+    // branches), so the deprecation nudge fires whenever `--diff` / `diff` is set.
+    warnDeprecatedDiff(flags, userConfig);
     if (scanTarget.didRedirectViaRootDir && !isQuiet) {
       logger.dim(
         `Redirected to ${highlighter.info(toRelativePath(resolvedDirectory, requestedDirectory))} via react-doctor config "rootDir".`,
@@ -416,7 +419,6 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
     const changedFilesDiffInfo = flags.changedFilesFrom
       ? buildChangedFilesDiffInfo(readChangedFilesFrom(path.resolve(flags.changedFilesFrom)))
       : null;
-    warnDeprecatedDiff(flags, userConfig);
     const requestedScope = resolveScope(flags, userConfig);
     // The internal `--changed-files-from` path (the GitHub Action) implies the
     // `changed` scope when the user didn't pick one explicitly — it always ran
