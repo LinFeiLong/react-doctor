@@ -41,19 +41,23 @@ export const filterSourceFiles = (filePaths: string[]): string[] =>
 /**
  * Programmatic façade over `Git.changedLineRanges` (the `lines` scope). Diffs
  * `files` with `--unified=0` against `baseRef` (or the index when `cached`),
- * returning per-file changed line ranges relative to `directory`. Degrades to
- * `[]` rather than throwing when git is unavailable or the ref is unsafe.
+ * returning per-file changed line ranges relative to `directory`. Returns
+ * `null` when the ranges can't be computed (git unavailable / unsafe ref /
+ * non-zero exit) so the caller degrades to file-level scope; an empty array
+ * means git succeeded but the files added no lines.
  */
 export const getChangedLineRanges = (input: {
   directory: string;
   baseRef?: string;
   cached?: boolean;
   files: ReadonlyArray<string>;
-}): Promise<ChangedFileLineRanges[]> =>
+}): Promise<ChangedFileLineRanges[] | null> =>
   Effect.runPromise(
     Effect.gen(function* () {
       const git = yield* Git;
       const ranges = yield* git.changedLineRanges(input);
-      return ranges.map((entry) => ({ file: entry.file, ranges: entry.ranges }));
+      return ranges === null
+        ? null
+        : ranges.map((entry) => ({ file: entry.file, ranges: entry.ranges }));
     }).pipe(Effect.provide(Git.layerNode)),
   );

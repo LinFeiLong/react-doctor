@@ -284,12 +284,14 @@ export class Git extends Context.Service<
      * Per-file changed line ranges for the `lines` scope. Runs
      * `git diff --unified=0` (optionally `--cached`, optionally against
      * `baseRef`) limited to `files`, and parses the new-side hunks. Returns
-     * `[]` when git fails or `baseRef` is unsafe so the caller degrades to
-     * file-level scope rather than crashing.
+     * `null` when the ranges can't be computed (unsafe `baseRef`, or git
+     * exited non-zero) so the caller degrades to file-level scope instead of
+     * hiding every finding behind empty ranges; an empty array means git
+     * succeeded but the files added no lines.
      */
     readonly changedLineRanges: (
       input: GitChangedLineRangesInput,
-    ) => Effect.Effect<ReadonlyArray<ChangedFileLineRanges>, ReactDoctorError>;
+    ) => Effect.Effect<ReadonlyArray<ChangedFileLineRanges> | null, ReactDoctorError>;
   }
 >()("react-doctor/Git") {
   static readonly layerNode: Layer.Layer<Git> = Layer.effect(
@@ -739,9 +741,10 @@ export class Git extends Context.Service<
         changedLineRanges: ({ directory, baseRef, cached, files }) =>
           Effect.gen(function* () {
             if (files.length === 0) return [];
-            // An unsafe base ref can't reach git (CVE-2018-17456 shape); a
-            // missing one degrades to file-level scope rather than crashing.
-            if (baseRef !== undefined && !isSafeGitRevision(baseRef)) return [];
+            // An unsafe base ref can't reach git (CVE-2018-17456 shape) and a
+            // failed diff both mean "couldn't compute" — return null so the
+            // caller degrades to file-level scope rather than hiding everything.
+            if (baseRef !== undefined && !isSafeGitRevision(baseRef)) return null;
             const result = yield* runGit(directory, [
               "diff",
               "--unified=0",
@@ -752,7 +755,7 @@ export class Git extends Context.Service<
               "--",
               ...files,
             ]);
-            if (result.status !== 0) return [];
+            if (result.status !== 0) return null;
             return parseChangedLineRanges(result.stdout);
           }),
       });

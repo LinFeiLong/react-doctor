@@ -16,7 +16,6 @@ import {
 } from "@react-doctor/core";
 import { inspect } from "../../inspect.js";
 import type {
-  ChangedFileLineRanges,
   Diagnostic,
   DiffInfo,
   InspectResult,
@@ -355,21 +354,29 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
       });
       // `--staged --scope lines`: only report issues on the staged hunks. The
       // index diff (`--cached`) is keyed by the same relative paths the staged
-      // snapshot mirrors, so the ranges match the scan's diagnostics.
-      const stagedLineRanges =
-        resolveScope(flags, userConfig).scope === "lines"
-          ? await getChangedLineRanges({
-              directory: resolvedDirectory,
-              cached: true,
-              files: snapshot.stagedFiles,
-            })
-          : undefined;
+      // snapshot mirrors, so the ranges match the scan's diagnostics. A `null`
+      // result (git diff failed) degrades to file-level rather than hiding
+      // everything behind an empty filter.
+      const stagedWantsLines = resolveScope(flags, userConfig).scope === "lines";
+      const stagedLineRanges = stagedWantsLines
+        ? await getChangedLineRanges({
+            directory: resolvedDirectory,
+            cached: true,
+            files: snapshot.stagedFiles,
+          })
+        : null;
+      if (stagedWantsLines && stagedLineRanges === null && !isQuiet) {
+        logger.warn(
+          "Could not determine staged changed lines; reporting all issues in staged files.",
+        );
+        logger.break();
+      }
       try {
         const scanResult = await inspect(snapshot.tempDirectory, {
           ...scanOptions,
           includePaths: snapshot.stagedFiles,
           configOverride: userConfig,
-          changedLineRanges: stagedLineRanges,
+          changedLineRanges: stagedLineRanges ?? undefined,
         });
 
         const remappedDiagnostics = scanResult.diagnostics.map((diagnostic) => ({
@@ -457,17 +464,20 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
       scope === "lines" &&
       diffInfo !== null &&
       (diffInfo.isCurrentChanges || linesBaseRef !== null);
-    const changedLineRanges: ChangedFileLineRanges[] =
+    // `null` here means the ranges couldn't be computed (no base, or the git
+    // diff failed). `lines` is only active when we got a concrete range set;
+    // otherwise degrade to `files` (report all findings in changed files).
+    const changedLineRanges =
       canComputeLines && diffInfo !== null
         ? await getChangedLineRanges({
             directory: resolvedDirectory,
             baseRef: linesBaseRef ?? undefined,
             files: [...diffInfo.changedFiles],
           })
-        : [];
-    if (scope === "lines" && !canComputeLines && !isQuiet) {
+        : null;
+    if (scope === "lines" && changedLineRanges === null && !isQuiet) {
       logger.warn(
-        "Could not determine changed lines (no base ref); reporting all issues in changed files.",
+        "Could not determine changed lines (no base ref or git diff failed); reporting all issues in changed files.",
       );
       logger.break();
     }
@@ -538,9 +548,14 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
         configOverride: userConfig,
         suppressRendering: isMultiProject,
         baseline: baselineRef ? { ref: baselineRef } : undefined,
-        changedLineRanges: canComputeLines
-          ? resolveProjectChangedLineRanges(resolvedDirectory, projectDirectory, changedLineRanges)
-          : undefined,
+        changedLineRanges:
+          scope === "lines" && changedLineRanges !== null
+            ? resolveProjectChangedLineRanges(
+                resolvedDirectory,
+                projectDirectory,
+                changedLineRanges,
+              )
+            : undefined,
         supplyChainManifestChanged,
       });
       allDiagnostics.push(...scanResult.diagnostics);
@@ -572,7 +587,10 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
       // to `diff` if no delta was produced (degraded run).
       mode: baselineRef ? "baseline" : isDiffMode ? "diff" : "full",
       diff: isDiffMode ? diffInfo : null,
-      baselineIntended: isDiffMode && diffInfo !== null && !diffInfo.isCurrentChanges,
+      // Only `changed` intends a baseline. `files` / `lines` have no baseline
+      // delta, so they must NOT look "degraded" — that would skip the CI gate
+      // they're entitled to.
+      baselineIntended: scope === "changed" && diffInfo !== null && !diffInfo.isCurrentChanges,
       isJsonMode,
       isScoreOnly,
       flags,
