@@ -1,6 +1,6 @@
 ---
-"@react-doctor/core": minor
-"react-doctor": minor
+"@react-doctor/core": patch
+"react-doctor": patch
 ---
 
 Consolidate the scan-scope controls into one `--scope` flag (and `scope` config option) with four values, shared verbatim by the CLI and the GitHub Action:
