@@ -22,6 +22,7 @@ import {
 } from "./install-doctor-script.js";
 import { askAddToGitHubActions } from "./ask-add-to-github-actions.js";
 import { askUpgradeActionVersion } from "./ask-upgrade-action-version.js";
+import { detectDefaultBranch } from "./detect-default-branch.js";
 import { hasHandledActionUpgrade, recordActionUpgradeDecision } from "./action-upgrade-prompt.js";
 import { installReactDoctorAgentHooks } from "./install-agent-hooks.js";
 import {
@@ -440,11 +441,14 @@ const installReactDoctorAgentHooksStep = (
 // themselves. The PR-opening flow belongs to the post-scan handoff, not
 // `install` — committing to a throwaway branch can lose the file if the push is
 // rejected, leaving "yes" with nothing on disk.
-const installReactDoctorWorkflowStep = (projectRoot: string): boolean => {
+const installReactDoctorWorkflowStep = async (projectRoot: string): Promise<boolean> => {
   const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
+  // The template's push trigger scans the repo's actual default branch
+  // (`master`, `develop`, …) instead of assuming `main`.
+  const defaultBranch = await detectDefaultBranch(projectRoot);
   return reportWorkflowResult(
     workflowSpinner,
-    installReactDoctorWorkflow(projectRoot),
+    installReactDoctorWorkflow(projectRoot, defaultBranch ?? undefined),
     projectRoot,
   );
 };
@@ -599,7 +603,7 @@ export const runInstallReactDoctor = async (
     // Blank line between the skill group and the workflow install/upgrade.
     logger.break();
     if (shouldInstallWorkflow) {
-      didInstallWorkflow = installReactDoctorWorkflowStep(projectRoot);
+      didInstallWorkflow = await installReactDoctorWorkflowStep(projectRoot);
     } else if (upgradeReactDoctorWorkflowStep(projectRoot)) {
       // Applied upgrade is terminal too — record it so the post-scan handoff
       // never re-offers the bump on the next scan.

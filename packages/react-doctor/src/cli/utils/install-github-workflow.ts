@@ -8,12 +8,14 @@ export interface InstallGitHubWorkflowResult {
 
 // Self-documenting workflow file. The inline YAML comments give a new user
 // one-line explanations of each trigger, without forcing them off to the
-// docs site to learn the basics. The action itself is pinned to the
-// floating major `@v2` (never `@main`, per the supply-chain guidance in
-// AGENTS.md): `@main` would run whatever HEAD points to with
-// `pull-requests: write` granted.
-const buildWorkflowContent =
-  (): string => `# React Doctor — finds security, performance, correctness, accessibility,
+// docs site to learn the basics. The push trigger scans the repo's actual
+// default branch (`master`, `develop`, …) — not a hardcoded `main`. The
+// action itself is pinned to the floating major `@v2` (never `@main`, per
+// the supply-chain guidance in AGENTS.md): `@main` would run whatever HEAD
+// points to with `pull-requests: write` granted.
+const buildWorkflowContent = (
+  defaultBranch: string,
+): string => `# React Doctor — finds security, performance, correctness, accessibility,
 # bundle-size, and architecture issues in React codebases.
 #
 # Docs: https://www.react.doctor/ci
@@ -25,9 +27,9 @@ on:
   # Scans the PR's changed files and posts a sticky summary comment listing only the new issues introduced relative to the merge base of the target branch.
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-  # Scans \`main\` on every push to track the health-score trend and catch regressions that slipped past PR review.
+  # Scans \`${defaultBranch}\` on every push to track the health-score trend and catch regressions that slipped past PR review.
   push:
-    branches: [main]
+    branches: ["${defaultBranch}"]
 
 permissions:
   contents: read
@@ -109,14 +111,19 @@ export const upgradeWorkflowActionToV2 = (
 // Writes `.github/workflows/react-doctor.yml`, creating the workflows
 // directory if needed. Returns "exists" without overwriting a workflow that's
 // already there, and "failed" (rather than throwing) so callers can degrade to
-// printing manual setup instructions.
-export const installReactDoctorWorkflow = (projectRoot: string): InstallGitHubWorkflowResult => {
+// printing manual setup instructions. `defaultBranch` lands in the template's
+// push trigger; callers resolve it via `detectDefaultBranch` and fall back to
+// `main` when the repo has no detectable default.
+export const installReactDoctorWorkflow = (
+  projectRoot: string,
+  defaultBranch: string = "main",
+): InstallGitHubWorkflowResult => {
   const workflowPath = getReactDoctorWorkflowPath(projectRoot);
   if (fs.existsSync(workflowPath)) return { status: "exists", workflowPath };
 
   try {
     fs.mkdirSync(path.dirname(workflowPath), { recursive: true });
-    fs.writeFileSync(workflowPath, buildWorkflowContent());
+    fs.writeFileSync(workflowPath, buildWorkflowContent(defaultBranch));
     return { status: "created", workflowPath };
   } catch {
     return { status: "failed", workflowPath };

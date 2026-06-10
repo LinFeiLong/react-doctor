@@ -1,5 +1,6 @@
 import { CI_URL, highlighter } from "@react-doctor/core";
 import { cliLogger as logger } from "./cli-logger.js";
+import { detectDefaultBranch } from "./detect-default-branch.js";
 import {
   findNearestPackageDirectory,
   installReactDoctorScriptStep,
@@ -42,7 +43,11 @@ export const setUpGitHubActions = async (options: SetUpGitHubActionsOptions): Pr
   } catch {}
 
   const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
-  const workflowResult = installReactDoctorWorkflow(projectRoot);
+  // Resolved once and reused for both the template's push trigger and the PR
+  // base below, so the workflow and the PR can't disagree about which branch
+  // is the default.
+  const defaultBranch = await detectDefaultBranch(projectRoot);
+  const workflowResult = installReactDoctorWorkflow(projectRoot, defaultBranch ?? undefined);
   const didCreateWorkflow = reportWorkflowResult(workflowSpinner, workflowResult, projectRoot);
 
   logger.break();
@@ -57,6 +62,7 @@ export const setUpGitHubActions = async (options: SetUpGitHubActionsOptions): Pr
     const pullRequestSpinner = spinner("Opening a pull request for review...").start();
     const pullRequestResult = await openWorkflowPullRequest({
       workflowPath: workflowResult.workflowPath,
+      baseBranch: defaultBranch ?? undefined,
     });
     if (pullRequestResult.status === "pr-opened") {
       pullRequestSpinner.succeed(
