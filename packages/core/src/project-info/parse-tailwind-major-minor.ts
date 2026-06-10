@@ -1,3 +1,5 @@
+import * as semver from "semver";
+
 // HACK: react-doctor reads the project's Tailwind version straight out
 // of package.json (the `tailwindcss` dep), which produces semver ranges
 // (`^3.4.1`, `~3.3.0`, `>=3 <5`, `4.x`, `latest`, etc.) — never a
@@ -10,11 +12,13 @@ interface TailwindMajorMinor {
   minor: number;
 }
 
-// Bounded quantifiers (mirroring parse-react-major-minor.ts) keep the
-// unanchored scan linear: `(\d+)\.` backtracks quadratically on long
-// digit runs, and the version string comes straight from package.json.
-const MAJOR_MINOR_PATTERN = /(\d{1,4})\.(\d{1,4})/;
-const MAJOR_ONLY_PATTERN = /(\d{1,4})/;
+// Lower bound of a range (`>=3.4 <5` → 3.4.0), with `coerce` as the
+// fallback for non-range specs that still embed a version
+// (`npm:tailwindcss@^3.4.1`). Tags (`latest`, `next`) resolve to null.
+const parseLowerBoundVersion = (versionSpec: string): semver.SemVer | null =>
+  semver.validRange(versionSpec) !== null
+    ? semver.minVersion(versionSpec)
+    : semver.coerce(versionSpec);
 
 export const parseTailwindMajorMinor = (
   tailwindVersion: string | null | undefined,
@@ -23,20 +27,9 @@ export const parseTailwindMajorMinor = (
   const trimmed = tailwindVersion.trim();
   if (trimmed.length === 0) return null;
 
-  const majorMinorMatch = trimmed.match(MAJOR_MINOR_PATTERN);
-  if (majorMinorMatch) {
-    const major = Number.parseInt(majorMinorMatch[1], 10);
-    const minor = Number.parseInt(majorMinorMatch[2], 10);
-    if (!Number.isFinite(major) || major <= 0) return null;
-    if (!Number.isFinite(minor) || minor < 0) return null;
-    return { major, minor };
-  }
-
-  const majorOnlyMatch = trimmed.match(MAJOR_ONLY_PATTERN);
-  if (!majorOnlyMatch) return null;
-  const major = Number.parseInt(majorOnlyMatch[1], 10);
-  if (!Number.isFinite(major) || major <= 0) return null;
-  return { major, minor: 0 };
+  const lowerBound = parseLowerBoundVersion(trimmed);
+  if (lowerBound === null || lowerBound.major <= 0) return null;
+  return { major: lowerBound.major, minor: lowerBound.minor };
 };
 
 export const isTailwindAtLeast = (
