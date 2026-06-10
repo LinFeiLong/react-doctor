@@ -243,9 +243,9 @@ function reducer(state, action) {
 
 Do not report this. The mutation path returns a new object. The `return state` path is a no-op.
 
-### Posture Rules (Project-Level Scans)
+### Scan Rules (Project-Level)
 
-Most rules are per-file AST rules. Use a posture rule when the signal lives in the file system, not in source syntax:
+Most rules are per-file AST rules. Use a scan rule when the signal lives in the file system, not in source syntax:
 
 - The target files are never linted: shipped bundles, `.env` and config files, SQL, Firebase rules, repository secret files.
 - Path context (`public/`, build output, repository layout) matters more than code shape.
@@ -253,10 +253,10 @@ Most rules are per-file AST rules. Use a posture rule when the signal lives in t
 
 If the bug is a JavaScript/TypeScript code shape in linted source, write a normal AST rule instead.
 
-Posture rules live in `packages/oxlint-plugin-react-doctor/src/plugin/rules/security-posture/` and use `definePostureRule`. A real example (`firebase-permissive-rules.ts`):
+Scan rules live in `packages/oxlint-plugin-react-doctor/src/plugin/rules/security-scan/` and use `defineScanRule`. A real example (`firebase-permissive-rules.ts`):
 
 ```ts
-export const firebasePermissiveRules = definePostureRule({
+export const firebasePermissiveRules = defineScanRule({
   id: "firebase-permissive-rules",
   title: "Permissive Firebase security rule",
   severity: "error",
@@ -272,22 +272,22 @@ export const firebasePermissiveRules = definePostureRule({
 
 The scan contract:
 
-- `scan(file: ScannedFile): PostureFinding[]` replaces AST visitors.
+- `scan(file: ScannedFile): ScanFinding[]` replaces AST visitors.
 - `ScannedFile` carries `absolutePath`, `relativePath`, `content`, and `isGeneratedBundle`.
-- Each `PostureFinding` has `message`, `line`, `column`, and optional `severity`/`title`/`help` fields that override the rule's registry metadata per finding (for example, `public-debug-artifact` escalates to `"error"` when the artifact contains a secret value). Omit them to inherit the rule's `severity`/`title`/`recommendation`.
+- Each `ScanFinding` has `message`, `line`, `column`, and optional `severity`/`title`/`help` fields that override the rule's registry metadata per finding (for example, `public-debug-artifact` escalates to `"error"` when the artifact contains a secret value). Omit them to inherit the rule's `severity`/`title`/`recommendation`.
 
 Registration, tags, and severity flow identically to normal rules:
 
-- Codegen picks the rule up like any other: the `security-posture` bucket auto-applies the `Security` category and the `security-posture` tag.
+- Codegen picks the rule up like any other: the `security-scan` bucket auto-applies the `Security` category and the `security-scan` tag.
 - `id:` and `severity:` must stay literal fields in the rule file — `scripts/generate-rule-registry.mjs` regex-parses them.
 - Capability gating, `disabledBy`, user severity overrides, inline disables, and `ignore.tags` apply the same as for AST rules.
 
-Execution is different: posture rules never appear in generated oxlint configs or ESLint presets. `@react-doctor/core`'s `check-security-posture` environment check runs every registered `scan` over one bounded whole-tree walk; diff/staged scans skip it like the other whole-project checks.
+Execution is different: scan rules never appear in generated oxlint configs or ESLint presets. `@react-doctor/core`'s `check-security-scan` environment check runs every registered `scan` over one bounded whole-tree walk; diff/staged scans skip it like the other whole-project checks.
 
 To test:
 
-- Unit-test one rule with the in-memory harness in `packages/oxlint-plugin-react-doctor/src/test-utils/run-posture-rule.ts` (build a `ScannedFile`, assert the findings) in a co-located test file.
-- End-to-end coverage runs through `packages/core/tests/check-security-posture.test.ts` against fixture trees in `packages/core/tests/fixtures/check-security-posture/`.
+- Unit-test one rule with the in-memory harness in `packages/oxlint-plugin-react-doctor/src/test-utils/run-scan-rule.ts` (build a `ScannedFile`, assert the findings) in a co-located test file.
+- End-to-end coverage runs through `packages/core/tests/check-security-scan.test.ts` against fixture trees in `packages/core/tests/fixtures/check-security-scan/`.
 
 ### V1 Scope
 

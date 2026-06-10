@@ -35,11 +35,11 @@ describe("rule tag registration", () => {
     }
   });
 
-  it('tags every security posture rule (every rule carrying a scan) with "security-posture"', () => {
-    const securityPostureRuleIds = collectRuleIdsMatching((rule) => rule.scan !== undefined);
-    expect(securityPostureRuleIds.length).toBeGreaterThan(0);
-    for (const ruleId of securityPostureRuleIds) {
-      expect(getRuleTags(ruleId)).toContain("security-posture");
+  it('tags every security scan rule (every rule carrying a scan) with "security-scan"', () => {
+    const securityScanRuleIds = collectRuleIdsMatching((rule) => rule.scan !== undefined);
+    expect(securityScanRuleIds.length).toBeGreaterThan(0);
+    for (const ruleId of securityScanRuleIds) {
+      expect(getRuleTags(ruleId)).toContain("security-scan");
     }
   });
 

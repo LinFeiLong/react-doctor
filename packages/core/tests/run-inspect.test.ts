@@ -597,12 +597,12 @@ describe("runInspect — supply-chain in diff mode", () => {
   });
 });
 
-describe("runInspect — security posture in the environment-checks phase", () => {
+describe("runInspect — security scan rules in the environment-checks phase", () => {
   // Unlike the mocked Linter/DeadCode services, environment checks read
   // the real filesystem at the resolved scan directory, so these tests
-  // scan a temp project seeded with a posture finding.
-  const makePostureProject = (): string => {
-    const rootDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "react-doctor-posture-"));
+  // scan a temp project seeded with a scan-rule finding.
+  const makeScanRuleProject = (): string => {
+    const rootDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "react-doctor-security-scan-"));
     temporaryDirectories.push(rootDirectory);
     fs.mkdirSync(path.join(rootDirectory, "public"), { recursive: true });
     fs.writeFileSync(
@@ -612,7 +612,7 @@ describe("runInspect — security posture in the environment-checks phase", () =
     return rootDirectory;
   };
 
-  const postureLayersOf = (rootDirectory: string, config: ReactDoctorConfig | null = null) =>
+  const scanRuleLayersOf = (rootDirectory: string, config: ReactDoctorConfig | null = null) =>
     Layer.mergeAll(
       Project.layerOf({ ...sampleProject, rootDirectory }),
       Config.layerOf({ config, resolvedDirectory: rootDirectory, configSourceDirectory: null }),
@@ -627,44 +627,44 @@ describe("runInspect — security posture in the environment-checks phase", () =
       Reporter.layerNoop,
     );
 
-  it("emits posture diagnostics in a full scan", async () => {
-    const rootDirectory = makePostureProject();
+  it("emits scan-rule diagnostics in a full scan", async () => {
+    const rootDirectory = makeScanRuleProject();
     const output = await Effect.runPromise(
       runInspect({ ...baseInput, directory: rootDirectory }).pipe(
-        Effect.provide(postureLayersOf(rootDirectory)),
+        Effect.provide(scanRuleLayersOf(rootDirectory)),
       ),
     );
-    const posture = output.diagnostics.filter((d) => d.rule === "public-debug-artifact");
-    expect(posture).toHaveLength(1);
-    expect(posture[0]?.severity).toBe("warning");
-    expect(posture[0]?.category).toBe("Security");
+    const scanDiagnostics = output.diagnostics.filter((d) => d.rule === "public-debug-artifact");
+    expect(scanDiagnostics).toHaveLength(1);
+    expect(scanDiagnostics[0]?.severity).toBe("warning");
+    expect(scanDiagnostics[0]?.category).toBe("Security");
   });
 
-  it("skips the posture scan in diff mode (includePaths.length > 0)", async () => {
-    const rootDirectory = makePostureProject();
+  it("skips the file scan in diff mode (includePaths.length > 0)", async () => {
+    const rootDirectory = makeScanRuleProject();
     const output = await Effect.runPromise(
       runInspect({
         ...baseInput,
         directory: rootDirectory,
         includePaths: ["src/App.tsx"],
-      }).pipe(Effect.provide(postureLayersOf(rootDirectory))),
+      }).pipe(Effect.provide(scanRuleLayersOf(rootDirectory))),
     );
     expect(output.diagnostics.map((d) => d.rule)).not.toContain("public-debug-artifact");
   });
 
-  it("applies user severity overrides to posture diagnostics", async () => {
-    const rootDirectory = makePostureProject();
+  it("applies user severity overrides to scan-rule diagnostics", async () => {
+    const rootDirectory = makeScanRuleProject();
     const output = await Effect.runPromise(
       runInspect({ ...baseInput, directory: rootDirectory }).pipe(
         Effect.provide(
-          postureLayersOf(rootDirectory, {
+          scanRuleLayersOf(rootDirectory, {
             rules: { "react-doctor/public-debug-artifact": "error" },
           }),
         ),
       ),
     );
-    const posture = output.diagnostics.filter((d) => d.rule === "public-debug-artifact");
-    expect(posture).toHaveLength(1);
-    expect(posture[0]?.severity).toBe("error");
+    const scanDiagnostics = output.diagnostics.filter((d) => d.rule === "public-debug-artifact");
+    expect(scanDiagnostics).toHaveLength(1);
+    expect(scanDiagnostics[0]?.severity).toBe("error");
   });
 });

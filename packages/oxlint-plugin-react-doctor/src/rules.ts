@@ -24,20 +24,18 @@ const toKeyedSeverity = (entries: ReadonlyArray<RegistryEntry>): ReadonlyArray<K
 const isRecommendedByDefault = (entry: RegistryEntry): boolean =>
   entry.rule.defaultEnabled !== false;
 
-// Posture rules (`scan` field) stay in the full registry exports for
+// Scan rules (`scan` field) stay in the full registry exports for
 // metadata consumers (`REACT_DOCTOR_RULES`, `ALL_REACT_DOCTOR_RULE_KEYS`)
 // but are excluded from the preset rule maps: their lint visitor is a
-// no-op (they run via @react-doctor/core's check-security-posture
+// no-op (they run via @react-doctor/core's check-security-scan
 // environment check), so enabling them in an ESLint/oxlint config would
 // only register dead rules.
-const isPostureRule = (entry: RegistryEntry): boolean => entry.rule.scan !== undefined;
+const isScanRule = (entry: RegistryEntry): boolean => entry.rule.scan !== undefined;
 
 const collectReactDoctorRulesByFramework = (frameworkName: RuleFramework) =>
   reactDoctorRules.filter(
     (entry) =>
-      entry.rule.framework === frameworkName &&
-      isRecommendedByDefault(entry) &&
-      !isPostureRule(entry),
+      entry.rule.framework === frameworkName && isRecommendedByDefault(entry) && !isScanRule(entry),
   );
 
 const collectExternalRulesBySource = (source: string) =>
@@ -109,7 +107,7 @@ export const PREACT_RULES = toRuleMap(
   toKeyedSeverity(collectReactDoctorRulesByFramework("preact")),
 );
 export const ALL_REACT_DOCTOR_RULES = toRuleMap(
-  toKeyedSeverity(REACT_DOCTOR_RULES.filter((entry) => !isPostureRule(entry))),
+  toKeyedSeverity(REACT_DOCTOR_RULES.filter((entry) => !isScanRule(entry))),
 );
 export const ALL_REACT_DOCTOR_RULE_KEYS: ReadonlySet<string> = new Set(
   REACT_DOCTOR_RULES.map((rule) => rule.key),

@@ -56,7 +56,7 @@ export const SECRET_PATTERNS = [
   /^sk-[a-zA-Z0-9]{32,}$/,
 ];
 
-// Whole-content credential patterns for the security-posture scan rules
+// Whole-content credential patterns for the security-scan scan rules
 // (unanchored sweep over full file contents), distinct from
 // SECRET_PATTERNS above, which anchor individual string-literal values
 // for `no-secrets-in-client-code`. Kept byte-identical to the original

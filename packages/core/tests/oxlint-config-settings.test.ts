@@ -50,7 +50,7 @@ describe("createOxlintConfig settings", () => {
     expect(config.settings["react-doctor"]).not.toHaveProperty("shopifyFlashListMajorVersion");
   });
 
-  it("never registers security posture rules (they run as a core environment check)", () => {
+  it("never registers security scan rules (they run as a core environment check)", () => {
     const config = createOxlintConfig({
       pluginPath: "/tmp/plugin.js",
       project: buildProject({ framework: "vite", hasReactNativeWorkspace: false }),
@@ -60,7 +60,7 @@ describe("createOxlintConfig settings", () => {
     expect(config.rules).not.toHaveProperty("react-doctor/raw-sql-injection-risk");
   });
 
-  it("excludes security posture rules even when severity controls opt them in", () => {
+  it("excludes security scan rules even when severity controls opt them in", () => {
     const config = createOxlintConfig({
       pluginPath: "/tmp/plugin.js",
       project: buildProject({ framework: "vite", hasReactNativeWorkspace: false }),

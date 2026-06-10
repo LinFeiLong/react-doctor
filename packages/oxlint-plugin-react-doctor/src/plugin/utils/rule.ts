@@ -1,4 +1,4 @@
-import type { PostureScan } from "./posture-scan.js";
+import type { FileScan } from "./file-scan.js";
 import type { RuleContext } from "./rule-context.js";
 import type { RuleVisitors } from "./rule-visitors.js";
 
@@ -69,11 +69,11 @@ export interface Rule {
   // Retired rules stay registered only so legacy configs and docs tooling
   // can resolve the id. They intentionally never report diagnostics.
   lifecycle?: "retired";
-  // Project-level posture scan. Rules with `scan` are registered for
+  // Project-level file scan. Rules with `scan` are registered for
   // metadata/tags/severity like any rule, but are EXCLUDED from the
   // generated oxlint config and executed by @react-doctor/core's
-  // check-security-posture environment check over a whole-tree walk.
-  scan?: PostureScan;
+  // check-security-scan environment check over a whole-tree walk.
+  scan?: FileScan;
   recommendation?: string;
   create: (context: RuleContext) => RuleVisitors;
 }

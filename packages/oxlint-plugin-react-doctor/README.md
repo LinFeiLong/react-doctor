@@ -56,7 +56,7 @@ npx oxlint .
 
 The full rule list lives in [`rule-registry.ts`](https://github.com/millionco/react-doctor/blob/main/packages/oxlint-plugin-react-doctor/src/plugin/rule-registry.ts). All rules are namespaced under `react-doctor/*`.
 
-Rules in the `security-posture` bucket are project-level posture scans (leaked artifact secrets, permissive Firebase/Supabase rules, committed key material, …). They register metadata here but are no-ops under plain oxlint or ESLint — the [React Doctor CLI](https://npmjs.com/package/react-doctor) executes them over a whole-tree file walk during its scan.
+Rules in the `security-scan` bucket are project-level project-wide file scans (leaked artifact secrets, permissive Firebase/Supabase rules, committed key material, …). They register metadata here but are no-ops under plain oxlint or ESLint — the [React Doctor CLI](https://npmjs.com/package/react-doctor) executes them over a whole-tree file walk during its scan.
 
 Each rule can be set to `"error"`, `"warn"`, or `"off"`:
 

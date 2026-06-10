@@ -3,8 +3,8 @@ import { ruleRegistry } from "./rule-registry.js";
 
 const REANIMATED_LAYOUT_RULE_ID = "rn-animate-layout-property";
 
-// The full security-posture bucket: project-level scan rules executed by
-// @react-doctor/core's check-security-posture environment check instead of
+// The full security-scan bucket: project-level scan rules executed by
+// @react-doctor/core's check-security-scan environment check instead of
 // the oxlint AST pipeline. Inlined so an accidental bucket addition/removal
 // fails loudly here instead of silently shifting scan coverage.
 const SECURITY_POSTURE_RULE_IDS = [
@@ -52,21 +52,21 @@ describe("rule registry", () => {
     expect(ruleRegistry[REANIMATED_LAYOUT_RULE_ID]?.defaultEnabled).toBe(false);
   });
 
-  it("registers exactly the 36 known security-posture rules", () => {
+  it("registers exactly the 36 known security-scan rules", () => {
     const taggedIds = Object.entries(ruleRegistry)
-      .filter(([, rule]) => (rule.tags ?? []).includes("security-posture"))
+      .filter(([, rule]) => (rule.tags ?? []).includes("security-scan"))
       .map(([ruleId]) => ruleId)
       .sort();
     expect(taggedIds).toHaveLength(36);
     expect(taggedIds).toEqual([...SECURITY_POSTURE_RULE_IDS]);
   });
 
-  it("gives every security-posture rule a scan function and no other rule a scan field", () => {
+  it("gives every security-scan rule a scan function and no other rule a scan field", () => {
     for (const [ruleId, rule] of Object.entries(ruleRegistry)) {
-      if ((rule.tags ?? []).includes("security-posture")) {
-        expect(typeof rule.scan, `${ruleId} should carry a posture scan`).toBe("function");
+      if ((rule.tags ?? []).includes("security-scan")) {
+        expect(typeof rule.scan, `${ruleId} should carry a scan`).toBe("function");
       } else {
-        expect(rule.scan, `${ruleId} should not carry a posture scan`).toBeUndefined();
+        expect(rule.scan, `${ruleId} should not carry a scan`).toBeUndefined();
       }
     }
   });
