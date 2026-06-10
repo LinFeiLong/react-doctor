@@ -1,4 +1,4 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isClientSourcePath } from "./utils/is-client-source-path.js";
 
@@ -8,7 +8,7 @@ const SENSITIVE_AUTH_FIELD_PATTERN =
 const SUPABASE_CLIENT_AUTHZ_WRITE_PATTERN =
   /\b(?:supabase\b|\.from\s*\(\s*["'][^"']+["']\s*\))[\s\S]{0,700}\b(?:insert|upsert|update)\s*\(\s*(?:\{|\[?\s*\{)[\s\S]{0,700}\b(?:ownerId|creatorId|userId|orgId|tenantId|role|isAdmin)\b/i;
 
-export const supabaseClientOwnedAuthzField = defineScanRule({
+export const supabaseClientOwnedAuthzField = defineRule({
   id: "supabase-client-owned-authz-field",
   title: "Client writes Supabase authorization field",
   severity: "error",

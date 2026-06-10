@@ -1,11 +1,11 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 
 const PATH_TRAVERSAL_RISK_PATTERN =
   /\b(?:readFile|readFileSync|writeFile|writeFileSync)\s*\(\s*(?:req\.|request\.|params\.|query\.|body\.|parsed\.|`[^`]*(?:req\.|request\.|params\.|query\.|body\.))|\bpath\.(?:join|resolve)\s*\([^)]*\b(?:req\.|request\.|params\.|query\.|body\.|parsed\.)/;
 
-export const pathTraversalRisk = defineScanRule({
+export const pathTraversalRisk = defineRule({
   id: "path-traversal-risk",
   title: "Filesystem path uses caller input",
   severity: "warn",

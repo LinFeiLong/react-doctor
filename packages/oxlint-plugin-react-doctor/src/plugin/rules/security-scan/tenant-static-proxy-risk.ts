@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isServerRouteSourcePath } from "./utils/is-server-route-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const tenantStaticProxyRisk = defineScanRule({
+export const tenantStaticProxyRisk = defineRule({
   id: "tenant-static-proxy-risk",
   title: "Tenant-controlled static asset proxy",
   severity: "warn",

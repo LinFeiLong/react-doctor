@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isFirebaseRulesPath } from "./utils/is-firebase-rules-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const firebasePermissiveRules = defineScanRule({
+export const firebasePermissiveRules = defineRule({
   id: "firebase-permissive-rules",
   title: "Permissive Firebase security rule",
   severity: "error",

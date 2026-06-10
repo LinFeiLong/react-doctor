@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isClientSourcePath } from "./utils/is-client-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const firebaseQueryFilterAsAuth = defineScanRule({
+export const firebaseQueryFilterAsAuth = defineRule({
   id: "firebase-query-filter-as-auth",
   title: "Firestore query filter used as authorization",
   severity: "warn",

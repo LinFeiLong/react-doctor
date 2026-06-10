@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isConfigOrCiPath } from "./utils/is-config-or-ci-path.js";
 
-export const buildPipelineSecretBoundary = defineScanRule({
+export const buildPipelineSecretBoundary = defineRule({
   id: "build-pipeline-secret-boundary",
   title: "Build pipeline runs code near secrets",
   severity: "warn",

@@ -1,8 +1,8 @@
 import { TEST_CONTEXT_PATTERN } from "../../constants/security-scan.js";
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const keyLifecycleRisk = defineScanRule({
+export const keyLifecycleRisk = defineRule({
   id: "key-lifecycle-risk",
   title: "Long-lived key material in repository",
   severity: "error",

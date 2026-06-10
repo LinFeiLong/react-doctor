@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const localRpcNativeBridgeRisk = defineScanRule({
+export const localRpcNativeBridgeRisk = defineRule({
   id: "local-rpc-native-bridge-risk",
   title: "Weak localhost native bridge boundary",
   severity: "warn",

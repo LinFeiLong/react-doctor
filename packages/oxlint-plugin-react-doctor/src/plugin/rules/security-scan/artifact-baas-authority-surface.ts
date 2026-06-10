@@ -1,4 +1,4 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isBrowserArtifactPath } from "./utils/is-browser-artifact-path.js";
 
@@ -10,7 +10,7 @@ const BAAS_CLIENT_CONFIG_PATTERN =
 const BAAS_AUTHORITY_SURFACE_PATTERN =
   /\b(?:collection\s*\(\s*["'](?:boosts|sessions|sessions_admin|users|orgs|candidateJobs|conversations|documents|profiles)|from\s*\(\s*["'](?:users|profiles|documents|organizations|memberships)|creatorID|creatorId|providerId|ghostOrg|ownerId|orgId|tenantId|workspaceId|role|roles|isAdmin|SuperAdmin)\b/i;
 
-export const artifactBaasAuthoritySurface = defineScanRule({
+export const artifactBaasAuthoritySurface = defineRule({
   id: "artifact-baas-authority-surface",
   title: "BaaS authority map shipped in browser artifact",
   severity: "warn",

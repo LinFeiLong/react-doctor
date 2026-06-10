@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const svgFilterClickjackingRisk = defineScanRule({
+export const svgFilterClickjackingRisk = defineRule({
   id: "svg-filter-clickjacking-risk",
   title: "SVG-filtered iframe clickjacking primitive",
   severity: "warn",

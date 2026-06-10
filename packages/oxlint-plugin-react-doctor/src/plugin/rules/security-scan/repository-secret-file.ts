@@ -1,6 +1,6 @@
 import { TEST_CONTEXT_PATTERN } from "../../constants/security-scan.js";
 import { SECRET_VALUE_PATTERNS } from "../../constants/security.js";
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import {
   findSuspiciousPublicEnvSecretNamePattern,
   hasSuspiciousPublicEnvSecretName,
@@ -14,7 +14,7 @@ const isRepositorySecretExamplePath = (relativePath: string): boolean =>
     relativePath,
   );
 
-export const repositorySecretFile = defineScanRule({
+export const repositorySecretFile = defineRule({
   id: "repository-secret-file",
   title: "Secret file checked into repository",
   severity: "error",

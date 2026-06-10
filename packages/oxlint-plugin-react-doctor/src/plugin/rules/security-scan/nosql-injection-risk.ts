@@ -1,5 +1,5 @@
 import { DATABASE_SOURCE_FILE_PATTERN } from "../../constants/security-scan.js";
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionFilePath } from "./utils/is-production-file-path.js";
 
@@ -9,7 +9,7 @@ const NOSQL_INJECTION_RISK_PATTERN =
 const isProductionDatabaseSourcePath = (relativePath: string): boolean =>
   isProductionFilePath(relativePath, DATABASE_SOURCE_FILE_PATTERN);
 
-export const nosqlInjectionRisk = defineScanRule({
+export const nosqlInjectionRisk = defineRule({
   id: "nosql-injection-risk",
   title: "NoSQL query accepts operator-shaped input",
   severity: "warn",

@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isClientSourcePath } from "./utils/is-client-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const firebaseClientOwnedAuthzField = defineScanRule({
+export const firebaseClientOwnedAuthzField = defineRule({
   id: "firebase-client-owned-authz-field",
   title: "Client writes authorization field",
   severity: "error",

@@ -1,9 +1,9 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isConfigOrCiPath } from "./utils/is-config-or-ci-path.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const clickjackingRedirectRisk = defineScanRule({
+export const clickjackingRedirectRisk = defineRule({
   id: "clickjacking-redirect-risk",
   title: "Redirect or frame boundary risk",
   severity: "warn",

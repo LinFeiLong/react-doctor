@@ -1,5 +1,5 @@
 import { AGENT_TOOL_DANGEROUS_CAPABILITY_PATTERN } from "../../constants/security-scan.js";
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 
@@ -9,7 +9,7 @@ const AGENT_TOOL_DEFINITION_PATTERN =
 const AGENT_TOOL_CONTEXT_PATH_PATTERN =
   /(?:^|\/)(?:agents?|tools?|mcp)(?:\/|$)|(?:agent|tool|mcp)[^/]*\.[cm]?[jt]sx?$/i;
 
-export const agentToolCapabilityRisk = defineScanRule({
+export const agentToolCapabilityRisk = defineRule({
   id: "agent-tool-capability-risk",
   title: "Agent tool exposes dangerous capability",
   severity: "warn",

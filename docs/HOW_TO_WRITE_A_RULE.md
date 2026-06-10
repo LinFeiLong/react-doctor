@@ -253,10 +253,10 @@ Most rules are per-file AST rules. Use a scan rule when the signal lives in the 
 
 If the bug is a JavaScript/TypeScript code shape in linted source, write a normal AST rule instead.
 
-Scan rules live in `packages/oxlint-plugin-react-doctor/src/plugin/rules/security-scan/` and use `defineScanRule`. A real example (`firebase-permissive-rules.ts`):
+Scan rules live in `packages/oxlint-plugin-react-doctor/src/plugin/rules/security-scan/` and declare a `scan` instead of `create` in their `defineRule` call. A real example (`firebase-permissive-rules.ts`):
 
 ```ts
-export const firebasePermissiveRules = defineScanRule({
+export const firebasePermissiveRules = defineRule({
   id: "firebase-permissive-rules",
   title: "Permissive Firebase security rule",
   severity: "error",

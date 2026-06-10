@@ -1,9 +1,9 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { findSuspiciousPublicEnvSecretNamePattern } from "./utils/find-suspicious-public-env-secret-name.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isClientSourcePath } from "./utils/is-client-source-path.js";
 
-export const publicEnvSecretName = defineScanRule({
+export const publicEnvSecretName = defineRule({
   id: "public-env-secret-name",
   title: "Secret-like public env variable",
   severity: "warn",

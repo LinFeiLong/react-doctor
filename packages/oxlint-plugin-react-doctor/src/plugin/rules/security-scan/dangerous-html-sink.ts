@@ -1,4 +1,4 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import type { ScanFinding } from "../../utils/file-scan.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 
@@ -7,7 +7,7 @@ const DANGEROUS_HTML_PATTERN = /dangerouslySetInnerHTML|\.innerHTML\s*=/;
 const DANGEROUS_HTML_TAINT_PATTERN =
   /searchParams|query|params|request|req\.|response\.|result\.|data\.|await|fetch|props\.|children|content|html|body|text|message/i;
 
-export const dangerousHtmlSink = defineScanRule({
+export const dangerousHtmlSink = defineRule({
   id: "dangerous-html-sink",
   title: "HTML injection sink with dynamic content",
   severity: "warn",

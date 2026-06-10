@@ -1,5 +1,5 @@
 import { AGENT_TOOL_DANGEROUS_CAPABILITY_PATTERN } from "../../constants/security-scan.js";
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 
@@ -9,7 +9,7 @@ const MCP_IMPORT_PATTERN =
 const MCP_TOOL_SURFACE_PATTERN =
   /\b(?:server\.\s*(?:tool|resource|prompt)\s*\(|register(?:Tool|Resource|Prompt)\s*\(|setRequestHandler\s*\(\s*(?:CallToolRequestSchema|ListToolsRequestSchema)|new\s+(?:McpServer|McpAgent)\s*\()/;
 
-export const mcpToolCapabilityRisk = defineScanRule({
+export const mcpToolCapabilityRisk = defineRule({
   id: "mcp-tool-capability-risk",
   title: "MCP tool exposes dangerous capability",
   severity: "warn",

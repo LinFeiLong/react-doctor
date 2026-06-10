@@ -1,11 +1,11 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 
 const GIT_PROVIDER_URL_INJECTION_PATTERN =
   /(?:api\.github\.com|github\.com|gitlab\.com|bitbucket\.org)[^`'"]{0,200}\$\{|`https?:\/\/[^`]{0,80}git[^`]{0,80}\$\{/i;
 
-export const gitProviderUrlInjectionRisk = defineScanRule({
+export const gitProviderUrlInjectionRisk = defineRule({
   id: "git-provider-url-injection-risk",
   title: "Git provider URL built from interpolation",
   severity: "warn",

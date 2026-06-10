@@ -1,10 +1,10 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import type { ScanFinding } from "../../utils/file-scan.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { hasSecretValue } from "./utils/has-secret-value.js";
 import { isPublicDebugArtifactPath } from "./utils/is-public-debug-artifact-path.js";
 
-export const publicDebugArtifact = defineScanRule({
+export const publicDebugArtifact = defineRule({
   id: "public-debug-artifact",
   title: "Public debug artifact",
   severity: "warn",

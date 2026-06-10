@@ -3,7 +3,6 @@
 // under `src/plugin/rules/<bucket>/<rule>.ts` for its single
 //   export const <identifier> = defineRule<Rule>({ id: "<rule-id>", ... })
 //   export const <identifier> = defineRetiredRule({ id: "<rule-id>", ... })
-//   export const <identifier> = defineScanRule({ id: "<rule-id>", ... })
 // declaration (one rule file = one rule). The bucket directory determines
 // the rule's `framework` and its default `category`; the rule file may
 // override the category with an explicit field. `framework` is never on
@@ -185,19 +184,18 @@ for (const bucket of fs.readdirSync(PLUGIN_RULES_ROOT, { withFileTypes: true }))
     // (e.g. `defineRule<Foo<Bar>>(`) and the no-generic `defineRule({` form,
     // where the original `<[^>]+>` matcher silently failed and dropped the rule.
     // `defineRetiredRule` follows the same metadata shape but intentionally
-    // emits a no-op rule for legacy config compatibility; `defineScanRule`
-    // rules carry a project-level `scan` and are excluded from oxlint configs.
+    // emits a no-op rule for legacy config compatibility; Scan rules
+    // (a `scan` field instead of `create`) also register through plain
+    // `defineRule`.
     const exportMatch = source.match(
-      /export\s+const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:defineRule|defineRetiredRule|defineScanRule)\b[^(]*\(\s*\{/,
+      /export\s+const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:defineRule|defineRetiredRule)\b[^(]*\(\s*\{/,
     );
     if (!exportMatch) {
       // Fail loudly if a file clearly declares a rule export but the scanner
       // can't parse it — a silent `continue` would ship a registry missing
       // the rule with no error.
       if (
-        /export\s+const\s+[A-Za-z_$][\w$]*\s*=\s*(?:defineRule|defineRetiredRule|defineScanRule)\b/.test(
-          source,
-        )
+        /export\s+const\s+[A-Za-z_$][\w$]*\s*=\s*(?:defineRule|defineRetiredRule)\b/.test(source)
       ) {
         console.error(
           `Rule export present but unparseable by the registry scanner: ${path.relative(PACKAGE_ROOT, filePath)}`,

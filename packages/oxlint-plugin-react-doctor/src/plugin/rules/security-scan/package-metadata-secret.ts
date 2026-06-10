@@ -1,9 +1,9 @@
 import { SECRET_VALUE_PATTERNS } from "../../constants/security.js";
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { findSuspiciousPublicEnvSecretNamePattern } from "./utils/find-suspicious-public-env-secret-name.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 
-export const packageMetadataSecret = defineScanRule({
+export const packageMetadataSecret = defineRule({
   id: "package-metadata-secret",
   title: "Secret-like package metadata",
   severity: "warn",

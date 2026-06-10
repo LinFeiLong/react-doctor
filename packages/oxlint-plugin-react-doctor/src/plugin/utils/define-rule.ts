@@ -1,3 +1,4 @@
+import type { FileScan } from "./file-scan.js";
 import { isTestlikeFilename } from "./is-testlike-filename.js";
 import {
   fileImportsNonReactJsxDialect,
@@ -6,9 +7,20 @@ import {
 import type { Rule } from "./rule.js";
 import type { EsTreeNodeOfType } from "./es-tree-node-of-type.js";
 
+// One definition for both rule kinds. An AST rule provides `create`
+// (per-file visitors, hosted by oxlint/ESLint); a scan rule provides
+// `scan` (a project-level file scan, executed by @react-doctor/core's
+// check-security-scan environment check) and gets an inert visitor
+// factory injected for host compatibility. Metadata, registration,
+// tags, and severity flow identically either way.
 interface DefineRule {
   (rule: Rule): Rule;
-  <RuleDefinition>(rule: RuleDefinition): RuleDefinition;
+  (rule: Omit<Rule, "create"> & { scan: FileScan }): Rule;
+  // `extends Rule` keeps the explicit `defineRule<Rule>({...})` call sites
+  // working while preventing this catch-all from swallowing scan-rule
+  // calls (their context-sensitive `scan` arrow would otherwise resolve
+  // here and freeze the widened literal type instead of `Rule`).
+  <RuleDefinition extends Rule>(rule: RuleDefinition): RuleDefinition;
 }
 
 // Rules tagged `"test-noise"` are by-design noisy in tests / stories /
@@ -94,7 +106,12 @@ const wrapCreateForReactJsxOnly = <
 export const defineRule: DefineRule = <RuleDefinition>(rule: RuleDefinition): RuleDefinition => {
   const tags = (rule as { tags?: ReadonlyArray<string> }).tags;
   const create = (rule as { create?: unknown }).create;
-  if (typeof create !== "function") return rule;
+  if (typeof create !== "function") {
+    if (typeof (rule as { scan?: unknown }).scan === "function") {
+      return { ...rule, create: () => ({}) } as RuleDefinition;
+    }
+    return rule;
+  }
   let wrappedCreate = create as (...args: unknown[]) => unknown;
   // `migration-hint` wins over `test-noise` — deprecated API usage in
   // test code is the very surface that needs migration (`react-dom/test-utils`

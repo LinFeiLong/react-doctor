@@ -1,4 +1,4 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 
@@ -11,7 +11,7 @@ const WEBHOOK_ENTRYPOINT_PATTERN =
 const WEBHOOK_SIGNATURE_VERIFICATION_PATTERN =
   /verifySignature|verify.*signature|constructEvent|createHmac|timingSafeEqual|svix|webhookSecret|stripe\.webhooks/i;
 
-export const webhookSignatureRisk = defineScanRule({
+export const webhookSignatureRisk = defineRule({
   id: "webhook-signature-risk",
   title: "Webhook handler lacks signature verification",
   severity: "warn",

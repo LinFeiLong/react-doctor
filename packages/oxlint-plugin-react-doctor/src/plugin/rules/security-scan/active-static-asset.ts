@@ -1,4 +1,4 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import type { ScanFinding } from "../../utils/file-scan.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isBrowserArtifactPath } from "./utils/is-browser-artifact-path.js";
@@ -12,7 +12,7 @@ const DANGEROUS_ALLOW_SVG_PATTERN = /dangerouslyAllowSVG\s*:\s*true/i;
 const EXECUTABLE_SVG_EMBED_PATTERN =
   /<(?:object|embed|iframe)\b[^>]+(?:data|src)=["'][^"']+\.svg(?:\?[^"']*)?["']/i;
 
-export const activeStaticAsset = defineScanRule({
+export const activeStaticAsset = defineRule({
   id: "active-static-asset",
   title: "Executable SVG exposure",
   severity: "warn",

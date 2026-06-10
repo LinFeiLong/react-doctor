@@ -1,5 +1,5 @@
 import { SERVER_CONTEXT_PATTERN } from "../../constants/security-scan.js";
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import type { ScanFinding } from "../../utils/file-scan.js";
 import { isServerRouteSourcePath } from "./utils/is-server-route-source-path.js";
 
@@ -11,7 +11,7 @@ const CALLER_STYLE_URL_NAME_PATTERN =
 
 const SAFE_REDIRECT_MODE_PATTERN = /\bredirect\s*:\s*["'](?:manual|error)["']/;
 
-export const untrustedRedirectFollowing = defineScanRule({
+export const untrustedRedirectFollowing = defineRule({
   id: "untrusted-redirect-following",
   title: "Server fetch follows redirects for caller-shaped URL",
   severity: "warn",

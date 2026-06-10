@@ -1,4 +1,4 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionScriptSourcePath } from "./utils/is-production-script-source-path.js";
 
@@ -17,7 +17,7 @@ const RAW_SQL_RISK_PATTERNS = [
   /mysqli_query\s*\(\s*[^,]+,\s*(?:"[^"]{0,400}"|'[^']{0,400}')\s*\.\s*\$/,
 ] as const;
 
-export const rawSqlInjectionRisk = defineScanRule({
+export const rawSqlInjectionRisk = defineRule({
   id: "raw-sql-injection-risk",
   title: "Raw SQL built outside parameter binding",
   severity: "warn",

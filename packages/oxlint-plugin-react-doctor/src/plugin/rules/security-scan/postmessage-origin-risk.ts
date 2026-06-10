@@ -1,4 +1,4 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isAstNode } from "../../utils/is-ast-node.js";
 import type { ScanFinding } from "../../utils/file-scan.js";
 import { getCalleeText } from "./utils/get-callee-text.js";
@@ -12,7 +12,7 @@ import { walkAst } from "./utils/walk-ast.js";
 const POSTMESSAGE_ORIGIN_CHECK_PATTERN =
   /(?:event|e)\.origin|\.origin\s*[!=]==?|origin.*(?:check|valid|allow|trust)|(?:check|valid|allow|trust).*origin/i;
 
-export const postmessageOriginRisk = defineScanRule({
+export const postmessageOriginRisk = defineRule({
   id: "postmessage-origin-risk",
   title: "postMessage handler without origin check",
   severity: "warn",

@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const mdxSsrExecutionRisk = defineScanRule({
+export const mdxSsrExecutionRisk = defineRule({
   id: "mdx-ssr-execution-risk",
   title: "Server-rendered MDX can execute code",
   severity: "warn",

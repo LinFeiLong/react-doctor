@@ -1,4 +1,4 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 
@@ -13,7 +13,7 @@ const SECURITY_RANDOM_CONTEXT_PATTERN =
 
 const MATH_RANDOM_CALL_PATTERN = /Math\.random\s*\(/;
 
-export const insecureCryptoRisk = defineScanRule({
+export const insecureCryptoRisk = defineRule({
   id: "insecure-crypto-risk",
   title: "Weak cryptography in security context",
   severity: "warn",

@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
 import { isSqlPath } from "./utils/is-sql-path.js";
 
-export const supabaseRlsPolicyRisk = defineScanRule({
+export const supabaseRlsPolicyRisk = defineRule({
   id: "supabase-rls-policy-risk",
   title: "Permissive Supabase RLS policy",
   severity: "error",

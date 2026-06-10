@@ -1,8 +1,8 @@
 import { SECRET_VALUE_PATTERNS } from "../../constants/security.js";
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { scanArtifactLeak } from "./utils/scan-artifact-leak.js";
 
-export const artifactSecretLeak = defineScanRule({
+export const artifactSecretLeak = defineRule({
   id: "artifact-secret-leak",
   title: "Secret shipped in browser artifact",
   severity: "error",

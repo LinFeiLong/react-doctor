@@ -1,8 +1,8 @@
-import { defineScanRule } from "../../utils/define-scan-rule.js";
+import { defineRule } from "../../utils/define-rule.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
-export const importMetadataExecutionRisk = defineScanRule({
+export const importMetadataExecutionRisk = defineRule({
   id: "import-metadata-execution-risk",
   title: "Imported metadata reaches code execution",
   severity: "error",
