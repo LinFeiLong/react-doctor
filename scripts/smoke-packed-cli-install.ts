@@ -112,25 +112,39 @@ const main = (): void => {
       `${JSON.stringify({ name: "react-doctor-packed-cli-smoke", private: true }, null, 2)}\n`,
     );
 
+    // Pack the CLI together with its workspace dependency: changesets
+    // version-bumps and publishes them as a pinned pair, so installing
+    // both tarballs mirrors what a release ships. Installing only the
+    // CLI tarball would resolve `oxlint-plugin-react-doctor` from the
+    // registry and reject any PR that adds cross-package API before
+    // it's published.
     runCommand({
       command: "pnpm",
-      args: ["--filter", "react-doctor", "pack", "--pack-destination", packDirectory],
+      args: [
+        "--filter",
+        "react-doctor",
+        "--filter",
+        "oxlint-plugin-react-doctor",
+        "pack",
+        "--pack-destination",
+        packDirectory,
+      ],
       cwd: REPOSITORY_ROOT,
       needsShell: process.platform === "win32",
     });
 
     const tarballs = fs.readdirSync(packDirectory).filter((fileName) => fileName.endsWith(".tgz"));
-    if (tarballs.length !== 1) {
+    if (tarballs.length !== 2) {
       console.error(
-        `Expected exactly one packed tarball in ${packDirectory}, found ${tarballs.length}.`,
+        `Expected exactly two packed tarballs in ${packDirectory}, found ${tarballs.length}.`,
       );
       process.exit(1);
     }
-    const tarballPath = path.join(packDirectory, tarballs[0] ?? "");
+    const tarballPaths = tarballs.map((tarball) => path.join(packDirectory, tarball));
 
     runCommand({
       command: "npm",
-      args: ["install", "--omit=dev", tarballPath],
+      args: ["install", "--omit=dev", ...tarballPaths],
       cwd: installDirectory,
       needsShell: process.platform === "win32",
     });
