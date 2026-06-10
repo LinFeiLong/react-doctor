@@ -10,6 +10,12 @@ interface TailwindMajorMinor {
   minor: number;
 }
 
+// Bounded quantifiers (mirroring parse-react-major-minor.ts) keep the
+// unanchored scan linear: `(\d+)\.` backtracks quadratically on long
+// digit runs, and the version string comes straight from package.json.
+const MAJOR_MINOR_PATTERN = /(\d{1,4})\.(\d{1,4})/;
+const MAJOR_ONLY_PATTERN = /(\d{1,4})/;
+
 export const parseTailwindMajorMinor = (
   tailwindVersion: string | null | undefined,
 ): TailwindMajorMinor | null => {
@@ -17,7 +23,7 @@ export const parseTailwindMajorMinor = (
   const trimmed = tailwindVersion.trim();
   if (trimmed.length === 0) return null;
 
-  const majorMinorMatch = trimmed.match(/(\d+)\.(\d+)/);
+  const majorMinorMatch = trimmed.match(MAJOR_MINOR_PATTERN);
   if (majorMinorMatch) {
     const major = Number.parseInt(majorMinorMatch[1], 10);
     const minor = Number.parseInt(majorMinorMatch[2], 10);
@@ -26,7 +32,7 @@ export const parseTailwindMajorMinor = (
     return { major, minor };
   }
 
-  const majorOnlyMatch = trimmed.match(/(\d+)/);
+  const majorOnlyMatch = trimmed.match(MAJOR_ONLY_PATTERN);
   if (!majorOnlyMatch) return null;
   const major = Number.parseInt(majorOnlyMatch[1], 10);
   if (!Number.isFinite(major) || major <= 0) return null;
