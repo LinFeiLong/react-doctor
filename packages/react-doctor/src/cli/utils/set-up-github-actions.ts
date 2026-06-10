@@ -43,11 +43,13 @@ export const setUpGitHubActions = async (options: SetUpGitHubActionsOptions): Pr
   } catch {}
 
   const workflowSpinner = spinner("Adding GitHub Actions workflow...").start();
-  // Resolved once and reused for both the template's push trigger and the PR
-  // base below, so the workflow and the PR can't disagree about which branch
-  // is the default.
-  const defaultBranch = await detectDefaultBranch(projectRoot);
-  const workflowResult = installReactDoctorWorkflow(projectRoot, defaultBranch ?? undefined);
+  // Resolved once — with the same `main` fallback the template uses — and
+  // reused for both the template's push trigger and the PR base below, so the
+  // workflow and the PR can't disagree about which branch is the default
+  // (a second detection pass could answer differently, e.g. after a timed-out
+  // gh probe recovers).
+  const defaultBranch = (await detectDefaultBranch(projectRoot)) ?? "main";
+  const workflowResult = installReactDoctorWorkflow(projectRoot, defaultBranch);
   const didCreateWorkflow = reportWorkflowResult(workflowSpinner, workflowResult, projectRoot);
 
   logger.break();
@@ -62,7 +64,7 @@ export const setUpGitHubActions = async (options: SetUpGitHubActionsOptions): Pr
     const pullRequestSpinner = spinner("Opening a pull request for review...").start();
     const pullRequestResult = await openWorkflowPullRequest({
       workflowPath: workflowResult.workflowPath,
-      baseBranch: defaultBranch ?? undefined,
+      baseBranch: defaultBranch,
     });
     if (pullRequestResult.status === "pr-opened") {
       pullRequestSpinner.succeed(
