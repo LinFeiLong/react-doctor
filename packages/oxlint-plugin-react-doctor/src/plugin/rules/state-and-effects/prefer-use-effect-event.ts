@@ -10,7 +10,6 @@ import { getEffectCallback } from "../../utils/get-effect-callback.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 
@@ -226,7 +225,7 @@ const classifyCallableReadsInsideEffect = (
   return { hasAnyRead, allReadsAreInSubHandlers, firstSubHandlerName };
 };
 
-export const preferUseEffectEvent = defineRule<Rule>({
+export const preferUseEffectEvent = defineRule({
   id: "prefer-use-effect-event",
   title: "Effect re-subscribes on a changing callback",
   requires: ["react:19"],

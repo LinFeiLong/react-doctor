@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
@@ -96,7 +95,7 @@ const getTerminalMethodName = (
 // `element(...)` passed as a multiline ARGUMENT to another call are all
 // naturally excluded — the corpus showed those argument lines are the main
 // false-positive trap for a text-based detector.
-export const rnDetoxMissingAwait = defineRule<Rule>({
+export const rnDetoxMissingAwait = defineRule({
   id: "rn-detox-missing-await",
   title: "Un-awaited Detox action",
   requires: ["react-native"],

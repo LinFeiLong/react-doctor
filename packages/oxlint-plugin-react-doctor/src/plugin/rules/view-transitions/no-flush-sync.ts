@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { getImportedName } from "../../utils/get-imported-name.js";
@@ -10,7 +9,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // would have triggered is silently dropped. We report only on the import
 // (a single actionable diagnostic per file) instead of on every call
 // site, which would clutter output for files with several flushSync()s.
-export const noFlushSync = defineRule<Rule>({
+export const noFlushSync = defineRule({
   id: "no-flush-sync",
   title: "flushSync skips View Transitions",
   tags: ["test-noise"],

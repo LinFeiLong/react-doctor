@@ -9,7 +9,6 @@ import { areExpressionsStructurallyEqual } from "../../utils/are-expressions-str
 import { walkAst } from "../../utils/walk-ast.js";
 import { findTriggeredSideEffectCalleeName } from "./utils/find-triggered-side-effect-callee-name.js";
 import { hasDocumentClassListMutation } from "./utils/has-document-class-list-mutation.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
@@ -153,7 +152,7 @@ const doesAnyEventLikeCallReferenceAnyRoot = (
   rootIdentifierNames: Set<string>,
 ): boolean => nodes.some((node) => doesEventLikeCallReferenceAnyRoot(node, rootIdentifierNames));
 
-export const noEffectEventHandler = defineRule<Rule>({
+export const noEffectEventHandler = defineRule({
   id: "no-effect-event-handler",
   title: "Effect used as an event handler",
   tags: ["test-noise"],

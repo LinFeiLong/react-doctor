@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (componentName: string, allowAllCaps: boolean): string =>
   allowAllCaps
@@ -148,7 +147,7 @@ const matchesIgnoreGlob = (
 // user-defined JSX components whose name isn't PascalCase. Supports
 // allowAllCaps / allowNamespace / allowLeadingUnderscore / ignore glob
 // settings. HTML tags (lowercase first letter) are skipped.
-export const jsxPascalCase = defineRule<Rule>({
+export const jsxPascalCase = defineRule({
   id: "jsx-pascal-case",
   title: "Component name not PascalCase",
   severity: "warn",

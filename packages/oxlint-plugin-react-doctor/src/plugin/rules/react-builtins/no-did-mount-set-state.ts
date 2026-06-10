@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isSetStateCallInLifecycle } from "../../utils/is-set-state-in-lifecycle.js";
-import type { Rule } from "../../utils/rule.js";
 
 const LIFECYCLE_NAMES = new Set(["componentDidMount"]);
 const MESSAGE =
@@ -28,7 +27,7 @@ const resolveSettings = (
 // `this.setState(...)` directly inside a `componentDidMount` lifecycle
 // (default), or inside any nested function within `componentDidMount`
 // when `mode: "disallow-in-func"`.
-export const noDidMountSetState = defineRule<Rule>({
+export const noDidMountSetState = defineRule({
   id: "no-did-mount-set-state",
   title: "setState in componentDidMount",
   severity: "warn",

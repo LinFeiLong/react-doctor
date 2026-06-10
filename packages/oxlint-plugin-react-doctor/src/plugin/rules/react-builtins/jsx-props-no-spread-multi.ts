@@ -3,7 +3,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildIdentifierMessage = (name: string): string =>
   `The later spread of \`${name}\` silently overrides the earlier one.`;
@@ -34,7 +33,7 @@ const flattenMemberExpressionName = (node: EsTreeNode): string | null => {
 // when the same identifier or member expression is spread more than once
 // in a single JSX element (`<C {...props} {...props} />` or
 // `<C {...this.props} {...this.props} />`).
-export const jsxPropsNoSpreadMulti = defineRule<Rule>({
+export const jsxPropsNoSpreadMulti = defineRule({
   id: "jsx-props-no-spread-multi",
   title: "Same prop spread multiple times",
   severity: "warn",

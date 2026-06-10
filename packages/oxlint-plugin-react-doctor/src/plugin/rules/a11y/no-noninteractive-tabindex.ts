@@ -8,7 +8,6 @@ import { isInteractiveElement } from "../../utils/is-interactive-element.js";
 import { isInteractiveRole } from "../../utils/is-interactive-role.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { parseJsxValue } from "../../utils/parse-jsx-value.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Keyboard users get stuck focusing this element they can't act on because `tabIndex` makes it tabbable, so remove it.";
@@ -36,7 +35,7 @@ const resolveSettings = (
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::no_noninteractive_tabindex`.
-export const noNoninteractiveTabindex = defineRule<Rule>({
+export const noNoninteractiveTabindex = defineRule({
   id: "no-noninteractive-tabindex",
   title: "Tabindex on non-interactive element",
   tags: ["react-jsx-only"],

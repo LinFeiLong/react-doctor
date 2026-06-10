@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const ARRAY_READ_METHOD_NAMES = new Set([
   "length",
@@ -91,7 +90,7 @@ const isChildrenMemberExpression = (node: EsTreeNodeOfType<"MemberExpression">):
 // which normalises the value to a flat array regardless of how many children
 // exist. This rule flags direct array-method access on `props.children`,
 // `this.props.children`, and destructured `children`.
-export const preactNoChildrenLength = defineRule<Rule>({
+export const preactNoChildrenLength = defineRule({
   id: "preact-no-children-length",
   title: "Array methods on Preact children can crash",
   requires: ["preact"],

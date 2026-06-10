@@ -11,7 +11,6 @@ import { getCalleeIdentifierTrail } from "../../utils/get-callee-identifier-trai
 import { isTestLibraryImportSource } from "../../utils/is-test-library-import-source.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -97,7 +96,7 @@ const reportIfIndependent = (statements: EsTreeNode[], context: RuleContext): vo
   });
 };
 
-export const asyncParallel = defineRule<Rule>({
+export const asyncParallel = defineRule({
   id: "async-parallel",
   title: "Independent awaits run sequentially",
   // `test-noise` opts every file `isTestFilePath(...)` recognises

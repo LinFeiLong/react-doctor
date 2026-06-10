@@ -3,7 +3,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Screen reader users can lose their shortcuts because `accessKey` clashes with them, so remove it.";
@@ -15,7 +14,7 @@ const isUndefinedIdentifier = (expression: EsTreeNode): boolean =>
 // Port of `oxc_linter::rules::jsx_a11y::no_access_key`. Flags any
 // `accessKey` attribute UNLESS its value is the bare `undefined`
 // identifier (matching OXC's `is_undefined` carve-out).
-export const noAccessKey = defineRule<Rule>({
+export const noAccessKey = defineRule({
   id: "no-access-key",
   title: "accessKey attribute used",
   tags: ["react-jsx-only"],

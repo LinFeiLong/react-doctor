@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -32,7 +31,7 @@ const findLegacyShadowProperty = (
 // `shadowRadius` keys only work on iOS, and `elevation` is Android-only,
 // so cross-platform code historically had to declare both — `boxShadow`
 // collapses that into one key.
-export const rnStylePreferBoxShadow = defineRule<Rule>({
+export const rnStylePreferBoxShadow = defineRule({
   id: "rn-style-prefer-boxshadow",
   title: "Platform-specific shadow keys over boxShadow",
   tags: ["test-noise"],

@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { getImportedName } from "../../utils/get-imported-name.js";
@@ -7,7 +6,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 const JS_THREAD_ANIMATION_IMPORTS = new Set(["Animated", "LayoutAnimation"]);
 
-export const rnPreferReanimated = defineRule<Rule>({
+export const rnPreferReanimated = defineRule({
   id: "rn-prefer-reanimated",
   title: "JS-thread animation instead of Reanimated",
   tags: ["test-noise"],

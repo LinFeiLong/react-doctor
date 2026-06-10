@@ -4,7 +4,6 @@ import {
   isImportedFromModule,
   getImportedNameFromModule,
 } from "../../utils/find-import-source-for-name.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -69,7 +68,7 @@ const containingFunctionIsComponentOrHook = (functionNode: EsTreeNode): boolean 
   return COMPONENT_NAME_PATTERN.test(cursor.id.name) || HOOK_NAME_PATTERN.test(cursor.id.name);
 };
 
-export const jotaiSelectAtomInRenderBody = defineRule<Rule>({
+export const jotaiSelectAtomInRenderBody = defineRule({
   id: "jotai-select-atom-in-render-body",
   title: "selectAtom called during render",
   severity: "error",

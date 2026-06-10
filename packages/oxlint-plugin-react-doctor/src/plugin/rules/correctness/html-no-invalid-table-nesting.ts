@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const TABLE_ELEMENTS = new Set(["table", "thead", "tbody", "tfoot", "tr", "td", "th"]);
 
@@ -116,7 +115,7 @@ const findEnclosingTable = (
 // `<MyTable>` is genuinely unknown. preact/debug has the same blind
 // spot at runtime: it walks the VNode tree, not the DOM, so it can't
 // validate boundaries it can't see either.
-export const htmlNoInvalidTableNesting = defineRule<Rule>({
+export const htmlNoInvalidTableNesting = defineRule({
   id: "html-no-invalid-table-nesting",
   title: "Invalid table element nesting",
   severity: "warn",

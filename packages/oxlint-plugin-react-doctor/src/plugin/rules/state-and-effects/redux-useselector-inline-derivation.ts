@@ -6,7 +6,6 @@ import { isFunctionLike } from "../../utils/is-function-like.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import { walkAst } from "../../utils/walk-ast.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { inlineUseSelectorFunction } from "./utils/inline-use-selector-function.js";
 
@@ -145,7 +144,7 @@ const findReturnedAllocatingCall = (expression: EsTreeNode): AllocatingCallSiteW
 //     primitive aggregation).
 //   - Companion to `redux-useselector-returns-new-collection`, which
 //     covers selectors returning a bare `{...}` / `[...]` literal.
-export const reduxUseselectorInlineDerivation = defineRule<Rule>({
+export const reduxUseselectorInlineDerivation = defineRule({
   id: "redux-useselector-inline-derivation",
   title: "useSelector derives data inline",
   severity: "warn",

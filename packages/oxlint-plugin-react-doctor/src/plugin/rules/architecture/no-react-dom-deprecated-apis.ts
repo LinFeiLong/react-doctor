@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { createDeprecatedReactImportRule } from "./utils/create-deprecated-react-import-rule.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -75,7 +74,7 @@ const reportTestUtilsImports = (
   }
 };
 
-export const noReactDomDeprecatedApis = defineRule<Rule>({
+export const noReactDomDeprecatedApis = defineRule({
   id: "no-react-dom-deprecated-apis",
   title: "Deprecated react-dom APIs break in React 19",
   requires: ["react:18"],

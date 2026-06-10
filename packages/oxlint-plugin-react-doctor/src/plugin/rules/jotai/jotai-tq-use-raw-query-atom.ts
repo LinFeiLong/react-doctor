@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { getImportedName } from "../../utils/get-imported-name.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -42,7 +41,7 @@ const SUBSCRIBING_HOOK_NAMES = new Set(["useAtomValue", "useAtom"]);
 const QUERY_ATOM_NAMING_CONVENTION =
   /(SuspenseInfiniteQuery|SuspenseQuery|InfiniteQuery|Query)Atom$/;
 
-export const jotaiTqUseRawQueryAtom = defineRule<Rule>({
+export const jotaiTqUseRawQueryAtom = defineRule({
   id: "jotai-tq-use-raw-query-atom",
   title: "Subscribing to raw query atom",
   severity: "warn",

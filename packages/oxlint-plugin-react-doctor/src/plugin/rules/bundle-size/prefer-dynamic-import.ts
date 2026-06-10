@@ -1,10 +1,9 @@
 import { HEAVY_LIBRARIES } from "../../constants/library.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const preferDynamicImport = defineRule<Rule>({
+export const preferDynamicImport = defineRule({
   id: "prefer-dynamic-import",
   title: "Heavy library loaded eagerly",
   tags: ["test-noise"],

@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { isExpoUiComponentElement } from "./utils/is-expo-ui-component-element.js";
@@ -34,7 +33,7 @@ const isArrayIterationExpression = (node: EsTreeNode): boolean => {
 // memory — for any list longer than ~10 items this destroys scroll
 // performance on lower-end devices. FlashList / LegendList / FlatList
 // recycle row components and only mount the visible window.
-export const rnNoScrollviewMappedList = defineRule<Rule>({
+export const rnNoScrollviewMappedList = defineRule({
   id: "rn-no-scrollview-mapped-list",
   title: "Non-virtualized mapped list in ScrollView",
   tags: ["test-noise"],

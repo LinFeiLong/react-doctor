@@ -1,12 +1,11 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { isGeneratedImageRenderContext } from "../../utils/is-generated-image-render-context.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { RuleVisitors } from "../../utils/rule-visitors.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoImgElement = defineRule<Rule>({
+export const nextjsNoImgElement = defineRule({
   id: "nextjs-no-img-element",
   title: "Plain img ships unoptimized images",
   tags: ["test-noise"],

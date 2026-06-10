@@ -1,6 +1,5 @@
 import { BOUNCE_ANIMATION_NAMES } from "../../constants/style.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getInlineStyleExpression } from "./utils/get-inline-style-expression.js";
 import { getStylePropertyStringValue } from "./utils/get-style-property-string-value.js";
@@ -26,7 +25,7 @@ const hasBounceAnimationName = (value: string): boolean => {
   return false;
 };
 
-export const noInlineBounceEasing = defineRule<Rule>({
+export const noInlineBounceEasing = defineRule({
   id: "no-inline-bounce-easing",
   title: "Bouncy easing animation",
   severity: "warn",

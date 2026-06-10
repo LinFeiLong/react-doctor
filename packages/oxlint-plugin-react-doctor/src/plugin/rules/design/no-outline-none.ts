@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getInlineStyleExpression } from "./utils/get-inline-style-expression.js";
 import { getStylePropertyStringValue } from "./utils/get-style-property-string-value.js";
@@ -8,7 +7,7 @@ import { getStylePropertyKey } from "./utils/get-style-property-key.js";
 import { getStylePropertyNumberValue } from "./utils/get-style-property-number-value.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noOutlineNone = defineRule<Rule>({
+export const noOutlineNone = defineRule({
   id: "no-outline-none",
   title: "outline:none removes focus ring",
   severity: "warn",

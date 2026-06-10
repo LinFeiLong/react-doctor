@@ -3,7 +3,6 @@ import { enclosingComponentOrHookScope } from "../../utils/enclosing-component-o
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { closureCaptures } from "../../semantic/closure-captures.js";
 import { isDescendantScope, type ScopeDescriptor } from "../../semantic/scope-analysis.js";
@@ -72,7 +71,7 @@ const hasComponentLocalCaptures = (
 //     ) => ...`) — those are intentional component-attached helpers.
 //   - Uses the existing scope-analysis pipeline (`closureCaptures`)
 //     to detect any binding from inside the component's body scope.
-export const preferModuleScopePureFunction = defineRule<Rule>({
+export const preferModuleScopePureFunction = defineRule({
   id: "prefer-module-scope-pure-function",
   title: "Pure function rebuilt every render",
   tags: ["test-noise"],

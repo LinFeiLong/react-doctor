@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getParentComponent } from "../../utils/get-parent-component.js";
 import { isEs5Component } from "../../utils/is-es5-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const UNSAFE_PREFIXED = new Set([
   "UNSAFE_componentWillMount",
@@ -74,7 +73,7 @@ const getStaticKeyName = (key: EsTreeNode): string | null => {
 // aliases when `checkAliases: true`. Does NOT gate on React version
 // (OXC's port does — we always assume modern React, where the prefixes
 // are valid).
-export const noUnsafe = defineRule<Rule>({
+export const noUnsafe = defineRule({
   id: "no-unsafe",
   title: "Unsafe legacy lifecycle method",
   severity: "warn",

@@ -8,7 +8,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { hasDirective } from "../../utils/has-directive.js";
 import { isInsidePlatformOsWebBranch } from "../../utils/is-inside-platform-os-web-branch.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { collectTextWrapperComponents } from "./utils/collect-text-wrapper-components.js";
@@ -91,7 +90,7 @@ const isInsideTextHandlingComponent = (node: EsTreeNodeOfType<"JSXElement">): bo
   return false;
 };
 
-export const rnNoRawText = defineRule<Rule>({
+export const rnNoRawText = defineRule({
   id: "rn-no-raw-text",
   title: "Raw text outside a Text component",
   requires: ["react-native"],

@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { getImportedNameFromModule } from "../../utils/find-import-source-for-name.js";
 import { getReactDoctorNumberSetting } from "../../utils/get-react-doctor-setting.js";
 import { FLASH_LIST_V2_MAJOR } from "../../constants/react-native.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -44,7 +43,7 @@ const isEmptyArrayLiteral = (node: EsTreeNodeOfType<"JSXAttribute">): boolean =>
   return isNodeOfType(expression, "ArrayExpression") && (expression.elements?.length ?? 0) === 0;
 };
 
-export const rnListMissingEstimatedItemSize = defineRule<Rule>({
+export const rnListMissingEstimatedItemSize = defineRule({
   id: "rn-list-missing-estimated-item-size",
   title: "List missing estimatedItemSize",
   tags: ["test-noise"],

@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 
@@ -60,7 +59,7 @@ const declarationReadsAnyName = (declaration: EsTreeNode, names: Set<string>): b
   return didRead;
 };
 
-export const serverSequentialIndependentAwait = defineRule<Rule>({
+export const serverSequentialIndependentAwait = defineRule({
   id: "server-sequential-independent-await",
   title: "Sequential independent awaits",
   severity: "warn",

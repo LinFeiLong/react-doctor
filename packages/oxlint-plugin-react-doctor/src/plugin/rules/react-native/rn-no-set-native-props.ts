@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
@@ -21,7 +20,7 @@ const isStaticMemberNamed = (node: EsTreeNode, name: string): boolean =>
 // `*.current(?.)setNativeProps(...)` ref shape so we only flag the React
 // ref escape hatch (host-component refs), not an unrelated object that
 // happens to expose a `setNativeProps` method.
-export const rnNoSetNativeProps = defineRule<Rule>({
+export const rnNoSetNativeProps = defineRule({
   id: "rn-no-set-native-props",
   title: "Imperative setNativeProps (no-op under Fabric)",
   requires: ["react-native"],

@@ -57,7 +57,7 @@ const reportIfStateMutation = (
 // Port of `oxc_linter::rules::react::no_direct_mutation_state`. Flags
 // direct assignment / update to `this.state.*` outside the constructor of
 // a React component (class component or createReactClass factory).
-export const noDirectMutationState = defineRule<Rule>({
+export const noDirectMutationState = defineRule({
   id: "no-direct-mutation-state",
   title: "Direct mutation of this.state",
   severity: "error",

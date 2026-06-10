@@ -4,7 +4,6 @@ import { getEffectCallback } from "../../utils/get-effect-callback.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -38,7 +37,7 @@ const describeClientSideNavigation = (node: EsTreeNode): string | null => {
   return null;
 };
 
-export const nextjsNoClientSideRedirect = defineRule<Rule>({
+export const nextjsNoClientSideRedirect = defineRule({
   id: "nextjs-no-client-side-redirect",
   title: "Client-side redirect for navigation",
   tags: ["test-noise"],

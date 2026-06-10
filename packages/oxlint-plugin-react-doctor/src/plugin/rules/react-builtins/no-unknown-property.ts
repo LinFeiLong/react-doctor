@@ -12,7 +12,6 @@ import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { isGeneratedImageRenderContext } from "../../utils/is-generated-image-render-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { fileImportsNonReactJsxDialect } from "../../utils/non-react-jsx-dialect.js";
-import type { Rule } from "../../utils/rule.js";
 
 interface NoUnknownPropertySettings {
   ignore?: ReadonlyArray<string>;
@@ -79,7 +78,7 @@ const UNKNOWN_PROP_GENERIC = "React ignores this prop because it doesn't recogni
 // `utils/non-react-jsx-dialect.ts` for the canonical package list +
 // the import / attribute markers we recognise.
 
-export const noUnknownProperty = defineRule<Rule>({
+export const noUnknownProperty = defineRule({
   id: "no-unknown-property",
   title: "Unknown DOM property",
   severity: "warn",

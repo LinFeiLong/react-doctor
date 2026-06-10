@@ -3,7 +3,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import {
   getMethodCall,
@@ -162,7 +161,7 @@ const isZodNamespaceImportMemberCreate = (
   );
 };
 
-export const zodV4NoDeprecatedSchemaApis = defineRule<Rule>({
+export const zodV4NoDeprecatedSchemaApis = defineRule({
   id: "zod-v4-no-deprecated-schema-apis",
   title: "Zod 3 schema API breaks in Zod 4",
   requires: ["zod:4"],

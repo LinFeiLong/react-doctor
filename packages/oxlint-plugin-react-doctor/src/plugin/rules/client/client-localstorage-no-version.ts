@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -29,7 +28,7 @@ const isJsonStringifyCall = (node: EsTreeNode): boolean => {
   return node.callee.property.name === "stringify";
 };
 
-export const clientLocalstorageNoVersion = defineRule<Rule>({
+export const clientLocalstorageNoVersion = defineRule({
   id: "client-localstorage-no-version",
   title: "Unversioned localStorage key",
   tags: ["test-noise"],

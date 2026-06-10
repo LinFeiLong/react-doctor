@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { findJsxAttribute } from "../../utils/find-jsx-attribute.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const ROLE_DIALOG_VALUES = new Set(["dialog", "alertdialog"]);
 
@@ -59,7 +58,7 @@ const isAriaModalTrue = (attribute: EsTreeNodeOfType<"JSXAttribute">): boolean =
 // `onClick={() => setOpen(true)}` modal toggles. We don't lint the
 // `command` side yet — it's too new — but the recommendation in this
 // rule's diagnostic mentions it so users have a path forward.
-export const preferHtmlDialog = defineRule<Rule>({
+export const preferHtmlDialog = defineRule({
   id: "prefer-html-dialog",
   title: "Custom modal instead of dialog",
   severity: "warn",

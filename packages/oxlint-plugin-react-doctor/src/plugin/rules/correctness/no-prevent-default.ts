@@ -4,7 +4,6 @@ import { getReactDoctorStringSetting } from "../../utils/get-react-doctor-settin
 import { isInlineFunctionExpression } from "../../utils/is-inline-function-expression.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -70,7 +69,7 @@ const selectFormMessage = (framework: string | undefined): string =>
     ? FORM_MESSAGE_SERVER_CAPABLE
     : FORM_MESSAGE_GENERIC;
 
-export const noPreventDefault = defineRule<Rule>({
+export const noPreventDefault = defineRule({
   id: "no-prevent-default",
   title: "preventDefault on a form or link",
   severity: "warn",

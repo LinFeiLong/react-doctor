@@ -4,7 +4,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildHandlerNameMessage = (handlerName: string, propKey: string): string =>
   `The handler "${handlerName}" does not match the "${propKey}" event prop convention, so readers cannot trace event flow quickly.`;
@@ -163,7 +162,7 @@ const isMemberExpressionCallee = (
 };
 
 // Port of `oxc_linter::rules::react::jsx_handler_names`.
-export const jsxHandlerNames = defineRule<Rule>({
+export const jsxHandlerNames = defineRule({
   id: "jsx-handler-names",
   title: "Inconsistent event handler names",
   severity: "warn",

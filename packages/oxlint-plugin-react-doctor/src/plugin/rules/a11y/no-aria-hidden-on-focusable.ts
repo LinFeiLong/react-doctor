@@ -5,7 +5,6 @@ import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isInteractiveElement } from "../../utils/is-interactive-element.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { parseJsxValue } from "../../utils/parse-jsx-value.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Screen reader users tab to this focusable element but hear nothing because `aria-hidden` skips it, so remove `aria-hidden` or stop it being focusable.";
@@ -13,7 +12,7 @@ const MESSAGE =
 // Port of `oxc_linter::rules::jsx_a11y::no_aria_hidden_on_focusable`.
 // Flags interactive / explicitly-tabbable elements that also set
 // `aria-hidden`.
-export const noAriaHiddenOnFocusable = defineRule<Rule>({
+export const noAriaHiddenOnFocusable = defineRule({
   id: "no-aria-hidden-on-focusable",
   title: "aria-hidden on focusable element",
   tags: ["react-jsx-only"],

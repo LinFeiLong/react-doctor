@@ -8,7 +8,6 @@ import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE_NO_LABEL =
   "Blind users can't identify this field because screen readers find no label text, so add visible text, `aria-label`, or `aria-labelledby`.";
@@ -193,7 +192,7 @@ const hasNestedControl = (
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::label_has_associated_control`.
-export const labelHasAssociatedControl = defineRule<Rule>({
+export const labelHasAssociatedControl = defineRule({
   id: "label-has-associated-control",
   title: "Label missing associated control",
   tags: ["react-jsx-only"],

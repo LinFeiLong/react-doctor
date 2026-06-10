@@ -5,7 +5,6 @@ import {
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { ParsedRgb } from "../../utils/parsed-rgb.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getInlineStyleExpression } from "./utils/get-inline-style-expression.js";
 import { getStylePropertyStringValue } from "./utils/get-style-property-string-value.js";
@@ -69,7 +68,7 @@ const isBackgroundDark = (bgValue: string): boolean => {
   );
 };
 
-export const noDarkModeGlow = defineRule<Rule>({
+export const noDarkModeGlow = defineRule({
   id: "no-dark-mode-glow",
   title: "Colored glow on dark background",
   tags: ["design", "test-noise"],

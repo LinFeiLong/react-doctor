@@ -6,7 +6,6 @@ import { isComponentDeclaration } from "../../utils/is-component-declaration.js"
 import { isInlineFunctionExpression } from "../../utils/is-inline-function-expression.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -37,7 +36,7 @@ const collectBooleanLikePropsFromBody = (
 // both destructured form (`{ isPrimary, hasIcon }`) and non-destructured
 // (`function Foo(props) { props.isPrimary }`) by walking member-access
 // patterns on the parameter binding.
-export const noManyBooleanProps = defineRule<Rule>({
+export const noManyBooleanProps = defineRule({
   id: "no-many-boolean-props",
   title: "Boolean prop combinations are hard to test",
   severity: "warn",

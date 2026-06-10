@@ -4,7 +4,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isInitialOnlyPropName } from "../../utils/is-initial-only-prop-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getArgsUpstreamRefs, getCallExpr, getUpstreamRefs } from "./utils/effect/ast.js";
 import { getProgramAnalysis } from "./utils/effect/get-program-analysis.js";
@@ -46,7 +45,7 @@ const getStateNameForUseStateDecl = (useStateNode: EsTreeNode | null): string | 
   return isNodeOfType(candidate, "Identifier") ? candidate.name : null;
 };
 
-export const noDerivedState = defineRule<Rule>({
+export const noDerivedState = defineRule({
   id: "no-derived-state",
   title: "Derived value copied into state",
   severity: "warn",

@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNamespacedApiCallee } from "../../utils/is-namespaced-api-call.js";
 import { DATA_SINK_METHOD_NAMES } from "../../constants/data-sink-method-names.js";
 import { getCallMethodName } from "../../utils/get-call-method-name.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getArgsUpstreamRefs, getCallExpr, isSynchronous } from "./utils/effect/ast.js";
 import { getProgramAnalysis } from "./utils/effect/get-program-analysis.js";
@@ -16,7 +15,7 @@ import {
   isUseEffect,
 } from "./utils/effect/react.js";
 
-export const noPassLiveStateToParent = defineRule<Rule>({
+export const noPassLiveStateToParent = defineRule({
   id: "no-pass-live-state-to-parent",
   title: "Live state pushed to parent via effect",
   severity: "warn",

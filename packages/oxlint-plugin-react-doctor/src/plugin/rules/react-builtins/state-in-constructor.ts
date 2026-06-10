@@ -3,7 +3,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isEs6Component } from "../../utils/is-es6-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const ALWAYS_MESSAGE =
   "This class uses a state field instead of the configured constructor pattern, so state setup is inconsistent across the codebase.";
@@ -68,7 +67,7 @@ const isInConstructor = (node: EsTreeNode): boolean => {
 //     class component (state should be set in `constructor`).
 //   - "never": flags `this.state = {…}` inside a constructor of a
 //     React class component (state should be a class field instead).
-export const stateInConstructor = defineRule<Rule>({
+export const stateInConstructor = defineRule({
   id: "state-in-constructor",
   title: "State initialized in constructor",
   severity: "warn",

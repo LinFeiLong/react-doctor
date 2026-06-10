@@ -1,6 +1,5 @@
 import { TINY_TEXT_THRESHOLD_PX } from "../../constants/design.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getInlineStyleExpression } from "./utils/get-inline-style-expression.js";
 import { getStylePropertyStringValue } from "./utils/get-style-property-string-value.js";
@@ -8,7 +7,7 @@ import { getStylePropertyKey } from "./utils/get-style-property-key.js";
 import { getStylePropertyNumberValue } from "./utils/get-style-property-number-value.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noTinyText = defineRule<Rule>({
+export const noTinyText = defineRule({
   id: "no-tiny-text",
   title: "Text is too small",
   severity: "warn",

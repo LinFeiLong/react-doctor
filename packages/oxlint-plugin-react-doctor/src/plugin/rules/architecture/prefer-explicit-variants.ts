@@ -10,7 +10,6 @@ import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 // Resolve a ternary `test` to the local binding name when it is a bare
@@ -138,7 +137,7 @@ const collectVariantBranchProps = (
 // visible at this AST layer). v1 only models two-sided ternaries on
 // destructured props; if/else early-return variants and multi-way chains
 // ending in `null` are out of scope.
-export const preferExplicitVariants = defineRule<Rule>({
+export const preferExplicitVariants = defineRule({
   id: "prefer-explicit-variants",
   title: "Prefer explicit variant components",
   severity: "warn",

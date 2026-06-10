@@ -5,7 +5,6 @@ import { isInlineFunctionExpression } from "../../utils/is-inline-function-expre
 import { isMemberProperty } from "../../utils/is-member-property.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -61,7 +60,7 @@ const isMatchingLengthEqualityGuard = (
 // .reduce against another array, a length mismatch is the cheapest possible
 // shortcut. e.g. `a.length === b.length && a.every((x, i) => x === b[i])`
 // runs the every-loop only when lengths match.
-export const jsLengthCheckFirst = defineRule<Rule>({
+export const jsLengthCheckFirst = defineRule({
   id: "js-length-check-first",
   title: "Array compare without length check",
   tags: ["test-noise"],

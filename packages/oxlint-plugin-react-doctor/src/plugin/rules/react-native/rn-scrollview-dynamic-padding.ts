@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { SCROLLVIEW_NAMES } from "./utils/scrollview_names.js";
@@ -12,7 +11,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // any sticky headers re-pin. The native equivalent is `contentInset`,
 // which the platform applies as an OS-level offset without re-laying out
 // the content.
-export const rnScrollviewDynamicPadding = defineRule<Rule>({
+export const rnScrollviewDynamicPadding = defineRule({
   id: "rn-scrollview-dynamic-padding",
   title: "Dynamic padding on contentContainerStyle",
   tags: ["test-noise"],

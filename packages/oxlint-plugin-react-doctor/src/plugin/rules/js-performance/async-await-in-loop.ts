@@ -5,7 +5,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isFunctionLike } from "../../utils/is-function-like.js";
 import { isInlineFunctionExpression } from "../../utils/is-inline-function-expression.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { walkAst } from "../../utils/walk-ast.js";
 
@@ -167,7 +166,7 @@ const isWrappedInPromiseConcurrency = (mapCall: EsTreeNode): boolean => {
   return PROMISE_CONCURRENCY_METHODS.has(callee.property.name);
 };
 
-export const asyncAwaitInLoop = defineRule<Rule>({
+export const asyncAwaitInLoop = defineRule({
   id: "async-await-in-loop",
   title: "await inside a loop",
   severity: "warn",

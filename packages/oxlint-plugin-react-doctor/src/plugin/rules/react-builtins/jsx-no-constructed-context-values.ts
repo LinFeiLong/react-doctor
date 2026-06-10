@@ -9,7 +9,6 @@ import { isInsideFunctionScope } from "../../utils/is-inside-function-scope.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Every reader of this context redraws on each render because you build its `value` inline.";
@@ -132,7 +131,7 @@ const isCreateContextBindingJsxName = (
 // checking whether the JSX opening name is one of those bindings.
 // Covers createContext imported from `react`, `use-context-selector`,
 // and `react-tracked`.
-export const jsxNoConstructedContextValues = defineRule<Rule>({
+export const jsxNoConstructedContextValues = defineRule({
   id: "jsx-no-constructed-context-values",
   title: "Unstable context provider value",
   tags: ["react-jsx-only"],

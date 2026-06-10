@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isCreateElementCall } from "../../utils/is-create-element-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "A `children` prop can override or hide nested children, so the component may render different content than the JSX shows.";
@@ -12,7 +11,7 @@ const MESSAGE =
 //   1. A `JSXAttribute` whose name is the identifier `children`.
 //   2. A `React.createElement(type, { children: ... })` call where the
 //      props bag (the second argument) contains a static `children` key.
-export const noChildrenProp = defineRule<Rule>({
+export const noChildrenProp = defineRule({
   id: "no-children-prop",
   title: "Children passed as a prop",
   severity: "warn",

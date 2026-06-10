@@ -5,7 +5,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isBarrelIndexModule } from "../../utils/is-barrel-index-module.js";
 import { resolveBarrelExportFilePath } from "../../utils/resolve-barrel-export-file-path.js";
 import { resolveRelativeImportPath } from "../../utils/resolve-relative-import-path.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 interface RuntimeImportRequest {
@@ -62,7 +61,7 @@ const buildReportMessage = (
 // `test-noise` because stories / tests / playground / examples aren't
 // shipped to users — barrel imports there don't expand the production
 // bundle.
-export const noBarrelImport = defineRule<Rule>({
+export const noBarrelImport = defineRule({
   id: "no-barrel-import",
   title: "Import from a barrel file",
   tags: ["test-noise"],

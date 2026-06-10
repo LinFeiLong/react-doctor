@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const ESCAPED_VERSIONS: Record<string, string> = {
   '"': "`&quot;` / `&ldquo;` / `&#34;` / `&rdquo;`",
@@ -16,7 +15,7 @@ const buildMessage = (character: string): string =>
 // text nodes and reports each `'`, `"`, `>`, and `}` character as an
 // unescaped entity. Matches `eslint-plugin-react`'s default surface
 // (OXC's narrower port covered only quotes).
-export const noUnescapedEntities = defineRule<Rule>({
+export const noUnescapedEntities = defineRule({
   id: "no-unescaped-entities",
   title: "Unescaped entities in JSX",
   severity: "warn",

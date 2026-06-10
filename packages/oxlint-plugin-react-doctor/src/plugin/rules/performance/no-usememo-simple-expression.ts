@@ -5,7 +5,6 @@ import { isImportedFromModule } from "../../utils/find-import-source-for-name.js
 import { isCanonicalReactNamespaceName } from "../../utils/is-canonical-react-namespace-name.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 const isSimpleExpression = (node: EsTreeNode | null): boolean => {
@@ -43,7 +42,7 @@ const isTriviallyCheapExpression = (node: EsTreeNode | null): boolean => {
   return true;
 };
 
-export const noUsememoSimpleExpression = defineRule<Rule>({
+export const noUsememoSimpleExpression = defineRule({
   id: "no-usememo-simple-expression",
   title: "useMemo on a cheap value",
   tags: ["test-noise"],

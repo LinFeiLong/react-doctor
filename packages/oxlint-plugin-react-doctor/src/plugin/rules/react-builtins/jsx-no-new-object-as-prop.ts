@@ -12,7 +12,6 @@ import { isJsxAttributeOnIntrinsicHtmlElement } from "../../utils/is-on-intrinsi
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import {
   ALWAYS_FRESH_OBJECT_PROPS,
   CONFIG_OBJECT_PROP_NAMES,
@@ -125,7 +124,7 @@ const followsRenderLocalObjectBinding = (
 // identifier-binding case (`const x = {}; <C prop={x} />`) is covered
 // via the same `findVariableInitializer` lookup used by the sister
 // rules.
-export const jsxNoNewObjectAsProp = defineRule<Rule>({
+export const jsxNoNewObjectAsProp = defineRule({
   id: "jsx-no-new-object-as-prop",
   title: "New object passed as a prop",
   tags: ["react-jsx-only"],

@@ -12,7 +12,6 @@ import { isJsxAttributeOnIntrinsicHtmlElement } from "../../utils/is-on-intrinsi
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import {
   DATA_ARRAY_PROP_NAMES,
   DATA_ARRAY_PROP_SUFFIXES,
@@ -134,7 +133,7 @@ const followsRenderLocalArrayBinding = (
 // IS flagged when the binding's scope owner is the render function.
 // Hoisted bindings (module-level) are exempt because they aren't
 // allocated per render.
-export const jsxNoNewArrayAsProp = defineRule<Rule>({
+export const jsxNoNewArrayAsProp = defineRule({
   id: "jsx-no-new-array-as-prop",
   title: "New array passed as a prop",
   tags: ["react-jsx-only"],

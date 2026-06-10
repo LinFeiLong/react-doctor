@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (tagName: string): string =>
   `Your users get broken clicks, focus & screen readers because you can't put a \`<${tagName}>\` inside another \`<${tagName}>\`, so the browser closes the outer one early. Move the inner one out.`;
@@ -54,7 +53,7 @@ const findEnclosingSameTag = (openingElement: EsTreeNode, tagName: string): EsTr
 // (the rule cannot see the <a>-wrapping ancestor when an <a> is rendered
 // in a child component); preact/debug catches the cross-component case at
 // runtime via the live VNode tree.
-export const htmlNoNestedInteractive = defineRule<Rule>({
+export const htmlNoNestedInteractive = defineRule({
   id: "html-no-nested-interactive",
   title: "Nested interactive elements",
   severity: "warn",

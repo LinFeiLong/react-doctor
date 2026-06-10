@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { hasJsxProp } from "../../utils/has-jsx-prop.js";
 import { isCreateElementCall } from "../../utils/is-create-element-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "`dangerouslySetInnerHTML` is an XSS hole that runs attacker-controlled HTML in your users' browsers.";
@@ -11,7 +10,7 @@ const MESSAGE =
 // Port of `oxc_linter::rules::react::no_danger`. Flags any
 // `dangerouslySetInnerHTML` prop, both as a JSXAttribute on a JSX element
 // and as a property in the props object passed to `React.createElement`.
-export const noDanger = defineRule<Rule>({
+export const noDanger = defineRule({
   id: "no-danger",
   title: "Raw HTML injection can run unsafe markup",
   severity: "warn",

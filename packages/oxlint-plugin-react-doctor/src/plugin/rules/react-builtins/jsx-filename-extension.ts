@@ -4,7 +4,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const JSX_NOT_ALLOWED = (extension: string): string =>
   `This file contains JSX but uses a \`${extension}\` name, so the filename no longer signals JSX to readers or tooling conventions.`;
@@ -44,7 +43,7 @@ const normalizeExtensions = (raw: ReadonlyArray<string>): Set<string> => {
 //     `jsx`, `tsx`),
 //   - in `as-needed` mode, allowed-extension files that contain NO
 //     JSX content (the file claims to be JSX but isn't).
-export const jsxFilenameExtension = defineRule<Rule>({
+export const jsxFilenameExtension = defineRule({
   id: "jsx-filename-extension",
   title: "JSX in disallowed file extension",
   severity: "warn",

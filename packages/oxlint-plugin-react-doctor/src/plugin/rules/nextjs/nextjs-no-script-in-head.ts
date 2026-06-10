@@ -1,10 +1,9 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoScriptInHead = defineRule<Rule>({
+export const nextjsNoScriptInHead = defineRule({
   id: "nextjs-no-script-in-head",
   title: "next/script inside next/head",
   tags: ["test-noise"],

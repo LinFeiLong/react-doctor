@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { findVariableInitializer } from "../../utils/find-variable-initializer.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { isImportedFromModule } from "../../utils/find-import-source-for-name.js";
@@ -98,7 +97,7 @@ const isTapChainEligibleForPressable = (chain: GestureChainInfo): boolean => {
   return true;
 };
 
-export const rnPreferPressableOverGestureDetector = defineRule<Rule>({
+export const rnPreferPressableOverGestureDetector = defineRule({
   id: "rn-prefer-pressable-over-gesture-detector",
   title: "GestureDetector for a plain tap",
   tags: ["test-noise"],

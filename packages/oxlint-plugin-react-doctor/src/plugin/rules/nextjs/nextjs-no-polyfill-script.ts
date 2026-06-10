@@ -1,12 +1,11 @@
 import { POLYFILL_SCRIPT_PATTERN } from "../../constants/nextjs.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { findJsxAttribute } from "../../utils/find-jsx-attribute.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoPolyfillScript = defineRule<Rule>({
+export const nextjsNoPolyfillScript = defineRule({
   id: "nextjs-no-polyfill-script",
   title: "Redundant polyfill script",
   tags: ["test-noise"],

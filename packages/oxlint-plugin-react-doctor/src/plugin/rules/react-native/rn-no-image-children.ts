@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { getImportedNameFromModule } from "../../utils/find-import-source-for-name.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -37,7 +36,7 @@ const isMeaningfulImageChild = (child: EsTreeNode): boolean => {
 // different component) and any same-named local/custom `Image` never trip
 // the rule — the OSS corpus showed `next/image` and Skia's `<Image>` are
 // the dominant same-name false positives.
-export const rnNoImageChildren = defineRule<Rule>({
+export const rnNoImageChildren = defineRule({
   id: "rn-no-image-children",
   title: "Children inside react-native <Image>",
   requires: ["react-native"],

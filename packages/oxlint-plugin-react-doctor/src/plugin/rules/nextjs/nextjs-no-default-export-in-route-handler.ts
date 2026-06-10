@@ -5,7 +5,6 @@ import {
 } from "../../constants/nextjs.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -44,7 +43,7 @@ const programHasNamedHttpMethodExport = (programNode: EsTreeNodeOfType<"Program"
   return false;
 };
 
-export const nextjsNoDefaultExportInRouteHandler = defineRule<Rule>({
+export const nextjsNoDefaultExportInRouteHandler = defineRule({
   id: "nextjs-no-default-export-in-route-handler",
   title: "Default export in route handler",
   tags: ["test-noise"],

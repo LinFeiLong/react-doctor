@@ -2,12 +2,11 @@ import { QUERY_CACHE_UPDATE_METHODS, TANSTACK_MUTATION_HOOKS } from "../../const
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const queryMutationMissingInvalidation = defineRule<Rule>({
+export const queryMutationMissingInvalidation = defineRule({
   id: "query-mutation-missing-invalidation",
   title: "Mutation without cache invalidation",
   tags: ["test-noise"],

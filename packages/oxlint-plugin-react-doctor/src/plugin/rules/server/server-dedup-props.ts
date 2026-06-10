@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { getRootIdentifierName } from "../../utils/get-root-identifier-name.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -20,7 +19,7 @@ const getDerivingMethodName = (node: EsTreeNode): string | null => {
 // React serializes across the RSC wire. The client gets two copies of
 // roughly the same array; one of the props is redundant. Have the
 // client derive what it needs from the single source prop instead.
-export const serverDedupProps = defineRule<Rule>({
+export const serverDedupProps = defineRule({
   id: "server-dedup-props",
   title: "Duplicate data in server props",
   tags: ["test-noise"],

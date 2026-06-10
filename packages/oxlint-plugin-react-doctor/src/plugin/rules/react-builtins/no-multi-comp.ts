@@ -7,7 +7,6 @@ import { isEs6Component } from "../../utils/is-es6-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
-import type { Rule } from "../../utils/rule.js";
 import type { ScopeAnalysis, SymbolDescriptor } from "../../semantic/scope-analysis.js";
 import { flattenCalleeName } from "../../utils/flatten-callee-name.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
@@ -567,7 +566,7 @@ const walkComponentSearch = (node: EsTreeNode, context: VisitContext): void => {
 //
 // Component nesting is tracked: components defined INSIDE another
 // component aren't double-counted.
-export const noMultiComp = defineRule<Rule>({
+export const noMultiComp = defineRule({
   id: "no-multi-comp",
   title: "Multiple components in one file",
   severity: "warn",

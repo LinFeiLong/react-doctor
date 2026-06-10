@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import { isFunctionLike } from "../../utils/is-function-like.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -71,7 +70,7 @@ const isInsideLoopContext = (node: EsTreeNode): boolean => {
   return false;
 };
 
-export const jsBatchDomCss = defineRule<Rule>({
+export const jsBatchDomCss = defineRule({
   id: "js-batch-dom-css",
   title: "Repeated inline style writes",
   tags: ["test-noise"],

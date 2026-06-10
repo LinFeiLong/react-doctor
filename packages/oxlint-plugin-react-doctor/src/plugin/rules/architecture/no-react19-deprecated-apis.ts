@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import { createDeprecatedReactImportRule } from "./utils/create-deprecated-react-import-rule.js";
 
 // HACK: React 19+ deprecated `forwardRef` (refs are now regular props on
@@ -25,7 +24,7 @@ const REACT_19_DEPRECATED_MESSAGES = new Map<string, string>([
   ],
 ]);
 
-export const noReact19DeprecatedApis = defineRule<Rule>({
+export const noReact19DeprecatedApis = defineRule({
   id: "no-react19-deprecated-apis",
   title: "React 19 API migration can break callers",
   requires: ["react:19"],

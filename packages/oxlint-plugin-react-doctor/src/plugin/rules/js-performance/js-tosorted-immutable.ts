@@ -2,10 +2,9 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isMemberProperty } from "../../utils/is-member-property.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
-export const jsTosortedImmutable = defineRule<Rule>({
+export const jsTosortedImmutable = defineRule({
   id: "js-tosorted-immutable",
   title: "Spread copy before sort()",
   tags: ["test-noise"],

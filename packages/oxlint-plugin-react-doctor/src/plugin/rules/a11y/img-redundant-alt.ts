@@ -6,7 +6,6 @@ import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isGeneratedImageRenderContext } from "../../utils/is-generated-image-render-context.js";
 import { isHiddenFromScreenReader } from "../../utils/is-hidden-from-screen-reader.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleVisitors } from "../../utils/rule-visitors.js";
 
 const MESSAGE =
@@ -83,7 +82,7 @@ const altValueRedundant = (
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::img_redundant_alt`.
-export const imgRedundantAlt = defineRule<Rule>({
+export const imgRedundantAlt = defineRule({
   id: "img-redundant-alt",
   title: "Redundant words in image alt",
   tags: ["react-jsx-only"],

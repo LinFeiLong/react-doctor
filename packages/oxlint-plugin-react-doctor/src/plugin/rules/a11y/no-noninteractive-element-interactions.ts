@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
-import type { Rule } from "../../utils/rule.js";
 import { NON_INTERACTIVE_ELEMENTS } from "../../constants/html-tags.js";
 import { INTERACTIVE_ROLES } from "../../constants/aria-roles.js";
 
@@ -23,7 +22,7 @@ const INTERACTIVE_HANDLERS: ReadonlyArray<string> = [
 // Port of `oxc_linter::rules::jsx_a11y::no_noninteractive_element_interactions`.
 // Reports interactive event handlers attached to non-interactive HTML
 // elements without an interactive role.
-export const noNoninteractiveElementInteractions = defineRule<Rule>({
+export const noNoninteractiveElementInteractions = defineRule({
   id: "no-noninteractive-element-interactions",
   title: "Handler on non-interactive element",
   tags: ["react-jsx-only"],

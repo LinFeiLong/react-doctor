@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE = "Your app breaks in React 19 because `ReactDOM.render` returns nothing there.";
 
@@ -39,7 +38,7 @@ const isUsedAsReturnValue = (parent: EsTreeNode | null | undefined): boolean => 
 // the return value of `ReactDOM.render(...)` is captured into a variable,
 // returned from a function, assigned, used as an object-property value,
 // or implicitly returned from an expression-bodied arrow.
-export const noRenderReturnValue = defineRule<Rule>({
+export const noRenderReturnValue = defineRule({
   id: "no-render-return-value",
   title: "Using ReactDOM.render return value",
   severity: "warn",

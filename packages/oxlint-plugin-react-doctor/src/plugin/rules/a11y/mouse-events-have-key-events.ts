@@ -5,7 +5,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { hasJsxProp } from "../../utils/has-jsx-prop.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMissingFocusMessage = (handler: string): string =>
   `Keyboard users miss this \`${handler}\` because it only fires with a mouse, so add an \`onFocus\` handler too.`;
@@ -42,7 +41,7 @@ const isExplicitUndefinedExpression = (value: EsTreeNode): boolean => {
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::mouse_events_have_key_events`.
-export const mouseEventsHaveKeyEvents = defineRule<Rule>({
+export const mouseEventsHaveKeyEvents = defineRule({
   id: "mouse-events-have-key-events",
   title: "Mouse handler missing focus handler",
   tags: ["react-jsx-only"],

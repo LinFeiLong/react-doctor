@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -10,7 +9,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // emits. The supported way is to render <ViewTransition> and let React
 // call startViewTransition for you (around startTransition, useDeferredValue,
 // or Suspense reveals).
-export const noDocumentStartViewTransition = defineRule<Rule>({
+export const noDocumentStartViewTransition = defineRule({
   id: "no-document-start-view-transition",
   title: "Direct document.startViewTransition call",
   tags: ["test-noise"],

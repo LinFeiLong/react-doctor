@@ -3,12 +3,11 @@ import { TANSTACK_QUERY_CLIENT_CLASS } from "../../constants/tanstack.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const queryStableQueryClient = defineRule<Rule>({
+export const queryStableQueryClient = defineRule({
   id: "query-stable-query-client",
   title: "Unstable QueryClient in component",
   tags: ["test-noise"],

@@ -1,11 +1,10 @@
 import { TANSTACK_REDIRECT_FUNCTIONS } from "../../constants/tanstack.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const tanstackStartRedirectInTryCatch = defineRule<Rule>({
+export const tanstackStartRedirectInTryCatch = defineRule({
   id: "tanstack-start-redirect-in-try-catch",
   title: "redirect() inside try-catch",
   tags: ["test-noise"],

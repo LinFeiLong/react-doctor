@@ -9,7 +9,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { hasJsxKeyAttribute } from "../../utils/has-jsx-key-attribute.js";
 import { isAstNode } from "../../utils/is-ast-node.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
@@ -75,7 +74,7 @@ const collectReturnedJsxElements = (expression: EsTreeNode): EsTreeNodeOfType<"J
   return elements;
 };
 
-export const rnNoRenderitemKey = defineRule<Rule>({
+export const rnNoRenderitemKey = defineRule({
   id: "rn-no-renderitem-key",
   title: "renderItem key is ignored by React Native lists",
   tags: ["test-noise"],

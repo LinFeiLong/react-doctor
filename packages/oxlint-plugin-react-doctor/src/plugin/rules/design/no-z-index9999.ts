@@ -2,7 +2,6 @@ import { Z_INDEX_ABSURD_THRESHOLD } from "../../constants/design.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getInlineStyleExpression } from "./utils/get-inline-style-expression.js";
 import { getStylePropertyKey } from "./utils/get-style-property-key.js";
@@ -10,7 +9,7 @@ import { getStylePropertyNumberValue } from "./utils/get-style-property-number-v
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noZIndex9999 = defineRule<Rule>({
+export const noZIndex9999 = defineRule({
   id: "no-z-index-9999",
   title: "Excessively high z-index",
   tags: ["test-noise"],

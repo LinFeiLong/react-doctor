@@ -7,7 +7,6 @@ import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isInteractiveRole } from "../../utils/is-interactive-role.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isNonInteractiveElement } from "../../utils/is-non-interactive-element.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (tag: string, role: string): string =>
   `Role \`${role}\` gives \`<${tag}>\` interactive semantics even though the element is noninteractive, so screen reader users get the wrong controls.`;
@@ -46,7 +45,7 @@ const resolveSettings = (
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::no_noninteractive_element_to_interactive_role`.
-export const noNoninteractiveElementToInteractiveRole = defineRule<Rule>({
+export const noNoninteractiveElementToInteractiveRole = defineRule({
   id: "no-noninteractive-element-to-interactive-role",
   title: "Noninteractive element given interactive role",
   tags: ["react-jsx-only"],

@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getInlineStyleExpression } from "./utils/get-inline-style-expression.js";
 import { getStylePropertyStringValue } from "./utils/get-style-property-string-value.js";
@@ -8,7 +7,7 @@ import { isPureBlackColor } from "./utils/is-pure-black-color.js";
 import { getStringFromClassNameAttr } from "./utils/get-string-from-class-name-attr.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noPureBlackBackground = defineRule<Rule>({
+export const noPureBlackBackground = defineRule({
   id: "no-pure-black-background",
   title: "Pure black background",
   tags: ["design", "test-noise"],

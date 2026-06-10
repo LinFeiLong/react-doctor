@@ -10,7 +10,6 @@ import { isInsideFunctionScope } from "../../utils/is-inside-function-scope.js";
 import { isJsxAttributeOnIntrinsicHtmlElement } from "../../utils/is-on-intrinsic-html-element.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 interface EmptyFallback {
@@ -93,7 +92,7 @@ const buildMessage = (emptyKind: "array" | "object"): string => {
 //   - Stable expr := identifier / non-computed member chain / `this`
 //   - Intrinsic HTML elements are skipped (not memoised)
 //   - Inside function scope only — module-level JSX is allocated once
-export const preferStableEmptyFallback = defineRule<Rule>({
+export const preferStableEmptyFallback = defineRule({
   id: "prefer-stable-empty-fallback",
   title: "Empty fallback rebuilt each render",
   tags: ["react-jsx-only", "test-noise"],

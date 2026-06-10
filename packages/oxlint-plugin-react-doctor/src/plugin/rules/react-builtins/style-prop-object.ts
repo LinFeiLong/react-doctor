@@ -5,7 +5,6 @@ import { findVariableInitializer } from "../../utils/find-variable-initializer.j
 import { isCreateElementCall } from "../../utils/is-create-element-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Your styles don't render because you passed the `style` prop a string instead of an object.";
@@ -136,7 +135,7 @@ const getJsxOpeningElementName = (node: EsTreeNodeOfType<"JSXOpeningElement">): 
 // `style={true}` / `style={42}` / `style={"x"}` etc. Also flags
 // `React.createElement("div", { style: "..." })`. The `allow` setting
 // list lets specific component names skip the check.
-export const stylePropObject = defineRule<Rule>({
+export const stylePropObject = defineRule({
   id: "style-prop-object",
   title: "Style prop is not an object",
   severity: "warn",

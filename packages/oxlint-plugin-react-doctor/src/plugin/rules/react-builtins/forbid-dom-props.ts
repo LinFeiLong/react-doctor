@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 interface ForbiddenPropDescriptor {
   propName: string;
@@ -54,7 +53,7 @@ const resolveSettings = (
 // Port of `oxc_linter::rules::react::forbid_dom_props`. Configurable
 // via `forbid` setting; matches each prop only on DOM-tag JSX elements
 // (lowercase tag names), respecting per-prop `disallowedFor` allow-lists.
-export const forbidDomProps = defineRule<Rule>({
+export const forbidDomProps = defineRule({
   id: "forbid-dom-props",
   title: "Blocked DOM prop bypasses project contract",
   severity: "warn",

@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Screen readers can't pick the right voice because this `lang` isn't a real language code, so use a valid one like `en` or `en-US`.";
@@ -212,7 +211,7 @@ const isValidLangTag = (value: string): boolean => {
 
 // Port of `oxc_linter::rules::jsx_a11y::lang`. Validates `lang`
 // attribute on `<html>` and similar elements.
-export const lang = defineRule<Rule>({
+export const lang = defineRule({
   id: "lang",
   title: "Invalid lang attribute value",
   tags: ["react-jsx-only"],

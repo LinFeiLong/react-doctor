@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getStaticTemplateLiteralValue } from "../../utils/get-static-template-literal-value.js";
 import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 // Each ARIA prop's value type, mirroring OXC's `AriaPropType` enum.
 type AriaPropType =
@@ -294,7 +293,7 @@ const isValidValueForType = (propType: AriaPropType, value: EsTreeNode): boolean
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::aria_proptypes`.
-export const ariaProptypes = defineRule<Rule>({
+export const ariaProptypes = defineRule({
   id: "aria-proptypes",
   title: "Invalid ARIA attribute value",
   tags: ["react-jsx-only"],

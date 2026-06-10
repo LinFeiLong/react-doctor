@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
@@ -47,7 +46,7 @@ const isProcessEnv = (node: EsTreeNode | null | undefined): boolean =>
 // (`const { NAME } = process.env`) defeat that static match, so the value
 // ends up `undefined` in the bundled app. Ports eslint-config-expo's
 // `no-dynamic-env-var` + `no-env-var-destructuring` (both errors there).
-export const expoNoNonInlinedEnv = defineRule<Rule>({
+export const expoNoNonInlinedEnv = defineRule({
   id: "expo-no-non-inlined-env",
   title: "Non-inlinable process.env access (Expo)",
   requires: ["expo"],

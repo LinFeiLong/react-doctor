@@ -2,7 +2,6 @@ import { VAGUE_BUTTON_LABELS } from "../../constants/design.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import { getStaticTemplateLiteralValue } from "../../utils/get-static-template-literal-value.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getOpeningElementTagName } from "./utils/get-opening-element-tag-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -56,7 +55,7 @@ const collectJsxLabelText = (jsxElementNode: EsTreeNode): string | null => {
   return collectedFragments.join("").trim();
 };
 
-export const noVagueButtonLabel = defineRule<Rule>({
+export const noVagueButtonLabel = defineRule({
   id: "design-no-vague-button-label",
   title: "Vague button label",
   tags: ["design", "test-noise"],

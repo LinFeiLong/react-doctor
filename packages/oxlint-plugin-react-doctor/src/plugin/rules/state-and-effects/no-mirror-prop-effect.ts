@@ -8,7 +8,6 @@ import { getRootIdentifierName } from "../../utils/get-root-identifier-name.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { isSetterIdentifier } from "../../utils/is-setter-identifier.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 
@@ -52,7 +51,7 @@ interface MirrorBinding {
   propRootName: string;
 }
 
-export const noMirrorPropEffect = defineRule<Rule>({
+export const noMirrorPropEffect = defineRule({
   id: "no-mirror-prop-effect",
   title: "Prop mirrored into state via effect",
   tags: ["test-noise"],

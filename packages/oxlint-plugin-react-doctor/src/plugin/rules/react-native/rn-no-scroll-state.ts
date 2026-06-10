@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { isUseStateSetterInScope } from "../../utils/is-use-state-setter-in-scope.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -29,7 +28,7 @@ const findSetStateInBody = (body: EsTreeNode): EsTreeNode | null => {
 // at scroll-event frequency (60-120Hz). Use a Reanimated shared value
 // (useSharedValue + useAnimatedScrollHandler) or a ref + raf throttle so
 // the JS thread isn't pegged.
-export const rnNoScrollState = defineRule<Rule>({
+export const rnNoScrollState = defineRule({
   id: "rn-no-scroll-state",
   title: "setState in onScroll handler",
   tags: ["test-noise"],

@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (role: string, missingProps: ReadonlyArray<string>): string =>
   `Screen reader users can't tell the state of this \`${role}\` without its required ARIA props, so add \`${missingProps.join("`, `")}\`.`;
@@ -23,7 +22,7 @@ const ROLE_REQUIRED_PROPS: ReadonlyMap<string, ReadonlyArray<string>> = new Map(
 ]);
 
 // Port of `oxc_linter::rules::jsx_a11y::role_has_required_aria_props`.
-export const roleHasRequiredAriaProps = defineRule<Rule>({
+export const roleHasRequiredAriaProps = defineRule({
   id: "role-has-required-aria-props",
   title: "Role missing required ARIA props",
   tags: ["react-jsx-only"],

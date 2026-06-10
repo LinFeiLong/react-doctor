@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getArgsUpstreamRefs, getCallExpr, getUpstreamRefs } from "./utils/effect/ast.js";
 import { getProgramAnalysis } from "./utils/effect/get-program-analysis.js";
@@ -17,7 +16,7 @@ import {
 // (severity and message intentionally diverge — see SOURCE.md).
 // Note: upstream does NOT skip on cleanup return.
 
-export const noAdjustStateOnPropChange = defineRule<Rule>({
+export const noAdjustStateOnPropChange = defineRule({
   id: "no-adjust-state-on-prop-change",
   title: "State synced to a prop inside an effect",
   severity: "error",

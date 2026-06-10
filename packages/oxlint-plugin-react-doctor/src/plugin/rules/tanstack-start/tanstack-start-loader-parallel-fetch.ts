@@ -1,7 +1,6 @@
 import { SEQUENTIAL_AWAIT_THRESHOLD_FOR_LOADER } from "../../constants/tanstack.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getRouteOptionsObject } from "./utils/get-route-options-object.js";
 import { getPropertyKeyName } from "./utils/get-property-key-name.js";
@@ -30,7 +29,7 @@ const hasTopLevelAwait = (statement: EsTreeNode): boolean => {
   return false;
 };
 
-export const tanstackStartLoaderParallelFetch = defineRule<Rule>({
+export const tanstackStartLoaderParallelFetch = defineRule({
   id: "tanstack-start-loader-parallel-fetch",
   title: "Sequential awaits in loader",
   tags: ["test-noise"],

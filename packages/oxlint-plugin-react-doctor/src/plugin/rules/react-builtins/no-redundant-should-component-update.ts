@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (className: string): string =>
   `\`shouldComponentUpdate\` fights PureComponent's built-in check in \`${className}\` & can skip needed updates.`;
@@ -40,7 +39,7 @@ const findShouldComponentUpdate = (classBody: EsTreeNodeOfType<"ClassBody">): Es
 // Reports `shouldComponentUpdate` defined on a `class extends
 // React.PureComponent` (or bare `extends PureComponent`) — PureComponent
 // already implements shallow-equal SCU, so the override is redundant.
-export const noRedundantShouldComponentUpdate = defineRule<Rule>({
+export const noRedundantShouldComponentUpdate = defineRule({
   id: "no-redundant-should-component-update",
   title: "Redundant shouldComponentUpdate",
   severity: "warn",

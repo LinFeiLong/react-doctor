@@ -4,7 +4,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { inlineUseSelectorFunction } from "./utils/inline-use-selector-function.js";
 
@@ -61,7 +60,7 @@ const isConciseBodyReturningCollection = (functionNode: EsTreeNode): boolean => 
 //   - inline arrow/function selectors only. Selector hoisted to an
 //     identifier is skipped — those usually live alongside a `createSelector`
 //     pipeline that the user knows is memoised.
-export const reduxUseselectorReturnsNewCollection = defineRule<Rule>({
+export const reduxUseselectorReturnsNewCollection = defineRule({
   id: "redux-useselector-returns-new-collection",
   title: "useSelector returns a new collection",
   severity: "warn",

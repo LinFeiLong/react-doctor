@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactHookName } from "../../utils/is-react-hook-name.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 // Sister rule to `rerender-lazy-state-init`. `useRef` is even less
@@ -34,7 +33,7 @@ import type { RuleContext } from "../../utils/rule-context.js";
 //   - Trivial wrappers (`Number`, `String`, `Array`, `Boolean`,
 //     `parseInt`, `parseFloat`) are exempt because they're essentially
 //     free — same exemption list as `rerender-lazy-state-init`.
-export const rerenderLazyRefInit = defineRule<Rule>({
+export const rerenderLazyRefInit = defineRule({
   id: "rerender-lazy-ref-init",
   title: "Ref initializer runs on every render",
   tags: ["test-noise"],

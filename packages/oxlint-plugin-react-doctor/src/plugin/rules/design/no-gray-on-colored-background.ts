@@ -1,10 +1,9 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getStringFromClassNameAttr } from "./utils/get-string-from-class-name-attr.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noGrayOnColoredBackground = defineRule<Rule>({
+export const noGrayOnColoredBackground = defineRule({
   id: "no-gray-on-colored-background",
   title: "Gray text on colored background",
   tags: ["test-noise"],

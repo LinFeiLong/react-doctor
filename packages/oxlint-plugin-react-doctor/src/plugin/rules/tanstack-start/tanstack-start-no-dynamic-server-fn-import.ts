@@ -1,11 +1,10 @@
 import { TANSTACK_SERVER_FN_FILE_PATTERN } from "../../constants/tanstack.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const tanstackStartNoDynamicServerFnImport = defineRule<Rule>({
+export const tanstackStartNoDynamicServerFnImport = defineRule({
   id: "tanstack-start-no-dynamic-server-fn-import",
   title: "Dynamic server function import",
   tags: ["test-noise"],

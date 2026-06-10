@@ -1,6 +1,5 @@
 import { FLEX_OR_GRID_DISPLAY_TOKENS, SPACE_AXIS_PATTERN } from "../../constants/design.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getClassNameLiteral } from "./utils/get-class-name-literal.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -9,7 +8,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 const tokenizeClassName = (classNameValue: string): string[] =>
   classNameValue.split(/\s+/).filter(Boolean);
 
-export const noSpaceOnFlexChildren = defineRule<Rule>({
+export const noSpaceOnFlexChildren = defineRule({
   id: "design-no-space-on-flex-children",
   title: "space-* utility on flex children",
   tags: ["design", "test-noise"],

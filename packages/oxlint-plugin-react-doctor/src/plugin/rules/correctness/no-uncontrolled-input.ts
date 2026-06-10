@@ -6,7 +6,6 @@ import { isInlineFunctionExpression } from "../../utils/is-inline-function-expre
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -73,7 +72,7 @@ const hasJsxSpreadAttribute = (attributes: EsTreeNode[]): boolean =>
 // `register()`, Headless UI, Radix, etc. routinely supply `onChange` /
 // `defaultValue` via spread, and we can't see through it without scope
 // analysis. False-negative > false-positive on a heavily used pattern.
-export const noUncontrolledInput = defineRule<Rule>({
+export const noUncontrolledInput = defineRule({
   id: "no-uncontrolled-input",
   title: "Uncontrolled input value",
   severity: "warn",

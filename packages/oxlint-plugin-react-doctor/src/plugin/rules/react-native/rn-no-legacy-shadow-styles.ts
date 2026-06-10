@@ -1,7 +1,6 @@
 import { LEGACY_SHADOW_STYLE_PROPERTIES } from "../../constants/react-native.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { isMemberProperty } from "../../utils/is-member-property.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -29,7 +28,7 @@ const reportLegacyShadowProperties = (
   });
 };
 
-export const rnNoLegacyShadowStyles = defineRule<Rule>({
+export const rnNoLegacyShadowStyles = defineRule({
   id: "rn-no-legacy-shadow-styles",
   title: "Legacy platform-specific shadow styles",
   tags: ["test-noise"],

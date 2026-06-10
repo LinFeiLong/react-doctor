@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (value: string): string =>
   `Users who rely on autofill can't fill this field because \`${value}\` isn't a known token, so use a valid \`autoComplete\` token.`;
@@ -86,7 +85,7 @@ const resolveSettings = (
 
 // Port of `oxc_linter::rules::jsx_a11y::autocomplete_valid`. Validates
 // `autoComplete` against the known HTML autofill token list.
-export const autocompleteValid = defineRule<Rule>({
+export const autocompleteValid = defineRule({
   id: "autocomplete-valid",
   title: "Invalid autocomplete value",
   tags: ["react-jsx-only"],

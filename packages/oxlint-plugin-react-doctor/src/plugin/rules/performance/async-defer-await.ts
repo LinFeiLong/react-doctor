@@ -8,7 +8,6 @@ import { isBareAwaitExpressionStatement } from "../../utils/is-bare-await-expres
 import { isEarlyExitIfStatement } from "../../utils/is-early-exit-if-statement.js";
 import { isFunctionLike } from "../../utils/is-function-like.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { walkAst } from "../../utils/walk-ast.js";
 
@@ -173,7 +172,7 @@ const collectAwaitWindow = (statements: EsTreeNode[], startIndex: number): Await
 // whose test references no identifiers bound by the preamble. Any
 // non-binding statement between the await and the if implies the awaited
 // value is being prepared for use, so we conservatively skip.
-export const asyncDeferAwait = defineRule<Rule>({
+export const asyncDeferAwait = defineRule({
   id: "async-defer-await",
   title: "await before an early-return guard",
   severity: "warn",

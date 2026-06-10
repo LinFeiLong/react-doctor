@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
@@ -131,7 +130,7 @@ const isEverySpecifierInlineType = (
   );
 };
 
-export const rnNoDeepImports = defineRule<Rule>({
+export const rnNoDeepImports = defineRule({
   id: "rn-no-deep-imports",
   title: "Deep import into react-native internals",
   requires: ["react-native"],

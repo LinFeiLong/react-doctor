@@ -4,7 +4,6 @@ import { flattenCalleeName } from "../../utils/flatten-callee-name.js";
 import { flattenJsxName } from "../../utils/flatten-jsx-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactFunctionCall } from "../../utils/is-react-function-call.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (element: string, customHelp?: string): string =>
   customHelp
@@ -44,7 +43,7 @@ const flattenMemberName = flattenCalleeName;
 // settings list — `forbid: ["button", { element: "Modal", message: "use
 // Button" }, ...]`. Each item matches against the JSX element name or
 // the first argument of `React.createElement(...)`.
-export const forbidElements = defineRule<Rule>({
+export const forbidElements = defineRule({
   id: "forbid-elements",
   title: "Blocked element bypasses approved UI primitives",
   severity: "warn",

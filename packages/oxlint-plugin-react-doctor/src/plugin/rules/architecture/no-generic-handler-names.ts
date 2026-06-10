@@ -1,11 +1,10 @@
 import { GENERIC_EVENT_SUFFIXES } from "../../constants/react.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noGenericHandlerNames = defineRule<Rule>({
+export const noGenericHandlerNames = defineRule({
   id: "no-generic-handler-names",
   title: "Vague event handler name",
   severity: "warn",

@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -93,7 +92,7 @@ const hasSuppressHydrationWarningAttribute = (openingElement: EsTreeNode | null)
 // to wrap in `useEffect` + `useState` (so the dynamic value renders
 // only client-side) or to add `suppressHydrationWarning` to the parent
 // element when the mismatch is intentional.
-export const renderingHydrationMismatchTime = defineRule<Rule>({
+export const renderingHydrationMismatchTime = defineRule({
   id: "rendering-hydration-mismatch-time",
   title: "Time or random value in JSX",
   severity: "warn",

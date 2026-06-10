@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { collectUseStateBindings } from "./utils/collect-use-state-bindings.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -35,7 +34,7 @@ const isUnconditionalSetterCallStatement = (
   return expression;
 };
 
-export const noSetStateInRender = defineRule<Rule>({
+export const noSetStateInRender = defineRule({
   id: "no-set-state-in-render",
   title: "setState called during render",
   severity: "warn",

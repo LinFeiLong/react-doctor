@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const REACT_HOOK_NAMES = new Set([
   "useCallback",
@@ -38,7 +37,7 @@ const buildMessage = (importedNames: ReadonlyArray<string>): string =>
 // using `preact/compat` aliasing, and importing from `react` is exactly how
 // compat is meant to be consumed — flagging it there would be a false
 // positive.
-export const preactNoReactHooksImport = defineRule<Rule>({
+export const preactNoReactHooksImport = defineRule({
   id: "preact-no-react-hooks-import",
   title: "React hook imports break pure Preact hook state",
   requires: ["pure-preact"],

@@ -11,7 +11,6 @@ import { isSetterIdentifier } from "../../utils/is-setter-identifier.js";
 import { isUseStateSetterInScope } from "../../utils/is-use-state-setter-in-scope.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -74,7 +73,7 @@ const collectValueIdentifierNames = (node: EsTreeNode | null | undefined, into: 
   }
 };
 
-export const noDerivedStateEffect = defineRule<Rule>({
+export const noDerivedStateEffect = defineRule({
   id: "no-derived-state-effect",
   title: "Derived state stored in an effect",
   severity: "warn",

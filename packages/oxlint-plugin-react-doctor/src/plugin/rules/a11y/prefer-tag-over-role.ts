@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
-import type { Rule } from "../../utils/rule.js";
 import { getTagsForRole } from "../../constants/aria-element-roles.js";
 
 const buildMessage = (role: string, tag: string): string =>
@@ -12,7 +11,7 @@ const buildMessage = (role: string, tag: string): string =>
 // Port of `oxc_linter::rules::jsx_a11y::prefer_tag_over_role`. When a
 // generic element (`div`/`span`) uses `role` to emulate a built-in
 // element's semantics, suggest using the built-in directly.
-export const preferTagOverRole = defineRule<Rule>({
+export const preferTagOverRole = defineRule({
   id: "prefer-tag-over-role",
   title: "Role used instead of HTML tag",
   tags: ["react-jsx-only"],

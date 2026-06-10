@@ -3,7 +3,6 @@ import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -47,7 +46,7 @@ const containsEarlyReturn = (ifStatement: EsTreeNode): boolean => {
 // component bails out (loading, gated, etc.). Better to extract the JSX
 // into a memoized child component so the parent's early return
 // short-circuits before the child renders.
-export const rerenderMemoBeforeEarlyReturn = defineRule<Rule>({
+export const rerenderMemoBeforeEarlyReturn = defineRule({
   id: "rerender-memo-before-early-return",
   title: "useMemo before an early return",
   tags: ["test-noise"],

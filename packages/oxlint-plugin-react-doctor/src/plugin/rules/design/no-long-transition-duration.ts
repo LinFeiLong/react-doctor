@@ -1,13 +1,12 @@
 import { LONG_TRANSITION_DURATION_THRESHOLD_MS } from "../../constants/design.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getInlineStyleExpression } from "./utils/get-inline-style-expression.js";
 import { getStylePropertyStringValue } from "./utils/get-style-property-string-value.js";
 import { getStylePropertyKey } from "./utils/get-style-property-key.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noLongTransitionDuration = defineRule<Rule>({
+export const noLongTransitionDuration = defineRule({
   id: "no-long-transition-duration",
   title: "Transition duration too long",
   tags: ["test-noise"],

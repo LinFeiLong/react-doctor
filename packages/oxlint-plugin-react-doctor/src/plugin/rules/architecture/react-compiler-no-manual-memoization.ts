@@ -7,7 +7,6 @@ import {
 } from "../../utils/find-import-source-for-name.js";
 import { isCanonicalReactNamespaceName } from "../../utils/is-canonical-react-namespace-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 const REMOVAL_MESSAGE_BY_REACT_API_NAME = new Map<string, string>([
@@ -69,7 +68,7 @@ const resolveRemovalMessageForCallee = (callee: EsTreeNode): string | null => {
 // source check below. Composes with `react-hooks-js/preserve-manual-
 // memoization`, which inverts the rule for cases the compiler cannot
 // safely auto-memoize.
-export const reactCompilerNoManualMemoization = defineRule<Rule>({
+export const reactCompilerNoManualMemoization = defineRule({
   id: "react-compiler-no-manual-memoization",
   title: "Redundant manual memoization",
   // Redundant-memo cleanup is correctness-neutral: the code already works,

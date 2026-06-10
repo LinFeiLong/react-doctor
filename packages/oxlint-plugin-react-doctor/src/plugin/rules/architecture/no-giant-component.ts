@@ -5,11 +5,10 @@ import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noGiantComponent = defineRule<Rule>({
+export const noGiantComponent = defineRule({
   id: "no-giant-component",
   title: "Large component is hard to read and change",
   severity: "warn",

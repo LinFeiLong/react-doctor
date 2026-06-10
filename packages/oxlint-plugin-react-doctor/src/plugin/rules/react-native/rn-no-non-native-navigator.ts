@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
@@ -19,7 +18,7 @@ const NON_NATIVE_NAVIGATOR_PACKAGES = new Map<string, string>([
 // imperfect native gesture/feel. native-stack (and native-tabs in v7+)
 // uses platform-native UINavigationController / Fragment, giving real
 // iOS/Android transitions, swipe-back, and large titles for free.
-export const rnNoNonNativeNavigator = defineRule<Rule>({
+export const rnNoNonNativeNavigator = defineRule({
   id: "rn-no-non-native-navigator",
   title: "Non-native JS navigator",
   tags: ["test-noise"],

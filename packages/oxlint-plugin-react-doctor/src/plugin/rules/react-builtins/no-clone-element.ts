@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isImportedFromModule } from "../../utils/find-import-source-for-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "`React.cloneElement` couples the parent to the child's prop shape, so child prop changes can silently break injected behavior.";
@@ -13,7 +12,7 @@ const MESSAGE =
 // (or `<NS>` for the namespace form) was imported from `"react"`.
 // Helpers like `import { cloneElement } from 'something-else'` or local
 // `const cloneElement = ...` aren't flagged.
-export const noCloneElement = defineRule<Rule>({
+export const noCloneElement = defineRule({
   id: "no-clone-element",
   title: "cloneElement makes child props fragile",
   severity: "warn",

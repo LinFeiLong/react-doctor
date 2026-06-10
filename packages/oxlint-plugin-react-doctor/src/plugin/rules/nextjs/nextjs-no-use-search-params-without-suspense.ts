@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { getImportedName } from "../../utils/get-imported-name.js";
@@ -113,7 +112,7 @@ const collectImportedComponents = (
   return entries;
 };
 
-export const nextjsNoUseSearchParamsWithoutSuspense = defineRule<Rule>({
+export const nextjsNoUseSearchParamsWithoutSuspense = defineRule({
   id: "nextjs-no-use-search-params-without-suspense",
   title: "useSearchParams without Suspense",
   tags: ["test-noise"],

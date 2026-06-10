@@ -1,11 +1,10 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { findJsxAttribute } from "../../utils/find-jsx-attribute.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoAElement = defineRule<Rule>({
+export const nextjsNoAElement = defineRule({
   id: "nextjs-no-a-element",
   title: "Plain anchor reloads internal Next.js links",
   tags: ["test-noise"],

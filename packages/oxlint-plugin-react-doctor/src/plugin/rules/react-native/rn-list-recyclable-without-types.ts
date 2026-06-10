@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -18,7 +17,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // value) or `recycleItems={true}` counts as enabled.
 const RECYCLABLE_LIST_NAMES = new Set(["FlashList", "LegendList"]);
 
-export const rnListRecyclableWithoutTypes = defineRule<Rule>({
+export const rnListRecyclableWithoutTypes = defineRule({
   id: "rn-list-recyclable-without-types",
   title: "Recyclable list missing getItemType",
   tags: ["test-noise"],

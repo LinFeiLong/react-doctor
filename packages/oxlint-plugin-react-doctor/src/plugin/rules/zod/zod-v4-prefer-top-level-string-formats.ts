@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isDirectMethodCallOnZodFactory } from "./utils/zod-ast.js";
 
@@ -29,7 +28,7 @@ const STRING_FORMAT_METHODS = new Set([
   "uuid",
 ]);
 
-export const zodV4PreferTopLevelStringFormats = defineRule<Rule>({
+export const zodV4PreferTopLevelStringFormats = defineRule({
   id: "zod-v4-prefer-top-level-string-formats",
   title: "Format method on z.string()",
   requires: ["zod:4"],

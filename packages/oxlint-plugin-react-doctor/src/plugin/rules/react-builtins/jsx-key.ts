@@ -261,7 +261,7 @@ const getKeyAttributeValueString = (
 //   - warnOnDuplicates (default false): duplicate `key` values among siblings
 // Skips elements wrapped by `Children.toArray(...)` since React's runtime
 // assigns synthetic keys for those.
-export const jsxKey = defineRule<Rule>({
+export const jsxKey = defineRule({
   id: "jsx-key",
   title: "Missing key in list",
   severity: "error",

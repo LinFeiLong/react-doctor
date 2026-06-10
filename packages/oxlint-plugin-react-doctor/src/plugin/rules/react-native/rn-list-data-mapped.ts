@@ -1,7 +1,6 @@
 import { REACT_NATIVE_LIST_COMPONENTS } from "../../constants/react-native.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -54,7 +53,7 @@ const isFreshArrayExpression = (node: EsTreeNode): string | null => {
 // .flat, .flatMap, [...spread]) allocates a fresh array on every parent
 // render, busting the memo cache for every row. Hoist the transform into
 // a useMemo or do the projection earlier.
-export const rnListDataMapped = defineRule<Rule>({
+export const rnListDataMapped = defineRule({
   id: "rn-list-data-mapped",
   title: "List data rebuilt every render",
   tags: ["test-noise"],

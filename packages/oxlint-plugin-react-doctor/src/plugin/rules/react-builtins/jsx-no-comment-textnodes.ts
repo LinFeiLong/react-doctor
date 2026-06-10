@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Your users see this comment as text on the page because `//` & `/*` aren't hidden in JSX.";
@@ -41,7 +40,7 @@ const isInsideLiteralTextTag = (node: EsTreeNode): boolean => {
 // comments, they're rendered as literal text. Skips text inside
 // `<code>`, `<pre>`, `<kbd>`, `<samp>`, `<tt>` — those tags exist to
 // render literal text including code-comment-like prefixes.
-export const jsxNoCommentTextnodes = defineRule<Rule>({
+export const jsxNoCommentTextnodes = defineRule({
   id: "jsx-no-comment-textnodes",
   title: "Comment rendered as JSX text",
   severity: "warn",

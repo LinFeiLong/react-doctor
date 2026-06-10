@@ -3,7 +3,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isEs6Component } from "../../utils/is-es6-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 // Preact code conventionally imports the namespace as `Preact` (e.g.
 // `import * as Preact from "preact"; class Foo extends Preact.Component`).
@@ -89,7 +88,7 @@ const stripThisParameter = (params: ReadonlyArray<EsTreeNode>): ReadonlyArray<Es
 // We only flag class components that extend `Component` / `PureComponent`
 // (or `React.Component` / `React.PureComponent`) — function components
 // and non-component classes are untouched.
-export const preactNoRenderArguments = defineRule<Rule>({
+export const preactNoRenderArguments = defineRule({
   id: "preact-no-render-arguments",
   title: "render() reads props from arguments",
   requires: ["preact"],

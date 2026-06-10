@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getInlineStyleExpression } from "./utils/get-inline-style-expression.js";
 import { getStylePropertyStringValue } from "./utils/get-style-property-string-value.js";
@@ -7,7 +6,7 @@ import { getStylePropertyKey } from "./utils/get-style-property-key.js";
 import { getStringFromClassNameAttr } from "./utils/get-string-from-class-name-attr.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noGradientText = defineRule<Rule>({
+export const noGradientText = defineRule({
   id: "no-gradient-text",
   title: "Gradient text is hard to read",
   tags: ["design", "test-noise"],

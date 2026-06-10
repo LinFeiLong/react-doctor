@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE = "A `javascript:` URL is an XSS hole that runs injected input as code.";
 
@@ -51,7 +50,7 @@ const isLinkPropForElement = (
 // `javascript:` regex. By default only `<a href="...">` is checked; the
 // `components` map lets callers extend to custom Link components, and
 // `includeFromSettings` opts in to the `linkComponents` settings hash.
-export const jsxNoScriptUrl = defineRule<Rule>({
+export const jsxNoScriptUrl = defineRule({
   id: "jsx-no-script-url",
   title: "javascript: URL in JSX",
   severity: "error",

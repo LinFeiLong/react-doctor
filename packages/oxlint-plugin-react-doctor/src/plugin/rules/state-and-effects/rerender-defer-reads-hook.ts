@@ -3,7 +3,6 @@ import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { collectHandlerBindingNames } from "./utils/collect-handler-binding-names.js";
 import { isInsideEventHandler } from "./utils/is-inside-event-handler.js";
@@ -49,7 +48,7 @@ const findHookCallBindings = (
 //
 // Heuristic: hook value-name appears only inside arrow / function
 // expressions that are themselves bound to JSX `on*` attributes.
-export const rerenderDeferReadsHook = defineRule<Rule>({
+export const rerenderDeferReadsHook = defineRule({
   id: "rerender-defer-reads-hook",
   title: "URL hook value only read in handlers",
   tags: ["test-noise"],

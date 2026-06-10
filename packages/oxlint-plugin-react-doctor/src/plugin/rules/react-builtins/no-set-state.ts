@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getParentComponent } from "../../utils/get-parent-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "`this.setState` keeps local class state in a project that forbids it, so state ownership becomes harder to reason about.";
@@ -10,7 +9,7 @@ const MESSAGE =
 // Port of `oxc_linter::rules::react::no_set_state`. Style rule for
 // architectures (Flux-like) that forbid local component state — flags
 // `this.setState(...)` only when inside an es5/es6 React component.
-export const noSetState = defineRule<Rule>({
+export const noSetState = defineRule({
   id: "no-set-state",
   title: "Local class state forbidden",
   severity: "warn",

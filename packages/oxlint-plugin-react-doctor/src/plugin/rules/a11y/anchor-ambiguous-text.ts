@@ -6,7 +6,6 @@ import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js"
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isHiddenFromScreenReader } from "../../utils/is-hidden-from-screen-reader.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (text: string): string =>
   `Screen reader users can't tell where \`${text}\` goes, so name the destination, like "View pricing details".`;
@@ -79,7 +78,7 @@ const getAccessibleText = (
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::anchor_ambiguous_text`.
-export const anchorAmbiguousText = defineRule<Rule>({
+export const anchorAmbiguousText = defineRule({
   id: "anchor-ambiguous-text",
   title: "Ambiguous link text",
   tags: ["react-jsx-only"],

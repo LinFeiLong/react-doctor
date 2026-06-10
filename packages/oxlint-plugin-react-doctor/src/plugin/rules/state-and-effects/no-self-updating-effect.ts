@@ -11,7 +11,6 @@ import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { collectUseStateBindings } from "./utils/collect-use-state-bindings.js";
 
@@ -642,7 +641,7 @@ const everySetterCallIsTopLevel = (
   return safe;
 };
 
-export const noSelfUpdatingEffect = defineRule<Rule>({
+export const noSelfUpdatingEffect = defineRule({
   id: "no-self-updating-effect",
   title: "Effect updates its own dependency",
   severity: "warn",

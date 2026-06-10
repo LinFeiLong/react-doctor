@@ -3,13 +3,12 @@ import { collectLocallyScopedCookieBindings } from "../../utils/collect-locally-
 import { collectLocallyScopedSafeBindings } from "../../utils/collect-locally-scoped-safe-bindings.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { findSideEffect } from "../../utils/find-side-effect.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { walkServerFnChain } from "./utils/walk-server-fn-chain.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const tanstackStartGetMutation = defineRule<Rule>({
+export const tanstackStartGetMutation = defineRule({
   id: "tanstack-start-get-mutation",
   title: "Mutation in GET server function",
   tags: ["test-noise"],

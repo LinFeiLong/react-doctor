@@ -3,7 +3,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 // HACK: methods that ALWAYS return a string when called on a string
@@ -273,7 +272,7 @@ const isIndexedArrayElementWithStringArgument = (
   return false;
 };
 
-export const jsSetMapLookups = defineRule<Rule>({
+export const jsSetMapLookups = defineRule({
   id: "js-set-map-lookups",
   title: "Array lookup inside a loop",
   tags: ["test-noise"],

@@ -64,7 +64,7 @@ const validateSandboxValue = (
 //  - `React.createElement("iframe", …)` equivalents of all three.
 // `document.createElement("iframe", …)` is intentionally NOT flagged
 // (DOM API, sandbox can't be set there).
-export const iframeMissingSandbox = defineRule<Rule>({
+export const iframeMissingSandbox = defineRule({
   id: "iframe-missing-sandbox",
   title: "iframe missing sandbox attribute",
   severity: "warn",

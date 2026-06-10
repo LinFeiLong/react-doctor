@@ -5,7 +5,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isCreateElementCall } from "../../utils/is-create-element-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE = "React throws an error when you set both children & `dangerouslySetInnerHTML`.";
 
@@ -82,7 +81,7 @@ const resolveJsxSpreadPropsShape = (
 // Port of `oxc_linter::rules::react::no_danger_with_children`. Reports
 // when the same JSX element / createElement call has BOTH a `children`
 // prop / nested children AND `dangerouslySetInnerHTML`.
-export const noDangerWithChildren = defineRule<Rule>({
+export const noDangerWithChildren = defineRule({
   id: "no-danger-with-children",
   title: "dangerouslySetInnerHTML with children",
   severity: "error",

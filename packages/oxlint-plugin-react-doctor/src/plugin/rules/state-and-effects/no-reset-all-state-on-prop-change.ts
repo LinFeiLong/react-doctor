@@ -3,7 +3,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getCallExpr, getDownstreamRefs, getUpstreamRefs } from "./utils/effect/ast.js";
 import { getProgramAnalysis, type ProgramAnalysis } from "./utils/effect/get-program-analysis.js";
@@ -85,7 +84,7 @@ const findPropUsedToResetAllState = (
   return null;
 };
 
-export const noResetAllStateOnPropChange = defineRule<Rule>({
+export const noResetAllStateOnPropChange = defineRule({
   id: "no-reset-all-state-on-prop-change",
   title: "All state reset on prop change",
   severity: "warn",

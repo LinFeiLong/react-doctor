@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { hasDirective } from "../../utils/has-directive.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -106,7 +105,7 @@ const isLikelyNumericExpression = (node: EsTreeNode): boolean => {
 // boolean state/props/constants that never produce `0`. We only
 // flag identifiers/expressions with numeric-sounding names or
 // `.length` access.
-export const rnNoFalsyAndRender = defineRule<Rule>({
+export const rnNoFalsyAndRender = defineRule({
   id: "rn-no-falsy-and-render",
   title: "Numeric && renders bare zero",
   requires: ["react-native"],

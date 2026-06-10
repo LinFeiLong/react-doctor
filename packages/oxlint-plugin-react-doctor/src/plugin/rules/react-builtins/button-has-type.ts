@@ -105,7 +105,7 @@ const reportInvalid = (context: Parameters<Rule["create"]>[0], reportNode: EsTre
 //   - `React.createElement("button", { type: "foo" })` equivalents.
 // Three settings (button/submit/reset, default true) toggle which
 // values are allowed.
-export const buttonHasType = defineRule<Rule>({
+export const buttonHasType = defineRule({
   id: "button-has-type",
   title: "Button missing explicit type",
   severity: "warn",

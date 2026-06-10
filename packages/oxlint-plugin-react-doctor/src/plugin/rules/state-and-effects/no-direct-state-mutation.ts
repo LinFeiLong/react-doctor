@@ -6,7 +6,6 @@ import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isFunctionLike } from "../../utils/is-function-like.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { collectUseStateBindings } from "./utils/collect-use-state-bindings.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -78,7 +77,7 @@ const walkComponentRespectingShadows = (
   }
 };
 
-export const noDirectStateMutation = defineRule<Rule>({
+export const noDirectStateMutation = defineRule({
   id: "no-direct-state-mutation",
   title: "State mutated in place",
   severity: "warn",

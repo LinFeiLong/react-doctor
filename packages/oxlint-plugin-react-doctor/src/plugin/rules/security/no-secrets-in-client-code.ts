@@ -12,7 +12,6 @@ import { classifySecretFileExposure } from "../../utils/classify-secret-file-exp
 import { enclosingComponentOrHookName } from "../../utils/enclosing-component-or-hook-name.js";
 import { getIdentifierTrailingWord } from "../../utils/get-identifier-trailing-word.js";
 import { getReactDoctorStringSetting } from "../../utils/get-react-doctor-setting.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { hasDirective } from "../../utils/has-directive.js";
 import { isInsideServerOnlyScope } from "../../utils/is-inside-server-only-scope.js";
@@ -20,7 +19,7 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isPlaceholderSecretValue } from "../../utils/is-placeholder-secret-value.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noSecretsInClientCode = defineRule<Rule>({
+export const noSecretsInClientCode = defineRule({
   id: "no-secrets-in-client-code",
   title: "Secret in client code",
   severity: "warn",

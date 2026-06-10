@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getCalleeName } from "../../utils/get-callee-name.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 // Hooks whose tail (or trailing) argument is an explicit dependency array.
 // Notably excludes `@preact/signals`'s `useSignalEffect(callback)` — it
@@ -58,7 +57,7 @@ const isNanLiteral = (node: EsTreeNode): boolean => {
 // `useSignalEffect` is intentionally excluded: its signature is
 // `useSignalEffect(callback)` with no deps argument; signal reads
 // inside the callback auto-track, so there's no array to inspect.
-export const hooksNoNanInDeps = defineRule<Rule>({
+export const hooksNoNanInDeps = defineRule({
   id: "hooks-no-nan-in-deps",
   title: "NaN in a hook dependency array",
   severity: "warn",

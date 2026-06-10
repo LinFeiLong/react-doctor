@@ -15,7 +15,7 @@ const MESSAGE = "This JSX crashes because `React` isn't in scope.";
 // longer silences JSX in an unrelated function. The common shape
 // (module-level `import React from 'react'`) is still detected
 // because module-scope bindings are visible from every nested site.
-export const reactInJsxScope = defineRule<Rule>({
+export const reactInJsxScope = defineRule({
   id: "react-in-jsx-scope",
   title: "React not in scope for JSX",
   severity: "warn",

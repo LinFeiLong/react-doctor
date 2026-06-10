@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 // Lifted verbatim from `preact/debug/src/debug.js`'s
 // `ILLEGAL_PARAGRAPH_CHILD_ELEMENTS` regex. These are the block-level
@@ -99,7 +98,7 @@ const findEnclosingParagraph = (openingElement: EsTreeNode): EsTreeNode | null =
 // implicitly close the paragraph. The result is a DOM tree that doesn't
 // match what the JSX expressed — hydration mismatches, broken styling
 // selectors, and accessibility tree corruption all follow.
-export const htmlNoInvalidParagraphChild = defineRule<Rule>({
+export const htmlNoInvalidParagraphChild = defineRule({
   id: "html-no-invalid-paragraph-child",
   title: "Block element inside a paragraph",
   severity: "warn",

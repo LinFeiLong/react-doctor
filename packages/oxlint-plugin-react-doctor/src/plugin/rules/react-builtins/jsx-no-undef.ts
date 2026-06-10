@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { findProgramRoot } from "../../utils/find-program-root.js";
 import { findVariableInitializer } from "../../utils/find-variable-initializer.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (name: string): string =>
   `\`${name}\` crashes at runtime because it isn't defined here.`;
@@ -55,7 +54,7 @@ const getRootIdentifier = (elementName: EsTreeNode): string | null => {
 //     diagnostic. `interface` and `type` alias declarations do NOT
 //     — those are erased at runtime and JSX usage of them is an
 //     error we want to surface.
-export const jsxNoUndef = defineRule<Rule>({
+export const jsxNoUndef = defineRule({
   id: "jsx-no-undef",
   title: "Undefined JSX component",
   severity: "error",

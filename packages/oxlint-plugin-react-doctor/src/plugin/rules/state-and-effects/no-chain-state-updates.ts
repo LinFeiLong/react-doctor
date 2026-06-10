@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getArgsUpstreamRefs, getCallExpr, getUpstreamRefs } from "./utils/effect/ast.js";
 import { getProgramAnalysis } from "./utils/effect/get-program-analysis.js";
@@ -17,7 +16,7 @@ import {
 // 1:1 port of upstream
 // `src/rules/no-chain-state-updates.js`.
 
-export const noChainStateUpdates = defineRule<Rule>({
+export const noChainStateUpdates = defineRule({
   id: "no-chain-state-updates",
   title: "State updates chained through effects",
   severity: "warn",

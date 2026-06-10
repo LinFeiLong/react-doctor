@@ -6,7 +6,6 @@ import { isHookCall } from "../../utils/is-hook-call.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import { walkInsideStatementBlocks } from "../../utils/walk-inside-statement-blocks.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import {
   isCleanupReturningSubscribeLikeCallExpression,
@@ -210,7 +209,7 @@ const effectHasCleanupReturn = (
   return didFindCleanupReturn;
 };
 
-export const effectNeedsCleanup = defineRule<Rule>({
+export const effectNeedsCleanup = defineRule({
   id: "effect-needs-cleanup",
   title: "Effect subscription or timer never cleaned up",
   severity: "error",

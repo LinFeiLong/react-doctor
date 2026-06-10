@@ -1,7 +1,6 @@
 import { INDEX_PARAMETER_NAMES } from "../../constants/react.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isAllLiteralArrayExpression } from "../../utils/is-all-literal-array-expression.js";
 import { isFunctionLike } from "../../utils/is-function-like.js";
@@ -277,7 +276,7 @@ const isCompositeKeyWithIteratorIdentity = (
   return templateLiteralHasIteratorIdentity(keyExpression, itemName);
 };
 
-export const noArrayIndexAsKey = defineRule<Rule>({
+export const noArrayIndexAsKey = defineRule({
   id: "no-array-index-as-key",
   title: "Array index used as a key",
   severity: "warn",

@@ -2,7 +2,6 @@ import { PROPERTY_ACCESS_REPEAT_THRESHOLD } from "../../constants/thresholds.js"
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 
@@ -21,7 +20,7 @@ const buildMemberAccessKey = (node: EsTreeNode): string | null => {
 // or hot user-code paths often benefit from caching the access in a const
 // at the top of the loop body. We require a member-expression depth ≥ 2
 // (two dots) and ≥ 3 occurrences in the same loop block to fire.
-export const jsCachePropertyAccess = defineRule<Rule>({
+export const jsCachePropertyAccess = defineRule({
   id: "js-cache-property-access",
   title: "Repeated property access in a loop",
   tags: ["test-noise"],

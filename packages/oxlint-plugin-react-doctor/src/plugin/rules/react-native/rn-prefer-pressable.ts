@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { getImportedName } from "../../utils/get-imported-name.js";
@@ -18,7 +17,7 @@ const TOUCHABLE_SOURCES = new Set(["react-native", "react-native-gesture-handler
 // TouchableNativeFeedback are legacy and feature-frozen. Pressable is the
 // modern, more configurable, more accessible replacement that works the
 // same on iOS, Android, and Fabric.
-export const rnPreferPressable = defineRule<Rule>({
+export const rnPreferPressable = defineRule({
   id: "rn-prefer-pressable",
   title: "Touchable components instead of Pressable",
   tags: ["test-noise"],

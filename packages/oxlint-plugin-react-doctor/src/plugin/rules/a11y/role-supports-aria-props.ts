@@ -9,7 +9,6 @@ import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessageDefault = (role: string, propName: string): string =>
   `Screen reader users get no help from \`${propName}\` because role \`${role}\` ignores it, so remove it or change the role.`;
@@ -155,7 +154,7 @@ const getImplicitRole = (
 // Port of `oxc_linter::rules::jsx_a11y::role_supports_aria_props`.
 // Reports `aria-*` props that aren't supported by the element's
 // effective ARIA role (explicit > implicit).
-export const roleSupportsAriaProps = defineRule<Rule>({
+export const roleSupportsAriaProps = defineRule({
   id: "role-supports-aria-props",
   title: "Unsupported ARIA prop for role",
   tags: ["react-jsx-only"],

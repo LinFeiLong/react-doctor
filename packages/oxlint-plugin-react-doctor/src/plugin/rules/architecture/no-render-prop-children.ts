@@ -1,7 +1,6 @@
 import { RENDER_PROP_PROLIFERATION_THRESHOLD } from "../../constants/thresholds.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -16,7 +15,7 @@ const RENDER_PROP_PATTERN = /^render[A-Z]/;
 // single element receives 3 or more `render*` props, that's the smell
 // of "many slots cobbled together where compound components or
 // `children` would be cleaner".
-export const noRenderPropChildren = defineRule<Rule>({
+export const noRenderPropChildren = defineRule({
   id: "no-render-prop-children",
   title: "Render-prop slots make this component hard to extend",
   tags: ["test-noise"],

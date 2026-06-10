@@ -4,12 +4,11 @@ import {
 } from "../../constants/tanstack.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const tanstackStartServerFnMethodOrder = defineRule<Rule>({
+export const tanstackStartServerFnMethodOrder = defineRule({
   id: "tanstack-start-server-fn-method-order",
   title: "Server function method order breaks type inference",
   tags: ["test-noise"],

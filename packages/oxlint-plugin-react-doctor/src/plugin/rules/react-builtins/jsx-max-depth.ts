@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { findVariableInitializer } from "../../utils/find-variable-initializer.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (depth: number, max: number): string =>
   `This JSX is hard to read at ${depth} levels deep, past the limit of ${max}.`;
@@ -97,7 +96,7 @@ const computeChildrenDepth = (
 // `{<jsxSubtree/>}` children — recursing through bindings via our
 // initializer-tracker. Cycles in binding references (`x → y → x`) are
 // broken by name.
-export const jsxMaxDepth = defineRule<Rule>({
+export const jsxMaxDepth = defineRule({
   id: "jsx-max-depth",
   title: "JSX nested too deeply",
   severity: "warn",

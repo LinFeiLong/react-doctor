@@ -13,7 +13,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isFunctionLike } from "../../utils/is-function-like.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 const extractMutatingRouteSegment = (rawFilename: string): string | null => {
@@ -190,7 +189,7 @@ const resolveGetHandlerBodies = (
   return [];
 };
 
-export const nextjsNoSideEffectInGetHandler = defineRule<Rule>({
+export const nextjsNoSideEffectInGetHandler = defineRule({
   id: "nextjs-no-side-effect-in-get-handler",
   title: "Side effect in GET handler",
   tags: ["test-noise"],

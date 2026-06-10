@@ -8,7 +8,6 @@ import {
 } from "../../utils/find-import-source-for-name.js";
 import { isCanonicalReactNamespaceName } from "../../utils/is-canonical-react-namespace-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 const MESSAGE =
@@ -66,7 +65,7 @@ const isCreateContextCallee = (callee: EsTreeNode): boolean => {
 //   - Reports only when the call is inside a function whose name looks
 //     like a React component (PascalCase) or hook (`use*`). Calls inside
 //     plain helper functions or at module scope are left alone.
-export const noCreateContextInRender = defineRule<Rule>({
+export const noCreateContextInRender = defineRule({
   id: "no-create-context-in-render",
   title: "createContext called during render",
   severity: "error",

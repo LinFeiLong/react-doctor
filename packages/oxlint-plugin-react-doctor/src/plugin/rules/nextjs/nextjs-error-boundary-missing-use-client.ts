@@ -2,11 +2,10 @@ import { APP_DIRECTORY_PATTERN, ERROR_BOUNDARY_FILE_PATTERN } from "../../consta
 import { defineRule } from "../../utils/define-rule.js";
 import { hasDirective } from "../../utils/has-directive.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsErrorBoundaryMissingUseClient = defineRule<Rule>({
+export const nextjsErrorBoundaryMissingUseClient = defineRule({
   id: "nextjs-error-boundary-missing-use-client",
   title: "Error boundary missing 'use client'",
   tags: ["test-noise"],

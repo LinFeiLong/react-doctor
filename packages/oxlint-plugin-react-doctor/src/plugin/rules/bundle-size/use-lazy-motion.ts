@@ -1,12 +1,11 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { getImportedName } from "../../utils/get-imported-name.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const useLazyMotion = defineRule<Rule>({
+export const useLazyMotion = defineRule({
   id: "use-lazy-motion",
   title: "Full Framer Motion import",
   tags: ["test-noise"],

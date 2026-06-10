@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { findJsxAttribute } from "../../utils/find-jsx-attribute.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const PREFER_ONINPUT_MESSAGE =
   "Your users see no live updates because `onChange` on text inputs in Preact core only fires on blur, so use `onInput` instead. `preact/compat` handles this for you.";
@@ -43,7 +42,7 @@ const isTextLikeInput = (openingElement: EsTreeNodeOfType<"JSXOpeningElement">):
 // `pure-preact` is both simpler and correct: if `react` (the alias
 // entry point for compat) is present in deps, the rule sits out
 // entirely. Pairs with the sibling `preact-prefer-ondblclick` rule.
-export const preactPreferOninput = defineRule<Rule>({
+export const preactPreferOninput = defineRule({
   id: "preact-prefer-oninput",
   title: "onChange instead of onInput",
   requires: ["pure-preact"],

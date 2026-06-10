@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -10,7 +9,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // distinct argument objects per render, so the cache never hits and the
 // underlying fetch runs twice per request. Pass primitives (or memoize
 // the argument object once at module/route scope).
-export const serverCacheWithObjectLiteral = defineRule<Rule>({
+export const serverCacheWithObjectLiteral = defineRule({
   id: "server-cache-with-object-literal",
   title: "React.cache with object literal",
   tags: ["test-noise"],

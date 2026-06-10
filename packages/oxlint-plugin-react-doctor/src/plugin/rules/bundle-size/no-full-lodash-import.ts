@@ -1,9 +1,8 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noFullLodashImport = defineRule<Rule>({
+export const noFullLodashImport = defineRule({
   id: "no-full-lodash-import",
   title: "Full lodash import",
   tags: ["test-noise"],

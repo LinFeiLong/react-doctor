@@ -6,7 +6,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import { walkAst } from "../../utils/walk-ast.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import {
   isDescendantScope,
@@ -188,7 +187,7 @@ const isHoistableValueExpression = (expression: EsTreeNode): boolean => {
 //   - Also treats inner function expressions as "uses local state" —
 //     a function inside the value is itself a closure, and hoisting
 //     would change its semantics.
-export const preferModuleScopeStaticValue = defineRule<Rule>({
+export const preferModuleScopeStaticValue = defineRule({
   id: "prefer-module-scope-static-value",
   title: "Static value rebuilt every render",
   tags: ["test-noise"],

@@ -2,7 +2,6 @@ import { TANSTACK_ROOT_ROUTE_FILE_PATTERN } from "../../constants/tanstack.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -65,7 +64,7 @@ const isCustomJsxElementName = (node: EsTreeNodeOfType<"JSXOpeningElement">["nam
   );
 };
 
-export const tanstackStartMissingHeadContent = defineRule<Rule>({
+export const tanstackStartMissingHeadContent = defineRule({
   id: "tanstack-start-missing-head-content",
   title: "Root route missing HeadContent",
   tags: ["test-noise"],

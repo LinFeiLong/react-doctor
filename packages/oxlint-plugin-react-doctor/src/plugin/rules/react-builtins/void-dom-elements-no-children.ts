@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isCreateElementCall } from "../../utils/is-create-element-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const VOID_DOM_ELEMENTS = new Set([
   "area",
@@ -42,7 +41,7 @@ const findChildrenLikePropName = (
 // Port of `oxc_linter::rules::react::void_dom_elements_no_children`.
 // Reports `<img>Children</img>`, `<br children="…" />`, void elements
 // passing dangerouslySetInnerHTML, and the `React.createElement` analogues.
-export const voidDomElementsNoChildren = defineRule<Rule>({
+export const voidDomElementsNoChildren = defineRule({
   id: "void-dom-elements-no-children",
   title: "Children on a void element",
   severity: "warn",

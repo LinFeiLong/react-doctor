@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getRouteOptionsObject } from "./utils/get-route-options-object.js";
 import { getPropertyKeyName } from "./utils/get-property-key-name.js";
@@ -21,7 +20,7 @@ const isLikelySecret = (envVarName: string): boolean => {
   return SECRET_KEYWORD_PATTERN.test(envVarName);
 };
 
-export const tanstackStartNoSecretsInLoader = defineRule<Rule>({
+export const tanstackStartNoSecretsInLoader = defineRule({
   id: "tanstack-start-no-secrets-in-loader",
   title: "Secret exposed in a loader",
   tags: ["test-noise"],

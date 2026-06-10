@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -10,7 +9,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // what the consumer happened to pass. Better to expose explicit
 // subcomponents (`<Button.Text />`) so text always lands in the right
 // shape and the component's API is checked at compile time.
-export const noPolymorphicChildren = defineRule<Rule>({
+export const noPolymorphicChildren = defineRule({
   id: "no-polymorphic-children",
   title: "Children type checked at runtime",
   severity: "warn",

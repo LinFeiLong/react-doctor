@@ -3,12 +3,11 @@ import { defineRule } from "../../utils/define-rule.js";
 import { isMemberProperty } from "../../utils/is-member-property.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noGlobalCssVariableAnimation = defineRule<Rule>({
+export const noGlobalCssVariableAnimation = defineRule({
   id: "no-global-css-variable-animation",
   title: "Animating a global CSS variable",
   tags: ["test-noise"],

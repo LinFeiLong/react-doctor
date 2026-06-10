@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isImportedFromModule } from "../../utils/find-import-source-for-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "`React.Children` traversal depends on the runtime child shape, so wrapping or unwrapping a child can silently change what gets visited.";
@@ -28,7 +27,7 @@ const isReactNamespaceMember = (node: EsTreeNode, contextNode: EsTreeNode): bool
 // and `React.Children.<method>(...)` (when `React` is the local name of
 // any React import). Local `Children` declarations and unrelated imports
 // aren't flagged.
-export const noReactChildren = defineRule<Rule>({
+export const noReactChildren = defineRule({
   id: "no-react-children",
   title: "React.Children is fragile when child shape changes",
   severity: "warn",

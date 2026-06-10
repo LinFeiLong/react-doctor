@@ -3,7 +3,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import {
   getZodFactoryCallName,
@@ -88,7 +87,7 @@ const parseCallUsesErrorMap = (callExpression: EsTreeNodeOfType<"CallExpression"
   );
 };
 
-export const zodV4NoDeprecatedErrorCustomization = defineRule<Rule>({
+export const zodV4NoDeprecatedErrorCustomization = defineRule({
   id: "zod-v4-no-deprecated-error-customization",
   title: "Zod 3 error customization breaks in Zod 4",
   requires: ["zod:4"],

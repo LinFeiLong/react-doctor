@@ -3,11 +3,10 @@ import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isComponentDeclaration } from "../../utils/is-component-declaration.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noNestedComponentDefinition = defineRule<Rule>({
+export const noNestedComponentDefinition = defineRule({
   id: "no-nested-component-definition",
   title: "Component defined inside another component",
   tags: ["test-noise", "react-jsx-only"],

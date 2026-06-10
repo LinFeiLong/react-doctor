@@ -5,7 +5,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
-import type { Rule } from "../../utils/rule.js";
 
 interface ForbidEntry {
   propName?: string;
@@ -114,7 +113,7 @@ const buildMessage = (propName: string, message: string | null): string =>
 // Port of `oxc_linter::rules::react::forbid_component_props`. Reports
 // configured props on user-defined (PascalCase / namespaced) JSX
 // components.
-export const forbidComponentProps = defineRule<Rule>({
+export const forbidComponentProps = defineRule({
   id: "forbid-component-props",
   title: "Blocked component prop bypasses API contract",
   severity: "warn",

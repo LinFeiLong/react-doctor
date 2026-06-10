@@ -4,12 +4,11 @@ import {
   MOTION_ANIMATE_PROPS,
 } from "../../constants/style.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noLargeAnimatedBlur = defineRule<Rule>({
+export const noLargeAnimatedBlur = defineRule({
   id: "no-large-animated-blur",
   title: "Large animated blur",
   tags: ["test-noise"],

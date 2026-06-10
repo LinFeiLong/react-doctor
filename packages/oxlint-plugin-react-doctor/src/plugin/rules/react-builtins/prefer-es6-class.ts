@@ -3,7 +3,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isEs5Component } from "../../utils/is-es5-component.js";
 import { isEs6Component } from "../../utils/is-es6-component.js";
-import type { Rule } from "../../utils/rule.js";
 
 const ALWAYS_MESSAGE =
   "`createReactClass` is legacy and adds a dependency, so this component diverges from modern React class syntax.";
@@ -25,7 +24,7 @@ const resolveSettings = (
 // Port of `oxc_linter::rules::react::prefer_es6_class`. By default
 // (mode = "always") flags `createReactClass({...})` calls. With
 // mode = "never" flips: flags `class X extends React.Component`.
-export const preferEs6Class = defineRule<Rule>({
+export const preferEs6Class = defineRule({
   id: "prefer-es6-class",
   title: "createClass instead of ES6 class",
   severity: "warn",

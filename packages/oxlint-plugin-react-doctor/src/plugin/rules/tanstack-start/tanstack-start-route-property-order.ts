@@ -1,12 +1,11 @@
 import { TANSTACK_ROUTE_PROPERTY_ORDER } from "../../constants/tanstack.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getRouteOptionsObject } from "./utils/get-route-options-object.js";
 import { getPropertyKeyName } from "./utils/get-property-key-name.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const tanstackStartRoutePropertyOrder = defineRule<Rule>({
+export const tanstackStartRoutePropertyOrder = defineRule({
   id: "tanstack-start-route-property-order",
   title: "Route property order breaks type inference",
   tags: ["test-noise"],

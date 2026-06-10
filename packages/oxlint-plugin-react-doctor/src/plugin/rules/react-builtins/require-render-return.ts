@@ -5,7 +5,6 @@ import { functionBodyHasReturnWithValue } from "../../utils/function-body-has-re
 import { isEs5Component } from "../../utils/is-es5-component.js";
 import { isEs6Component } from "../../utils/is-es6-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const RENDER_METHOD_NAME = "render";
 const MESSAGE = "Your users see nothing because this `render` method returns nothing.";
@@ -72,7 +71,7 @@ const isInsideEs6Component = (renderHost: EsTreeNode): boolean => {
 // `return X` statement (with a non-undefined argument). Without a CFG we
 // approximate by walking the body and skipping nested function scopes —
 // good enough for every OXC test fixture.
-export const requireRenderReturn = defineRule<Rule>({
+export const requireRenderReturn = defineRule({
   id: "require-render-return",
   title: "Render method does not return",
   severity: "error",

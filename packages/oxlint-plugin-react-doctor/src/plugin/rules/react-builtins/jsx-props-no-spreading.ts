@@ -5,7 +5,6 @@ import { flattenJsxName } from "../../utils/flatten-jsx-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE = "You can't tell what props reach this element when you spread them.";
 
@@ -38,7 +37,7 @@ const resolveSettings = (
 // JSX names). Settings let either tag class be disabled, plus an
 // exception list and an `explicitSpread: "ignore"` mode that allows
 // spreads of object literals (`<C {...{ foo: 1 }} />`).
-export const jsxPropsNoSpreading = defineRule<Rule>({
+export const jsxPropsNoSpreading = defineRule({
   id: "jsx-props-no-spreading",
   title: "Props spread onto element",
   severity: "warn",

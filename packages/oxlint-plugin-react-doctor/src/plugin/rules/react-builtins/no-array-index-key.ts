@@ -9,7 +9,6 @@ import {
   PURE_SVG_PRIMITIVE_TAGS,
   STATELESS_HTML_LEAF_TAGS,
 } from "../../utils/jsx-stateless-leaf.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE = "Your users can see & submit the wrong data when this list reorders.";
 
@@ -357,7 +356,7 @@ const isFragmentJsxName = (jsxOpeningName: EsTreeNode): boolean => {
 };
 
 // Port of `oxc_linter::rules::react::no_array_index_key`.
-export const noArrayIndexKey = defineRule<Rule>({
+export const noArrayIndexKey = defineRule({
   id: "no-array-index-key",
   title: "Array index used as a key",
   severity: "warn",

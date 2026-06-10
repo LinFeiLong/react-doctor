@@ -1,12 +1,11 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isInsideExcludedTypographyAncestor } from "./utils/is-inside-excluded-typography-ancestor.js";
 
 const EM_DASH = "—";
 
-export const noEmDashInJsxText = defineRule<Rule>({
+export const noEmDashInJsxText = defineRule({
   id: "design-no-em-dash-in-jsx-text",
   title: "Em dash in JSX text",
   tags: ["design", "test-noise"],

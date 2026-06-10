@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { hasDirective } from "../../utils/has-directive.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -28,7 +27,7 @@ const isMutableConstInitializer = (init: EsTreeNode | null | undefined): string 
 // and serverless cold-starts produce inconsistent state. Per-request data
 // must live inside the action, in headers/cookies, or in a request scope
 // (React.cache, AsyncLocalStorage, etc.).
-export const serverNoMutableModuleState = defineRule<Rule>({
+export const serverNoMutableModuleState = defineRule({
   id: "server-no-mutable-module-state",
   title: "Mutable module state on the server",
   severity: "error",

@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { getImportedName } from "../../utils/get-imported-name.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -13,7 +12,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // is busy. We key off the named import from `react-native` (resolving
 // aliases) so a same-named local symbol or a re-export from another
 // package never trips the rule.
-export const rnNoPanresponder = defineRule<Rule>({
+export const rnNoPanresponder = defineRule({
   id: "rn-no-panresponder",
   title: "PanResponder over react-native-gesture-handler",
   tags: ["test-noise"],

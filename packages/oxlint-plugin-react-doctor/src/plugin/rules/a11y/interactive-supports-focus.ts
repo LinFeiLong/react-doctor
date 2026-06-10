@@ -12,7 +12,6 @@ import { isInteractiveRole } from "../../utils/is-interactive-role.js";
 import { isNonInteractiveElement } from "../../utils/is-non-interactive-element.js";
 import { isNonInteractiveRole } from "../../utils/is-non-interactive-role.js";
 import { isPresentationRole } from "../../utils/is-presentation-role.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildTabbableMessage = (role: string): string =>
   `Keyboard users can't tab to this '${role}' because it isn't focusable, so add \`tabIndex={0}\`.`;
@@ -46,7 +45,7 @@ const resolveSettings = (
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::interactive_supports_focus`.
-export const interactiveSupportsFocus = defineRule<Rule>({
+export const interactiveSupportsFocus = defineRule({
   id: "interactive-supports-focus",
   title: "Interactive element not focusable",
   tags: ["react-jsx-only"],

@@ -7,7 +7,6 @@ import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { RuleVisitors } from "../../utils/rule-visitors.js";
 
@@ -89,7 +88,7 @@ const createComponentBindingStackTracker = (
 // Bindings are scoped per-component using a stack so a `useEffectEvent`
 // binding named `onChange` in ComponentA doesn't taint a regular variable
 // `onChange` in ComponentB in the same file.
-export const noEffectEventInDeps = defineRule<Rule>({
+export const noEffectEventInDeps = defineRule({
   id: "no-effect-event-in-deps",
   title: "Effect Event listed in effect deps",
   tags: ["test-noise"],

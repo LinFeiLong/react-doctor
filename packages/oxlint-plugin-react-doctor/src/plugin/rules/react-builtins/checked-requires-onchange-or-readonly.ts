@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { isCreateElementCall } from "../../utils/is-create-element-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MISSING_MESSAGE = "Your users can't toggle this input because `checked` has no `onChange`.";
 const EXCLUSIVE_MESSAGE =
@@ -77,7 +76,7 @@ const collectFromObjectProperties = (
 // Reports `<input type="checkbox" checked>` (and createElement equivalent)
 // without `onChange` or `readOnly`, and reports `checked + defaultChecked`
 // used together. Settings let either check be silenced.
-export const checkedRequiresOnchangeOrReadonly = defineRule<Rule>({
+export const checkedRequiresOnchangeOrReadonly = defineRule({
   id: "checked-requires-onchange-or-readonly",
   title: "Checked input without onChange",
   severity: "warn",

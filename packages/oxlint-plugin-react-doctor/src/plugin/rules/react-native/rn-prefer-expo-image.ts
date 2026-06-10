@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { RuleVisitors } from "../../utils/rule-visitors.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -14,7 +13,7 @@ const EMPTY_VISITORS: RuleVisitors = {};
 // replacement (same prop API plus more) with disk + memory caching, blur
 // placeholders, and crossfades — a major perceived-perf win for any list
 // or hero image.
-export const rnPreferExpoImage = defineRule<Rule>({
+export const rnPreferExpoImage = defineRule({
   id: "rn-prefer-expo-image",
   title: "react-native Image instead of expo-image",
   tags: ["test-noise"],

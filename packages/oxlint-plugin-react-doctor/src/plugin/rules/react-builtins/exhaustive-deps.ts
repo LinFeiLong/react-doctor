@@ -12,7 +12,6 @@ import { getStaticTemplateLiteralValue } from "../../utils/get-static-template-l
 import { isAstNode } from "../../utils/is-ast-node.js";
 import { isReactComponentOrHookName } from "../../utils/is-react-component-or-hook-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import { REACT_HOC_NAMES } from "../../constants/react.js";
 import {
   getHookName,
@@ -656,7 +655,7 @@ const addAggregatePropsDependency = (
   if (hasMemberCallForRoot(callback, "props")) captureKeys.add("props");
 };
 
-export const exhaustiveDeps = defineRule<Rule>({
+export const exhaustiveDeps = defineRule({
   id: "exhaustive-deps",
   title: "Missing effect dependencies",
   severity: "warn",

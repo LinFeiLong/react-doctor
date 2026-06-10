@@ -1,12 +1,11 @@
 import { GOOGLE_ANALYTICS_SCRIPT_PATTERN } from "../../constants/nextjs.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { findJsxAttribute } from "../../utils/find-jsx-attribute.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoGoogleAnalyticsScript = defineRule<Rule>({
+export const nextjsNoGoogleAnalyticsScript = defineRule({
   id: "nextjs-no-google-analytics-script",
   title: "Manual Google Analytics script blocks optimized loading",
   tags: ["test-noise"],

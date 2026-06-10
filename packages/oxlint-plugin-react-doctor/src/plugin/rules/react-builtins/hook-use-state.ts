@@ -3,7 +3,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactFunctionCall } from "../../utils/is-react-function-call.js";
-import type { Rule } from "../../utils/rule.js";
 
 const REQUIRE_DESTRUCTURE_MESSAGE =
   "`useState` should be destructured as `[value, setValue]` so readers can see the state value and setter together.";
@@ -62,7 +61,7 @@ const expectedSetterNames = (prefix: string, suffix: string): ReadonlyArray<stri
 // Names that don't start with a lowercase letter (`RGB`) are flagged
 // because no `set<X>` convention can be derived (mirrors OXC's
 // `split_leading_lowercase` early-return).
-export const hookUseState = defineRule<Rule>({
+export const hookUseState = defineRule({
   id: "hook-use-state",
   title: "useState not destructured",
   severity: "warn",

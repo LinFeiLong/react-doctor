@@ -1,7 +1,6 @@
 import { WIDE_TRACKING_THRESHOLD_EM } from "../../constants/design.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getInlineStyleExpression } from "./utils/get-inline-style-expression.js";
 import { getStylePropertyStringValue } from "./utils/get-style-property-string-value.js";
@@ -65,7 +64,7 @@ const hasUppercaseSiblingProp = (styleAttribute: EsTreeNodeOfType<"JSXAttribute"
   return false;
 };
 
-export const noWideLetterSpacing = defineRule<Rule>({
+export const noWideLetterSpacing = defineRule({
   id: "no-wide-letter-spacing",
   title: "Wide letter spacing on body text",
   severity: "warn",

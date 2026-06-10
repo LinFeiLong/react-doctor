@@ -2,13 +2,12 @@ import { APP_DIRECTORY_PATTERN, GLOBAL_ERROR_FILE_PATTERN } from "../../constant
 import { defineRule } from "../../utils/define-rule.js";
 import { fileContainsJsxElements } from "../../utils/file-contains-jsx-elements.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
 const REQUIRED_HTML_TAGS = ["html", "body"] as const;
 
-export const nextjsGlobalErrorMissingHtmlBody = defineRule<Rule>({
+export const nextjsGlobalErrorMissingHtmlBody = defineRule({
   id: "nextjs-global-error-missing-html-body",
   title: "global-error.tsx missing <html>/<body>",
   tags: ["test-noise"],

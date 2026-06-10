@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isSetStateCallInLifecycle } from "../../utils/is-set-state-in-lifecycle.js";
-import type { Rule } from "../../utils/rule.js";
 
 const LIFECYCLE_NAMES = new Set(["componentWillUpdate", "UNSAFE_componentWillUpdate"]);
 const MESSAGE =
@@ -44,7 +43,7 @@ const isReactBelow16_3 = (settings: Readonly<Record<string, unknown>> | undefine
 // Port of `oxc_linter::rules::react::no_will_update_set_state`. Flags
 // `this.setState(...)` inside `componentWillUpdate` (or its
 // `UNSAFE_componentWillUpdate` form), where it would loop indefinitely.
-export const noWillUpdateSetState = defineRule<Rule>({
+export const noWillUpdateSetState = defineRule({
   id: "no-will-update-set-state",
   title: "setState in componentWillUpdate",
   severity: "warn",

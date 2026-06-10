@@ -2,11 +2,10 @@ import { OG_IMAGE_FILE_PATTERN } from "../../constants/nextjs.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoEdgeOgRuntime = defineRule<Rule>({
+export const nextjsNoEdgeOgRuntime = defineRule({
   id: "nextjs-no-edge-og-runtime",
   title: "Edge runtime in OG image route",
   tags: ["test-noise"],

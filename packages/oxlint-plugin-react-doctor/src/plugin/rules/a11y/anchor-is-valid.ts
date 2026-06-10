@@ -5,7 +5,6 @@ import { getElementType } from "../../utils/get-element-type.js";
 import { getStaticTemplateLiteralValue } from "../../utils/get-static-template-literal-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE_MISSING_HREF =
   "Keyboard users can't reach this link because it has no `href`, so add a real `href` (or use `<button>` for actions).";
@@ -68,7 +67,7 @@ const checkValueIsEmptyOrInvalid = (
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::anchor_is_valid`.
-export const anchorIsValid = defineRule<Rule>({
+export const anchorIsValid = defineRule({
   id: "anchor-is-valid",
   title: "Anchor used as a button",
   tags: ["react-jsx-only"],

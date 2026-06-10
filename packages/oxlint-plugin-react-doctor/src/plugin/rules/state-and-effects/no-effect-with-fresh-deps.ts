@@ -6,7 +6,6 @@ import { findVariableInitializer } from "../../utils/find-variable-initializer.j
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 type FreshDepKind = "object" | "array" | "function" | "JSX" | "instance";
@@ -125,7 +124,7 @@ const resolveDependencyFreshness = (dep: EsTreeNode): ResolvedFreshness | null =
 //   - Custom user hooks (`useMyThing(...)`) returning fresh objects
 //     are treated as opaque to avoid flagging genuinely-stable
 //     custom-hook results.
-export const noEffectWithFreshDeps = defineRule<Rule>({
+export const noEffectWithFreshDeps = defineRule({
   id: "no-effect-with-fresh-deps",
   title: "Effect dependency recreated every render",
   severity: "error",

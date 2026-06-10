@@ -1,13 +1,12 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { walkServerFnChain } from "./utils/walk-server-fn-chain.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const tanstackStartServerFnValidateInput = defineRule<Rule>({
+export const tanstackStartServerFnValidateInput = defineRule({
   id: "tanstack-start-server-fn-validate-input",
   title: "Server function without input validation",
   tags: ["test-noise"],

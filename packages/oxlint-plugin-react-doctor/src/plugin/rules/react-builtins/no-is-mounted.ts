@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 // Port of `oxc_linter::rules::react::no_is_mounted`. Mirrors the Rust
 // rule's behavior: flags a `this.isMounted()` call only when it sits
@@ -9,7 +8,7 @@ import type { Rule } from "../../utils/rule.js";
 // callback (TSESTree `Property` value), since those are the React
 // component shapes the rule cares about. A bare `this.isMounted()` at
 // module scope is left alone.
-export const noIsMounted = defineRule<Rule>({
+export const noIsMounted = defineRule({
   id: "no-is-mounted",
   title: "isMounted lets async callbacks update after unmount",
   severity: "warn",

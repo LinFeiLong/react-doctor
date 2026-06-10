@@ -5,7 +5,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isAstNode } from "../../utils/is-ast-node.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
-import type { Rule } from "../../utils/rule.js";
 import {
   ENTRY_POINT_BASENAMES,
   NON_FAST_REFRESH_PATH_SEGMENTS,
@@ -406,7 +405,7 @@ const isFileNameAllowed = (filename: string | undefined, checkJS: boolean): bool
 // when `checkJS` is on) — pure `.ts` files don't participate in HMR
 // and can't break it. `allowConstantExport: true` by default because
 // stable constants alongside components don't break Fast Refresh.
-export const onlyExportComponents = defineRule<Rule>({
+export const onlyExportComponents = defineRule({
   id: "only-export-components",
   title: "Non-component export in component file",
   severity: "warn",

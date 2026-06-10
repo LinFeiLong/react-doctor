@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -13,7 +12,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // distinguish class vs function from the assignment alone, but the
 // recommendation is the same either way — switch to ES6 default params
 // in destructured props — so the guidance is uniform.
-export const noDefaultProps = defineRule<Rule>({
+export const noDefaultProps = defineRule({
   id: "no-default-props",
   title: "defaultProps removed in React 19",
   requires: ["react:19"],

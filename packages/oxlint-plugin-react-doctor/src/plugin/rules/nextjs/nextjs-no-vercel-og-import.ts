@@ -1,9 +1,8 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoVercelOgImport = defineRule<Rule>({
+export const nextjsNoVercelOgImport = defineRule({
   id: "nextjs-no-vercel-og-import",
   title: "@vercel/og import instead of next/og",
   tags: ["test-noise"],

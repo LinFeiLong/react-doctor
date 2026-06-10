@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
-import type { Rule } from "../../utils/rule.js";
 import { getElementImplicitRoles } from "../../constants/aria-element-roles.js";
 
 interface NoRedundantRolesSettings {
@@ -29,7 +28,7 @@ const resolveSettings = (
 
 // Port of `oxc_linter::rules::jsx_a11y::no_redundant_roles`. Reports a
 // `role` attribute that matches the element's implicit role.
-export const noRedundantRoles = defineRule<Rule>({
+export const noRedundantRoles = defineRule({
   id: "no-redundant-roles",
   title: "Redundant ARIA role",
   tags: ["react-jsx-only"],

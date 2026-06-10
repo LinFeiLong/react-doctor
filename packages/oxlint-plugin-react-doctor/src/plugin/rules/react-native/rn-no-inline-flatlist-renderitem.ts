@@ -1,12 +1,11 @@
 import { REACT_NATIVE_LIST_COMPONENTS } from "../../constants/react-native.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const rnNoInlineFlatlistRenderitem = defineRule<Rule>({
+export const rnNoInlineFlatlistRenderitem = defineRule({
   id: "rn-no-inline-flatlist-renderitem",
   title: "Inline renderItem on list",
   tags: ["test-noise"],

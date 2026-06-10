@@ -1,7 +1,6 @@
 import { RENDER_ITEM_PROP_NAMES } from "../../constants/react-native.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -12,7 +11,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // shallow-compare for that prop and rerenders even when the underlying
 // data didn't change. Hoist the object outside renderItem (StyleSheet,
 // constant, useMemo at list scope) or pass primitives into the row.
-export const rnNoInlineObjectInListItem = defineRule<Rule>({
+export const rnNoInlineObjectInListItem = defineRule({
   id: "rn-no-inline-object-in-list-item",
   title: "Inline object in list renderItem",
   tags: ["test-noise"],

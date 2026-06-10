@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { getCallExpr } from "./utils/effect/ast.js";
 import { getProgramAnalysis } from "./utils/effect/get-program-analysis.js";
@@ -23,7 +22,7 @@ import {
 // canonical literal / identifier / call shapes; falls back to
 // `<expression>` for complex inputs.
 
-export const noInitializeState = defineRule<Rule>({
+export const noInitializeState = defineRule({
   id: "no-initialize-state",
   title: "State initialized from a mount effect",
   severity: "warn",

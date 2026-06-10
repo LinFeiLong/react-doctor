@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { containsDirectAwait } from "../../utils/contains-direct-await.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import { walkAst } from "../../utils/walk-ast.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -103,7 +102,7 @@ const bodyAwaitsAccumulator = (fn: FunctionExpressionLike, accumulatorName: stri
   return awaitsAccumulator;
 };
 
-export const jsAsyncReduceWithoutAwaitedAcc = defineRule<Rule>({
+export const jsAsyncReduceWithoutAwaitedAcc = defineRule({
   id: "js-async-reduce-without-awaited-acc",
   title: "Async reduce drops its accumulator",
   severity: "warn",

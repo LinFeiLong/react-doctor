@@ -11,7 +11,6 @@ import { hasUseServerDirective } from "../../utils/has-use-server-directive.js";
 import { isFunctionLike } from "../../utils/is-function-like.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -202,7 +201,7 @@ const getCandidateFromDefaultDeclaration = (
   };
 };
 
-export const serverAuthActions = defineRule<Rule>({
+export const serverAuthActions = defineRule({
   id: "server-auth-actions",
   title: "Unauthenticated server action can be called directly",
   severity: "error",

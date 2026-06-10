@@ -4,12 +4,11 @@ import { getEffectCallback } from "../../utils/get-effect-callback.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { isSetterCall } from "../../utils/is-setter-call.js";
 import { isUseStateSetterInScope } from "../../utils/is-use-state-setter-in-scope.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const renderingHydrationNoFlicker = defineRule<Rule>({
+export const renderingHydrationNoFlicker = defineRule({
   id: "rendering-hydration-no-flicker",
   title: "useEffect setState flashes on mount",
   tags: ["test-noise"],

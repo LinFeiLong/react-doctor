@@ -6,7 +6,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildBaseMessage = (suffix: string): string =>
   `This \`role\` is not a valid ARIA role, so assistive tech cannot expose it correctly. Use a real, non-abstract role.${suffix}`;
@@ -31,7 +30,7 @@ const resolveSettings = (
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::aria_role`.
-export const ariaRole = defineRule<Rule>({
+export const ariaRole = defineRule({
   id: "aria-role",
   title: "Invalid ARIA role",
   tags: ["react-jsx-only"],

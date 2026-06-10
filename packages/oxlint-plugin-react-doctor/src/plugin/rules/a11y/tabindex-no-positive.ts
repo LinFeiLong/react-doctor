@@ -4,14 +4,13 @@ import { getJsxPropStringValue } from "../../utils/get-jsx-prop-string-value.js"
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { parseJsxValue } from "../../utils/parse-jsx-value.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Keyboard users get jumped out of the normal order by a positive `tabIndex`, so use `0` or `-1`.";
 
 // Port of `oxc_linter::rules::jsx_a11y::tabindex_no_positive`. Reports
 // `tabIndex={N}` where N > 0.
-export const tabindexNoPositive = defineRule<Rule>({
+export const tabindexNoPositive = defineRule({
   id: "tabindex-no-positive",
   title: "Positive tabindex value",
   tags: ["react-jsx-only"],

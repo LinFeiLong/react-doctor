@@ -1,12 +1,11 @@
 import { GOOGLE_FONTS_PATTERN } from "../../constants/nextjs.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { findJsxAttribute } from "../../utils/find-jsx-attribute.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoCssLink = defineRule<Rule>({
+export const nextjsNoCssLink = defineRule({
   id: "nextjs-no-css-link",
   title: "Linked stylesheet bypasses Next.js CSS optimization",
   tags: ["test-noise"],

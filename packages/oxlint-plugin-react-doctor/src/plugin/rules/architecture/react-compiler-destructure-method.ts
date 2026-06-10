@@ -3,7 +3,6 @@ import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isInlineFunctionExpression } from "../../utils/is-inline-function-expression.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isImportedFromModule } from "../../utils/find-import-source-for-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -66,7 +65,7 @@ const buildHookBindingMap = (componentBody: EsTreeNode | null | undefined): Map<
 //
 // Heuristic: `router.push(...)` (or any of the canonical hook objects)
 // where `router` is bound to a `useRouter()` call in the same component.
-export const reactCompilerDestructureMethod = defineRule<Rule>({
+export const reactCompilerDestructureMethod = defineRule({
   id: "react-compiler-destructure-method",
   title: "Hook method called without destructuring",
   tags: ["test-noise"],

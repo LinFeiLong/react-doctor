@@ -5,7 +5,6 @@ import { getEffectCallback } from "../../utils/get-effect-callback.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { walkInsideStatementBlocks } from "../../utils/walk-inside-statement-blocks.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -17,7 +16,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // stale mirror. The right shape is to lift state into a Provider that
 // both child and parent read from; the child then doesn't need an
 // effect-driven sync at all.
-export const noPropCallbackInEffect = defineRule<Rule>({
+export const noPropCallbackInEffect = defineRule({
   id: "no-prop-callback-in-effect",
   title: "Parent kept in sync with a callback effect",
   severity: "warn",

@@ -4,7 +4,6 @@ import { findProgramRoot } from "../../utils/find-program-root.js";
 import { getImportedName } from "../../utils/get-imported-name.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { walkAst } from "../../utils/walk-ast.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -96,7 +95,7 @@ const countEffectHookCalls = (body: EsTreeNode | null): number => {
   return count;
 };
 
-export const activityWrapsEffectHeavySubtree = defineRule<Rule>({
+export const activityWrapsEffectHeavySubtree = defineRule({
   id: "activity-wraps-effect-heavy-subtree",
   title: "Activity wraps an effect-heavy subtree",
   severity: "warn",

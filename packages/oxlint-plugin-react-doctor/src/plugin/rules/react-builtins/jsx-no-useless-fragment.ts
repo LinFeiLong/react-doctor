@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { hasJsxKeyAttribute } from "../../utils/has-jsx-key-attribute.js";
 import { isJsxFragmentElement } from "../../utils/is-jsx-fragment-element.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const NEEDS_MORE_CHILDREN = "This fragment wraps a single child & does nothing.";
 const CHILD_OF_HTML_ELEMENT =
@@ -97,7 +96,7 @@ const isFragmentWithOnlyTextAndNotJsxChild = (
 //   - `<><X /></>` directly inside an HTML element (HTML can hold the
 //     child directly).
 // Honors `allowExpressions: true` to permit `<>{expr}</>`.
-export const jsxNoUselessFragment = defineRule<Rule>({
+export const jsxNoUselessFragment = defineRule({
   id: "jsx-no-useless-fragment",
   title: "Unnecessary React fragment",
   severity: "warn",

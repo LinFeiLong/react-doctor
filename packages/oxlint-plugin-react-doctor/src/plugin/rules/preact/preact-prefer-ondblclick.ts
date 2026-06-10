@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { findJsxAttribute } from "../../utils/find-jsx-attribute.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Your users get no response from `onDoubleClick` in Preact core, where it never fires, so use `onDblClick` instead, which matches the DOM event name.";
@@ -24,7 +23,7 @@ const MESSAGE =
 // flagging it there would be a false positive. Pairs with the existing
 // `preact-prefer-oninput` rule (same naming convention, same intent for
 // the `onChange` → `onInput` divergence).
-export const preactPreferOndblclick = defineRule<Rule>({
+export const preactPreferOndblclick = defineRule({
   id: "preact-prefer-ondblclick",
   title: "onDoubleClick instead of onDblClick",
   requires: ["pure-preact"],

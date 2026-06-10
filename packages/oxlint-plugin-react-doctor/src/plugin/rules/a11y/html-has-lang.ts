@@ -5,7 +5,6 @@ import { getElementType } from "../../utils/get-element-type.js";
 import { getStaticTemplateLiteralValue } from "../../utils/get-static-template-literal-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Screen readers may mispronounce this page because it doesn't declare a language, so add a `lang` attribute like `en`.";
@@ -68,7 +67,7 @@ const evaluateLang = (attributeValue: EsTreeNode | null | undefined): LangVerdic
 // `<html>` (or configured aliases) without a lang attribute, OR with
 // a statically-empty / falsy value. Spread attributes count as
 // "missing lang".
-export const htmlHasLang = defineRule<Rule>({
+export const htmlHasLang = defineRule({
   id: "html-has-lang",
   title: "html element missing lang",
   tags: ["react-jsx-only"],

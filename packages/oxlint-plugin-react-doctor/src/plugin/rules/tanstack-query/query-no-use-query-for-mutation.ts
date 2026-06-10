@@ -3,12 +3,11 @@ import { TANSTACK_QUERY_HOOKS } from "../../constants/tanstack.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const queryNoUseQueryForMutation = defineRule<Rule>({
+export const queryNoUseQueryForMutation = defineRule({
   id: "query-no-usequery-for-mutation",
   title: "useQuery used for mutation",
   tags: ["test-noise"],

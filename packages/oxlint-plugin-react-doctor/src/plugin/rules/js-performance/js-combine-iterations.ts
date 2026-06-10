@@ -7,7 +7,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { walkAst } from "../../utils/walk-ast.js";
 
@@ -220,7 +219,7 @@ const collectGeneratorNames = (programNode: EsTreeNode): Set<string> => {
   return generatorNames;
 };
 
-export const jsCombineIterations = defineRule<Rule>({
+export const jsCombineIterations = defineRule({
   id: "js-combine-iterations",
   title: "Chained array iterations",
   tags: ["test-noise"],

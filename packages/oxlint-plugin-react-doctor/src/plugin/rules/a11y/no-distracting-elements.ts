@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (tag: string): string =>
   `Users with attention or motion sensitivity struggle because \`<${tag}>\` animates on its own, so use normal, accessible markup instead.`;
@@ -28,7 +27,7 @@ const resolveSettings = (
 
 // Port of `oxc_linter::rules::jsx_a11y::no_distracting_elements`. Flags
 // `<marquee>` and `<blink>` (or any tag in `elements`).
-export const noDistractingElements = defineRule<Rule>({
+export const noDistractingElements = defineRule({
   id: "no-distracting-elements",
   title: "Distracting marquee or blink element",
   tags: ["react-jsx-only"],

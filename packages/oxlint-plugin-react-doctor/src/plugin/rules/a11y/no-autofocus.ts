@@ -5,7 +5,6 @@ import { getElementType } from "../../utils/get-element-type.js";
 import { getStaticTemplateLiteralValue } from "../../utils/get-static-template-literal-value.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
-import type { Rule } from "../../utils/rule.js";
 import { HTML_TAGS } from "../../constants/html-tags.js";
 
 const MESSAGE =
@@ -92,7 +91,7 @@ const isFalseAttributeValue = (value: EsTreeNode): boolean => {
 // case-sensitive `autoFocus=` attribute on JSX elements whose value
 // isn't statically `false`. With `ignoreNonDOM: true`, only HTML
 // elements (lowercase tag in HTML_TAGS) are checked.
-export const noAutofocus = defineRule<Rule>({
+export const noAutofocus = defineRule({
   id: "no-autofocus",
   title: "Autofocus on an element",
   tags: ["react-jsx-only"],

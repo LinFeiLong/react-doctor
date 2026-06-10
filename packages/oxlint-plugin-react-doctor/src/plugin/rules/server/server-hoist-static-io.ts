@@ -3,7 +3,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -118,7 +117,7 @@ const collectIdentifierParams = (params: EsTreeNode[]): Set<string> => {
 // catch BOTH App Router (`export async function GET/POST/...` in
 // `app/.../route.ts`) and Pages Router (`export default async function
 // handler(req, res)` in `pages/api/...`).
-export const serverHoistStaticIo = defineRule<Rule>({
+export const serverHoistStaticIo = defineRule({
   id: "server-hoist-static-io",
   title: "Static file read on every request",
   tags: ["test-noise"],

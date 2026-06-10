@@ -1,11 +1,10 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { hasJsxAttribute } from "../../utils/has-jsx-attribute.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsImageMissingSizes = defineRule<Rule>({
+export const nextjsImageMissingSizes = defineRule({
   id: "nextjs-image-missing-sizes",
   title: "next/image fill image is missing sizes",
   tags: ["test-noise"],

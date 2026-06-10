@@ -5,7 +5,6 @@ import {
 } from "../../utils/find-import-source-for-name.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
 import { walkAst } from "../../utils/walk-ast.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -204,7 +203,7 @@ const functionBodyReferencesGetParameter = (
   return found;
 };
 
-export const jotaiDerivedAtomReturnsFreshObject = defineRule<Rule>({
+export const jotaiDerivedAtomReturnsFreshObject = defineRule({
   id: "jotai-derived-atom-returns-fresh-object",
   title: "Derived atom returns fresh object",
   severity: "warn",

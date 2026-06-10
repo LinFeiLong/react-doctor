@@ -5,7 +5,6 @@ import { getElementType } from "../../utils/get-element-type.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isInteractiveElement } from "../../utils/is-interactive-element.js";
 import { parseJsxValue } from "../../utils/parse-jsx-value.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Keyboard users can't focus this element with `aria-activedescendant` because it isn't tabbable, so add `tabIndex={0}`.";
@@ -13,7 +12,7 @@ const MESSAGE =
 // Port of `oxc_linter::rules::jsx_a11y::aria_activedescendant_has_tabindex`.
 // Reports HTML elements with `aria-activedescendant` that are NOT
 // implicitly tabbable AND lack a non-`<-1` `tabIndex`.
-export const ariaActivedescendantHasTabindex = defineRule<Rule>({
+export const ariaActivedescendantHasTabindex = defineRule({
   id: "aria-activedescendant-has-tabindex",
   title: "aria-activedescendant missing tabindex",
   tags: ["react-jsx-only"],

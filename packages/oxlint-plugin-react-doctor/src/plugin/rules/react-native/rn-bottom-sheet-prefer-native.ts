@@ -1,5 +1,4 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
@@ -13,7 +12,7 @@ const JS_BOTTOM_SHEET_PACKAGES = new Set([
   "@discord/bottom-sheet",
 ]);
 
-export const rnBottomSheetPreferNative = defineRule<Rule>({
+export const rnBottomSheetPreferNative = defineRule({
   id: "rn-bottom-sheet-prefer-native",
   title: "JS bottom sheet misses native sheet behavior",
   tags: ["test-noise"],

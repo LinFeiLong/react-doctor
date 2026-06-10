@@ -1,10 +1,9 @@
 import { LEGACY_EXPO_PACKAGE_REPLACEMENTS } from "../../constants/react-native.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const rnNoLegacyExpoPackages = defineRule<Rule>({
+export const rnNoLegacyExpoPackages = defineRule({
   id: "rn-no-legacy-expo-packages",
   title: "Unmaintained legacy Expo package",
   tags: ["test-noise"],

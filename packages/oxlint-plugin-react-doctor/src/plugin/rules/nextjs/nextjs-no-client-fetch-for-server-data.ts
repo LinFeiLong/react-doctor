@@ -6,11 +6,10 @@ import { normalizeFilename } from "../../utils/normalize-filename.js";
 import { getEffectCallback } from "../../utils/get-effect-callback.js";
 import { hasDirective } from "../../utils/has-directive.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoClientFetchForServerData = defineRule<Rule>({
+export const nextjsNoClientFetchForServerData = defineRule({
   id: "nextjs-no-client-fetch-for-server-data",
   title: "Client fetch for server data",
   tags: ["test-noise"],

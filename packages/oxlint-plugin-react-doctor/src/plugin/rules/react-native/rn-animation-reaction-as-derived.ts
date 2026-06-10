@@ -1,6 +1,5 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -11,7 +10,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // proper Reanimated dependency tracking, and avoids the side-effect
 // gloss that useAnimatedReaction implies (it's meant for cross-thread
 // reactions like calling runOnJS, not value derivation).
-export const rnAnimationReactionAsDerived = defineRule<Rule>({
+export const rnAnimationReactionAsDerived = defineRule({
   id: "rn-animation-reaction-as-derived",
   title: "useAnimatedReaction just copies a value",
   tags: ["test-noise"],

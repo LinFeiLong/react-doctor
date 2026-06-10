@@ -1,12 +1,11 @@
 import { HOOKS_WITH_DEPS } from "../../constants/react.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const rerenderDependencies = defineRule<Rule>({
+export const rerenderDependencies = defineRule({
   id: "rerender-dependencies",
   title: "Unstable value recreated every render",
   tags: ["test-noise"],

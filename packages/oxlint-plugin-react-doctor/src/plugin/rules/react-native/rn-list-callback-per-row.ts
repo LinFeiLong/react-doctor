@@ -2,7 +2,6 @@ import { RENDER_ITEM_PROP_NAMES } from "../../constants/react-native.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 
@@ -58,7 +57,7 @@ const isRenderItemFunction = (node: EsTreeNode): boolean => {
 // rerender even when the row data didn't change. Hoist the handler at
 // list scope (`const handlePress = useCallback((id) => ..., [])`) and
 // pass the row's id as a primitive prop.
-export const rnListCallbackPerRow = defineRule<Rule>({
+export const rnListCallbackPerRow = defineRule({
   id: "rn-list-callback-per-row",
   title: "Inline handler in list renderItem",
   tags: ["test-noise"],

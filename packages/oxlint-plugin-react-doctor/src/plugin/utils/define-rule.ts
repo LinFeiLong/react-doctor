@@ -7,21 +7,13 @@ import {
 import type { Rule } from "./rule.js";
 import type { EsTreeNodeOfType } from "./es-tree-node-of-type.js";
 
-// One definition for both rule kinds. An AST rule provides `create`
-// (per-file visitors, hosted by oxlint/ESLint); a scan rule provides
-// `scan` (a project-level file scan, executed by @react-doctor/core's
-// check-security-scan environment check) and gets an inert visitor
-// factory injected for host compatibility. Metadata, registration,
-// tags, and severity flow identically either way.
-interface DefineRule {
-  (rule: Rule): Rule;
-  (rule: Omit<Rule, "create"> & { scan: FileScan }): Rule;
-  // `extends Rule` keeps the explicit `defineRule<Rule>({...})` call sites
-  // working while preventing this catch-all from swallowing scan-rule
-  // calls (their context-sensitive `scan` arrow would otherwise resolve
-  // here and freeze the widened literal type instead of `Rule`).
-  <RuleDefinition extends Rule>(rule: RuleDefinition): RuleDefinition;
-}
+// A rule definition has exactly one execution mode. An AST rule provides
+// `create` (per-file visitors, hosted by oxlint/ESLint); a scan rule
+// provides `scan` (a project-level file scan, executed by
+// @react-doctor/core's check-security-scan environment check) and gets an
+// inert visitor factory injected for host compatibility. Metadata,
+// registration, tags, and severity flow identically either way.
+export type RuleDefinition = Rule | (Omit<Rule, "create"> & { scan: FileScan });
 
 // Rules tagged `"test-noise"` are by-design noisy in tests / stories /
 // playgrounds — design-system style preferences, deprecated-API hints,
@@ -103,16 +95,12 @@ const wrapCreateForReactJsxOnly = <
     return wrappedVisitors;
   }) as CreateFn;
 
-export const defineRule: DefineRule = <RuleDefinition>(rule: RuleDefinition): RuleDefinition => {
-  const tags = (rule as { tags?: ReadonlyArray<string> }).tags;
-  const create = (rule as { create?: unknown }).create;
-  if (typeof create !== "function") {
-    if (typeof (rule as { scan?: unknown }).scan === "function") {
-      return { ...rule, create: () => ({}) } as RuleDefinition;
-    }
-    return rule;
+export const defineRule = (rule: RuleDefinition): Rule => {
+  if (!("create" in rule)) {
+    return { ...rule, create: () => ({}) };
   }
-  let wrappedCreate = create as (...args: unknown[]) => unknown;
+  const tags = rule.tags;
+  let wrappedCreate = rule.create;
   // `migration-hint` wins over `test-noise` — deprecated API usage in
   // test code is the very surface that needs migration (`react-dom/test-utils`
   // imports, legacy lifecycle methods in test class fixtures, etc.).
@@ -124,9 +112,9 @@ export const defineRule: DefineRule = <RuleDefinition>(rule: RuleDefinition): Ru
   if (tags?.includes("react-jsx-only")) {
     wrappedCreate = wrapCreateForReactJsxOnly(wrappedCreate as never) as never;
   }
-  if (wrappedCreate === create) return rule;
+  if (wrappedCreate === rule.create) return rule;
   return {
     ...rule,
     create: wrappedCreate,
-  } as RuleDefinition;
+  };
 };

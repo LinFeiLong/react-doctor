@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { findVariableInitializer } from "../../utils/find-variable-initializer.js";
 import { getRootIdentifierName } from "../../utils/get-root-identifier-name.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { SCROLLVIEW_NAMES } from "./utils/scrollview_names.js";
@@ -136,7 +135,7 @@ const findFlexShorthandProperty = (
   return null;
 };
 
-export const rnScrollviewFlexInContentContainer = defineRule<Rule>({
+export const rnScrollviewFlexInContentContainer = defineRule({
   id: "rn-scrollview-flex-in-content-container",
   title: "flex on contentContainerStyle collapses container",
   tags: ["test-noise"],

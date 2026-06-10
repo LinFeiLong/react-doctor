@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { resolveJsxElementName } from "./utils/resolve-jsx-element-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
@@ -62,7 +61,7 @@ const handlerMutatesIdentifier = (
 // on the UI thread for native-feeling press feedback. We only flag when
 // the receiver is actually a `useSharedValue` binding to avoid
 // false-positives on `Map.prototype.set` / `ref.current.value =` etc.
-export const rnPressableSharedValueMutation = defineRule<Rule>({
+export const rnPressableSharedValueMutation = defineRule({
   id: "rn-pressable-shared-value-mutation",
   title: "Pressable animates on the JS thread",
   tags: ["test-noise"],

@@ -3,14 +3,13 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { hasJsxProp } from "../../utils/has-jsx-prop.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "The `scope` attribute only works on `<th>` cells, so screen readers get no table-header help from it here.";
 
 // Port of `oxc_linter::rules::jsx_a11y::scope`. Flags `scope=` on
 // non-`<th>` elements.
-export const scope = defineRule<Rule>({
+export const scope = defineRule({
   id: "scope",
   title: "scope attribute on non-th element",
   tags: ["react-jsx-only"],

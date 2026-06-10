@@ -3,7 +3,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getElementType } from "../../utils/get-element-type.js";
 import { getJsxAttributeName } from "../../utils/get-jsx-attribute-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import { RESERVED_HTML_TAGS } from "../../constants/html-tags.js";
 
 const buildMessage = (tag: string, attribute: string): string =>
@@ -12,7 +11,7 @@ const buildMessage = (tag: string, attribute: string): string =>
 // Port of `oxc_linter::rules::jsx_a11y::aria_unsupported_elements`.
 // Reports `aria-*` / `role` on reserved HTML tags (e.g. `<base>`,
 // `<head>`, `<meta>`).
-export const ariaUnsupportedElements = defineRule<Rule>({
+export const ariaUnsupportedElements = defineRule({
   id: "aria-unsupported-elements",
   title: "ARIA on unsupported element",
   tags: ["react-jsx-only"],

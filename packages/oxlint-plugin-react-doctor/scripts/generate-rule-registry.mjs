@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Generates `src/plugin/rule-registry.ts` by scanning every per-rule file
 // under `src/plugin/rules/<bucket>/<rule>.ts` for its single
-//   export const <identifier> = defineRule<Rule>({ id: "<rule-id>", ... })
+//   export const <identifier> = defineRule({ id: "<rule-id>", ... })
 //   export const <identifier> = defineRetiredRule({ id: "<rule-id>", ... })
 // declaration (one rule file = one rule). The bucket directory determines
 // the rule's `framework` and its default `category`; the rule file may

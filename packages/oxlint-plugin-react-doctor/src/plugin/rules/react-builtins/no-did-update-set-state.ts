@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isSetStateCallInLifecycle } from "../../utils/is-set-state-in-lifecycle.js";
-import type { Rule } from "../../utils/rule.js";
 
 const LIFECYCLE_NAMES = new Set(["componentDidUpdate"]);
 const MESSAGE =
@@ -26,7 +25,7 @@ const resolveSettings = (
 // Port of `oxc_linter::rules::react::no_did_update_set_state`. Flags
 // `this.setState(...)` inside `componentDidUpdate`. With
 // `mode: "disallow-in-func"`, also flags nested-function call sites.
-export const noDidUpdateSetState = defineRule<Rule>({
+export const noDidUpdateSetState = defineRule({
   id: "no-did-update-set-state",
   title: "setState in componentDidUpdate",
   severity: "warn",

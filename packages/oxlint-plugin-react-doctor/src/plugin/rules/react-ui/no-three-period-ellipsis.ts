@@ -1,11 +1,10 @@
 import { TRAILING_THREE_PERIOD_ELLIPSIS_PATTERN } from "../../constants/design.js";
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isInsideExcludedTypographyAncestor } from "./utils/is-inside-excluded-typography-ancestor.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noThreePeriodEllipsis = defineRule<Rule>({
+export const noThreePeriodEllipsis = defineRule({
   id: "design-no-three-period-ellipsis",
   title: "Three dots instead of ellipsis",
   tags: ["design", "test-noise"],

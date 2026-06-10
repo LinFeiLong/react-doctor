@@ -4,7 +4,6 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isEs6Component } from "../../utils/is-es6-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "This class component keeps behavior in lifecycle methods, so state and effects are harder to follow than in a hook-based function component.";
@@ -60,7 +59,7 @@ const isErrorBoundaryClass = (classNode: EsTreeNode): boolean => {
 //     extend Component) are NOT flagged by default — matching the
 //     conservative behaviour. Enable OXC-parity flagging with
 //     `allowJsxUtilityClass: true`.
-export const preferFunctionComponent = defineRule<Rule>({
+export const preferFunctionComponent = defineRule({
   id: "prefer-function-component",
   title: "Class component instead of function",
   severity: "warn",

@@ -7,7 +7,6 @@ import { isHookCall } from "../../utils/is-hook-call.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { collectUseStateBindings } from "./utils/collect-use-state-bindings.js";
 import { buildLocalDependencyGraph } from "./utils/build-local-dependency-graph.js";
@@ -114,7 +113,7 @@ const collectHandlerOnlyWriteStateNames = (
   return handlerOnlyWriteStateNames;
 };
 
-export const noEventTriggerState = defineRule<Rule>({
+export const noEventTriggerState = defineRule({
   id: "no-event-trigger-state",
   title: "State exists only to trigger an effect",
   tags: ["test-noise"],

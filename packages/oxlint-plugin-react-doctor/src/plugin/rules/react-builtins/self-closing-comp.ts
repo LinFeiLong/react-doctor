@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE = "This tag has no children, so the closing tag adds noise without changing output.";
 
@@ -35,7 +34,7 @@ const isLowercaseIdentifier = (name: EsTreeNode): boolean => {
 // `<X></X>` and `<X> </X>` (multi-line whitespace) where `<X />` would
 // suffice. Settings let callers disable for HTML tags or for custom
 // components independently.
-export const selfClosingComp = defineRule<Rule>({
+export const selfClosingComp = defineRule({
   id: "self-closing-comp",
   title: "Element not self-closing",
   severity: "warn",

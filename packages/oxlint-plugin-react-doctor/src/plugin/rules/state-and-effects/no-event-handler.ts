@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { findDownstreamNodes, getDownstreamRefs, getUpstreamRefs } from "./utils/effect/ast.js";
 import { getProgramAnalysis } from "./utils/effect/get-program-analysis.js";
@@ -132,7 +131,7 @@ const isPureEarlyExitConsequent = (consequent: EsTreeNode): boolean => {
 // 1:1 port of upstream `src/rules/no-event-handler.js`, narrowed to
 // skip pure early-exit guard patterns (`if (!enabled) return;`) and
 // one-shot ref-guarded effects (`if (wrapperRef.current && ...)`).
-export const noEventHandler = defineRule<Rule>({
+export const noEventHandler = defineRule({
   id: "no-event-handler",
   title: "Event logic handled in an effect",
   tags: ["test-noise"],

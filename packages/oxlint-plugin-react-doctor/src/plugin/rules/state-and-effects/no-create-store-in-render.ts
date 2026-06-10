@@ -7,7 +7,6 @@ import {
   isImportedFromModule,
 } from "../../utils/find-import-source-for-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 interface StoreApi {
@@ -125,7 +124,7 @@ const resolveStoreFactoryForCallee = (callee: EsTreeNode): StoreApi | null => {
 //   - Subclasses of the store factory.
 //   - User-defined helpers that wrap a factory and are themselves
 //     named like a component/hook (`useMakeStore`).
-export const noCreateStoreInRender = defineRule<Rule>({
+export const noCreateStoreInRender = defineRule({
   id: "no-create-store-in-render",
   title: "Store created during render",
   severity: "error",

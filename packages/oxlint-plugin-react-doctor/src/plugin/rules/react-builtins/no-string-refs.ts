@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { getParentComponent } from "../../utils/get-parent-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
-import type { Rule } from "../../utils/rule.js";
 
 const STRING_IN_REF_MESSAGE =
   "Your component can't reach this node because string refs don't work in modern React.";
@@ -55,7 +54,7 @@ const resolveSettings = (
 //      With `noTemplateLiterals: true` setting, also reports template
 //      literals (`<x ref={\`...\`} />`).
 //   2. `this.refs.foo` — when used inside a React component's body.
-export const noStringRefs = defineRule<Rule>({
+export const noStringRefs = defineRule({
   id: "no-string-refs",
   title: "String refs are legacy and fragile",
   severity: "warn",

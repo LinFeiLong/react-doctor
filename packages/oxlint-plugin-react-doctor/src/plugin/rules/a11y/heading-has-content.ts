@@ -5,7 +5,6 @@ import { getElementType } from "../../utils/get-element-type.js";
 import { isHiddenFromScreenReader } from "../../utils/is-hidden-from-screen-reader.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { objectHasAccessibleChild } from "../../utils/object-has-accessible-child.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Blind users can't use this heading to navigate because screen readers skip it empty, so add text, `aria-label`, or `aria-labelledby`.";
@@ -32,7 +31,7 @@ const resolveSettings = (
 // Port of `oxc_linter::rules::jsx_a11y::heading_has_content`. Reports
 // heading elements (h1-h6 + configured aliases) without accessible
 // content (visible text / aria-label / dangerouslySetInnerHTML).
-export const headingHasContent = defineRule<Rule>({
+export const headingHasContent = defineRule({
   id: "heading-has-content",
   title: "Heading has no content",
   tags: ["react-jsx-only"],

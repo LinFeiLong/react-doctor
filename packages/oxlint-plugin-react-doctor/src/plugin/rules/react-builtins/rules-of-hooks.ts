@@ -623,7 +623,7 @@ const isUseEffectEventInitializer = (node: EsTreeNodeOfType<"CallExpression">): 
 // actually React hooks — flagging them as Rules-of-Hooks violations is
 // unactionable noise. Real misuse will surface at runtime inside the
 // test/story.
-export const rulesOfHooks = defineRule<Rule>({
+export const rulesOfHooks = defineRule({
   id: "rules-of-hooks",
   title: "Hook called conditionally",
   severity: "error",

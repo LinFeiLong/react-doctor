@@ -3,11 +3,10 @@ import { containsFetchCall } from "../../utils/contains-fetch-call.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { getEffectCallback } from "../../utils/get-effect-callback.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noFetchInEffect = defineRule<Rule>({
+export const noFetchInEffect = defineRule({
   id: "no-fetch-in-effect",
   title: "Data fetching inside an effect",
   severity: "warn",

@@ -1,11 +1,10 @@
 import { APP_DIRECTORY_PATTERN } from "../../constants/nextjs.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { normalizeFilename } from "../../utils/normalize-filename.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const nextjsNoHeadImport = defineRule<Rule>({
+export const nextjsNoHeadImport = defineRule({
   id: "nextjs-no-head-import",
   title: "next/head in App Router",
   tags: ["test-noise"],

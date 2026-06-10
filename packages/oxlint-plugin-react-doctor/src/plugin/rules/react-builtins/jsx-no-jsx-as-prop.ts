@@ -12,7 +12,6 @@ import { isJsxAttributeOnIntrinsicHtmlElement } from "../../utils/is-on-intrinsi
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE = "This child redraws every render because the prop gets brand new JSX each time.";
 
@@ -306,7 +305,7 @@ const followsRenderLocalJsxBinding = (
 // function scope. Also follows render-local identifier bindings
 // (`const tree = <X />; return <C jsx={tree} />`) via
 // `followsRenderLocalJsxBinding` — hoisted JSX (module scope) is exempt.
-export const jsxNoJsxAsProp = defineRule<Rule>({
+export const jsxNoJsxAsProp = defineRule({
   id: "jsx-no-jsx-as-prop",
   title: "JSX element passed as a prop",
   tags: ["react-jsx-only"],

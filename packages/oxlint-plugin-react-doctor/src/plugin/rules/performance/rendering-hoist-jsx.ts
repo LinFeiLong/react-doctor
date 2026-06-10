@@ -3,7 +3,6 @@ import { isComponentAssignment } from "../../utils/is-component-assignment.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -29,7 +28,7 @@ const jsxReferencesLocalScope = (jsxNode: EsTreeNode): boolean => {
   return referencesScope;
 };
 
-export const renderingHoistJsx = defineRule<Rule>({
+export const renderingHoistJsx = defineRule({
   id: "rendering-hoist-jsx",
   title: "Constant JSX rebuilt each render",
   tags: ["test-noise"],

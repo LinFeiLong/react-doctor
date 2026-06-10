@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { hasDirective } from "../../utils/has-directive.js";
 import { hasUseServerDirective } from "../../utils/has-use-server-directive.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -44,7 +43,7 @@ const isDeferrableSideEffectCall = (objectName: string, methodName: string): boo
   return false;
 };
 
-export const serverAfterNonblocking = defineRule<Rule>({
+export const serverAfterNonblocking = defineRule({
   id: "server-after-nonblocking",
   title: "Blocking side effect before response",
   tags: ["test-noise"],

@@ -1,9 +1,8 @@
 import { defineRule } from "../../utils/define-rule.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const noMoment = defineRule<Rule>({
+export const noMoment = defineRule({
   id: "no-moment",
   title: "Using moment.js",
   tags: ["test-noise"],

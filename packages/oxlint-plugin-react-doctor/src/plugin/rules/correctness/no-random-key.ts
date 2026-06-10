@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { findVariableInitializer } from "../../utils/find-variable-initializer.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 // Direct-callee names that produce a fresh value every call. The
@@ -145,7 +144,7 @@ const looksLikeFreshUpdateExpression = (expression: EsTreeNode): string | null =
 //   - Doesn't model arbitrary user-defined factories. Adding a generic
 //     "looks like an id generator" name list would over-report on
 //     things like `getKey(item.id)` which is fine.
-export const noRandomKey = defineRule<Rule>({
+export const noRandomKey = defineRule({
   id: "no-random-key",
   title: "Random value used as a key",
   severity: "error",

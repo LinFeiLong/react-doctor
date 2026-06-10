@@ -1,12 +1,11 @@
 import { DEEP_NESTING_THRESHOLD } from "../../constants/thresholds.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const jsEarlyExit = defineRule<Rule>({
+export const jsEarlyExit = defineRule({
   id: "js-early-exit",
   title: "Deeply nested if statements",
   tags: ["test-noise"],

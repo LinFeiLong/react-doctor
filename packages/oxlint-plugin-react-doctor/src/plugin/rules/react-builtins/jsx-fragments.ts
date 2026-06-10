@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isJsxFragmentElement } from "../../utils/is-jsx-fragment-element.js";
-import type { Rule } from "../../utils/rule.js";
 
 const SYNTAX_MESSAGE =
   "`<React.Fragment>` is used where shorthand fragments are configured, so similar wrappers look different across the codebase.";
@@ -28,7 +27,7 @@ const resolveSettings = (
 //   - "syntax" (default): prefer `<></>`. Flags `<React.Fragment>...</>`
 //     and `<Fragment>...</>` with NO attributes.
 //   - "element": prefer `<React.Fragment>`. Flags `<></>` shorthand.
-export const jsxFragments = defineRule<Rule>({
+export const jsxFragments = defineRule({
   id: "jsx-fragments",
   title: "Inconsistent fragment syntax",
   severity: "warn",

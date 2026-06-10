@@ -7,7 +7,6 @@ import { isHiddenFromScreenReader } from "../../utils/is-hidden-from-screen-read
 import { isInteractiveElement } from "../../utils/is-interactive-element.js";
 import { isPureEventBlockerHandler } from "../../utils/is-pure-event-blocker-handler.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
-import type { Rule } from "../../utils/rule.js";
 import { HTML_TAGS } from "../../constants/html-tags.js";
 
 const PRESENTATION_ROLES: ReadonlySet<string> = new Set(["presentation", "none"]);
@@ -22,7 +21,7 @@ const KEY_HANDLERS = ["onKeyUp", "onKeyDown", "onKeyPress"] as const;
 // applies to non-interactive HTML elements (interactive ones already
 // support keyboard activation). Non-React JSX dialect skipping is
 // handled by the `react-jsx-only` tag via `defineRule`.
-export const clickEventsHaveKeyEvents = defineRule<Rule>({
+export const clickEventsHaveKeyEvents = defineRule({
   id: "click-events-have-key-events",
   title: "Click handler missing keyboard handler",
   tags: ["react-jsx-only"],

@@ -3,7 +3,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 // `Array.prototype.find` / `.findIndex` take a callback as the first arg.
@@ -25,7 +24,7 @@ const looksLikeArrayCallbackCall = (node: EsTreeNodeOfType<"CallExpression">): b
   return false;
 };
 
-export const jsIndexMaps = defineRule<Rule>({
+export const jsIndexMaps = defineRule({
   id: "js-index-maps",
   title: "array.find() inside a loop",
   tags: ["test-noise"],

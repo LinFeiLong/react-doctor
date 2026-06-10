@@ -9,7 +9,6 @@ import { isSetterIdentifier } from "../../utils/is-setter-identifier.js";
 import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isCleanupReturn } from "./utils/is-cleanup-return.js";
 import { isCleanupReturningSubscribeLikeCallExpression } from "./utils/is-subscribe-like-call-expression.js";
@@ -165,7 +164,7 @@ const cleanupReleasesSubscription = (
   );
 };
 
-export const preferUseSyncExternalStore = defineRule<Rule>({
+export const preferUseSyncExternalStore = defineRule({
   id: "prefer-use-sync-external-store",
   title: "Hand-rolled external store subscription",
   tags: ["test-noise"],

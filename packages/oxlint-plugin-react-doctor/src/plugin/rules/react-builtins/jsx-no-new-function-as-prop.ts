@@ -12,7 +12,6 @@ import {
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 import {
   ACCESSOR_PREDICATE_PREFIXES,
   ONE_SHOT_HANDLER_SUFFIXES,
@@ -496,7 +495,7 @@ const isParameterBindingWrapper = (expression: EsTreeNode): boolean => {
 // is declared in the render function's scope. Hoisted bindings
 // (module scope) are exempt — the allocation only happens once.
 // See `followsRenderLocalFunctionBinding` for the resolution details.
-export const jsxNoNewFunctionAsProp = defineRule<Rule>({
+export const jsxNoNewFunctionAsProp = defineRule({
   id: "jsx-no-new-function-as-prop",
   title: "New function passed as a prop",
   tags: ["react-jsx-only"],

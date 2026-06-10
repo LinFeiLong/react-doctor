@@ -173,7 +173,7 @@ const isScriptElement = (openingElement: EsTreeNodeOfType<"JSXOpeningElement">):
   (openingElement.name as EsTreeNodeOfType<"JSXIdentifier">).name === "script";
 
 // Port of `oxc_linter::rules::react::jsx_curly_brace_presence`.
-export const jsxCurlyBracePresence = defineRule<Rule>({
+export const jsxCurlyBracePresence = defineRule({
   id: "jsx-curly-brace-presence",
   title: "Unnecessary curly braces in JSX",
   severity: "warn",

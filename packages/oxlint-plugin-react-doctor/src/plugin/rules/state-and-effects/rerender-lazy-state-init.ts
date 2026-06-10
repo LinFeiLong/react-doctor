@@ -1,12 +1,11 @@
 import { TRIVIAL_INITIALIZER_NAMES } from "../../constants/react.js";
 import { defineRule } from "../../utils/define-rule.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 
-export const rerenderLazyStateInit = defineRule<Rule>({
+export const rerenderLazyStateInit = defineRule({
   id: "rerender-lazy-state-init",
   title: "State initializer runs on every render",
   tags: ["test-noise"],

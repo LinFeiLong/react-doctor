@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isCreateElementCall } from "../../utils/is-create-element-call.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (componentName: string): string =>
   `React can't render namespaced names like \`${componentName}\`.`;
@@ -10,7 +9,7 @@ const buildMessage = (componentName: string): string =>
 // Port of `oxc_linter::rules::react::no_namespace`. Flags JSX namespaced
 // names (`<ns:Foo />`) and string-literal element types passed to
 // `React.createElement` that contain a colon.
-export const noNamespace = defineRule<Rule>({
+export const noNamespace = defineRule({
   id: "no-namespace",
   title: "Namespaced JSX element",
   severity: "warn",

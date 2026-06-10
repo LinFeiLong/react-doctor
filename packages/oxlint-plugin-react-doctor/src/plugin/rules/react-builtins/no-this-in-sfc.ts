@@ -4,7 +4,6 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isEs5Component } from "../../utils/is-es5-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE = "This value is `undefined` because function components have no `this`.";
 
@@ -122,7 +121,7 @@ const looksLikeFunctionComponent = (
 // or calls React.createElement; we approximate by relying on the
 // PascalCase naming convention. Class components are excluded by the
 // ancestor walk.
-export const noThisInSfc = defineRule<Rule>({
+export const noThisInSfc = defineRule({
   id: "no-this-in-sfc",
   title: "this used in function component",
   severity: "warn",

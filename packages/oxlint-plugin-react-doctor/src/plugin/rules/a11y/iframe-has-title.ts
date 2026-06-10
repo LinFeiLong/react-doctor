@@ -5,7 +5,6 @@ import { getElementType } from "../../utils/get-element-type.js";
 import { getStaticTemplateLiteralValue } from "../../utils/get-static-template-literal-value.js";
 import { hasJsxPropIgnoreCase } from "../../utils/has-jsx-prop-ignore-case.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Screen reader users cannot identify this `<iframe>` because it has no title. Add a `title` that describes its content.";
@@ -44,7 +43,7 @@ const evaluateTitleValue = (value: EsTreeNode | null | undefined): StaticVerdict
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::iframe_has_title`.
-export const iframeHasTitle = defineRule<Rule>({
+export const iframeHasTitle = defineRule({
   id: "iframe-has-title",
   title: "iframe missing title",
   tags: ["react-jsx-only"],

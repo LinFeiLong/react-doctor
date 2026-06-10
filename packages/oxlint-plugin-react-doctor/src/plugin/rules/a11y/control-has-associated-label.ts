@@ -14,7 +14,6 @@ import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
 import { stripParenExpression } from "../../utils/strip-paren-expression.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Blind users can't tell what this control does because screen readers find no label, so add visible text, `aria-label`, or `aria-labelledby`.";
@@ -285,7 +284,7 @@ const hasHtmlForLabel = (
 };
 
 // Port of `oxc_linter::rules::jsx_a11y::control_has_associated_label`.
-export const controlHasAssociatedLabel = defineRule<Rule>({
+export const controlHasAssociatedLabel = defineRule({
   id: "control-has-associated-label",
   title: "Control missing accessible label",
   tags: ["react-jsx-only"],

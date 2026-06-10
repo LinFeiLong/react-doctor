@@ -14,7 +14,6 @@ import { isNonInteractiveRole } from "../../utils/is-non-interactive-role.js";
 import { isPresentationRole } from "../../utils/is-presentation-role.js";
 import { isPureEventBlockerHandler } from "../../utils/is-pure-event-blocker-handler.js";
 import { isTestlikeFilename } from "../../utils/is-testlike-filename.js";
-import type { Rule } from "../../utils/rule.js";
 
 const MESSAGE =
   "Screen reader users can't tell this click handler is interactive because it has no `role`, so add a `role` or use a button or link.";
@@ -62,7 +61,7 @@ const isNullValue = (attribute: EsTreeNodeOfType<"JSXAttribute">): boolean => {
 // Port of `oxc_linter::rules::jsx_a11y::no_static_element_interactions`.
 // Non-React JSX dialect skipping is handled by the `react-jsx-only`
 // tag via `defineRule`.
-export const noStaticElementInteractions = defineRule<Rule>({
+export const noStaticElementInteractions = defineRule({
   id: "no-static-element-interactions",
   title: "Interaction on static element",
   tags: ["react-jsx-only"],

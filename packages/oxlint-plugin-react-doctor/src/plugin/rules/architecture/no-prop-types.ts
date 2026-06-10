@@ -3,7 +3,6 @@ import { isUppercaseName } from "../../utils/is-uppercase-name.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 
 // HACK: React 19 removed runtime `propTypes` validation entirely —
@@ -68,7 +67,7 @@ const getComponentNameFromClassProperty = (
 const buildMessage = (componentName: string): string =>
   `${componentName}.propTypes does nothing in React 19, so bad props reach your users with no warning. Describe props with TypeScript types & check risky data yourself.`;
 
-export const noPropTypes = defineRule<Rule>({
+export const noPropTypes = defineRule({
   id: "no-prop-types",
   title: "propTypes ignored in React 19",
   requires: ["react:19"],

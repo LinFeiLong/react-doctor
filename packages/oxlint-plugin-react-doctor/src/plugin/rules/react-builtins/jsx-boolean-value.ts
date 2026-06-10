@@ -1,7 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
-import type { Rule } from "../../utils/rule.js";
 
 const NEVER_MESSAGE = (): string =>
   "This boolean prop style disagrees with the project setting, so equivalent true props are harder to scan consistently.";
@@ -39,7 +38,7 @@ const resolveSettings = (
 //     Per-attribute exceptions allowed via the `always` list.
 //   - "always": `<C foo />` should be `<C foo={true} />`. Per-attribute
 //     exceptions via the `never` list.
-export const jsxBooleanValue = defineRule<Rule>({
+export const jsxBooleanValue = defineRule({
   id: "jsx-boolean-value",
   title: "Inconsistent boolean prop notation",
   severity: "warn",

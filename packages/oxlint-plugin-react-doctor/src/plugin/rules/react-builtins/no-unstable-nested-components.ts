@@ -7,7 +7,6 @@ import { isCreateElementCall } from "../../utils/is-create-element-call.js";
 import { isFunctionLike } from "../../utils/is-function-like.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
-import type { Rule } from "../../utils/rule.js";
 
 const buildMessage = (parentName: string | null): string => {
   let message =
@@ -326,7 +325,7 @@ const isReturnOfMapCallback = (node: EsTreeNode): boolean => {
 };
 
 // Port of `oxc_linter::rules::react::no_unstable_nested_components`.
-export const noUnstableNestedComponents = defineRule<Rule>({
+export const noUnstableNestedComponents = defineRule({
   id: "no-unstable-nested-components",
   title: "Component defined inside a component",
   severity: "warn",

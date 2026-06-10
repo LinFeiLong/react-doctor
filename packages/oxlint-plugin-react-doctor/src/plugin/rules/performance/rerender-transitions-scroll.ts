@@ -2,7 +2,6 @@ import { defineRule } from "../../utils/define-rule.js";
 import { isUseStateSetterInScope } from "../../utils/is-use-state-setter-in-scope.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -54,7 +53,7 @@ const handlerCallsSetState = (handler: EsTreeNode): EsTreeNode | null => {
 // to mark the update as non-urgent (so the browser can interrupt it for
 // input), or stash the value in a ref + raf throttle, or use
 // `useDeferredValue`.
-export const rerenderTransitionsScroll = defineRule<Rule>({
+export const rerenderTransitionsScroll = defineRule({
   id: "rerender-transitions-scroll",
   title: "setState in a scroll handler",
   tags: ["test-noise"],

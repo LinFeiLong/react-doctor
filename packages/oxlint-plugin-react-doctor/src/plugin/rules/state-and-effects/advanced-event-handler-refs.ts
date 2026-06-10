@@ -4,7 +4,6 @@ import { getEffectCallback } from "../../utils/get-effect-callback.js";
 import { isHookCall } from "../../utils/is-hook-call.js";
 import { walkAst } from "../../utils/walk-ast.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
-import type { Rule } from "../../utils/rule.js";
 import type { RuleContext } from "../../utils/rule-context.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
@@ -27,7 +26,7 @@ import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 // so this rule and `prefer-use-sync-external-store` agree on what
 // counts as a subscription-shaped call (zustand/Redux `subscribe`,
 // browser `addEventListener`, EventEmitter `on`, etc.).
-export const advancedEventHandlerRefs = defineRule<Rule>({
+export const advancedEventHandlerRefs = defineRule({
   id: "advanced-event-handler-refs",
   title: "Listener re-subscribes on every handler change",
   tags: ["test-noise"],
