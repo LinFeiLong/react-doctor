@@ -9,7 +9,8 @@ import { isNextjsMetadataImageRouteFilename } from "./is-nextjs-metadata-image-r
 // exports are the documented shape, not a Fast Refresh hazard. Matched
 // by basename (the same JS/TS module extensions Next.js resolves) so a
 // deep route path resolves the same as a shallow one.
-const ext = NEXTJS_SOURCE_FILE_EXTENSION_GROUP;
+const sourceFileExtensionGroup = NEXTJS_SOURCE_FILE_EXTENSION_GROUP;
+
 const FRAMEWORK_ROUTE_FILE_PATTERNS: ReadonlyArray<RegExp> = [
   // Next.js App Router + Pages Router special files. (Metadata image
   // routes — opengraph-image, icon, … — are matched separately below.)
