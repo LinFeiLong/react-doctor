@@ -9,9 +9,16 @@ export interface RunCommandResult {
 
 // Call-signature interface so command-running helpers (e.g.
 // `detectDefaultBranch`) can take an injectable runner in tests without
-// spawning real `git` / `gh` processes.
+// spawning real `git` / `gh` processes. `timeoutMs` kills the child and
+// reports failure once exceeded; omit it for commands that may legitimately
+// run long (`git push`, `gh pr create`).
 export interface CommandRunner {
-  (command: string, args: ReadonlyArray<string>, cwd: string): Promise<RunCommandResult>;
+  (
+    command: string,
+    args: ReadonlyArray<string>,
+    cwd: string,
+    timeoutMs?: number,
+  ): Promise<RunCommandResult>;
 }
 
 const execFileAsync = promisify(execFile);
@@ -23,9 +30,13 @@ const execFileAsync = promisify(execFile);
 // not inherited, so nothing interleaves with the spinner. `execFile` rejects
 // on a non-zero exit (and on ENOENT); both carry the captured stdout/stderr
 // on the error object.
-export const runCommand: CommandRunner = async (command, args, cwd) => {
+export const runCommand: CommandRunner = async (command, args, cwd, timeoutMs) => {
   try {
-    const { stdout, stderr } = await execFileAsync(command, [...args], { cwd, encoding: "utf8" });
+    const { stdout, stderr } = await execFileAsync(command, [...args], {
+      cwd,
+      encoding: "utf8",
+      timeout: timeoutMs,
+    });
     return { success: true, stdout: stdout.trim(), stderr: stderr.trim() };
   } catch (error) {
     const failure = error as { stdout?: string; stderr?: string };

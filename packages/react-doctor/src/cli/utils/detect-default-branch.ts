@@ -1,3 +1,4 @@
+import { GH_DEFAULT_BRANCH_PROBE_TIMEOUT_MS } from "./constants.js";
 import { runCommand, type CommandRunner } from "./run-command.js";
 
 // Resolves the repository's default branch (the branch GitHub PRs merge
@@ -20,6 +21,7 @@ export const detectDefaultBranch = async (
     "gh",
     ["repo", "view", "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name"],
     cwd,
+    GH_DEFAULT_BRANCH_PROBE_TIMEOUT_MS,
   );
   // An empty repo has `defaultBranchRef: null`, which the jq filter prints
   // as the literal string "null".
