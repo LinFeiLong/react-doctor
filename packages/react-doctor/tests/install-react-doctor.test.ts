@@ -2,8 +2,16 @@ import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import type { Answers, PromptObject } from "prompts";
-import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import * as fs from "node:fs";
+
+// Keeps the suite hermetic: the real detection spawns `gh` / `git` against
+// the temp fixture, and a cold `gh.exe` on Windows CI has blown the 30s test
+// timeout. Returning null exercises the same `main` fallback the fixtures
+// (which have no git remote) would land on anyway.
+vi.mock("../src/cli/utils/detect-default-branch.js", () => ({
+  detectDefaultBranch: async () => null,
+}));
 import {
   CODING_AGENT_ENVIRONMENT_VALUE_VARIABLES,
   CODING_AGENT_ENVIRONMENT_VARIABLES,
@@ -688,6 +696,9 @@ describe("runInstallReactDoctor", () => {
     expect(workflowContent).toContain("statuses: write");
     expect(workflowContent).toContain("actions/checkout@v5");
     expect(workflowContent).toContain("millionco/react-doctor@v2");
+    expect(workflowContent).toContain("Advisory by default");
+    expect(workflowContent).toContain("#   blocking: error");
+    expect(workflowContent).not.toContain("\n        with:\n");
     expect(workflowContent).not.toContain("github-token");
     expect(workflowContent).not.toContain("diff: main");
   });

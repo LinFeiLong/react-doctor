@@ -23,6 +23,11 @@ export const GIT_HOOK_EXECUTABLE_MODE = 0o755;
 
 export const AGENT_HOOK_TIMEOUT_SECONDS = 120;
 
+// Hard cap on the `gh repo view` default-branch probe. A healthy gh answers
+// well under a second; a cold gh.exe on Windows CI has taken 30s+, and the
+// git fallbacks behind it are correct for almost every repo — so fail fast.
+export const GH_DEFAULT_BRANCH_PROBE_TIMEOUT_MS = 5000;
+
 // Cap on files listed per rule in the agent-handoff prompt so it stays a
 // compact, passable CLI argument.
 export const HANDOFF_MAX_FILES_PER_RULE = 3;

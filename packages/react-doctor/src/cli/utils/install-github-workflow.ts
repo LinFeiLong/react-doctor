@@ -6,14 +6,20 @@ export interface InstallGitHubWorkflowResult {
   readonly workflowPath: string;
 }
 
-// Self-documenting workflow file. The inline YAML comments give a new user
-// one-line explanations of each trigger, without forcing them off to the
-// docs site to learn the basics. The action itself is pinned to the
-// floating major `@v2` (never `@main`, per the supply-chain guidance in
-// AGENTS.md): `@main` would run whatever HEAD points to with
+// Self-documenting workflow file. It installs advisory-first: the action's
+// `blocking` input defaults to `none`, so the check never fails on day one —
+// every PR still gets the full report (sticky comment, inline review comments,
+// a commit-status score). The push trigger scans the repo's actual default
+// branch (`master`, `develop`, …) — not a hardcoded `main`. The inline YAML
+// comments give a new user one-line explanations of each trigger and show how
+// to graduate the gate (uncomment `with:` and set `blocking: error`), without
+// forcing them off to the docs site to learn the basics. The action itself is
+// pinned to the floating major `@v2` (never `@main`, per the supply-chain
+// guidance in AGENTS.md): `@main` would run whatever HEAD points to with
 // `pull-requests: write` granted.
-const buildWorkflowContent =
-  (): string => `# React Doctor — finds security, performance, correctness, accessibility,
+const buildWorkflowContent = (
+  defaultBranch: string,
+): string => `# React Doctor — finds security, performance, correctness, accessibility,
 # bundle-size, and architecture issues in React codebases.
 #
 # Docs: https://www.react.doctor/ci
@@ -25,9 +31,9 @@ on:
   # Scans the PR's changed files and posts a sticky summary comment listing only the new issues introduced relative to the merge base of the target branch.
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-  # Scans \`main\` on every push to track the health-score trend and catch regressions that slipped past PR review.
+  # Scans \`${defaultBranch}\` on every push to track the health-score trend and catch regressions that slipped past PR review.
   push:
-    branches: [main]
+    branches: ["${defaultBranch}"]
 
 permissions:
   contents: read
@@ -47,10 +53,15 @@ jobs:
       - uses: actions/checkout@v5
 
       - uses: millionco/react-doctor@v2
-        # Common configuration knobs — uncomment any to override the default.
+        # Advisory by default: React Doctor reports findings on every PR — a
+        # sticky summary comment, inline review comments, and a commit status
+        # with the health score — but never fails the check, so it won't red-X
+        # a teammate's PR on day one. When your team trusts the signal, graduate
+        # the gate: uncomment the block below and set blocking to "error" (fail
+        # on new error-severity findings) or "warning" (fail on any finding).
         # Full reference: https://www.react.doctor/ci
         # with:
-        #   blocking: warning        # Gate level: "error" (default) | "warning" | "none" (advisory)
+        #   blocking: error          # Gate level: "none" (advisory, the default) | "warning" | "error"
         #   scope: full              # On PRs, scan the whole project instead of just changed files
         #   comment: false           # Disable the sticky PR summary comment
         #   review-comments: false   # Disable inline review comments on changed lines
@@ -109,14 +120,19 @@ export const upgradeWorkflowActionToV2 = (
 // Writes `.github/workflows/react-doctor.yml`, creating the workflows
 // directory if needed. Returns "exists" without overwriting a workflow that's
 // already there, and "failed" (rather than throwing) so callers can degrade to
-// printing manual setup instructions.
-export const installReactDoctorWorkflow = (projectRoot: string): InstallGitHubWorkflowResult => {
+// printing manual setup instructions. `defaultBranch` lands in the template's
+// push trigger; callers resolve it via `detectDefaultBranch` and fall back to
+// `main` when the repo has no detectable default.
+export const installReactDoctorWorkflow = (
+  projectRoot: string,
+  defaultBranch: string = "main",
+): InstallGitHubWorkflowResult => {
   const workflowPath = getReactDoctorWorkflowPath(projectRoot);
   if (fs.existsSync(workflowPath)) return { status: "exists", workflowPath };
 
   try {
     fs.mkdirSync(path.dirname(workflowPath), { recursive: true });
-    fs.writeFileSync(workflowPath, buildWorkflowContent());
+    fs.writeFileSync(workflowPath, buildWorkflowContent(defaultBranch));
     return { status: "created", workflowPath };
   } catch {
     return { status: "failed", workflowPath };
