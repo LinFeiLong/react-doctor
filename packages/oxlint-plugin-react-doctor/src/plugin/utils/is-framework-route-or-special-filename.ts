@@ -15,14 +15,14 @@ const FRAMEWORK_ROUTE_FILE_PATTERNS: ReadonlyArray<RegExp> = [
   // Next.js App Router + Pages Router special files. (Metadata image
   // routes — opengraph-image, icon, … — are matched separately below.)
   new RegExp(
-    `^(page|layout|loading|error|not-found|template|default|global-error|route|_app|_document|_error)\\.${ext}$`,
+    `^(page|layout|loading|error|not-found|template|default|global-error|route|_app|_document|_error)\\.${sourceFileExtensionGroup}$`,
   ),
   // Expo Router: `_layout` segment wrapper + `+`-prefixed reserved files.
-  new RegExp(`^(_layout|\\+html|\\+not-found|\\+native-intent)\\.${ext}$`),
+  new RegExp(`^(_layout|\\+html|\\+not-found|\\+native-intent)\\.${sourceFileExtensionGroup}$`),
   // TanStack Router / Start: `__root` root route + `*.lazy` split routes.
-  new RegExp(`(?:^__root|\\.lazy)\\.${ext}$`),
+  new RegExp(`(?:^__root|\\.lazy)\\.${sourceFileExtensionGroup}$`),
   // Remix / React Router: `root` route module + client/server entries.
-  new RegExp(`^(root|entry\\.client|entry\\.server)\\.${ext}$`),
+  new RegExp(`^(root|entry\\.client|entry\\.server)\\.${sourceFileExtensionGroup}$`),
 ];
 
 export const isFrameworkRouteOrSpecialFilename = (rawFilename: string | undefined): boolean => {
