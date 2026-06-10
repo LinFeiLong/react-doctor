@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { DiffInfo } from "@react-doctor/core";
-import { finalizeScope, resolveScope } from "../src/cli/utils/resolve-scope.js";
+import { finalizeScope, resolveScope, warnDeprecatedDiff } from "../src/cli/utils/resolve-scope.js";
 import { prompts } from "../src/cli/utils/prompts.js";
 
 vi.mock("../src/cli/utils/prompts.js", () => ({
@@ -81,6 +81,41 @@ describe("resolveScope", () => {
   it("warns and ignores an invalid --scope value", () => {
     expect(resolveScope({ scope: "bogus" }, null).scope).toBeUndefined();
     expect(consoleHandle.capturedMessages.join("\n")).toMatch(/Invalid --scope/);
+  });
+});
+
+describe("warnDeprecatedDiff", () => {
+  let consoleHandle: ConsoleWarnHandle;
+  beforeEach(() => {
+    consoleHandle = captureConsoleWarn();
+  });
+  afterEach(() => {
+    consoleHandle.restore();
+    vi.clearAllMocks();
+  });
+
+  it("does not warn when neither --diff nor config.diff is set", () => {
+    warnDeprecatedDiff({}, null);
+    expect(consoleHandle.capturedMessages).toHaveLength(0);
+  });
+
+  it("points --diff false at --scope full (not changed)", () => {
+    warnDeprecatedDiff({ diff: false }, null);
+    const message = consoleHandle.capturedMessages.join("\n");
+    expect(message).toMatch(/--scope full/);
+    expect(message).not.toMatch(/--scope changed/);
+  });
+
+  it("points --diff <base> at --scope changed with a --base hint", () => {
+    warnDeprecatedDiff({ diff: "main" }, null);
+    const message = consoleHandle.capturedMessages.join("\n");
+    expect(message).toMatch(/--scope changed/);
+    expect(message).toMatch(/--base/);
+  });
+
+  it("warns about the config option with the resolved scope", () => {
+    warnDeprecatedDiff({}, { diff: false });
+    expect(consoleHandle.capturedMessages.join("\n")).toMatch(/scope: "full"/);
   });
 });
 

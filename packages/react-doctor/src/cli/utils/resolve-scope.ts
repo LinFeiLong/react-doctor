@@ -84,9 +84,18 @@ export const warnDeprecatedDiff = (
 ): void => {
   const usedFlag = flags.diff !== undefined;
   if (!usedFlag && userConfig?.diff === undefined) return;
-  const source = usedFlag ? "The `--diff` flag" : "The `diff` config option";
-  const replacement = usedFlag ? "`--scope changed` (with `--base <ref>`)" : "`scope`";
-  logger.warn(`${source} is deprecated; use ${replacement} instead.`);
+  // Point at the scope the value actually resolves to: `--diff false` forces a
+  // full scan, so suggesting `--scope changed` there would be wrong.
+  const targetScope =
+    coerceDeprecatedDiff(usedFlag ? flags.diff : userConfig?.diff)?.scope ?? "changed";
+  if (usedFlag) {
+    const baseHint = targetScope === "changed" ? " (add `--base <ref>` to pin the base)" : "";
+    logger.warn(
+      `The \`--diff\` flag is deprecated; use \`--scope ${targetScope}\`${baseHint} instead.`,
+    );
+    return;
+  }
+  logger.warn(`The \`diff\` config option is deprecated; use \`scope: "${targetScope}"\` instead.`);
 };
 
 const warnDiffUnavailable = (requested: RequestedScope, isQuiet: boolean): void => {
