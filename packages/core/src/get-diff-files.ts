@@ -1,7 +1,7 @@
 import * as Effect from "effect/Effect";
 import { isLintableSourceFile } from "./utils/is-lintable-source-file.js";
 import { Git } from "./services/git.js";
-import type { DiffInfo } from "./types/index.js";
+import type { ChangedFileLineRanges, DiffInfo } from "./types/index.js";
 
 /**
  * Programmatic façade over `Git.diffSelection`. Async because the
@@ -37,3 +37,23 @@ export const getDiffInfo = (
 
 export const filterSourceFiles = (filePaths: string[]): string[] =>
   filePaths.filter(isLintableSourceFile);
+
+/**
+ * Programmatic façade over `Git.changedLineRanges` (the `lines` scope). Diffs
+ * `files` with `--unified=0` against `baseRef` (or the index when `cached`),
+ * returning per-file changed line ranges relative to `directory`. Degrades to
+ * `[]` rather than throwing when git is unavailable or the ref is unsafe.
+ */
+export const getChangedLineRanges = (input: {
+  directory: string;
+  baseRef?: string;
+  cached?: boolean;
+  files: ReadonlyArray<string>;
+}): Promise<ChangedFileLineRanges[]> =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const git = yield* Git;
+      const ranges = yield* git.changedLineRanges(input);
+      return ranges.map((entry) => ({ file: entry.file, ranges: entry.ranges }));
+    }).pipe(Effect.provide(Git.layerNode)),
+  );

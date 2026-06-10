@@ -8,6 +8,7 @@ import {
   collectSupplyChainScores,
   filterDiagnosticsForSurface,
   findLegacyConfig,
+  getChangedLineRanges,
   getDiffInfo,
   highlighter,
   resolveScanTarget,
@@ -15,12 +16,14 @@ import {
 } from "@react-doctor/core";
 import { inspect } from "../../inspect.js";
 import type {
+  ChangedFileLineRanges,
   Diagnostic,
   DiffInfo,
   InspectResult,
   JsonReportMode,
   ReactDoctorConfig,
 } from "@react-doctor/core";
+import type { RequestedScope } from "../utils/resolve-scope.js";
 import { cliLogger as logger } from "../utils/cli-logger.js";
 import { METRIC, STAGED_FILES_TEMP_DIR_PREFIX } from "../utils/constants.js";
 import { recordCount } from "../utils/record-metric.js";
@@ -53,11 +56,13 @@ import {
 } from "../utils/prompt-install-setup.js";
 import { resolveCliInspectOptions } from "../utils/resolve-cli-inspect-options.js";
 import type { CliInspectOptions } from "../utils/resolve-cli-inspect-options.js";
-import { resolveDiffMode } from "../utils/resolve-diff-mode.js";
-import { resolveEffectiveDiff } from "../utils/resolve-effective-diff.js";
+import { finalizeScope, resolveScope, warnDeprecatedDiff } from "../utils/resolve-scope.js";
 import { resolveMergeBaseRef } from "../utils/materialize-baseline-files.js";
 import { resolveBlockingLevel } from "../utils/resolve-blocking-level.js";
-import { resolveProjectDiffIncludePaths } from "../utils/resolve-project-diff-include-paths.js";
+import {
+  resolveProjectChangedLineRanges,
+  resolveProjectDiffIncludePaths,
+} from "../utils/resolve-project-diff-include-paths.js";
 import { runExplain } from "../utils/run-explain.js";
 import { projectManifestChanged } from "../utils/project-manifest-changed.js";
 import { renderSupplyChainScores } from "../utils/render-supply-chain-scores.js";
@@ -348,11 +353,23 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
         fs.rmSync(tempDirectory, { recursive: true, force: true });
         throw error;
       });
+      // `--staged --scope lines`: only report issues on the staged hunks. The
+      // index diff (`--cached`) is keyed by the same relative paths the staged
+      // snapshot mirrors, so the ranges match the scan's diagnostics.
+      const stagedLineRanges =
+        resolveScope(flags, userConfig).scope === "lines"
+          ? await getChangedLineRanges({
+              directory: resolvedDirectory,
+              cached: true,
+              files: snapshot.stagedFiles,
+            })
+          : undefined;
       try {
         const scanResult = await inspect(snapshot.tempDirectory, {
           ...scanOptions,
           includePaths: snapshot.stagedFiles,
           configOverride: userConfig,
+          changedLineRanges: stagedLineRanges,
         });
 
         const remappedDiagnostics = scanResult.diagnostics.map((diagnostic) => ({
@@ -392,37 +409,68 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
     const changedFilesDiffInfo = flags.changedFilesFrom
       ? buildChangedFilesDiffInfo(readChangedFilesFrom(path.resolve(flags.changedFilesFrom)))
       : null;
-    const effectiveDiff = resolveEffectiveDiff(flags, userConfig);
-    const explicitBaseBranch = typeof effectiveDiff === "string" ? effectiveDiff : undefined;
-    const wantsDiffMode = effectiveDiff !== undefined && effectiveDiff !== false;
-    // HACK: also call getDiffInfo when we MIGHT prompt the user — without
-    // it, resolveDiffMode short-circuits at !diffInfo and the
-    // "Only scan changed files?" prompt never appears for users on a
-    // feature branch who didn't explicitly pass --diff.
+    warnDeprecatedDiff(flags, userConfig);
+    const requestedScope = resolveScope(flags, userConfig);
+    // The internal `--changed-files-from` path (the GitHub Action) implies the
+    // `changed` scope when the user didn't pick one explicitly — it always ran
+    // in diff mode historically.
+    const scopeRequest: RequestedScope =
+      requestedScope.scope === undefined && changedFilesDiffInfo !== null
+        ? { ...requestedScope, scope: "changed" }
+        : requestedScope;
+    const wantsDiffMode = scopeRequest.scope !== undefined && scopeRequest.scope !== "full";
+    // HACK: also call getDiffInfo when we MIGHT prompt the user — without it the
+    // "full vs changed" prompt never appears for users on a feature branch who
+    // didn't explicitly pass a scope.
     const shouldDetectDiff =
-      changedFilesDiffInfo === null && (wantsDiffMode || (!skipPrompts && !isQuiet));
+      changedFilesDiffInfo === null &&
+      (wantsDiffMode || (scopeRequest.scope === undefined && !skipPrompts && !isQuiet));
     const diffInfo =
       changedFilesDiffInfo ??
-      (shouldDetectDiff ? await getDiffInfo(resolvedDirectory, explicitBaseBranch) : null);
-    const isDiffMode =
-      changedFilesDiffInfo !== null ||
-      (await resolveDiffMode(diffInfo, effectiveDiff, skipPrompts, isQuiet));
+      (shouldDetectDiff ? await getDiffInfo(resolvedDirectory, scopeRequest.base) : null);
+    const scope = await finalizeScope({ requested: scopeRequest, diffInfo, skipPrompts, isQuiet });
+    const isDiffMode = scope !== "full";
 
-    // Baseline (PR-introduced-issues-only) mode: when diffing against a base
-    // ref (not just uncommitted changes), read base content from the SAME
-    // commit the file diff was taken against so the file set and the base
-    // snapshot agree. The GitHub Action forwards the PR base SHA — three-dot
-    // PR semantics, so merge-base it with HEAD; a local `--diff` already knows
-    // its exact base (`diffBaseRef`: `A` for two-dot `A..B`, the merge-base for
-    // three-dot / single-base). A null ref (base not fetched, detached, or git
-    // unavailable) degrades to a plain diff scan that shows all findings.
-    const baselineRef =
+    // The commit a baseline / line-range diff compares against. When diffing
+    // against a base ref (not just uncommitted changes), read base content from
+    // the SAME commit the file diff was taken against so the file set and the
+    // base snapshot agree. The GitHub Action forwards the PR base SHA — three-dot
+    // PR semantics, so merge-base it with HEAD; a local diff already knows its
+    // exact base (`diffBaseRef`). `null` when uncommitted, detached, or git is
+    // unavailable. Shared by `changed` (baseline) and `lines` (hunk ranges).
+    const comparisonBaseRef =
       isDiffMode && diffInfo && !diffInfo.isCurrentChanges
         ? diffInfo.baseSha
           ? await resolveMergeBaseRef(resolvedDirectory, diffInfo.baseSha)
           : (diffInfo.diffBaseRef ??
             (await resolveMergeBaseRef(resolvedDirectory, diffInfo.baseBranch)))
         : null;
+    // `changed` subtracts pre-existing findings (baseline); `files` / `lines` do not.
+    const baselineRef = scope === "changed" ? comparisonBaseRef : null;
+
+    // `--scope lines`: per-file changed line ranges (repo-relative). Working-tree
+    // vs HEAD for uncommitted changes, vs the merge-base otherwise. When no base
+    // resolves we can't tell which lines changed, so degrade to `files` (report
+    // every finding in the changed files) rather than hiding everything.
+    const linesBaseRef = diffInfo?.isCurrentChanges ? "HEAD" : comparisonBaseRef;
+    const canComputeLines =
+      scope === "lines" &&
+      diffInfo !== null &&
+      (diffInfo.isCurrentChanges || linesBaseRef !== null);
+    const changedLineRanges: ChangedFileLineRanges[] =
+      canComputeLines && diffInfo !== null
+        ? await getChangedLineRanges({
+            directory: resolvedDirectory,
+            baseRef: linesBaseRef ?? undefined,
+            files: [...diffInfo.changedFiles],
+          })
+        : [];
+    if (scope === "lines" && !canComputeLines && !isQuiet) {
+      logger.warn(
+        "Could not determine changed lines (no base ref); reporting all issues in changed files.",
+      );
+      logger.break();
+    }
 
     // HACK: set the report-mode marker BEFORE the scan loop runs — if the
     // user hits Ctrl-C mid-scan, the SIGINT handler reads it for the JSON
@@ -490,6 +538,9 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
         configOverride: userConfig,
         suppressRendering: isMultiProject,
         baseline: baselineRef ? { ref: baselineRef } : undefined,
+        changedLineRanges: canComputeLines
+          ? resolveProjectChangedLineRanges(resolvedDirectory, projectDirectory, changedLineRanges)
+          : undefined,
         supplyChainManifestChanged,
       });
       allDiagnostics.push(...scanResult.diagnostics);
