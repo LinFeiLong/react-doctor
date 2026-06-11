@@ -1,5 +1,7 @@
+import { SOURCE_FILE_PATTERN } from "../../../constants/security-scan.js";
 import type { FileScan, ScannedFile } from "../../../utils/file-scan.js";
 import { getMatchLocation } from "./get-match-location.js";
+import { stripCommentsPreservingPositions } from "./strip-comments-preserving-positions.js";
 
 export interface ScanByPatternInput {
   readonly shouldScan: (file: ScannedFile) => boolean;
@@ -15,17 +17,32 @@ export interface ScanByPatternInput {
   readonly message: string;
 }
 
+const strippedContentCache = new WeakMap<ScannedFile, string>();
+
+// Comments are a recurring false-positive source ("Ajv compiles schemas via
+// `new Function(...)`"); blank them for JS/TS files before pattern matching.
+// Stripping preserves offsets, so reported lines/columns stay correct.
+export const getScannableContent = (file: ScannedFile): string => {
+  if (!SOURCE_FILE_PATTERN.test(file.relativePath)) return file.content;
+  const cachedContent = strippedContentCache.get(file);
+  if (cachedContent !== undefined) return cachedContent;
+  const strippedContent = stripCommentsPreservingPositions(file.content);
+  strippedContentCache.set(file, strippedContent);
+  return strippedContent;
+};
+
 export const scanByPattern =
   ({ shouldScan, pattern, requireAll, suppressWhen, message }: ScanByPatternInput): FileScan =>
   (file) => {
     if (!shouldScan(file)) return [];
-    if (requireAll !== undefined && !requireAll.every((gate) => gate.test(file.content))) {
+    const content = getScannableContent(file);
+    if (requireAll !== undefined && !requireAll.every((gate) => gate.test(content))) {
       return [];
     }
     const patterns = pattern instanceof RegExp ? [pattern] : pattern;
-    const matchedPattern = patterns.find((candidate) => candidate.test(file.content));
+    const matchedPattern = patterns.find((candidate) => candidate.test(content));
     if (matchedPattern === undefined) return [];
-    if (suppressWhen !== undefined && suppressWhen.test(file.content)) return [];
-    const { line, column } = getMatchLocation(file.content, matchedPattern);
+    if (suppressWhen !== undefined && suppressWhen.test(content)) return [];
+    const { line, column } = getMatchLocation(content, matchedPattern);
     return [{ message, line, column }];
   };

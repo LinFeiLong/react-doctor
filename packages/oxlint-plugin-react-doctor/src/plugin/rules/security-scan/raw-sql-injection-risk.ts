@@ -2,14 +2,18 @@ import { defineRule } from "../../utils/define-rule.js";
 import { isProductionScriptSourcePath } from "./utils/is-production-script-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
+// `Prisma.raw("AND ")` (pure literal) and `whereRaw("col = {p: String}", {p})`
+// (driver-side binding) are parameterized usage, not string-built SQL — the
+// escape hatch only matters when the argument is dynamic. The `${` check
+// skips interpolations wrapped in a sanitizer/escaper call.
 const RAW_SQL_RISK_PATTERNS = [
   /\$queryRawUnsafe\s*\(/,
   /\$executeRawUnsafe\s*\(/,
-  /\bPrisma\.raw\s*\(/,
-  /\bsql\.\s*(?:raw|unsafe)\s*\(/,
-  /\b(?:client|pool|conn)\.query\s*\(\s*['"`]\s*(?:SELECT|INSERT|UPDATE|DELETE)\b[^)]{0,400}\$\{/i,
+  /\bPrisma\.raw\s*\(\s*(?!["'][^"'\n]*["']\s*[,)]|`[^`$]*`)/,
+  /\bsql\.\s*(?:raw|unsafe)\s*\(\s*(?!["'][^"'\n]*["']\s*[,)]|`[^`$]*`)/,
+  /\b(?:client|pool|conn)\.query\s*\(\s*['"`]\s*(?:SELECT|INSERT|UPDATE|DELETE)\b[^)]{0,400}\$\{(?!\s*[\w$.]*(?:sanitiz|escape|quote)[\w$]*\s*\()/i,
   /\.query\s*\(\s*['"`][^'"`]{0,200}['"`]\s*\+/,
-  /\.whereRaw\s*\(|\.orderByRaw\s*\(|\.havingRaw\s*\(/,
+  /\.(?:where|orderBy|having)Raw\s*\(\s*(?!["'][^"'\n]*["']\s*[,)]|`[^`$]*`)/,
   /\bcursor\.execute\s*\(\s*f['"]/,
   /\bcursor\.execute\s*\(\s*(?:"[^"]{0,400}"|'[^']{0,400}')\s*(?:%|\.format\s*\(|\+)/,
   /\b(?:engine|session)\.execute\s*\(\s*(?:text\s*\(\s*)?f['"]/,

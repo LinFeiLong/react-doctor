@@ -27,4 +27,6 @@ export interface ScanFinding {
   readonly help?: string;
 }
 
-export type FileScan = (file: ScannedFile) => ScanFinding[];
+export interface FileScan {
+  (file: ScannedFile): ScanFinding[];
+}

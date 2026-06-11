@@ -2,8 +2,12 @@ import { defineRule } from "../../utils/define-rule.js";
 import { isClientSourcePath } from "./utils/is-client-source-path.js";
 import { scanByPattern } from "./utils/scan-by-pattern.js";
 
+// The privileged name must be the parameter actually read — a proximity
+// window matches `from "next/..."` imports and any file mentioning users.
+// No `email`/`user`: prefilled emails and username route params are benign
+// booking/contact UX, not privileged actions.
 const PRIVILEGED_QUERY_PARAM_PATTERN =
-  /\b(?:searchParams|URLSearchParams|request\.nextUrl\.searchParams|location\.search)\b[\s\S]{0,700}\b(?:email|user|userstoinvite|role|permission|sharingaction|invite|admin|next|continue|returnTo|redirect_uri)\b/i;
+  /\b(?:searchParams|useSearchParams\s*\(\s*\)|URLSearchParams\s*\([^)]{0,120}\))(?:[?!])?\.get(?:All)?\s*\(\s*["'](?:userstoinvite|role|permission|sharingaction|invite|admin|next|continue|returnTo|redirect_uri|callbackUrl)["']|\bsearchParams\.(?:userstoinvite|role|permission|sharingaction|invite|admin|returnTo|redirect_uri|callbackUrl)\b/i;
 
 export const urlPrefilledPrivilegedAction = defineRule({
   id: "url-prefilled-privileged-action",

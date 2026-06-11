@@ -11,12 +11,12 @@ export const publicDebugArtifact = defineRule({
     "Remove debug artifacts from public output; logs and dumps often reveal source paths, internal routes, tokens, or environment snapshots.",
   scan: (file) => {
     if (!isPublicDebugArtifactPath(file.relativePath)) return [];
-    // The finding is about the file existing at a public path, so there
-    // is no content match to anchor a location to.
+    // The finding is about the file existing at a public path, so there is
+    // no content match to anchor to — whole-file findings sit at 1:1.
     const finding: ScanFinding = {
       message: "A browser-reachable debug, log, dump, report, or env artifact is present.",
-      line: 0,
-      column: 0,
+      line: 1,
+      column: 1,
     };
     // Secret-bearing debug artifacts escalate over the rule's default "warn".
     const hasSecretValue = SECRET_VALUE_PATTERNS.some((pattern) => pattern.test(file.content));

@@ -1,2 +1,2 @@
-boot failed while connecting to DATABASE_URL=postgres://debug:password@db.example.com/app
+boot failed while connecting to DATABASE_URL=postgres://debug:N7vq2mXfA9z@db.example.com/app
 stack: at connect (/Users/example/app/server/db.ts:12:7)

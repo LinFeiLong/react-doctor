@@ -8,10 +8,12 @@ export const localRpcNativeBridgeRisk = defineRule({
   severity: "warn",
   recommendation:
     "Use exact origin allowlists after URL parsing, per-request nonces, narrow methods, and never expose install/update commands to arbitrary web pages.",
+  // Generic verbs (includes/indexOf/install/update) match dev-server helpers
+  // and ordinary state updates — only native-capability commands count.
   scan: scanByPattern({
     shouldScan: (file) => isProductionSourcePath(file.relativePath),
     pattern:
-      /\b(?:127\.0\.0\.1|localhost|Access-Control-Allow-Origin|websocket|WebSocket)\b[\s\S]{0,700}\b(?:includes|indexOf|endsWith|UpdateApp|InstallApp|install|update|exec|spawn)\b/i,
+      /\b(?:127\.0\.0\.1|localhost|Access-Control-Allow-Origin|websocket|WebSocket)\b[\s\S]{0,700}(?:\b(?:UpdateApp|InstallApp|child_process)\b|(?<![.\w$])(?:exec(?:File)?(?:Sync)?|spawn(?:Sync)?)\s*\()/i,
     message:
       "Code appears to bridge browser code to localhost/native capabilities with weak origin or update/install checks.",
   }),

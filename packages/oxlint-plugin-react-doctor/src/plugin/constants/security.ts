@@ -85,7 +85,11 @@ export const SECRET_VALUE_PATTERNS = [
   /\bservice_role\b/i,
   /"private_key"\s*:\s*"-----BEGIN PRIVATE KEY-----/,
   /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/,
-  /\b(?:postgres|mysql|mongodb(?:\+srv)?|redis):\/\/[^:\s/@]+:[^@\s/]+@/i,
+  // Placeholder credentials (postgres://user:pass@..., myusername:mypassword)
+  // are how compose templates and sample envs document the URL shape, and a
+  // dotless host is a docker-network service name (or localhost) that no
+  // credential can reach from outside the deployment.
+  /\b(?:postgres|mysql|mongodb(?:\+srv)?|redis):\/\/[^:\s/@]+:(?!(?:pass(?:word)?|my[a-z]*pass(?:word)?|mysecretpassword|myusername|postgres|mysql|redis|root|admin|minioadmin|secret|example|changeme|change_me|test|guest|placeholder|default|user(?:name)?|x{3,}|\*{2,}|\$\{[^}]*\}|\$[A-Z_]+|<[^>]*>|%[\w.]+%|\{\{[^}]*\}\})@)[^@\s/]+@(?!(?:localhost|127\.0\.0\.1|0\.0\.0\.0|host\.docker\.internal)(?:[:/\s]|$))[^\s:/@]*\./i,
 ];
 
 export const PUBLIC_ENV_SECRET_NAME_PATTERN =

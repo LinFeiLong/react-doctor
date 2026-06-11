@@ -8,10 +8,13 @@ export const tenantStaticProxyRisk = defineRule({
   severity: "warn",
   recommendation:
     "Bind tenant identity to the trusted host or authenticated org, canonicalize after decoding, reject traversal, and never let one tenant choose another tenant's asset prefix.",
+  // `params` near `fetch` matched every dynamic route handler; the tenant
+  // identifier must sit inside the asset-fetch call's own argument list.
+  // `(?<!\.)org` keeps `.org` domain literals from counting.
   scan: scanByPattern({
     shouldScan: (file) => isServerRouteSourcePath(file.relativePath),
     pattern:
-      /\b(?:tenant|subdomain|org|organization|workspace|hostPattern|params)\b[\s\S]{0,700}\b(?:fetch|S3|s3|cdn|bucket|path\.join|join\(["']\/["']\)|decodeURIComponent)\b/i,
+      /\b(?:fetch|path\.join|getObject\w*|GetObjectCommand|getSignedUrl|createReadStream)\s*\([^;]{0,200}(?:\$\{[^}]{0,100}\b(?:tenant|subdomain|workspace|hostPattern|(?<!\.)organization(?:Id|Slug)?)\b|\b(?:tenant|subdomain|workspace)(?:Id|Slug|Name)?\b\s*[,)+\].])/i,
     message:
       "Route code appears to compose tenant or subdomain input into a static/CDN/object-store fetch path.",
   }),
