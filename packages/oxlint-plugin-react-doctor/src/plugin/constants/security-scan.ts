@@ -19,13 +19,19 @@ export const SERVER_CONTEXT_PATTERN =
   /(?:^|\/)(?:api|backend|server|servers|middleware|route|routes|functions|lambdas|workers)(?:\/|$)|(?:^|\/)[^/]+\.server\.[cm]?[jt]sx?$/i;
 
 export const TEST_CONTEXT_PATTERN =
-  /(?:^|\/)(?:__fixtures__|__mocks__|__tests__|fixtures|mocks|test|tests)(?:\/|$)|\.(?:test|spec|fixture|fixtures|stories|story)\.[cm]?[jt]sx?$/i;
+  /(?:^|\/)(?:__fixtures__|__mocks__|__tests__|fixtures|mocks|test|tests|e2e|playwright)(?:\/|$)|\.(?:test|spec|e2e|e2e-spec|integration-test|fixture|fixtures|stories|story)\.[cm]?[jt]sx?$|(?:^|\/)(?:test_[^/]+|[^/]+_test|conftest)\.py$|\.env\.[^/]*(?:test|e2e)[^/]*$/i;
+
+// `tools/` is deliberately not excluded: agent/MCP tool definitions live there.
+export const BUILD_SCRIPT_CONTEXT_PATTERN = /(?:^|\/)scripts(?:\/|$)/i;
 
 export const DOCUMENTATION_CONTEXT_PATTERN =
   /(?:^|\/)(?:README|CHANGELOG|CONTRIBUTING|PUBLISHING|DOCS)\.mdx?$|\.mdx?$/i;
 
+// Vendored directories and version-pinned filenames (`jsonwebtoken@8.5.1.js`)
+// are third-party code the project does not own; their internals (cipher
+// tables, exec helpers) are not this repository's security posture.
 export const GENERATED_SOURCE_CONTEXT_PATTERN =
-  /(?:^|\/)(?:generated|__generated__|dist|build|coverage|out|storybook-static)(?:\/|$)|(?:^|\/)\.next\/|(?:^|\/)public\/(?:chunks?|assets?|build|dist|static)\/|(?:generated|\.gen)\.[cm]?[jt]sx?$/i;
+  /(?:^|\/)(?:generated|__generated__|dist|build|coverage|out|storybook-static|vendor|vendors|third[-_]?party|libraries)(?:\/|$)|(?:^|\/)\.next\/|(?:^|\/)public\/(?:chunks?|assets?|build|dist|static)\/|(?:generated|\.gen)\.[cm]?[jt]sx?$|@\d+\.\d+\.\d+(?:[-.][\w.]+)?\.[cm]?js$|[.-]min\.[cm]?js$/i;
 
 // Filename-only bundle test (the walker content-sniffs minified files
 // separately). Distinct from @react-doctor/core's same-named pattern,

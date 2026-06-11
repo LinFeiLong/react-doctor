@@ -10,7 +10,7 @@ import { hasSecretValue } from "./utils/has-secret-value.js";
 import { isRepositorySecretFilePath } from "./utils/is-repository-secret-file-path.js";
 
 const isRepositorySecretExamplePath = (relativePath: string): boolean =>
-  /(?:^|\/)\.env\.example$|(?:^|\/)[^/]*(?:example|sample|template)[^/]*\.(?:env|json|pem|key)$/i.test(
+  /(?:^|\/)\.env\.(?:example|sample|template|dist|defaults?)$|(?:^|\/)[^/]*(?:example|sample|template)[^/]*\.(?:env|json|pem|key)$/i.test(
     relativePath,
   );
 

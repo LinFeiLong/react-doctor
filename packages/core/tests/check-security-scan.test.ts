@@ -245,9 +245,11 @@ describe("checkSecurityScan", () => {
       "app/api/static/[tenant]/route.ts",
       `export const GET = async (_, { params }) => fetch(CDN + "/" + params.tenant + "/" + decodeURIComponent(params.path.join("/")));`,
     );
+    // Untrusted-shaped source: rendering a project's own docs MDX is the
+    // benign default, so the rule keys on request/tenant-shaped input.
     writeFile(
       "src/render-mdx.ts",
-      `import { compileMDX } from "next-mdx-remote/rsc"; export const render = (markdown) => compileMDX({ source: markdown });`,
+      `import { compileMDX } from "next-mdx-remote/rsc"; export const render = (req) => compileMDX({ source: req.body.markdown });`,
     );
     writeFile(
       "src/local-bridge.ts",
@@ -297,17 +299,21 @@ describe("checkSecurityScan", () => {
       "app/api/files/route.ts",
       `export const POST = async (request) => readFile(request.body.path, "utf-8");`,
     );
+    // Request-shaped interpolation: bare `${owner}` parameters proved to be
+    // internal config in practice, so the rule keys on request property reads.
     writeFile(
       "src/github-import.ts",
-      "export const build = (owner, repo) => `https://api.github.com/repos/${owner}/${repo}`;",
+      "export const build = (req) => `https://api.github.com/repos/${req.query.owner}/${req.query.repo}`;",
     );
     writeFile(
       "app/api/stripe/webhook/route.ts",
       `export const POST = async (request) => { const event = await request.json(); return Response.json({ received: event.type }); };`,
     );
     writeFile("src/session-token.ts", `export const token = () => Math.random().toString(36);`);
+    // Not under `scripts/`: build-script paths are excluded from production
+    // source on purpose (see BUILD_SCRIPT_CONTEXT_PATTERN).
     writeFile(
-      "scripts/report.py",
+      "backend/report.py",
       "import os\ndef run(request):\n    os.system(f\"wkhtmltopdf {request.args['url']} /tmp/report.pdf\")\n",
     );
     writeFile(
