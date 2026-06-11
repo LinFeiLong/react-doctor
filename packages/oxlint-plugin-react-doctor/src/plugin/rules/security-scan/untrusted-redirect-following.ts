@@ -1,4 +1,3 @@
-import { SERVER_CONTEXT_PATTERN } from "../../constants/security-scan.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { ScanFinding } from "../../utils/file-scan.js";
 import { isServerRouteSourcePath } from "./utils/is-server-route-source-path.js";
@@ -18,12 +17,7 @@ export const untrustedRedirectFollowing = defineRule({
   recommendation:
     'Use `redirect: "manual"` or equivalent and re-validate every redirect target before following it to avoid SSRF redirect bypasses.',
   scan: (file) => {
-    if (
-      !isServerRouteSourcePath(file.relativePath) &&
-      !SERVER_CONTEXT_PATTERN.test(file.relativePath)
-    ) {
-      return [];
-    }
+    if (!isServerRouteSourcePath(file.relativePath)) return [];
     if (!OUTBOUND_FETCH_CALL_PATTERN.test(file.content)) return [];
 
     const findings: ScanFinding[] = [];
