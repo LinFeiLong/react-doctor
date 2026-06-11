@@ -20,31 +20,34 @@ interface DirectoryStackEntry {
   readonly depth: number;
 }
 
-const readScannedFile = (
-  absolutePath: string,
-  relativePath: string,
-  isGeneratedBundleByName: boolean,
-): ScannedFile | null => {
+interface SecurityScanCandidate {
+  readonly absolutePath: string;
+  readonly relativePath: string;
+  readonly isGeneratedBundleByName: boolean;
+}
+
+const readScannedFile = (candidate: SecurityScanCandidate): ScannedFile | null => {
   let stat: fs.Stats;
   try {
-    stat = fs.statSync(absolutePath);
+    stat = fs.statSync(candidate.absolutePath);
   } catch {
     return null;
   }
   if (!stat.isFile()) return null;
 
-  const isGeneratedBundle = isGeneratedBundleByName || isLargeMinifiedFile(absolutePath);
+  const isGeneratedBundle =
+    candidate.isGeneratedBundleByName || isLargeMinifiedFile(candidate.absolutePath);
   const maxSizeBytes = isGeneratedBundle
     ? SECURITY_SCAN_MAX_BUNDLE_FILE_SIZE_BYTES
     : SECURITY_SCAN_MAX_FILE_SIZE_BYTES;
   if (stat.size > maxSizeBytes) return null;
-  if (!shouldReadSecurityScanContent(relativePath, isGeneratedBundle)) return null;
+  if (!shouldReadSecurityScanContent(candidate.relativePath, isGeneratedBundle)) return null;
 
   try {
     return {
-      absolutePath,
-      relativePath,
-      content: fs.readFileSync(absolutePath, "utf-8"),
+      absolutePath: candidate.absolutePath,
+      relativePath: candidate.relativePath,
+      content: fs.readFileSync(candidate.absolutePath, "utf-8"),
       isGeneratedBundle,
     };
   } catch {
@@ -52,14 +55,19 @@ const readScannedFile = (
   }
 };
 
-// Bounded whole-tree walk feeding the security-scan rules: files are
-// bucketed priority → artifact → other by `classifySecurityScanFile`
-// (each bucket capped at SECURITY_SCAN_MAX_FILES) so config/secret files
-// and shipped browser artifacts survive the cap on huge repositories.
-export const collectSecurityScanFiles = (rootDirectory: string): ScannedFile[] => {
-  const priorityFiles: ScannedFile[] = [];
-  const artifactFiles: ScannedFile[] = [];
-  const otherFiles: ScannedFile[] = [];
+// Bounded whole-tree walk feeding the security-scan rules: candidate paths
+// are bucketed priority → artifact → other by `classifySecurityScanFile`
+// so config/secret files and shipped browser artifacts survive the cap on
+// huge repositories. Only paths are collected up front; contents are read
+// lazily, one file per iteration (capped at SECURITY_SCAN_MAX_FILES
+// successful reads per bucket), so a caller that streams findings never
+// holds more than one file's content at a time.
+export function* collectSecurityScanFiles(
+  rootDirectory: string,
+): Generator<ScannedFile, void, void> {
+  const priorityCandidates: SecurityScanCandidate[] = [];
+  const artifactCandidates: SecurityScanCandidate[] = [];
+  const otherCandidates: SecurityScanCandidate[] = [];
   const stack: DirectoryStackEntry[] = [{ absolutePath: rootDirectory, depth: 0 }];
 
   while (stack.length > 0) {
@@ -67,8 +75,7 @@ export const collectSecurityScanFiles = (rootDirectory: string): ScannedFile[] =
     if (current === undefined) continue;
     if (current.depth > SECURITY_SCAN_MAX_DIRECTORY_DEPTH) continue;
 
-    const entries = readDirectoryEntries(current.absolutePath);
-    for (const entry of entries) {
+    for (const entry of readDirectoryEntries(current.absolutePath)) {
       const absolutePath = path.join(current.absolutePath, entry.name);
       if (entry.isDirectory()) {
         if (!SKIPPED_DIRECTORY_NAMES.has(entry.name)) {
@@ -80,22 +87,28 @@ export const collectSecurityScanFiles = (rootDirectory: string): ScannedFile[] =
       const relativePath = path.relative(rootDirectory, absolutePath).replaceAll("\\", "/");
       const classification = classifySecurityScanFile(relativePath);
       if (classification === null) continue;
-      const bucketFiles =
+      const candidates =
         classification.bucket === "priority"
-          ? priorityFiles
+          ? priorityCandidates
           : classification.bucket === "artifact"
-            ? artifactFiles
-            : otherFiles;
-      if (bucketFiles.length >= SECURITY_SCAN_MAX_FILES) continue;
-
-      const scannedFile = readScannedFile(
+            ? artifactCandidates
+            : otherCandidates;
+      candidates.push({
         absolutePath,
         relativePath,
-        classification.isGeneratedBundleByName,
-      );
-      if (scannedFile !== null) bucketFiles.push(scannedFile);
+        isGeneratedBundleByName: classification.isGeneratedBundleByName,
+      });
     }
   }
 
-  return [...priorityFiles, ...artifactFiles, ...otherFiles];
-};
+  for (const candidates of [priorityCandidates, artifactCandidates, otherCandidates]) {
+    let yieldedCount = 0;
+    for (const candidate of candidates) {
+      if (yieldedCount >= SECURITY_SCAN_MAX_FILES) break;
+      const scannedFile = readScannedFile(candidate);
+      if (scannedFile === null) continue;
+      yieldedCount += 1;
+      yield scannedFile;
+    }
+  }
+}
