@@ -1,7 +1,6 @@
+import { SECRET_VALUE_PATTERNS } from "../../constants/security.js";
 import { defineRule } from "../../utils/define-rule.js";
 import type { ScanFinding } from "../../utils/file-scan.js";
-import { getMatchLocation } from "./utils/get-match-location.js";
-import { hasSecretValue } from "./utils/has-secret-value.js";
 import { isPublicDebugArtifactPath } from "./utils/is-public-debug-artifact-path.js";
 
 export const publicDebugArtifact = defineRule({
@@ -12,13 +11,15 @@ export const publicDebugArtifact = defineRule({
     "Remove debug artifacts from public output; logs and dumps often reveal source paths, internal routes, tokens, or environment snapshots.",
   scan: (file) => {
     if (!isPublicDebugArtifactPath(file.relativePath)) return [];
-    const location = getMatchLocation(file.content, undefined);
+    // The finding is about the file existing at a public path, so there
+    // is no content match to anchor a location to.
     const finding: ScanFinding = {
       message: "A browser-reachable debug, log, dump, report, or env artifact is present.",
-      line: location.line,
-      column: location.column,
+      line: 0,
+      column: 0,
     };
     // Secret-bearing debug artifacts escalate over the rule's default "warn".
-    return [hasSecretValue(file.content) ? { ...finding, severity: "error" } : finding];
+    const hasSecretValue = SECRET_VALUE_PATTERNS.some((pattern) => pattern.test(file.content));
+    return [hasSecretValue ? { ...finding, severity: "error" } : finding];
   },
 });

@@ -17,6 +17,3 @@ export const findSuspiciousPublicEnvSecretNamePattern = (content: string): RegEx
   }
   return undefined;
 };
-
-export const hasSuspiciousPublicEnvSecretName = (content: string): boolean =>
-  findSuspiciousPublicEnvSecretNamePattern(content) !== undefined;

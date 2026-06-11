@@ -1,6 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
-import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionSourcePath } from "./utils/is-production-source-path.js";
+import { scanByPattern } from "./utils/scan-by-pattern.js";
 
 const WEBHOOK_HANDLER_PATTERN =
   /(?:^|\/)[^/]*webhook[^/]*\/|(?:^|\/)[^/]*webhook[^/]*\.[cm]?[jt]s$|\bwebhook\b/i;
@@ -17,24 +17,13 @@ export const webhookSignatureRisk = defineRule({
   severity: "warn",
   recommendation:
     "Verify provider signatures before parsing or acting on webhook bodies. Use provider SDK helpers or HMAC verification with timing-safe comparison.",
-  scan: (file) => {
-    if (!isProductionSourcePath(file.relativePath)) return [];
-    if (
-      !WEBHOOK_HANDLER_PATTERN.test(file.relativePath) &&
-      !WEBHOOK_HANDLER_PATTERN.test(file.content)
-    ) {
-      return [];
-    }
-    if (!WEBHOOK_ENTRYPOINT_PATTERN.test(file.content)) return [];
-    if (WEBHOOK_SIGNATURE_VERIFICATION_PATTERN.test(file.content)) return [];
-
-    const location = getMatchLocation(file.content, WEBHOOK_ENTRYPOINT_PATTERN);
-    return [
-      {
-        message: "Webhook handler code does not show an obvious signature verification step.",
-        line: location.line,
-        column: location.column,
-      },
-    ];
-  },
+  scan: scanByPattern({
+    shouldScan: (file) =>
+      isProductionSourcePath(file.relativePath) &&
+      (WEBHOOK_HANDLER_PATTERN.test(file.relativePath) ||
+        WEBHOOK_HANDLER_PATTERN.test(file.content)),
+    pattern: WEBHOOK_ENTRYPOINT_PATTERN,
+    suppressWhen: WEBHOOK_SIGNATURE_VERIFICATION_PATTERN,
+    message: "Webhook handler code does not show an obvious signature verification step.",
+  }),
 });

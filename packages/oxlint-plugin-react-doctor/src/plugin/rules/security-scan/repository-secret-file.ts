@@ -1,12 +1,8 @@
 import { TEST_CONTEXT_PATTERN } from "../../constants/security-scan.js";
 import { SECRET_VALUE_PATTERNS } from "../../constants/security.js";
 import { defineRule } from "../../utils/define-rule.js";
-import {
-  findSuspiciousPublicEnvSecretNamePattern,
-  hasSuspiciousPublicEnvSecretName,
-} from "./utils/find-suspicious-public-env-secret-name.js";
+import { findSuspiciousPublicEnvSecretNamePattern } from "./utils/find-suspicious-public-env-secret-name.js";
 import { getMatchLocation } from "./utils/get-match-location.js";
-import { hasSecretValue } from "./utils/has-secret-value.js";
 import { isRepositorySecretFilePath } from "./utils/is-repository-secret-file-path.js";
 
 const isRepositorySecretExamplePath = (relativePath: string): boolean =>
@@ -24,13 +20,12 @@ export const repositorySecretFile = defineRule({
     if (!isRepositorySecretFilePath(file.relativePath)) return [];
     if (isRepositorySecretExamplePath(file.relativePath)) return [];
     if (TEST_CONTEXT_PATTERN.test(file.relativePath)) return [];
-    if (!hasSecretValue(file.content) && !hasSuspiciousPublicEnvSecretName(file.content)) {
-      return [];
-    }
 
     const pattern =
       SECRET_VALUE_PATTERNS.find((candidate) => candidate.test(file.content)) ??
       findSuspiciousPublicEnvSecretNamePattern(file.content);
+    if (pattern === undefined) return [];
+
     const location = getMatchLocation(file.content, pattern);
     return [
       {

@@ -45,16 +45,11 @@ export const activeStaticAsset = defineRule({
       return findings;
     }
 
-    if (
-      DANGEROUS_ALLOW_SVG_PATTERN.test(file.content) ||
-      EXECUTABLE_SVG_EMBED_PATTERN.test(file.content)
-    ) {
-      const location = getMatchLocation(
-        file.content,
-        DANGEROUS_ALLOW_SVG_PATTERN.test(file.content)
-          ? DANGEROUS_ALLOW_SVG_PATTERN
-          : EXECUTABLE_SVG_EMBED_PATTERN,
-      );
+    const pattern = [DANGEROUS_ALLOW_SVG_PATTERN, EXECUTABLE_SVG_EMBED_PATTERN].find((candidate) =>
+      candidate.test(file.content),
+    );
+    if (pattern !== undefined) {
+      const location = getMatchLocation(file.content, pattern);
       findings.push({
         message: "The app enables or embeds SVG in an executable browser context.",
         line: location.line,

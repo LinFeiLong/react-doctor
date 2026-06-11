@@ -1,6 +1,6 @@
 import { defineRule } from "../../utils/define-rule.js";
-import { getMatchLocation } from "./utils/get-match-location.js";
 import { isProductionScriptSourcePath } from "./utils/is-production-script-source-path.js";
+import { scanByPattern } from "./utils/scan-by-pattern.js";
 
 const RAW_SQL_RISK_PATTERNS = [
   /\$queryRawUnsafe\s*\(/,
@@ -23,18 +23,10 @@ export const rawSqlInjectionRisk = defineRule({
   severity: "warn",
   recommendation:
     "Keep user input in driver parameters or ORM bind variables. Avoid unsafe/raw SQL helpers and string interpolation for queries.",
-  scan: (file) => {
-    if (!isProductionScriptSourcePath(file.relativePath)) return [];
-    const pattern = RAW_SQL_RISK_PATTERNS.find((candidate) => candidate.test(file.content));
-    if (pattern === undefined) return [];
-    const location = getMatchLocation(file.content, pattern);
-    return [
-      {
-        message:
-          "Code uses a raw SQL escape hatch or string-built query shape that can bypass parameter binding.",
-        line: location.line,
-        column: location.column,
-      },
-    ];
-  },
+  scan: scanByPattern({
+    shouldScan: (file) => isProductionScriptSourcePath(file.relativePath),
+    pattern: RAW_SQL_RISK_PATTERNS,
+    message:
+      "Code uses a raw SQL escape hatch or string-built query shape that can bypass parameter binding.",
+  }),
 });

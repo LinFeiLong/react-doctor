@@ -21,20 +21,15 @@ export const insecureCryptoRisk = defineRule({
     "Use modern primitives, `crypto.randomBytes` / Web Crypto randomness, and timing-safe comparisons for signatures, digests, tokens, and auth material.",
   scan: (file) => {
     if (!isProductionSourcePath(file.relativePath)) return [];
-    const hasInsecurePrimitive =
-      INSECURE_CRYPTO_PATTERN.test(file.content) ||
-      UNSAFE_SIGNATURE_COMPARISON_PATTERN.test(file.content);
-    const hasSecurityRandom =
-      SECURITY_RANDOM_CONTEXT_PATTERN.test(file.content) &&
-      MATH_RANDOM_CALL_PATTERN.test(file.content);
-    if (!hasInsecurePrimitive && !hasSecurityRandom) return [];
-
-    let pattern = MATH_RANDOM_CALL_PATTERN;
-    if (INSECURE_CRYPTO_PATTERN.test(file.content)) {
-      pattern = INSECURE_CRYPTO_PATTERN;
-    } else if (UNSAFE_SIGNATURE_COMPARISON_PATTERN.test(file.content)) {
-      pattern = UNSAFE_SIGNATURE_COMPARISON_PATTERN;
-    }
+    const pattern =
+      [INSECURE_CRYPTO_PATTERN, UNSAFE_SIGNATURE_COMPARISON_PATTERN].find((candidate) =>
+        candidate.test(file.content),
+      ) ??
+      (SECURITY_RANDOM_CONTEXT_PATTERN.test(file.content) &&
+      MATH_RANDOM_CALL_PATTERN.test(file.content)
+        ? MATH_RANDOM_CALL_PATTERN
+        : undefined);
+    if (pattern === undefined) return [];
 
     const location = getMatchLocation(file.content, pattern);
     return [
