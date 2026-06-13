@@ -1,0 +1,84 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index db4894f02ffeb57715b533570f1459a9ccaa4583..2f9b766139a572322d91f7a1855f01f2baa1dba7 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -3227,8 +3227,12 @@ const resolveExpoPluginPath = (configDirectory, pluginPath) => {
+ 		if (isFile(indexCandidatePath)) return indexCandidatePath;
+ 	}
+ };
++const __expoPluginPackages = new Set();
+ const addExpoPluginEntry = (entries, rootDirectory, configDirectory, pluginPath) => {
+-	if (!isLocalExpoPluginPath(pluginPath)) return;
++	if (!isLocalExpoPluginPath(pluginPath)) {
++		if (pluginPath.length > 0 && !pluginPath.startsWith("/") && !pluginPath.includes("*") && !pluginPath.includes("?")) __expoPluginPackages.add(pluginPath);
++		return;
++	}
+ 	const resolvedPath = resolveExpoPluginPath(configDirectory, pluginPath);
+ 	if (!resolvedPath) return;
+ 	const relativePath = (0, node_path.relative)(rootDirectory, resolvedPath);
+@@ -3256,7 +3260,12 @@ const collectExpoPluginPathsFromArray = (array, entries, rootDirectory, configDi
+ 	}
+ };
+ const collectExpoPluginPathsFromConfigObject = (objectLiteral, entries, rootDirectory, configDirectory) => {
+-	for (const property of objectLiteral.properties) if (typescript.default.isPropertyAssignment(property) && getPropertyName(property.name) === "plugins" && typescript.default.isArrayLiteralExpression(property.initializer)) collectExpoPluginPathsFromArray(property.initializer, entries, rootDirectory, configDirectory);
++	for (const property of objectLiteral.properties) {
++		if (!typescript.default.isPropertyAssignment(property)) continue;
++		const __name = getPropertyName(property.name);
++		if (__name === "plugins" && typescript.default.isArrayLiteralExpression(property.initializer)) collectExpoPluginPathsFromArray(property.initializer, entries, rootDirectory, configDirectory);
++		if (__name === "expo" && typescript.default.isObjectLiteralExpression(property.initializer)) collectExpoPluginPathsFromConfigObject(property.initializer, entries, rootDirectory, configDirectory);
++	}
+ };
+ const collectReturnedExpoConfigPluginPaths = (body, entries, rootDirectory, configDirectory) => {
+ 	if (!typescript.default.isBlock(body)) {
+@@ -8152,6 +8161,9 @@ const detectStalePackages = (graph, config) => {
+ 		if (declaredNames.has(toPackage)) usedPackageNames.add(toPackage);
+ 		if (usedPackageNames.has(fromPackage) && declaredNames.has(toPackage)) usedPackageNames.add(toPackage);
+ 	}
++	__expoPluginPackages.clear();
++	extractExpoConfigPluginEntries(config.rootDir, { ...dependencies, ...devDependencies });
++	for (const packageName of __expoPluginPackages) if (declaredNames.has(packageName)) usedPackageNames.add(packageName);
+ 	const candidateUnused = /* @__PURE__ */ new Set();
+ 	for (const [dependencyName] of declaredDependencies) {
+ 		if (isAlwaysConsideredUsed(dependencyName)) continue;
+diff --git a/dist/index.mjs b/dist/index.mjs
+index e83e31e1b8a17a35ab8425049a664d061dc01164..92a802b6d3c15dcb12bfa74fa3e22f01d7046fcd 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -3195,8 +3195,12 @@ const resolveExpoPluginPath = (configDirectory, pluginPath) => {
+ 		if (isFile(indexCandidatePath)) return indexCandidatePath;
+ 	}
+ };
++const __expoPluginPackages = new Set();
+ const addExpoPluginEntry = (entries, rootDirectory, configDirectory, pluginPath) => {
+-	if (!isLocalExpoPluginPath(pluginPath)) return;
++	if (!isLocalExpoPluginPath(pluginPath)) {
++		if (pluginPath.length > 0 && !pluginPath.startsWith("/") && !pluginPath.includes("*") && !pluginPath.includes("?")) __expoPluginPackages.add(pluginPath);
++		return;
++	}
+ 	const resolvedPath = resolveExpoPluginPath(configDirectory, pluginPath);
+ 	if (!resolvedPath) return;
+ 	const relativePath = relative(rootDirectory, resolvedPath);
+@@ -3224,7 +3228,12 @@ const collectExpoPluginPathsFromArray = (array, entries, rootDirectory, configDi
+ 	}
+ };
+ const collectExpoPluginPathsFromConfigObject = (objectLiteral, entries, rootDirectory, configDirectory) => {
+-	for (const property of objectLiteral.properties) if (ts.isPropertyAssignment(property) && getPropertyName(property.name) === "plugins" && ts.isArrayLiteralExpression(property.initializer)) collectExpoPluginPathsFromArray(property.initializer, entries, rootDirectory, configDirectory);
++	for (const property of objectLiteral.properties) {
++		if (!ts.isPropertyAssignment(property)) continue;
++		const __name = getPropertyName(property.name);
++		if (__name === "plugins" && ts.isArrayLiteralExpression(property.initializer)) collectExpoPluginPathsFromArray(property.initializer, entries, rootDirectory, configDirectory);
++		if (__name === "expo" && ts.isObjectLiteralExpression(property.initializer)) collectExpoPluginPathsFromConfigObject(property.initializer, entries, rootDirectory, configDirectory);
++	}
+ };
+ const collectReturnedExpoConfigPluginPaths = (body, entries, rootDirectory, configDirectory) => {
+ 	if (!ts.isBlock(body)) {
+@@ -8120,6 +8129,9 @@ const detectStalePackages = (graph, config) => {
+ 		if (declaredNames.has(toPackage)) usedPackageNames.add(toPackage);
+ 		if (usedPackageNames.has(fromPackage) && declaredNames.has(toPackage)) usedPackageNames.add(toPackage);
+ 	}
++	__expoPluginPackages.clear();
++	extractExpoConfigPluginEntries(config.rootDir, { ...dependencies, ...devDependencies });
++	for (const packageName of __expoPluginPackages) if (declaredNames.has(packageName)) usedPackageNames.add(packageName);
+ 	const candidateUnused = /* @__PURE__ */ new Set();
+ 	for (const [dependencyName] of declaredDependencies) {
+ 		if (isAlwaysConsideredUsed(dependencyName)) continue;

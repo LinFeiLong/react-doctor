@@ -1,59 +1,65 @@
-# tv-fork — react-doctor patché pour Expo
+# tv-fork — react-doctor avec le correctif plugins Expo
 
-Ce dossier sert à maintenir **`@linfeilong/react-doctor`** : react-doctor + un
-correctif des faux positifs `unused-dependency` / `unused-file` sur les plugins
-Expo (forme `{ expo: { plugins } }` d'`app.config.js`, et plugins déclarés par
-nom de package comme `@react-native-tvos/config-tv`).
+react-doctor (le moteur dead-code `deslop-js`) produit de faux positifs sur les
+projets Expo :
 
-## Utilisation quotidienne
+- `unused-dependency` sur un plugin déclaré par nom de package
+  (ex. `@react-native-tvos/config-tv`) ;
+- `unused-file` / non-détection des plugins quand `app.config.js` a la forme
+  `{ expo: { plugins: [...] } }`.
+
+Ce dossier installe react-doctor **en global, patché**, sur n'importe quelle machine.
+
+## Méthode retenue : `bun add -g` + `bun patch`
+
+On installe le react-doctor **officiel complet** et on patche le `deslop-js`
+qu'il embarque. C'est robuste : rien n'est sorti de son contexte.
+
+> ⚠️ On a essayé de publier un fork autonome (`@linfeilong/react-doctor`) appelable
+> via `bunx`. Abandonné : react-doctor est un monorepo, et un package extrait seul
+> perd ses dépendances communes (hoistées) → `ERR_MODULE_NOT_FOUND` en cascade.
+> Le `bun patch` ci-dessous ne souffre pas de ce problème.
+
+## Installer (machine neuve, ou après `bun update -g`)
 
 ```bash
-bunx @linfeilong/react-doctor <projet> --no-telemetry
+bash tv-fork/setup.sh
 ```
 
-Prérequis une fois par machine — `~/.npmrc` :
+Le script : `bun add -g react-doctor`, puis applique `deslop-js-dist.patch` au
+deslop-js global via `bun patch`. Idempotent (ne refait rien si déjà patché).
 
-```
-@linfeilong:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=<PAT GitHub avec read:packages>
-```
-
-## Vérifier / suivre une mise à jour de react-doctor
+Ensuite, partout :
 
 ```bash
-bash tv-fork/update.sh --check   # dit juste si react-doctor upstream a une version plus récente
-bash tv-fork/update.sh           # vérifie ET rebuild si une MAJ existe
+react-doctor <projet> --no-telemetry
 ```
 
-`update.sh` compare la version de `react-doctor` (npm officiel) à celle de ton
-fork publié. S'ils sont égaux → « déjà à jour », rien à faire. Sinon il reclone
-react-doctor + deslop-js, applique `expo-config-plugin-fix.patch` au source de
-deslop-js, et rebuild les 4 packages. Pour publier un `write:packages` est requis
-dans `~/.npmrc`.
+## Suivre une mise à jour de react-doctor
 
-## Les 4 packages publiés (GitHub Packages, scope @linfeilong)
+```bash
+bash tv-fork/update.sh --check   # dit si react-doctor upstream a une version plus récente
+```
 
-| Package | Rôle |
-| --- | --- |
-| `@linfeilong/deslop-js` | moteur dead-code — **porte le correctif** |
-| `@linfeilong/oxlint-plugin-react-doctor` | plugin oxlint (dép. de core) |
-| `@linfeilong/react-doctor-core` | moteur de diagnostics |
-| `@linfeilong/react-doctor` | le binaire `react-doctor` |
+Si oui et que tu fais `bun update -g react-doctor`, le patch saute → relance
+`bash tv-fork/setup.sh` pour le réappliquer.
 
-Versions : `<base upstream>-expo-plugins.<n>`.
+## Fichiers
 
-## Republier (étape manuelle guidée)
-
-Après un `update.sh` qui a rebuildé, republier consiste à, pour chaque package :
-renommer en `@linfeilong/*` dans son `package.json`, réécrire les dépendances
-internes (`deslop-js` → `@linfeilong/deslop-js`, `@react-doctor/core` →
-`@linfeilong/react-doctor-core`, `oxlint-plugin-react-doctor` →
-`@linfeilong/oxlint-plugin-react-doctor`), faire le même remplacement dans les
-fichiers `dist/`, puis `npm publish --registry=https://npm.pkg.github.com`.
-Ordre : deslop-js → oxlint-plugin → core → react-doctor.
+- `setup.sh` — install globale + patch (la commande à lancer).
+- `deslop-js-dist.patch` — correctif appliqué au **bundle** `dist/index.{mjs,cjs}`
+  de deslop-js (cible 0.0.24 / 0.0.25).
+- `expo-config-plugin-fix.patch` — le même correctif au niveau du **source** TS
+  (référence ; utile pour régénérer le patch dist si la version de deslop-js change).
+- `update.sh` — comparateur de version upstream.
 
 ## Le vrai fix
 
-Le correctif est proposé en amont (PR sur `millionco/deslop-js`). S'il est mergé
-et publié, ce fork devient inutile : `bunx react-doctor@latest` officiel suffira.
-`expo-config-plugin-fix.patch` est le diff source de référence.
+Proposé en amont (PR sur `millionco/deslop-js`). Une fois mergé et publié,
+`react-doctor@latest` officiel suffira et ce dossier deviendra inutile.
+
+## Régénérer le patch dist (si deslop-js change de version)
+
+Le bundle change → le `.patch` ne s'applique plus. Réappliquer le fix au source
+(`expo-config-plugin-fix.patch` sur `millionco/deslop-js`), `bun run build`, puis
+`git diff` sur `dist/index.mjs` + `dist/index.cjs` → nouveau `deslop-js-dist.patch`.
