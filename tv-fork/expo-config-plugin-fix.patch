@@ -1,0 +1,347 @@
+diff --git a/packages/deslop-js/src/collect/expo-config-plugin-entries.ts b/packages/deslop-js/src/collect/expo-config-plugin-entries.ts
+index 46871dc..1836fe9 100644
+--- a/packages/deslop-js/src/collect/expo-config-plugin-entries.ts
++++ b/packages/deslop-js/src/collect/expo-config-plugin-entries.ts
+@@ -22,6 +22,11 @@ interface StaticConfigBindings {
+   readonly functions: Map<string, ts.FunctionDeclaration>;
+ }
+ 
++interface ExpoPluginCollector {
++  readonly filePaths: Set<string>;
++  readonly packageNames: Set<string>;
++}
++
+ const isRecord = (value: unknown): value is Record<string, unknown> =>
+   typeof value === "object" && value !== null;
+ 
+@@ -58,13 +63,24 @@ const resolveExpoPluginPath = (configDirectory: string, pluginPath: string): str
+   return undefined;
+ };
+ 
++const isPackagePluginName = (value: string): boolean =>
++  value.length > 0 &&
++  !value.startsWith("./") &&
++  !value.startsWith("../") &&
++  !value.startsWith("/") &&
++  !value.includes("*") &&
++  !value.includes("?");
++
+ const addExpoPluginEntry = (
+-  entries: Set<string>,
++  collector: ExpoPluginCollector,
+   rootDirectory: string,
+   configDirectory: string,
+   pluginPath: string,
+ ): void => {
+-  if (!isLocalExpoPluginPath(pluginPath)) return;
++  if (!isLocalExpoPluginPath(pluginPath)) {
++    if (isPackagePluginName(pluginPath)) collector.packageNames.add(pluginPath);
++    return;
++  }
+ 
+   const resolvedPath = resolveExpoPluginPath(configDirectory, pluginPath);
+   if (!resolvedPath) return;
+@@ -72,7 +88,7 @@ const addExpoPluginEntry = (
+   const relativePath = relative(rootDirectory, resolvedPath);
+   if (relativePath !== "" && (relativePath.startsWith("..") || isAbsolute(relativePath))) return;
+ 
+-  entries.add(resolvedPath);
++  collector.filePaths.add(resolvedPath);
+ };
+ 
+ const getPropertyName = (name: ts.PropertyName): string | undefined => {
+@@ -91,13 +107,13 @@ const unwrapExpression = (expression: ts.Expression): ts.Expression => {
+ 
+ const collectExpoPluginPathsFromArray = (
+   array: ts.ArrayLiteralExpression,
+-  entries: Set<string>,
++  collector: ExpoPluginCollector,
+   rootDirectory: string,
+   configDirectory: string,
+ ): void => {
+   for (const element of array.elements) {
+     if (ts.isStringLiteral(element) || ts.isNoSubstitutionTemplateLiteral(element)) {
+-      addExpoPluginEntry(entries, rootDirectory, configDirectory, element.text);
++      addExpoPluginEntry(collector, rootDirectory, configDirectory, element.text);
+       continue;
+     }
+ 
+@@ -107,7 +123,7 @@ const collectExpoPluginPathsFromArray = (
+         pluginName &&
+         (ts.isStringLiteral(pluginName) || ts.isNoSubstitutionTemplateLiteral(pluginName))
+       ) {
+-        addExpoPluginEntry(entries, rootDirectory, configDirectory, pluginName.text);
++        addExpoPluginEntry(collector, rootDirectory, configDirectory, pluginName.text);
+       }
+     }
+   }
+@@ -115,19 +131,30 @@ const collectExpoPluginPathsFromArray = (
+ 
+ const collectExpoPluginPathsFromConfigObject = (
+   objectLiteral: ts.ObjectLiteralExpression,
+-  entries: Set<string>,
++  collector: ExpoPluginCollector,
+   rootDirectory: string,
+   configDirectory: string,
+ ): void => {
+   for (const property of objectLiteral.properties) {
+-    if (
+-      ts.isPropertyAssignment(property) &&
+-      getPropertyName(property.name) === "plugins" &&
+-      ts.isArrayLiteralExpression(property.initializer)
+-    ) {
++    if (!ts.isPropertyAssignment(property)) continue;
++    const propertyName = getPropertyName(property.name);
++
++    if (propertyName === "plugins" && ts.isArrayLiteralExpression(property.initializer)) {
+       collectExpoPluginPathsFromArray(
+         property.initializer,
+-        entries,
++        collector,
++        rootDirectory,
++        configDirectory,
++      );
++    }
++
++    // app.config.js may wrap the config under an `expo` key (`{ expo: { plugins } }`),
++    // the same shape as app.json. Without descending into it, plugins nested under
++    // `expo` are never visited and every plugin reads as unused.
++    if (propertyName === "expo" && ts.isObjectLiteralExpression(property.initializer)) {
++      collectExpoPluginPathsFromConfigObject(
++        property.initializer,
++        collector,
+         rootDirectory,
+         configDirectory,
+       );
+@@ -137,14 +164,14 @@ const collectExpoPluginPathsFromConfigObject = (
+ 
+ const collectReturnedExpoConfigPluginPaths = (
+   body: ts.ConciseBody,
+-  entries: Set<string>,
++  collector: ExpoPluginCollector,
+   rootDirectory: string,
+   configDirectory: string,
+ ): void => {
+   if (!ts.isBlock(body)) {
+     const expression = unwrapExpression(body);
+     if (ts.isObjectLiteralExpression(expression)) {
+-      collectExpoPluginPathsFromConfigObject(expression, entries, rootDirectory, configDirectory);
++      collectExpoPluginPathsFromConfigObject(expression, collector, rootDirectory, configDirectory);
+     }
+     return;
+   }
+@@ -156,7 +183,7 @@ const collectReturnedExpoConfigPluginPaths = (
+     if (ts.isReturnStatement(node) && node.expression) {
+       const expression = unwrapExpression(node.expression);
+       if (ts.isObjectLiteralExpression(expression)) {
+-        collectExpoPluginPathsFromConfigObject(expression, entries, rootDirectory, configDirectory);
++        collectExpoPluginPathsFromConfigObject(expression, collector, rootDirectory, configDirectory);
+       }
+       return;
+     }
+@@ -169,7 +196,7 @@ const collectReturnedExpoConfigPluginPaths = (
+ 
+ const collectExpoPluginPathsFromConfigExpression = (
+   expression: ts.Expression,
+-  entries: Set<string>,
++  collector: ExpoPluginCollector,
+   rootDirectory: string,
+   configDirectory: string,
+   bindings: StaticConfigBindings,
+@@ -179,7 +206,7 @@ const collectExpoPluginPathsFromConfigExpression = (
+   if (ts.isObjectLiteralExpression(configExpression)) {
+     collectExpoPluginPathsFromConfigObject(
+       configExpression,
+-      entries,
++      collector,
+       rootDirectory,
+       configDirectory,
+     );
+@@ -194,7 +221,7 @@ const collectExpoPluginPathsFromConfigExpression = (
+     if (boundExpression) {
+       collectExpoPluginPathsFromConfigExpression(
+         boundExpression,
+-        entries,
++        collector,
+         rootDirectory,
+         configDirectory,
+         bindings,
+@@ -207,7 +234,7 @@ const collectExpoPluginPathsFromConfigExpression = (
+     if (boundFunction?.body) {
+       collectReturnedExpoConfigPluginPaths(
+         boundFunction.body,
+-        entries,
++        collector,
+         rootDirectory,
+         configDirectory,
+       );
+@@ -218,7 +245,7 @@ const collectExpoPluginPathsFromConfigExpression = (
+   if (ts.isArrowFunction(configExpression)) {
+     collectReturnedExpoConfigPluginPaths(
+       configExpression.body,
+-      entries,
++      collector,
+       rootDirectory,
+       configDirectory,
+     );
+@@ -228,7 +255,7 @@ const collectExpoPluginPathsFromConfigExpression = (
+   if (ts.isFunctionExpression(configExpression) && configExpression.body) {
+     collectReturnedExpoConfigPluginPaths(
+       configExpression.body,
+-      entries,
++      collector,
+       rootDirectory,
+       configDirectory,
+     );
+@@ -271,7 +298,7 @@ const collectStaticConfigBindings = (sourceFile: ts.SourceFile): StaticConfigBin
+ 
+ const collectExpoPluginPathsFromAppConfig = (
+   configPath: string,
+-  entries: Set<string>,
++  collector: ExpoPluginCollector,
+   rootDirectory: string,
+ ): void => {
+   const extension = extname(configPath);
+@@ -291,7 +318,7 @@ const collectExpoPluginPathsFromAppConfig = (
+     if (ts.isExportAssignment(node)) {
+       collectExpoPluginPathsFromConfigExpression(
+         node.expression,
+-        entries,
++        collector,
+         rootDirectory,
+         configDirectory,
+         bindings,
+@@ -300,7 +327,7 @@ const collectExpoPluginPathsFromAppConfig = (
+     }
+ 
+     if (ts.isFunctionDeclaration(node) && hasDefaultExportModifier(node) && node.body) {
+-      collectReturnedExpoConfigPluginPaths(node.body, entries, rootDirectory, configDirectory);
++      collectReturnedExpoConfigPluginPaths(node.body, collector, rootDirectory, configDirectory);
+       return;
+     }
+ 
+@@ -311,7 +338,7 @@ const collectExpoPluginPathsFromAppConfig = (
+     ) {
+       collectExpoPluginPathsFromConfigExpression(
+         node.right,
+-        entries,
++        collector,
+         rootDirectory,
+         configDirectory,
+         bindings,
+@@ -343,7 +370,7 @@ const collectPluginPathsFromJsonValue = (value: unknown): string[] => {
+ 
+ const collectExpoPluginPathsFromAppJson = (
+   configPath: string,
+-  entries: Set<string>,
++  collector: ExpoPluginCollector,
+   rootDirectory: string,
+ ): void => {
+   const parsedJson: unknown = JSON.parse(readFileSync(configPath, "utf8"));
+@@ -359,34 +386,37 @@ const collectExpoPluginPathsFromAppJson = (
+     ...expoPluginPaths,
+     ...collectPluginPathsFromJsonValue(parsedJson.plugins),
+   ]) {
+-    addExpoPluginEntry(entries, rootDirectory, configDirectory, pluginPath);
++    addExpoPluginEntry(collector, rootDirectory, configDirectory, pluginPath);
+   }
+ };
+ 
+ const collectExpoPluginPathsFromConfig = (
+   configPath: string,
+-  entries: Set<string>,
++  collector: ExpoPluginCollector,
+   rootDirectory: string,
+ ): void => {
+   try {
+     if (basename(configPath) === "app.json") {
+-      collectExpoPluginPathsFromAppJson(configPath, entries, rootDirectory);
++      collectExpoPluginPathsFromAppJson(configPath, collector, rootDirectory);
+       return;
+     }
+ 
+-    collectExpoPluginPathsFromAppConfig(configPath, entries, rootDirectory);
++    collectExpoPluginPathsFromAppConfig(configPath, collector, rootDirectory);
+   } catch {}
+ };
+ 
+-export const extractExpoConfigPluginEntries = (
++const collectExpoConfigPlugins = (
+   directory: string,
+   dependencies: Record<string, string>,
+-  rootDirectory = directory,
+-  includeNestedConfigs = true,
+-): string[] => {
+-  if (!isExpoOrReactNativeWorkspace(dependencies)) return [];
++  rootDirectory: string,
++  includeNestedConfigs: boolean,
++): ExpoPluginCollector => {
++  const collector: ExpoPluginCollector = {
++    filePaths: new Set<string>(),
++    packageNames: new Set<string>(),
++  };
++  if (!isExpoOrReactNativeWorkspace(dependencies)) return collector;
+ 
+-  const entries = new Set<string>();
+   const configPaths = fg.sync(
+     includeNestedConfigs ? NESTED_EXPO_CONFIG_FILE_GLOBS : EXPO_CONFIG_FILE_GLOBS,
+     {
+@@ -399,8 +429,26 @@ export const extractExpoConfigPluginEntries = (
+   );
+ 
+   for (const configPath of configPaths) {
+-    collectExpoPluginPathsFromConfig(configPath, entries, rootDirectory);
++    collectExpoPluginPathsFromConfig(configPath, collector, rootDirectory);
+   }
+ 
+-  return [...entries];
++  return collector;
+ };
++
++export const extractExpoConfigPluginEntries = (
++  directory: string,
++  dependencies: Record<string, string>,
++  rootDirectory = directory,
++  includeNestedConfigs = true,
++): string[] => [
++  ...collectExpoConfigPlugins(directory, dependencies, rootDirectory, includeNestedConfigs).filePaths,
++];
++
++export const extractExpoConfigPluginPackageNames = (
++  directory: string,
++  dependencies: Record<string, string>,
++  rootDirectory = directory,
++  includeNestedConfigs = true,
++): string[] => [
++  ...collectExpoConfigPlugins(directory, dependencies, rootDirectory, includeNestedConfigs).packageNames,
++];
+diff --git a/packages/deslop-js/src/report/packages.ts b/packages/deslop-js/src/report/packages.ts
+index 91b96d2..d3c4727 100644
+--- a/packages/deslop-js/src/report/packages.ts
++++ b/packages/deslop-js/src/report/packages.ts
+@@ -9,6 +9,7 @@ import { collectPnpmWorkspaceOverrideMappings } from "../utils/parse-pnpm-worksp
+ import { matchesPackageImportReference } from "../utils/matches-package-import-reference.js";
+ import { matchesPackageTokenReference } from "../utils/matches-package-token-reference.js";
+ import { findMonorepoRoot } from "../utils/find-monorepo-root.js";
++import { extractExpoConfigPluginPackageNames } from "../collect/expo-config-plugin-entries.js";
+ 
+ interface OverrideMapping {
+   fromPackage: string;
+@@ -191,6 +192,17 @@ export const detectStalePackages = (
+     }
+   }
+ 
++  // Packages named as Expo config plugins in app.config.* / app.json (e.g.
++  // "@react-native-tvos/config-tv") run at prebuild but are never imported in JS,
++  // so the import graph alone reads them as unused.
++  const expoPluginPackages = extractExpoConfigPluginPackageNames(
++    config.rootDir,
++    { ...dependencies, ...devDependencies },
++  );
++  for (const packageName of expoPluginPackages) {
++    if (declaredNames.has(packageName)) usedPackageNames.add(packageName);
++  }
++
+   const candidateUnused = new Set<string>();
+   for (const [dependencyName] of declaredDependencies) {
+     if (isAlwaysConsideredUsed(dependencyName)) continue;
