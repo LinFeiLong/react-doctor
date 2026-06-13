@@ -29,6 +29,13 @@ bash tv-fork/setup.sh
 Le script : `bun add -g react-doctor`, puis applique `deslop-js-dist.patch` au
 deslop-js global via `bun patch`. Idempotent (ne refait rien si déjà patché).
 
+> ⚠️ **Dédup obligatoire** (bug du 2026-06-13). react-doctor embarque sa propre
+> copie imbriquée `react-doctor/node_modules/deslop-js` et la charge **en priorité**
+> sur la copie racine. Patcher la seule racine ne suffit donc pas : config-tv
+> reste flaggé et le dead-code échoue (« dead-code checks failed »). `setup.sh`
+> supprime la copie imbriquée après le patch pour forcer la résolution sur la
+> racine patchée (et la recopie en dernier recours si bun la réinstalle).
+
 Ensuite, partout :
 
 ```bash
