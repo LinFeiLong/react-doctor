@@ -35,9 +35,14 @@ export const buildSentryScope = (runContext: RunContext = buildRunContext()): Se
     viaAction: runContext.viaAction,
     codingAgent: runContext.codingAgent,
     interactive: runContext.interactive,
+    terminalKind: runContext.terminalKind,
     jsonMode: runContext.jsonMode,
+    debug: runContext.debug,
     invokedVia: runContext.invokedVia,
     nodeMajor: runContext.nodeMajor,
+    // Low-cardinality LPT cohort dim (`cost` / `arrival`); rides every event
+    // and metric so the before/after query can group on it.
+    lintBatchOrdering: runContext.lintBatchOrdering,
   };
   // `runId` is intentionally NOT a tag: it's a per-run unique value and would
   // explode tag cardinality. It still rides `contexts.run` below (the full

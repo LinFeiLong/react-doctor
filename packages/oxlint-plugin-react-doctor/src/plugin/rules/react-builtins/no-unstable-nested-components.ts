@@ -4,6 +4,7 @@ import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isAstNode } from "../../utils/is-ast-node.js";
 import { isCreateElementCall } from "../../utils/is-create-element-call.js";
+import { isEs6Component } from "../../utils/is-es6-component.js";
 import { isFunctionLike } from "../../utils/is-function-like.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
@@ -92,34 +93,13 @@ const expressionContainsJsxOrCreateElement = (root: EsTreeNode): boolean => {
 // True iff `classNode` extends React.Component / PureComponent (or a
 // bare `Component` / `PureComponent` symbol — matches the import shape
 // most React class components actually use).
-const classExtendsReactComponent = (classNode: EsTreeNode): boolean => {
-  const superClass = (classNode as { superClass?: EsTreeNode | null }).superClass;
-  if (!superClass) return false;
-  if (
-    isNodeOfType(superClass, "Identifier") &&
-    (superClass.name === "Component" || superClass.name === "PureComponent")
-  ) {
-    return true;
-  }
-  if (
-    isNodeOfType(superClass, "MemberExpression") &&
-    isNodeOfType(superClass.object, "Identifier") &&
-    superClass.object.name === "React" &&
-    isNodeOfType(superClass.property, "Identifier") &&
-    (superClass.property.name === "Component" || superClass.property.name === "PureComponent")
-  ) {
-    return true;
-  }
-  return false;
-};
-
 // Returns true when `classNode` is a *React* class — either by
 // explicit `extends React.Component` / `extends Component` lineage, or
 // by containing JSX / `React.createElement(...)` in any method body.
 // Catches both the canonical class-component shape and the rare hybrid
 // case where a class declares JSX in render without `extends`.
 const isReactClassComponent = (classNode: EsTreeNode): boolean => {
-  if (classExtendsReactComponent(classNode)) return true;
+  if (isEs6Component(classNode)) return true;
   return expressionContainsJsxOrCreateElement(classNode);
 };
 
@@ -336,11 +316,7 @@ export const noUnstableNestedComponents = defineRule({
     const settings = resolveSettings(context.settings);
     const renderPropRegex = compileGlob(settings.propNamePattern);
 
-    const reportCandidate = (
-      candidateNode: EsTreeNode,
-      reportNode: EsTreeNode,
-      candidateName: string | null,
-    ): void => {
+    const reportCandidate = (candidateNode: EsTreeNode, reportNode: EsTreeNode): void => {
       if (isFirstArgumentOfHocCall(candidateNode)) return;
       if (isReturnOfMapCallback(candidateNode)) return;
       const propInfo = isComponentDeclaredInProp(candidateNode);
@@ -351,13 +327,10 @@ export const noUnstableNestedComponents = defineRule({
       }
       const enclosing = findEnclosingComponent(candidateNode);
       if (!enclosing) return;
-      // Skip if outer doesn't actually look like a component (require
-      // its body to contain JSX).
       context.report({
         node: reportNode,
         message: buildMessage(enclosing.name),
       });
-      void candidateName;
     };
 
     const checkFunctionLike = (
@@ -375,7 +348,7 @@ export const noUnstableNestedComponents = defineRule({
         propInfo !== null ||
         isObjectCallbackCandidate(node as EsTreeNode);
       if (!isCandidate) return;
-      reportCandidate(node as EsTreeNode, node as EsTreeNode, inferredName);
+      reportCandidate(node as EsTreeNode, node as EsTreeNode);
     };
 
     return {
@@ -391,18 +364,18 @@ export const noUnstableNestedComponents = defineRule({
         // tldraw, `class Tool extends BaseTool`, etc.) as a nested React
         // component candidate.
         if (!isReactClassComponent(node as EsTreeNode)) return;
-        reportCandidate(node as EsTreeNode, node as EsTreeNode, node.id.name);
+        reportCandidate(node as EsTreeNode, node as EsTreeNode);
       },
       ClassExpression(node: EsTreeNodeOfType<"ClassExpression">) {
         const inferredName = node.id?.name ?? inferFunctionLikeName(node as EsTreeNode);
         if (!inferredName || !isReactComponentName(inferredName)) return;
         if (!isReactClassComponent(node as EsTreeNode)) return;
-        reportCandidate(node as EsTreeNode, node as EsTreeNode, inferredName);
+        reportCandidate(node as EsTreeNode, node as EsTreeNode);
       },
       CallExpression(node: EsTreeNodeOfType<"CallExpression">) {
         if (!isHocCallee(node)) return;
         if (!hocCallContainsComponent(node)) return;
-        reportCandidate(node as EsTreeNode, node as EsTreeNode, null);
+        reportCandidate(node as EsTreeNode, node as EsTreeNode);
       },
     };
   },

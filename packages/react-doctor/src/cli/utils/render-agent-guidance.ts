@@ -10,9 +10,10 @@ const AGENT_GUIDANCE_LINES = [
   "Investigate deeply where relevant: race conditions, security-sensitive flows, state propagation, multi-file refactors, and downstream dependency chains.",
   "Ignore pure style preferences, theoretical issues without real impact, missing features, and unrelated pre-existing code.",
   "Start with high-confidence fixes that preserve behavior. Leave low-confidence or product-dependent changes as notes.",
-  "Run `npx react-doctor@latest --verbose --diff` before and after changes, plus relevant tests after each focused batch.",
+  "Run `npx react-doctor@latest --verbose --scope changed` before and after changes, plus relevant tests after each focused batch.",
   "When available, spawn subagents or isolated worktrees for independent rule families, then review and merge only the best safe fixes.",
   "Split unrelated, broad, or behavior-changing work into separate PRs/branches instead of one large cleanup.",
+  "When one rule spans dozens of files (a migration-scale change), fix a representative sample first, confirm the recipe holds, and get the code owner's sign-off before changing the rest. Don't mass-fix a broad pattern in one unreviewed pass.",
   "For confirmed issues that cannot be fixed now, create GitHub issues with the rule, file/line, confidence, impact, and proposed fix.",
   "If a fix needs an API, UX, or architecture decision, stop and ask before editing.",
 ] as const;

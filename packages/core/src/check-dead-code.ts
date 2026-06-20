@@ -10,7 +10,9 @@ import {
   DEAD_CODE_WORKER_MAX_OLD_SPACE_MB,
   DEAD_CODE_WORKER_TIMEOUT_MS,
   MILLISECONDS_PER_SECOND,
+  TSCONFIG_FILENAMES,
 } from "./constants.js";
+import { isRecord } from "./utils/is-record.js";
 import { toCanonicalPath } from "./utils/to-canonical-path.js";
 import { toRelativePath } from "./utils/to-relative-path.js";
 
@@ -28,6 +30,23 @@ interface CheckDeadCodeOptions {
   readonly deslopJsModuleSpecifier?: string;
   readonly createWorker?: DeadCodeWorkerFactory;
   readonly workerTimeoutMs?: number;
+  /**
+   * Caps deslop's internal parse worker pool (`DESLOP_PARSE_CONCURRENCY`). The
+   * orchestrator sets this when dead-code overlaps lint so the two pools share
+   * the cores instead of each claiming all of them — the oversubscription that
+   * otherwise starves the parse pass past `workerTimeoutMs`. Omitted → deslop
+   * uses `os.availableParallelism()` (the strictly-sequential / full-CPU path).
+   */
+  readonly parseConcurrency?: number;
+  /**
+   * Aborts the in-flight worker. The orchestrator threads
+   * `Effect.tryPromise`'s signal here so interrupting the dead-code fiber
+   * (e.g. when lint fails and dead-code becomes wasted work, or when the
+   * scan is cancelled) SIGKILLs the 8 GB child PROCESS immediately via its
+   * `terminate` handle instead of orphaning it until
+   * `DEAD_CODE_WORKER_TIMEOUT_MS`.
+   */
+  readonly abortSignal?: AbortSignal;
 }
 
 interface DeadCodeWorkerInput {
@@ -36,6 +55,8 @@ interface DeadCodeWorkerInput {
   readonly tsConfigPath?: string;
   readonly ignorePatterns: ReadonlyArray<string>;
   readonly deslopJsModuleSpecifier: string;
+  /** Caps deslop's parse pool via `DESLOP_PARSE_CONCURRENCY` on the child env. */
+  readonly parseConcurrency?: number;
 }
 
 interface DeadCodeWorkerHandle {
@@ -91,11 +112,6 @@ interface DeadCodeWorkerFailureMessage {
   readonly error: DeadCodeWorkerError;
 }
 
-const TSCONFIG_FILENAMES = ["tsconfig.json", "tsconfig.base.json"];
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
 // Runs in a child PROCESS (node -e), not a worker_thread — see
 // `createDeadCodeWorker`. Reads the worker input as JSON on stdin and
 // writes the normalized result (or a serialized error) as JSON on
@@ -147,6 +163,22 @@ process.stdin.on("end", () => {
         ...(workerInput.ignorePatterns.length > 0
           ? { ignorePatterns: workerInput.ignorePatterns }
           : {}),
+        // We consume only deslop's GRAPH-based findings (unusedFiles, unusedExports,
+        // unusedDependencies, circularDependencies). Everything else deslop can compute
+        // is pure wasted work for us, and it's the bulk of the runtime:
+        //   - semantic: a full TS Program for unusedTypes/enum/class-members/
+        //     misclassifiedDependencies (~37-45% of the phase).
+        //   - reportCodeQuality: the duplicate-block, complexity, feature-flag,
+        //     TypeScript-smell, private-type-leak and re-export-cycle detectors. These
+        //     are the single most expensive pass — duplicate-block detection alone was
+        //     ~83s of a ~130s Sentry scan — so skipping them is an ~8.5x dead-code
+        //     speedup on a large repo.
+        // Both are provably safe: the consumed graph findings are computed by their own
+        // detectors, independent of these passes (confirmed byte-identical on
+        // excalidraw + mui-material + sentry). tsConfigPath stays — the module resolver
+        // needs it for path-alias resolution in the import graph.
+        semantic: { enabled: false },
+        reportCodeQuality: false,
       };
       const result = await analyze(defineConfig(config));
       emit({ ok: true, result: normalizeResult(result) });
@@ -332,6 +364,10 @@ const createDeadCodeWorker: DeadCodeWorkerFactory = (input) => {
     {
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
+      env:
+        input.parseConcurrency === undefined
+          ? process.env
+          : { ...process.env, DESLOP_PARSE_CONCURRENCY: String(input.parseConcurrency) },
     },
   );
 
@@ -397,56 +433,71 @@ const createDeadCodeWorker: DeadCodeWorkerFactory = (input) => {
 const runDeadCodeWorkerWithTimeout = (
   handle: DeadCodeWorkerHandle,
   timeoutMs: number,
+  abortSignal?: AbortSignal,
 ): Promise<unknown> =>
   new Promise<unknown>((resolve, reject) => {
     let didSettle = false;
-    const timeoutHandle = setTimeout(() => {
+
+    // Centralizes the teardown every exit path shares: stop the timer, detach
+    // the abort listener, and SIGKILL the child via its `terminate` handle.
+    const settle = (finish: () => void): void => {
       if (didSettle) return;
       didSettle = true;
+      clearTimeout(timeoutHandle);
+      abortSignal?.removeEventListener("abort", onAbort);
       void handle.terminate?.();
-      reject(
-        new Error(`Dead-code worker timed out after ${timeoutMs / MILLISECONDS_PER_SECOND}s.`),
-      );
-    }, timeoutMs);
+      finish();
+    };
+
+    const onAbort = (): void => settle(() => reject(new Error("Dead-code worker aborted.")));
+    const timeoutHandle = setTimeout(
+      () =>
+        settle(() =>
+          reject(
+            new Error(`Dead-code worker timed out after ${timeoutMs / MILLISECONDS_PER_SECOND}s.`),
+          ),
+        ),
+      timeoutMs,
+    );
     timeoutHandle.unref?.();
 
+    if (abortSignal?.aborted) {
+      onAbort();
+      return;
+    }
+    abortSignal?.addEventListener("abort", onAbort, { once: true });
+
     handle.result.then(
-      (value) => {
-        if (didSettle) return;
-        didSettle = true;
-        clearTimeout(timeoutHandle);
-        void handle.terminate?.();
-        resolve(value);
-      },
-      (error: unknown) => {
-        if (didSettle) return;
-        didSettle = true;
-        clearTimeout(timeoutHandle);
-        void handle.terminate?.();
-        reject(error);
-      },
+      (value) => settle(() => resolve(value)),
+      (error: unknown) => settle(() => reject(error)),
     );
   });
 
 export const checkDeadCode = async (options: CheckDeadCodeOptions): Promise<Diagnostic[]> => {
-  const { userConfig } = options;
   // Canonicalize up front so the deslop graph and its resolver share one
   // path space (see `toCanonicalPath` for why a symlinked root breaks it).
   const rootDirectory = toCanonicalPath(options.rootDirectory);
   if (!fs.existsSync(path.join(rootDirectory, "package.json"))) return [];
 
   const entryPatterns = collectDeadCodeEntryPatterns(rootDirectory);
-  const ignorePatterns = collectDeadCodeIgnorePatterns(rootDirectory, userConfig);
+  const ignorePatterns = collectDeadCodeIgnorePatterns(rootDirectory);
   const workerHandle = (options.createWorker ?? createDeadCodeWorker)({
     rootDirectory,
     entryPatterns,
     tsConfigPath: resolveTsConfigPath(rootDirectory),
     ignorePatterns,
     deslopJsModuleSpecifier: options.deslopJsModuleSpecifier ?? import.meta.resolve("deslop-js"),
+    parseConcurrency: options.parseConcurrency,
   });
+  // `runDeadCodeWorkerWithTimeout` owns the abort wiring: when the surrounding
+  // Effect fiber is interrupted (lint failed / dead-code phase timeout / scan
+  // cancelled), `Effect.tryPromise` aborts `options.abortSignal`, which its
+  // `settle()` path turns into an immediate worker SIGKILL — rather than
+  // orphaning the child until the in-worker timer expires.
   const rawResult = await runDeadCodeWorkerWithTimeout(
     workerHandle,
     options.workerTimeoutMs ?? DEAD_CODE_WORKER_TIMEOUT_MS,
+    options.abortSignal,
   );
   const result = parseDeadCodeWorkerResult(rawResult);
   const toRelative = (filePath: string): string => toRelativeFilePath(rootDirectory, filePath);

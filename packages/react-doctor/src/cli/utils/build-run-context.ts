@@ -1,3 +1,5 @@
+import { resolveLintBatchOrdering } from "@react-doctor/core";
+import { detectTerminalKind } from "./detect-terminal-kind.js";
 import {
   detectCiEventName,
   detectCiProvider,
@@ -6,6 +8,7 @@ import {
   isCodingAgentEnvironment,
   isOfficialGithubAction,
 } from "./is-ci-environment.js";
+import { isDebugFlagEnabled } from "./is-debug-flag.js";
 import { isGitHookEnvironment } from "./is-git-hook-environment.js";
 import { isNonInteractiveEnvironment } from "./is-non-interactive-environment.js";
 import { isJsonModeActive } from "./json-mode.js";
@@ -34,11 +37,22 @@ export interface RunContext {
   viaAction: boolean;
   codingAgent: string | null;
   interactive: boolean;
+  // Terminal emulator / editor hosting the run (nvim, vscode, iterm, …), or
+  // "ci"/"unknown". Reveals where the CLI is actually used.
+  terminalKind: string;
   jsonMode: boolean;
+  // User passed `--debug` (forces a Sentry trace and prints its id). Tracks
+  // adoption of the diagnostic flag.
+  debug: boolean;
   // Package-manager / runner the CLI was launched through (npm, pnpm, yarn,
   // bun, or "unknown"), derived from `npm_config_user_agent`. Distinguishes
   // `npx react-doctor` (npm) from `pnpm dlx` / global installs in triage.
   invokedVia: string;
+  // Full-scan lint batch ordering in effect for this run: `"cost"` (LPT,
+  // largest-first) or `"arrival"` (the env-revertable fallback). The cohort
+  // dimension for the LPT before/after — `Linter.run` p95 and dropped-file
+  // rate are queried grouped by it.
+  lintBatchOrdering: "cost" | "arrival";
 }
 
 const ROOT_SUBCOMMANDS = new Set(["install", "setup"]);
@@ -103,7 +117,10 @@ export const buildRunContext = (): RunContext => {
     viaAction: isOfficialGithubAction(),
     codingAgent: detectCodingAgent(),
     interactive: !isNonInteractiveEnvironment(),
+    terminalKind: detectTerminalKind(),
     jsonMode: isJsonModeActive(),
+    debug: isDebugFlagEnabled(),
     invokedVia: detectInvokedVia(),
+    lintBatchOrdering: resolveLintBatchOrdering(),
   };
 };

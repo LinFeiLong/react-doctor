@@ -9,7 +9,9 @@
       "oxlint-plugin-react-doctor",
       "@react-doctor/core",
       "@react-doctor/api",
-      "@react-doctor/language-server"
+      "@react-doctor/language-server",
+      "deslop-js",
+      "deslop-cli"
     ]
   ],
   "linked": [],

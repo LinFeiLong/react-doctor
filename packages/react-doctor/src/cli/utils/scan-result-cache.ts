@@ -1,10 +1,9 @@
 import crypto from "node:crypto";
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
-import { computeConfigFingerprint } from "@react-doctor/core";
+import { computeConfigFingerprint, resolveLintBatchOrdering } from "@react-doctor/core";
 import type {
   Diagnostic,
   InspectOutput,
@@ -17,6 +16,7 @@ import {
   SCAN_RESULT_CACHE_MAX_ENTRY_COUNT,
   SCAN_RESULT_CACHE_SCHEMA_VERSION,
 } from "./constants.js";
+import { runGit } from "./git-hook-shared.js";
 import type { ResolvedInspectOptions } from "../../inspect.js";
 
 interface StringUnknownRecord {
@@ -33,12 +33,20 @@ export interface CachedScanPayload {
   readonly lintPartialFailures: ReadonlyArray<string>;
   readonly didDeadCodeFail: boolean;
   readonly deadCodeFailureReason: string | null;
+  readonly deadCodeOverlapped: boolean;
   readonly directory: string;
   readonly scannedFileCount: number;
   readonly scannedFilePaths: ReadonlyArray<string>;
   readonly scanElapsedMilliseconds: number;
   readonly baselineDelta: InspectResult["baselineDelta"];
   readonly lintFailureReasonKind: InspectOutput["lintFailureReasonKind"];
+  /**
+   * Resolved lint worker count (`InspectOutput["scanConcurrency"]`), surfaced
+   * for telemetry. Optional so cache entries persisted before this field
+   * existed still load — a stale hit falls back to the caller's `concurrency`.
+   */
+  readonly scanConcurrency?: number;
+  readonly supplyChainOverlapTimedOut: boolean;
 }
 
 interface PersistedScanResultCacheEntry {
@@ -116,18 +124,6 @@ const stringifyStableJson = (value: unknown): string | null => {
 };
 
 const hashString = (value: string): string => crypto.createHash("sha1").update(value).digest("hex");
-
-const runGit = (directory: string, args: ReadonlyArray<string>): string | null => {
-  try {
-    return execFileSync("git", [...args], {
-      cwd: directory,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return null;
-  }
-};
 
 const readHeadSha = (projectDirectory: string): string | null =>
   runGit(projectDirectory, ["rev-parse", "HEAD"]);
@@ -257,6 +253,11 @@ export const buildScanResultCacheKey = (input: ScanResultCacheKeyInput): string 
       adoptExistingLintConfig: input.options.adoptExistingLintConfig,
       ignoredTags: [...input.options.ignoredTags].sort(),
       concurrency: input.options.concurrency,
+      // Full-scan batch ordering can change which files trip the spawn
+      // timeout and get dropped, so — like `concurrency` above — it must key
+      // the cache: a `cost` run must not serve its payload to an `arrival`
+      // lookup at the same commit.
+      lintBatchOrdering: resolveLintBatchOrdering(),
       baselineRef: input.options.baseline?.ref,
       // `null` (not a `lines` scope) and an omitted field hash identically, so a
       // non-lines lookup matches a non-lines store; only real ranges shift the key.
@@ -296,4 +297,13 @@ export const createScanResultCache = (projectDirectory: string): ScanResultCache
 };
 
 export const shouldStoreScanPayload = (payload: CachedScanPayload): boolean =>
-  !payload.didLintFail && !payload.didDeadCodeFail && payload.lintPartialFailures.length === 0;
+  !payload.didLintFail &&
+  !payload.didDeadCodeFail &&
+  payload.lintPartialFailures.length === 0 &&
+  // A supply-chain overlap timeout means the cached diagnostics are missing
+  // their supply-chain findings; don't persist a degraded result — re-attempt
+  // the check on the next run instead. This also keeps the timeout kill metric
+  // clean: a stored payload therefore always carries
+  // `supplyChainOverlapTimedOut: false`, so a cache hit never replays a stale
+  // `true`.
+  !payload.supplyChainOverlapTimedOut;

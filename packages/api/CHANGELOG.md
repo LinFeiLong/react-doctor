@@ -1,5 +1,33 @@
 # @react-doctor/api
 
+## 0.5.8
+
+### Patch Changes
+
+- Updated dependencies [[`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae), [`350a6ed`](https://github.com/millionco/react-doctor/commit/350a6edc59dff4d7d4adcb6c6348144ded900d8c), [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae), [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae), [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae), [`9f733f7`](https://github.com/millionco/react-doctor/commit/9f733f7cff1055f631d69dbc84848efa948c0d89), [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae), [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae), [`2cadd3f`](https://github.com/millionco/react-doctor/commit/2cadd3fe2cb5b0476b35b1581c0a4c99bcdf1306), [`4560b6d`](https://github.com/millionco/react-doctor/commit/4560b6dd39a6826f3d65476df12032cae7abfc63)]:
+  - @react-doctor/core@0.5.8
+
+## 0.5.7
+
+### Patch Changes
+
+- Updated dependencies [[`431e515`](https://github.com/millionco/react-doctor/commit/431e515260a209088c2305c6372249009dd95474)]:
+  - @react-doctor/core@0.5.7
+
+## 0.5.6
+
+### Patch Changes
+
+- Updated dependencies [[`ea3b827`](https://github.com/millionco/react-doctor/commit/ea3b8278996613114c9c671afe292193388741c0), [`cf9e05b`](https://github.com/millionco/react-doctor/commit/cf9e05be8ee1f1781878c28b8342490ec11c176f), [`5fc0e27`](https://github.com/millionco/react-doctor/commit/5fc0e270c9a15d25be96ef982755cea81065d141), [`ea3b827`](https://github.com/millionco/react-doctor/commit/ea3b8278996613114c9c671afe292193388741c0), [`bac7c82`](https://github.com/millionco/react-doctor/commit/bac7c82950e2392ac4b21448f3e9cf86b605567f)]:
+  - @react-doctor/core@0.5.6
+
+## 0.5.5
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @react-doctor/core@0.5.5
+
 ## 0.5.4
 
 ### Patch Changes

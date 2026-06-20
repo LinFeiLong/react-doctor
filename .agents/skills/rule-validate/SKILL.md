@@ -62,6 +62,8 @@ Fix every real implementation bug with a targeted regression test.
 
 Use RDE after implementation when the rule is broad, heuristic, scope-aware, path-aware, or touches common React idioms.
 
+Run it via the `rde-eval` skill — a fast local loop (`--runner local`, uses your working tree) or a cloud fan-out across the corpus (push a branch, diff `git:…@main` vs `git:…@<branch>` with `--pool vercel`). `path:` is local-only; it never reaches the Vercel pool.
+
 Required handling:
 
 - Scan distinct repos, not just manifest entries.

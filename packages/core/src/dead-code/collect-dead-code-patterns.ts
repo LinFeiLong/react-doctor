@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { ReactDoctorConfig } from "../types/index.js";
 import { collectIgnorePatterns } from "../collect-ignore-patterns.js";
 import { readIgnoreFile } from "../read-ignore-file.js";
+import { isRecord } from "../utils/is-record.js";
 
 interface KnipWorkspaceConfig {
   readonly entry?: unknown;
@@ -16,9 +16,6 @@ interface KnipConfig {
 }
 
 const KNIP_JSON_FILENAME = "knip.json";
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const readJsonFileSafe = (filePath: string): unknown | null => {
   let rawContents: string;
@@ -91,15 +88,14 @@ const collectKnipPatterns = (
   ];
 };
 
-export const collectDeadCodeIgnorePatterns = (
-  rootDirectory: string,
-  userConfig: ReactDoctorConfig | null | undefined,
-): string[] => {
+// `ignore.files` is intentionally excluded: it suppresses *reporting* (via the
+// diagnostic pipeline), so those files must stay in deslop's graph or a file
+// imported only by an ignored file is falsely flagged unused (react-doctor#830).
+export const collectDeadCodeIgnorePatterns = (rootDirectory: string): string[] => {
   const seen = new Set<string>();
   const sources = [
     readIgnoreFile(path.join(rootDirectory, ".gitignore")),
     collectIgnorePatterns(rootDirectory),
-    userConfig?.ignore?.files ?? [],
     collectKnipPatterns(rootDirectory, "ignore"),
   ];
   for (const source of sources) {

@@ -55,9 +55,9 @@ const MemoChild = memo((props: { payload: { label: string } }) => {
   return <span>{props.payload.label}</span>;
 });
 
-export const App = () => (
+export const App = ({ html }: { html: string }) => (
   <>
-    <div dangerouslySetInnerHTML={{ __html: "<strong>Unsafe</strong>" }} />
+    <div dangerouslySetInnerHTML={{ __html: html }} />
     <MemoChild payload={{ label: "slow" }} />
   </>
 );
@@ -280,7 +280,7 @@ export const Cart = () => {
     );
     expect(normalizedStdout).toContain("race conditions, security-sensitive flows");
     expect(normalizedStdout).toContain("theoretical issues without real impact");
-    expect(normalizedStdout).toContain("npx react-doctor@latest --verbose --diff");
+    expect(normalizedStdout).toContain("npx react-doctor@latest --verbose --scope changed");
     expect(normalizedStdout).toContain(
       "  - Split unrelated, broad, or behavior-changing work into separate PRs/branches",
     );

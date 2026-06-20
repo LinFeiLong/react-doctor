@@ -6,7 +6,6 @@ import * as fs from "node:fs";
 import {
   buildJsonReport,
   DEFAULT_PROJECT_SCAN_CONCURRENCY,
-  findLegacyConfig,
   getChangedLineRanges,
   getDiffInfo,
   highlighter,
@@ -16,6 +15,7 @@ import {
   toRelativePath,
 } from "@react-doctor/core";
 import { inspect } from "../../inspect.js";
+import { flushSentry } from "../../instrument.js";
 import type {
   DiffInfo,
   InspectResult,
@@ -30,9 +30,10 @@ import { getStagedSourceFiles, materializeStagedFiles } from "../utils/get-stage
 import type { InspectFlags } from "../utils/inspect-flags.js";
 import { filterDiagnosticsByCategories } from "../utils/filter-diagnostics-by-categories.js";
 import { handleError, handleUserError } from "../utils/handle-error.js";
+import { isDebugFlagEnabled } from "../utils/is-debug-flag.js";
 import { isExpectedUserError } from "../utils/is-expected-user-error.js";
 import { handoffToAgent } from "../utils/handoff-to-agent.js";
-import { migrateLegacyConfig } from "../utils/migrate-legacy-config.js";
+import { runProjectMigrations } from "../utils/cli-migrations.js";
 import {
   enableJsonMode,
   setJsonReportDirectory,
@@ -50,6 +51,7 @@ import { printMultiProjectSummary } from "../utils/render-multi-project-summary.
 import { printDiagnosticsDump } from "../utils/render-summary.js";
 import { isCiOrCodingAgentEnvironment } from "../utils/is-ci-environment.js";
 import {
+  disableSetupPrompt,
   printAgentInstallHint,
   resolveInstallSetupProjectRoot,
   shouldShowAgentInstallHint,
@@ -213,25 +215,18 @@ interface MigrationGuardInput {
  * are left untouched — the loader still reads the legacy file as a deprecated
  * fallback and warns — so a scan never mutates the repo unattended.
  */
-const maybeMigrateLegacyConfig = (
+const maybeMigrateLegacyConfig = async (
   requestedDirectory: string,
   { isQuiet, isStaged }: MigrationGuardInput,
-): void => {
+): Promise<void> => {
   const isInteractiveHumanRun =
     !isQuiet && !isStaged && process.stdout.isTTY === true && !isCiOrCodingAgentEnvironment();
   if (!isInteractiveHumanRun) return;
 
-  const legacyConfig = findLegacyConfig(requestedDirectory);
-  if (!legacyConfig) return;
-
-  const migratedPath = migrateLegacyConfig(legacyConfig);
-  if (!migratedPath) return;
-
-  logger.success("Migrated react-doctor.config.json → doctor.config.ts");
-  logger.dim(
-    `  Your settings were preserved. Review ${toRelativePath(migratedPath, requestedDirectory)} and commit it.`,
-  );
-  logger.break();
+  // Runs every pending per-repo migration (currently the config-file rename);
+  // each is tracked so it applies at most once. The migrations themselves print
+  // their own user-facing summary.
+  await runProjectMigrations(requestedDirectory);
 };
 
 export const inspectAction = async (directory: string, flags: InspectFlags): Promise<void> => {
@@ -251,7 +246,10 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
   try {
     validateModeFlags(flags);
 
-    maybeMigrateLegacyConfig(requestedDirectory, { isQuiet, isStaged: Boolean(flags.staged) });
+    await maybeMigrateLegacyConfig(requestedDirectory, {
+      isQuiet,
+      isStaged: Boolean(flags.staged),
+    });
 
     const scanTarget = await resolveScanTarget(requestedDirectory, { allowAmbiguous: true });
     const userConfig = scanTarget.userConfig;
@@ -712,6 +710,9 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
       ) {
         printAgentInstallHint();
         recordCount(METRIC.agentInstallHintShown, 1);
+        // Show the install nudge once per repo, then stay quiet — the opt-out
+        // store already exists; this wires it so the hint isn't every-scan noise.
+        disableSetupPrompt(setupProjectRoot);
       }
     }
   } catch (error) {
@@ -721,6 +722,11 @@ export const inspectAction = async (directory: string, flags: InspectFlags): Pro
     // issue" block so they don't become triage noise.
     const isUserError = isExpectedUserError(error);
     const sentryEventId = isUserError ? undefined : await reportErrorToSentry(error);
+    // `--debug` prints the run's trace id from the exit handler. A user error
+    // skips `reportErrorToSentry` (and its flush), so a trace recorded when the
+    // scan span started would never be delivered — flush here so the printed id
+    // resolves in Sentry. Cheap no-op for the already-flushed non-user path.
+    if (isDebugFlagEnabled()) await flushSentry();
     if (isJsonMode) {
       writeJsonErrorReport(error, sentryEventId);
       process.exitCode = 1;

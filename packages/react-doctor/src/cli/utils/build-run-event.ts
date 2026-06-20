@@ -5,6 +5,7 @@ import {
   summarizeDiagnostics,
 } from "@react-doctor/core";
 import type { BlockingLevel, InspectResult, ReactDoctorConfig } from "@react-doctor/core";
+import { buildRuleBlastRadii } from "./diagnostic-grouping.js";
 import { ACTION_INPUT_ENVIRONMENT_VARIABLES, detectRunnerOs } from "./is-ci-environment.js";
 import { summarizeRuleFirings } from "./record-scan-metrics.js";
 import { isValidBlockingLevel } from "./resolve-blocking-level.js";
@@ -48,7 +49,28 @@ export interface RunEventInput {
   readonly didLintFail?: boolean;
   readonly lintFailureReasonKind?: string | null;
   readonly lintPartialFailureCount?: number;
+  // Total files the lint pass dropped (timeout-tripping batches that couldn't
+  // be split further). A per-scan outcome dim — the kill-metric signal for LPT:
+  // if cost-ordering front-loads the pathological bucket and drops MORE files,
+  // this rises on the `cost` cohort vs `arrival`.
+  readonly lintDroppedFileCount?: number;
   readonly didDeadCodeFail?: boolean;
+  // `true` when the background supply-chain check hit its overlap budget and
+  // failed open to no diagnostics. The kill metric for the lint/supply-chain
+  // overlap watches the rate of this per supply-chain-eligible scan (filter to
+  // `mode == "full"`, since a skipped check also reports `false`). Known on the
+  // success path and replayed from the cached payload on a cache hit — but a
+  // timed-out run is never cached (`shouldStoreScanPayload`), so a cache hit
+  // always reports `false`. Omitted only on the failure path (the scan threw
+  // before finalizing).
+  readonly supplyChainOverlapTimedOut?: boolean;
+  /**
+   * Whether the dead-code pass ran concurrently with lint this scan (gate
+   * opened / overlap forced). Lets a query compare `runInspect` wall-clock
+   * grouped by overlap, and watch for an OOM/timeout regression on
+   * overlapped scans (the kill-metric for the overlap feature).
+   */
+  readonly deadCodeOverlapped?: boolean;
   // A degraded baseline run (no delta computed) skips the CI gate, so the
   // `wouldBlock` prediction must match — never block on its plain-diff findings.
   readonly gateExempt?: boolean;
@@ -139,12 +161,31 @@ const buildOutcomeAttributes = (input: RunEventInput): RunEventAttributes => {
     }
   }
 
+  // Widest-blast-radius rule: how many files the single most-spread rule
+  // touches (and its site count). Lets a query see how common migration-scale
+  // buckets are and calibrate MIGRATION_SCALE_RULE_FILE_COUNT — the threshold
+  // that fires the "sample before you sweep" advisory — against real scans.
+  const largestRuleBucket = buildRuleBlastRadii(result.diagnostics)[0] ?? null;
+
   let diagnosticsInTestFiles = 0;
   let diagnosticsInStoryFiles = 0;
+  // Root-cause grouping rollup: how many distinct fix groups, and how many
+  // findings they cover. `fixGroupedFindings - fixGroups` is the number of
+  // findings that collapse away (one fix, not N tasks) — the signal that says
+  // whether this feature fires on real repos and how much it folds.
+  const findingsPerFixGroup = new Map<string, number>();
   for (const diagnostic of result.diagnostics) {
     if (diagnostic.fileContext === "test") diagnosticsInTestFiles += 1;
     if (diagnostic.fileContext === "story") diagnosticsInStoryFiles += 1;
+    if (diagnostic.fixGroupId) {
+      findingsPerFixGroup.set(
+        diagnostic.fixGroupId,
+        (findingsPerFixGroup.get(diagnostic.fixGroupId) ?? 0) + 1,
+      );
+    }
   }
+  let fixGroupedFindings = 0;
+  for (const count of findingsPerFixGroup.values()) fixGroupedFindings += count;
 
   const attributes: RunEventAttributes = {
     outcome,
@@ -159,8 +200,22 @@ const buildOutcomeAttributes = (input: RunEventInput): RunEventAttributes => {
     diagnosticsInTestFiles,
     diagnosticsInStoryFiles,
     distinctRulesFired: countByRule.size,
+    "diag.fixGroups": findingsPerFixGroup.size,
+    "diag.fixGroupedFindings": fixGroupedFindings,
     topRule,
+    "migration.largestRuleBucketFiles": largestRuleBucket ? largestRuleBucket.fileCount : null,
+    "migration.largestRuleBucketSites": largestRuleBucket ? largestRuleBucket.siteCount : null,
+    "migration.largestRuleBucketRule": largestRuleBucket ? largestRuleBucket.ruleKey : null,
     scannedFileCount: result.scannedFileCount ?? null,
+    // Per-file lint cache outcome. Numeric so Sentry can `p75(lintCacheHitRatio)`;
+    // all `null` when the cache was off/bypassed so "no cache" reads distinctly
+    // from a 0% hit rate (`toSpanAttributes` drops the nulls).
+    lintCacheHitFiles: result.lintCacheHitFileCount ?? null,
+    lintCacheTotalFiles: result.lintCacheTotalFileCount ?? null,
+    lintCacheHitRatio:
+      result.lintCacheTotalFileCount != null && result.lintCacheTotalFileCount > 0
+        ? (result.lintCacheHitFileCount ?? 0) / result.lintCacheTotalFileCount
+        : null,
     elapsedMs: result.elapsedMilliseconds,
     scanPhaseMs: result.scanElapsedMilliseconds ?? null,
     score: result.score ? result.score.score : null,
@@ -170,7 +225,10 @@ const buildOutcomeAttributes = (input: RunEventInput): RunEventAttributes => {
     didLintFail: input.didLintFail ?? null,
     lintFailureReasonKind: input.lintFailureReasonKind ?? null,
     lintPartialFailureCount: input.lintPartialFailureCount ?? null,
+    lintDroppedFileCount: input.lintDroppedFileCount ?? null,
     didDeadCodeFail: input.didDeadCodeFail ?? null,
+    supplyChainOverlapTimedOut: input.supplyChainOverlapTimedOut ?? null,
+    deadCodeOverlapped: input.deadCodeOverlapped ?? null,
   };
   for (const [category, count] of countByCategory) {
     attributes[`diag.category.${toCategoryKey(category)}`] = count;

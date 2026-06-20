@@ -83,6 +83,7 @@ const baseInput = (overrides: Partial<RunEventInput> = {}): RunEventInput => ({
   lintFailureReasonKind: null,
   lintPartialFailureCount: 0,
   didDeadCodeFail: false,
+  deadCodeOverlapped: false,
   ...overrides,
 });
 
@@ -105,6 +106,23 @@ describe("buildRunEventAttributes", () => {
     }
   });
 
+  it("records whether the dead-code pass overlapped lint, and drops it on the failure path", () => {
+    expect(
+      buildRunEventAttributes(baseInput({ result: buildResult(), deadCodeOverlapped: true }))
+        .deadCodeOverlapped,
+    ).toBe(true);
+    // A false dimension is still emitted (toSpanAttributes only drops null), so
+    // overlap-adoption rate is queryable across all scans.
+    expect(
+      buildRunEventAttributes(baseInput({ result: buildResult(), deadCodeOverlapped: false }))
+        .deadCodeOverlapped,
+    ).toBe(false);
+    // Failure path (no result) carries no outcome dimensions, so it's dropped.
+    expect(
+      buildRunEventAttributes(baseInput({ error: new Error("boom") })).deadCodeOverlapped,
+    ).toBeUndefined();
+  });
+
   it("marks a finding-free run clean and drops absent CI signals", () => {
     const attributes = buildRunEventAttributes(baseInput({ result: buildResult() }));
     expect(attributes.outcome).toBe("clean");
@@ -116,6 +134,35 @@ describe("buildRunEventAttributes", () => {
     expect(attributes.actorAssociation).toBeUndefined();
     expect(attributes.runnerOs).toBeUndefined();
     expect(attributes.versionPin).toBeUndefined();
+    // Nothing fired -> no migration bucket to report (dropped, not "null").
+    expect(attributes["migration.largestRuleBucketFiles"]).toBeUndefined();
+    expect(attributes["migration.largestRuleBucketRule"]).toBeUndefined();
+  });
+
+  it("records the widest-blast-radius rule for migration-scale calibration", () => {
+    const diagnostics: Diagnostic[] = [];
+    for (let fileIndex = 0; fileIndex < 45; fileIndex += 1) {
+      diagnostics.push(
+        buildDiagnostic({
+          rule: "react-compiler-no-manual-memoization",
+          category: "Performance",
+          filePath: `src/components/widget-${fileIndex}.tsx`,
+        }),
+      );
+    }
+    // A noisier-by-sites but narrow rule must NOT win: blast radius is files.
+    diagnostics.push(
+      buildDiagnostic({ rule: "no-array-index-as-key", filePath: "src/list.tsx", line: 1 }),
+      buildDiagnostic({ rule: "no-array-index-as-key", filePath: "src/list.tsx", line: 2 }),
+    );
+
+    const attributes = buildRunEventAttributes(baseInput({ result: buildResult({ diagnostics }) }));
+
+    expect(attributes["migration.largestRuleBucketFiles"]).toBe(45);
+    expect(attributes["migration.largestRuleBucketSites"]).toBe(45);
+    expect(attributes["migration.largestRuleBucketRule"]).toBe(
+      "react-doctor/react-compiler-no-manual-memoization",
+    );
   });
 
   it("rolls up diagnostics by severity, rule, and category", () => {
@@ -207,6 +254,25 @@ describe("buildRunEventAttributes", () => {
     expect(attributes.totalDiagnostics).toBeUndefined();
   });
 
+  it("records the supply-chain overlap timeout outcome and drops it when absent", () => {
+    // The healthy path reports `false`; the rare hung-socket guard reports
+    // `true`. When the field is omitted (failure path / cache hit), it's dropped
+    // rather than coerced to a misleading value.
+    expect(
+      buildRunEventAttributes(
+        baseInput({ result: buildResult(), supplyChainOverlapTimedOut: true }),
+      ).supplyChainOverlapTimedOut,
+    ).toBe(true);
+    expect(
+      buildRunEventAttributes(
+        baseInput({ result: buildResult(), supplyChainOverlapTimedOut: false }),
+      ).supplyChainOverlapTimedOut,
+    ).toBe(false);
+    expect(
+      buildRunEventAttributes(baseInput({ result: buildResult() })).supplyChainOverlapTimedOut,
+    ).toBeUndefined();
+  });
+
   it("emits the baseline delta on a computed baseline run", () => {
     const result = buildResult({
       diagnostics: [buildDiagnostic(), buildDiagnostic({ filePath: "src/B.tsx" })],
@@ -244,6 +310,17 @@ describe("buildRunEventAttributes", () => {
     expect(buildRunEventAttributes(baseInput({ result: buildResult() })).versionPin).toBe("pinned");
     process.env[ACTION_INPUT_ENVIRONMENT_VARIABLES.version] = "./local/pkg";
     expect(buildRunEventAttributes(baseInput({ result: buildResult() })).versionPin).toBe("local");
+  });
+
+  it("records lintDroppedFileCount when present and drops it when absent", () => {
+    const withDrops = buildRunEventAttributes(
+      baseInput({ result: buildResult(), lintDroppedFileCount: 4 }),
+    );
+    expect(withDrops.lintDroppedFileCount).toBe(4);
+
+    // Not passed -> null -> dropped, never coerced to a misleading "null".
+    const withoutDrops = buildRunEventAttributes(baseInput({ result: buildResult() }));
+    expect(withoutDrops.lintDroppedFileCount).toBeUndefined();
   });
 
   it("captures config shape and drops null/undefined-valued attributes", () => {

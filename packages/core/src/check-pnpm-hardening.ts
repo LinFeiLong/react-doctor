@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { RECOMMENDED_PNPM_MINIMUM_RELEASE_AGE_MINUTES } from "./constants.js";
-import { isFile } from "./project-info/index.js";
+import { isFile, findMonorepoRoot } from "./project-info/index.js";
 import type { Diagnostic } from "./types/index.js";
 
 const PNPM_WORKSPACE_FILE = "pnpm-workspace.yaml";
@@ -122,11 +122,20 @@ const buildHardeningDiagnostic = (input: BuildHardeningDiagnosticInput): Diagnos
   category: "Security",
 });
 
-export const checkPnpmHardening = (rootDirectory: string): Diagnostic[] => {
-  if (!isPnpmManagedProject(rootDirectory)) return [];
+export const checkPnpmHardening = (scanDirectory: string): Diagnostic[] => {
+  if (!isPnpmManagedProject(scanDirectory)) return [];
 
-  const workspacePath = path.join(rootDirectory, PNPM_WORKSPACE_FILE);
-  const workspaceContent = isFile(workspacePath) ? fs.readFileSync(workspacePath, "utf-8") : "";
+  const workspacePath = path.join(scanDirectory, PNPM_WORKSPACE_FILE);
+  const hasWorkspaceFile = isFile(workspacePath);
+
+  if (!hasWorkspaceFile) {
+    const monorepoRoot = findMonorepoRoot(scanDirectory);
+    if (monorepoRoot !== null && isFile(path.join(monorepoRoot, PNPM_WORKSPACE_FILE))) {
+      return [];
+    }
+  }
+
+  const workspaceContent = hasWorkspaceFile ? fs.readFileSync(workspacePath, "utf-8") : "";
   const settings = parseHardeningSettings(workspaceContent);
 
   const diagnostics: Diagnostic[] = [];

@@ -1,4 +1,10 @@
-import { buildRuleDocsUrl, groupBy, hasPublishedFixRecipe } from "@react-doctor/core";
+import {
+  buildRuleDocsUrl,
+  groupBy,
+  hasPublishedFixRecipe,
+  MIGRATION_SCALE_RULE_FILE_COUNT,
+  MIN_SHARED_FIX_SITE_COUNT,
+} from "@react-doctor/core";
 import type { Diagnostic, ScoreResult } from "@react-doctor/core";
 
 // Ordering / formatting helpers shared by the diagnostics renderer, the
@@ -68,6 +74,19 @@ export const buildSortedRuleGroups = (
     rulePriority,
   );
 
+// When every finding in a group shares one root-cause fix (the `fixGroupId`
+// the core layer stamps on same-(file, rule, message) sites), the number of
+// findings that single fix resolves — else 0 (the group spans several fixes,
+// or none carry an id). Lets a surface say "one fix · N sites" instead of
+// "N findings", so one keyed-state fix reads as one task, not N.
+export const getSharedFixSiteCount = (diagnostics: ReadonlyArray<Diagnostic>): number => {
+  if (diagnostics.length < MIN_SHARED_FIX_SITE_COUNT) return 0;
+  const firstFixGroupId = diagnostics[0]?.fixGroupId;
+  if (!firstFixGroupId) return 0;
+  const sharesOneFix = diagnostics.every((diagnostic) => diagnostic.fixGroupId === firstFixGroupId);
+  return sharesOneFix ? diagnostics.length : 0;
+};
+
 // Agent-facing directive (not a bare label) so a consuming agent treats the
 // URL as a step to perform — cache-bust the canonical, reviewer-tested
 // recipe, then follow both its fix and its false-positive check before
@@ -90,3 +109,36 @@ export const formatLearnMoreLine = (diagnostic: Diagnostic): string | null =>
   hasPublishedFixRecipe(diagnostic)
     ? `Learn more: ${buildRuleDocsUrl(diagnostic.plugin, diagnostic.rule)}`
     : null;
+
+// Per-rule "blast radius": how many sites a `<plugin>/<rule>` group reports and
+// how many distinct files those sites span. Files (not raw sites) measure the
+// review burden of fixing a rule everywhere — 800 sites in 2 files is a small
+// PR; 800 across 300 files is a migration — so this is what the migration-scale
+// advisory and its calibration metric both read. Sorted widest blast radius
+// first; the title falls back to the rule key for adopted third-party rules.
+export interface RuleBlastRadius {
+  readonly ruleKey: string;
+  readonly title: string;
+  readonly siteCount: number;
+  readonly fileCount: number;
+}
+
+export const buildRuleBlastRadii = (diagnostics: ReadonlyArray<Diagnostic>): RuleBlastRadius[] =>
+  buildSortedRuleGroups(diagnostics)
+    .map(([ruleKey, ruleDiagnostics]) => ({
+      ruleKey,
+      title: ruleDiagnostics[0]!.title ?? ruleKey,
+      siteCount: ruleDiagnostics.length,
+      fileCount: new Set(ruleDiagnostics.map((diagnostic) => diagnostic.filePath)).size,
+    }))
+    .toSorted((left, right) => right.fileCount - left.fileCount);
+
+// The rule groups whose fix would touch enough files to be a migration rather
+// than a quick fix — the set that warrants sampling a few sites, confirming the
+// recipe holds, and getting the code owner's sign-off before sweeping the rest.
+export const findMigrationScaleBuckets = (
+  diagnostics: ReadonlyArray<Diagnostic>,
+): RuleBlastRadius[] =>
+  buildRuleBlastRadii(diagnostics).filter(
+    (bucket) => bucket.fileCount >= MIGRATION_SCALE_RULE_FILE_COUNT,
+  );

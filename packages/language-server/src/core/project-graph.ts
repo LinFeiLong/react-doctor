@@ -3,9 +3,11 @@ import {
   clearAutoSuppressionCaches,
   clearConfigCache,
   clearIgnorePatternsCache,
+  clearMinifiedFileCache,
   clearPackageJsonCache,
   clearProjectCache,
   discoverReactSubprojects,
+  messageFromUnknown,
 } from "@react-doctor/core";
 import { SILENT_LOGGER, type Logger, type ProjectGraph, type WorkspaceProject } from "../types.js";
 
@@ -47,9 +49,7 @@ export const createProjectGraph = (options: ProjectGraphOptions): ProjectGraph =
           }
         }
       } catch (error) {
-        logger.warn(
-          `Project discovery failed for ${root}: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        logger.warn(`Project discovery failed for ${root}: ${messageFromUnknown(error)}`);
       }
     }
     // Deepest-first so owning-project resolution can take the first match.
@@ -81,6 +81,7 @@ export const createProjectGraph = (options: ProjectGraphOptions): ProjectGraph =
       clearPackageJsonCache();
       clearIgnorePatternsCache();
       clearAutoSuppressionCaches();
+      clearMinifiedFileCache();
       projects = null;
     },
   };

@@ -1,5 +1,116 @@
 # oxlint-plugin-react-doctor
 
+## 0.5.8
+
+### Patch Changes
+
+- [#903](https://github.com/millionco/react-doctor/pull/903) [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Add a per-file content-addressed lint cache so repeat scans re-lint only the files whose content changed. On a warm scan the oxlint pass partitions the file list by content hash: unchanged files replay their cached raw diagnostics, and only changed files are re-linted. The five cross-file rules (`no-barrel-import`, `nextjs-missing-metadata`, `nextjs-no-use-search-params-without-suspense`, `no-mutating-reducer-state`, `rn-prefer-expo-image`) — whose verdict for a file can depend on _other_ files — always run fresh in a never-cached sidecar pass, so a dependency change can never serve a stale verdict. Output is byte-identical with the cache on or off (the design invariant), so the score, JSON report, and `inspect()`/`diagnose()` return values are unchanged.
+
+  The cache is on by default and content-hashed (so it survives CI re-clones), and is automatically bypassed in audit mode, when an `extends` lint config is adopted, or when user plugins are configured. Disable it with `REACT_DOCTOR_NO_FILE_CACHE=1`; the existing `REACT_DOCTOR_NO_CACHE=1` now disables both the whole-repo scan cache and this per-file cache. A `cross-file-rules` guard test fails if a future rule starts reading other files without being carved into the always-fresh sidecar. The CLI reports cache effectiveness on its Sentry run event as `lintCacheHitRatio`.
+
+  `oxlint-plugin-react-doctor` now exports `CROSS_FILE_RULE_IDS`, the canonical set of rules whose verdict can depend on other files.
+
+## 0.5.7
+
+### Patch Changes
+
+- [#847](https://github.com/millionco/react-doctor/pull/847) [`424d8f9`](https://github.com/millionco/react-doctor/commit/424d8f9f914ff98b791af6b1f88337922c80c8ef) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Fix `agent-tool-capability-risk` (and its sibling `mcp-tool-capability-risk`) false positives when a capability keyword appears only in prose ([#838](https://github.com/millionco/react-doctor/issues/838)).
+
+  The rules already blanked comments before their keyword scan but still matched the dangerous-capability pattern inside string literals. A tool whose `description` happened to contain a capability word as prose — e.g. `description: "...ALWAYS fetch the underlying numbers first"` — fired even though no shell/fs/network primitive was wired to the handler. The keyword scan now blanks string-literal interiors (preserving offsets, so reported lines/columns stay correct), via a new opt-in `ignoreStringLiterals` flag on the shared `scanByPattern` helper.
+
+  Genuine signals still fire: a real call site outside the quotes (`exec(command)`, `fetch(url)`), a capability inside a template interpolation (`` `${fetch(url)}` `` — `${…}` is treated as code, not blanked), and a dangerous module specifier (`import { execFile } from "node:child_process"`, `require("axios")`) are all preserved.
+
+- [#845](https://github.com/millionco/react-doctor/pull/845) [`81bbfcc`](https://github.com/millionco/react-doctor/commit/81bbfcc39a0ae2f7d92ebb8860d854d09a60344d) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Fix `artifact-baas-authority-surface` false positives on `next-sanity` / `@sanity/client` studio bundles ([#840](https://github.com/millionco/react-doctor/issues/840)).
+
+  The rule's "BaaS client config present" gate paired the generic `createClient` token with Firebase's `projectId` field. But that pairing is the _Sanity_ client signature — `createClient({ projectId, dataset, apiVersion })` — not a Firebase or Supabase one, so every Sanity Studio browser chunk tripped the gate and then matched the second factor on a shipped `roles`/`administrator` string. `createClient` now only counts as a BaaS signal next to a Supabase marker (`supabase` / `SUPABASE_URL`); Firebase is still detected by its own verbs (`initializeApp`, `firebase`, `firestore`), so genuine Firebase/Supabase authority maps keep firing.
+
+- [#861](https://github.com/millionco/react-doctor/pull/861) [`937a7ca`](https://github.com/millionco/react-doctor/commit/937a7ca8a1b066a62210dc4a11149b9180dc9851) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Stop `no-inline-exhaustive-style` from flagging Satori (next/og, @vercel/og) OG-image components.
+
+  OG components style everything inline because Satori rasterizes the JSX to a static image and supports no other styling channel — so the rule's "rebuilds every render" premise never applies, and an exhaustive `style={{…}}` is the only way to lay them out. The rule now shares the same `isGeneratedImageRenderContext` guard the sibling image rules already use (`alt-text`, `nextjs-no-img-element`, `no-unknown-property`): it short-circuits in Next.js metadata image routes (`opengraph-image.tsx`, `twitter-image.tsx`, `icon.tsx`, …) and skips JSX that flows into an `ImageResponse(...)`/`satori(...)` call, including a helper component resolved to that call. The expensive per-node generated-image lookup runs only once a style is large enough to report, so ordinary files pay nothing. Exhaustive inline styles in regular components are still flagged.
+
+- [#862](https://github.com/millionco/react-doctor/pull/862) [`b8170f8`](https://github.com/millionco/react-doctor/commit/b8170f814c079d7bbc9e7796dd13646a6e8175fe) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Stop `jsx-key` from flagging element collections handed to a non-`children` prop (e.g. `<Tabs items={[<Tab />, <Tab />]} />`).
+
+  The rule decided whether an element needed a `key` purely from its structural position — "is this JSX inside an array literal or a `.map`/`.flatMap`/`Array.from` callback?" — and never looked at where the resulting collection was consumed. React's dev-mode key validation only iterates `props.children` (`jsxWithValidation` → `validateChildKeys(props.children, type)`), so an element array passed to any other prop is never key-validated at the call site; the receiving component owns keying (the `cloneElement` / `Children.map` / `Children.toArray` idiom). Flagging the producer site was a false positive — the same "data handoff, not a sibling render" reasoning the rule already applies to object-`Property` values.
+
+  The fix exempts collections that are the value of a non-`children` JSX attribute, for both array literals and iterator callbacks — including when the value is wrapped in optional chaining, `&&`/`||`/`??`, a ternary branch, or a TS `as` / `satisfies` / `!` assertion (`items={ready && xs.map(...)}`), since none of those change whether React validates it.
+
+  Genuine missing keys still fire: array literals and `.map` results in **children** position (`<Menu>{data.map(...)}</Menu>`, `<ul>{[<li/>, <li/>]}</ul>`), and the explicit `children={[...]}` attribute — which _is_ `props.children` and which React does validate.
+
+- [#865](https://github.com/millionco/react-doctor/pull/865) [`3f7d0e7`](https://github.com/millionco/react-doctor/commit/3f7d0e7ddb055b4970cba2b393ce14f6615732e4) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Ship `no-danger` default-off so it no longer blanket-flags safe `dangerouslySetInnerHTML`.
+
+  `no-danger` is the absolutist oxc port — it flags **every** `dangerouslySetInnerHTML` with zero content awareness, so it fired Security warnings on the canonical-safe idioms that React Doctor's own content-aware detectors deliberately exempt: escaped JSON-LD, theme-init `<script>` templates, CSS-variable `<style>` injection, and sanitized / `safe`-named values. Two default-on Security rules judged the same prop and disagreed.
+
+  The content-aware rules are now the canonical default-on detectors for `dangerouslySetInnerHTML`: `dangerous-html-sink` (dynamic/tainted markup, with the style-tag / static-template / sanitizer exemptions) and `unsafe-json-in-html` (the unescaped-`JSON.stringify` breakout case). `no-danger` remains available opt-in (`"react-doctor/no-danger": "warn"`) for teams that want the stricter "never use `dangerouslySetInnerHTML` at all" policy (oxc / `eslint-plugin-react` parity).
+
+  Score impact: repos using these safe idioms will see fewer Security findings and a correspondingly **higher** score. A CI gate pinned to a fixed threshold may pass where it previously failed. Re-enable `no-danger` in config to restore the old behavior.
+
+- [#846](https://github.com/millionco/react-doctor/pull/846) [`6b8e756`](https://github.com/millionco/react-doctor/commit/6b8e756c40fe300634aec766edb00cbec73d8bc4) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Fix `server-sequential-independent-await` false positive on awaits whose dependency flows through nested destructuring ([#839](https://github.com/millionco/react-doctor/issues/839)).
+
+  The rule's binding collector only saw top-level `Identifier` bindings and shallow object/array pattern elements, so names bound through a nested pattern — e.g. `const [{ slug }, { isEnabled }] = await Promise.all([...])` — were invisible. A follow-up `await client.fetch(BlogPostQuery, { slug }, isEnabled ? ... : ...)` that genuinely depended on those names was wrongly flagged as an independent waterfall. The collector now reuses the recursive `collectPatternNames` utility, so nested array/object patterns, defaulted bindings, and rest elements all count as a real dependency.
+
+- [#831](https://github.com/millionco/react-doctor/pull/831) [`03301fc`](https://github.com/millionco/react-doctor/commit/03301fcdf4adcf256ef7ef7ed83f5566181ab371) Thanks [@aidenybai](https://github.com/aidenybai)! - Fix `server-auth-actions` false positives on custom auth guards ([#829](https://github.com/millionco/react-doctor/issues/829)).
+
+  The rule only recognized a fixed list of auth function names, so a server action protected by a project's own guard — e.g. `await requireAdmin()` or `await getAdminSession()` — was wrongly flagged as callable by anyone. It now recognizes auth checks by naming **convention** as well: an assertive verb plus an auth noun (`requireAdmin`, `ensureSignedIn`, `checkPermission`, `assertUser`, `isAdmin`, `hasRole`), a getter plus a strong auth noun (`getServerAuthSession`, `getAdminSession`), and `current`/`my`/`own` qualifiers (`getCurrentUser`). Genuinely ambiguous names like `getUser` and `getToken` still require an auth-related receiver, so `analytics.getUser()` keeps firing the rule.
+
+- [#859](https://github.com/millionco/react-doctor/pull/859) [`44db3e0`](https://github.com/millionco/react-doctor/commit/44db3e0546fe0518b79e0aa2636754dcccda2939) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Fix `server-fetch-without-revalidate` false positive on mutating fetches. Next.js only caches GET requests, so a `fetch(url, { method: "POST" | "PUT" | "PATCH" | "DELETE" })` in a Server Component or route handler can never serve stale cached data — the rule no longer flags it.
+
+- [#843](https://github.com/millionco/react-doctor/pull/843) [`5b742fa`](https://github.com/millionco/react-doctor/commit/5b742fa28c96443bd5bbd6348ad5aba55e17405c) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Fix `url-prefilled-privileged-action` false positive when a validating helper
+  wraps a read behind a receiver chain. The validator-suppression lookbehind only
+  recognized `validator(searchParams.get(...))` or `validator(new URLSearchParams(...))`
+  directly — real code reads through a receiver (`sanitizeNext(url.searchParams.get(...))`,
+  `validateNext(request.nextUrl.searchParams.get(...))`), and that intervening `url.`
+  broke the match so validated reads kept firing. The lookbehind now allows an optional
+  receiver member-chain between the helper's `(` and the read.
+
+- [#826](https://github.com/millionco/react-doctor/pull/826) [`8908f98`](https://github.com/millionco/react-doctor/commit/8908f98d02ad65e58d740ab948f8111948592cb9) Thanks [@aidenybai](https://github.com/aidenybai)! - Add 7 new rules mined from React, web-platform, security, and accessibility best practices:
+
+  - `no-call-component-as-function` (Bugs): calling a component like `Foo(props)` instead of `<Foo />` runs it outside React and breaks hooks, state, and memoization. Shadow-safe via scope resolution.
+  - `no-create-ref-in-function-component` (Bugs): `createRef()` in a function component or hook allocates a fresh ref every render; use `useRef()`.
+  - `no-async-effect-callback` (Bugs): an `async` `useEffect`/`useLayoutEffect` callback returns a Promise that React treats as cleanup, causing unmount races.
+  - `no-json-parse-stringify-clone` (Performance): `JSON.parse(JSON.stringify(x))` is a slow, lossy deep clone; use `structuredClone(x)`.
+  - `no-img-lazy-with-high-fetchpriority` (Performance): `loading="lazy"` and `fetchPriority="high"` are contradictory directives on the same image.
+  - `dialog-has-accessible-name` (Accessibility): a `<dialog>` / `role="dialog"` with no `aria-label`/`aria-labelledby` is announced only as "dialog".
+  - `auth-token-in-web-storage` (Security): persisting auth tokens in `localStorage`/`sessionStorage` exposes them to XSS exfiltration.
+
+- [#828](https://github.com/millionco/react-doctor/pull/828) [`451beeb`](https://github.com/millionco/react-doctor/commit/451beeb28405aa6810946e3311dfc7fb8de74632) Thanks [@aidenybai](https://github.com/aidenybai)! - Add 3 new rules (mining batch 2), each validated with an OSS noise sweep (0 false positives across ~2,800 diagnostics in react-use, radix-ui/primitives, excalidraw, mantine):
+
+  - `no-document-write` (Performance): `document.write()`/`document.writeln()` blocks parsing and is ignored or wipes the page after load.
+  - `no-sync-xhr` (Performance): a synchronous `XMLHttpRequest` (`.open(method, url, false)`) freezes the main thread until the request finishes.
+  - `no-string-false-on-boolean-attribute` (Bugs): `disabled="false"` and friends pass the string `"false"`, which is truthy, so the boolean attribute is applied even when you wrote "false". Targets a curated set of true HTML boolean attributes on intrinsic elements; excludes enumerated attrs (`aria-*`, `contentEditable`, `draggable`, `spellCheck`) and custom components.
+
+## 0.5.6
+
+### Patch Changes
+
+- [#812](https://github.com/millionco/react-doctor/pull/812) [`ea3b827`](https://github.com/millionco/react-doctor/commit/ea3b8278996613114c9c671afe292193388741c0) Thanks [@aidenybai](https://github.com/aidenybai)! - Add five `security-scan` rules distilled from security-researcher writeups and the deepsec scanner-matcher catalog, closing CWE shapes the bucket didn't cover:
+
+  - **`unsafe-json-in-html`** — `JSON.stringify(...)` embedded in `dangerouslySetInnerHTML` or inline `<script>` markup. `JSON.stringify` does not HTML-escape, so data containing `</script>` or `<` breaks out — the classic SSR data-hydration XSS. Suppressed when an HTML-safe serializer (serialize-javascript, devalue, superjson) or `\u003c` escaping is used.
+  - **`jwt-insecure-verification`** — the JWT `none` algorithm (`alg: none` / `algorithms: ["none"]`), which disables signature verification and lets any forged token through. (Detecting an unpinned `jwt.verify` precisely needs scope-aware analysis, so that is left to a future AST rule.)
+  - **`secret-in-fallback`** — a secret-shaped env var with a hardcoded string fallback (`process.env.STRIPE_SECRET_KEY ?? "<hardcoded>"`): a committed secret that also makes the app fail open when the var is unset. Skips public vars (PUBLIC/PUBLISHABLE/ANON) and placeholder defaults.
+  - **`request-body-mass-assignment`** — spreading or merging request input (`{ ...req.body }`, `Object.assign(target, req.body)`, lodash `merge`/`defaultsDeep`) without a field allowlist: mass assignment (client-set owner/role/price columns) or prototype pollution.
+  - **`insecure-session-cookie`** — auth/session cookies exposed to JavaScript: `httpOnly: false`, set via `document.cookie`, or a bare `res.cookie("session", value)` / `cookies().set(...)` with no options.
+
+  All five register through `defineRule` with a project-level `scan`, carry the `Security` category and `security-scan` tag, and are silenced by `react-doctor rules ignore-tag security-scan` like the rest of the family.
+
+- [#819](https://github.com/millionco/react-doctor/pull/819) [`5fc0e27`](https://github.com/millionco/react-doctor/commit/5fc0e270c9a15d25be96ef982755cea81065d141) Thanks [@aidenybai](https://github.com/aidenybai)! - Fix false positives reported in the security and TanStack rules:
+
+  - **`query-destructure-result`** ([#818](https://github.com/millionco/react-doctor/issues/818)): only flags `useQuery`/`useSuspenseQuery`/… when they actually come from a TanStack Query package (`@tanstack/*-query`, legacy `react-query`). A same-named hook imported from elsewhere — notably Convex's `useQuery` from `convex/react`, which returns the data directly — is no longer flagged.
+  - **`artifact-env-leak` / `artifact-secret-leak`** ([#816](https://github.com/millionco/react-doctor/issues/816), [#817](https://github.com/millionco/react-doctor/issues/817)): no longer treat server-side or dev-mode Next.js output as browser artifacts. `.next/dev/server/**` (dev source maps), any `.next/**/server/**`, `.output/server/**`, and the dev server's `.next/dev/**` output are excluded; production browser bundles (`.next/static`, `dist/assets`, `public/`, …) are still scanned.
+  - **`repository-secret-file`** / **`key-lifecycle-risk`** ([#813](https://github.com/millionco/react-doctor/issues/813)): no longer flag a credential/key file that git ignores — a local-only, gitignored `.env` is not "checked into the repository". Findings are dropped only when git definitively reports the path as ignored (the finding stands when there is no repo or git is unavailable).
+  - **`webhook-signature-risk`** ([#814](https://github.com/millionco/react-doctor/issues/814)): recognizes a delegated verification helper (a call pairing a verify-ish verb with a security noun, e.g. `isValidSecret(...)`, `verifySignature(...)`, `checkWebhookHmac(...)`) as verification evidence, so an extracted `timingSafeEqual` comparison in another module no longer trips the rule.
+
+- [#812](https://github.com/millionco/react-doctor/pull/812) [`ea3b827`](https://github.com/millionco/react-doctor/commit/ea3b8278996613114c9c671afe292193388741c0) Thanks [@aidenybai](https://github.com/aidenybai)! - Add a `supabase-table-missing-rls` security-scan rule. It flags a Supabase migration (`supabase/migrations/**`, `supabase/schemas/**`) that runs `create table` for a public-schema table but never enables Row Level Security — the highest-impact and most common Supabase misconfiguration, because RLS is OFF by default for SQL-created tables, so every row is readable and writable with the public anon key. It targets the same misconfiguration Supabase's own `rls_disabled_in_public` database linter flags, and the gap that turns the public anon key into the service key.
+
+  The existing `supabase-rls-policy-risk` only caught an explicit `disable row level security`; this complements it by catching the far more common "never enabled it" case. RLS is checked per table — each `create table` must have an `alter table <name> enable row level security` for that same table, after the create (a sibling table enabling RLS, or a policy without enabling it, does not vouch). SQL comments and string literals are ignored, non-public/Supabase-managed schemas (`auth.`, `storage.`, a `private.` schema, …) are skipped, and the rule is scoped to the `supabase/` directory so plain Drizzle/Prisma `.sql` migrations are not flagged. The scan runs per migration file, so enabling RLS in a _different_ migration than the `create table` is not detected — the same-file pattern (what Supabase tooling emits) is the supported case. Like the rest of the family it carries the `security-scan` tag and is silenced by `react-doctor rules ignore-tag security-scan`.
+
+## 0.5.5
+
+### Patch Changes
+
+- [#809](https://github.com/millionco/react-doctor/pull/809) [`e90eb7a`](https://github.com/millionco/react-doctor/commit/e90eb7acbfc4e06de68de2cb6a96d3242f72963e) Thanks [@devin-ai-integration](https://github.com/apps/devin-ai-integration)! - Recognize TanStack Start's current `.validator()` server-fn method (not just the deprecated `.inputValidator()`) in `tanstack-start-server-fn-validate-input` and `tanstack-start-server-fn-method-order`.
+
+  `@tanstack/react-start` renamed the server-function input-validation step from `inputValidator` back to `validator` and now marks `inputValidator` as deprecated. Both rules only matched `inputValidator`, so projects on current TanStack Start that use `.validator()` got a false "missing input validation" diagnostic, and the method-order check ignored a misplaced `.validator()`. Both names are now treated as the same validation step in the chain walker and the method-order sequence, and the rule messages/recommendations point at the canonical `.validator()`.
+
 ## 0.5.4
 
 ### Patch Changes

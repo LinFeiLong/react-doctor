@@ -1,5 +1,198 @@
 # react-doctor
 
+## 0.5.8
+
+### Patch Changes
+
+- [#903](https://github.com/millionco/react-doctor/pull/903) [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Bound every long-running scan phase with a hard, runtime-independent timeout so a single wedged dependency socket, quadratic file, or starved event loop can no longer hang a scan for hours (production traces showed `runInspect` up to 16h and `Linter.run` up to 7.5h).
+
+  - **Binary-split cascade** (`spawnLintBatches`): a cumulative split-time budget (`OXLINT_SPLIT_TOTAL_BUDGET_MS`, 3 min) and a recursion-depth cap (`OXLINT_SPLIT_MAX_DEPTH`, 8) now drop the remaining files of a pathological batch into the existing `onPartialFailure` / `skippedCheckReasons["lint:partial"]` channel instead of re-waiting a full spawn timeout at every split level.
+  - **Supply-chain check**: a whole-check cap (`SUPPLY_CHAIN_TOTAL_TIMEOUT_MS`, 90s) fails open (no diagnostics) on a many-socket pileup that ignores the per-fetch abort — the same fail-open contract the per-package lookup already had.
+  - **Dead-code & lint phases**: Effect-level caps (`REACT_DOCTOR_DEAD_CODE_PHASE_TIMEOUT_MS`, default 2.5 min; `REACT_DOCTOR_LINT_PHASE_TIMEOUT_MS`, default 5 min) sit above the existing per-unit timeouts and fold a timeout into the existing skipped-check / lint-failure contracts so the rest of the scan still completes. On interruption the dead-code worker and any in-flight oxlint subprocesses are SIGKILL'd (the `AbortSignal` is threaded down to both), so the cap actually reclaims the work instead of leaving orphaned processes running.
+  - **Overall deadline**: `REACT_DOCTOR_SCAN_DEADLINE_MS` (default 15 min) backstops any phase not individually capped, raising the new `ScanDeadlineExceeded` reason on the `ReactDoctorError` union. It sits above the sum of the per-phase caps so a scan that legitimately uses those budgets degrades gracefully rather than hard-failing.
+
+  All four caps are env-tunable so the budgets can be raised without a redeploy. The defaults sit well above measured p95, so only the pathological tail is affected — no behavior change for normal scans.
+
+- [#903](https://github.com/millionco/react-doctor/pull/903) [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Run dead-code analysis sequentially by default and scale its timeout to the repo size — fixing a silent drop of all dead-code findings on large supply-chain scans.
+
+  Dead-code (deslop reachability) is CPU-bound, like the oxlint lint pass. Running them concurrently oversubscribed the cores: deslop's parse pool and the oxlint pool each size to all cores, so together they demanded ~2x the cores, thrashed, and the parse pass missed its in-worker timeout. On a large repo (where the pass already runs near the cap) the supply-chain pass bleeding into the dead-code phase was enough to tip it over, and the fail-open path then silently dropped EVERY dead-code finding — observed dropping all ~349 findings on ~2/3 of supply-chain-on Sentry scans, with no user-visible error.
+
+  Dead-code now runs strictly after lint with the full core budget — fastest per-phase and never oversubscribed (overlapping two CPU-bound passes buys no wall-clock anyway). `REACT_DOCTOR_DEAD_CODE_OVERLAP=on` still forces the overlap, but the two pools now SPLIT the core budget — deslop's parse pool is capped via the new `DESLOP_PARSE_CONCURRENCY` env and lint shrinks to the remainder — so they sum to the cores instead of doubling them.
+
+  The dead-code phase + in-worker timeouts now scale with the project's source-file count (and inversely with the dead-code core share when overlapped) instead of a flat cap, so a large repo's legitimately-long pass isn't reclaimed before it finishes; the ceiling still reclaims a genuinely wedged worker, and an explicit `REACT_DOCTOR_DEAD_CODE_PHASE_TIMEOUT_MS` override is honored verbatim. This supersedes the previous memory-gated dead-code overlap and replaces the flat dead-code phase cap with the size-scaled budget.
+
+- [#903](https://github.com/millionco/react-doctor/pull/903) [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Skip the deslop analysis passes whose output react-doctor discards — an ~8.5x speedup of the dead-code phase on large repos.
+
+  react-doctor consumes only deslop's graph dead-code findings: unused files, unused exports, unused dependencies, and circular dependencies. The dead-code worker projects exactly those four off deslop's result (`check-dead-code.ts` `normalizeResult`); the other ~18 fields deslop computes never cross the worker boundary. Two of deslop's passes produce only discarded output and are the bulk of the runtime: the full-TypeScript-Program **semantic** pass (unused types / enum & class members / misclassified deps), and a set of **code-quality** detectors (duplicate-block / copy-paste detection, complexity hotspots, feature flags, TypeScript smells, private-type leaks, re-export cycles). Profiling a ~9k-file repo (Sentry) showed `generateReport` was ~90% of the phase and duplicate-block detection alone was ~83s of ~130s.
+
+  deslop gains a `reportCodeQuality` flag (default `true`, so deslop used standalone is unchanged) that gates those six code-quality detectors — they were the only expensive detectors still running unconditionally while the cheaper redundancy detectors were already opt-in. react-doctor's dead-code worker now passes both `semantic: { enabled: false }` and `reportCodeQuality: false`.
+
+  Measured on Sentry: deslop drops from ~132s to ~15.5s (8.5x) with byte-identical consumed findings (198 unused files, 10 unused exports, 4 unused deps, 137 cycles), and a full supply-chain-on scan drops from ~142s to ~40s. Skipping these is provably safe — each consumed finding comes from its own detector, independent of the disabled passes — and a parity test locks the invariant so a future deslop change that ever coupled a consumed finding to either pass fails CI first.
+
+- [#903](https://github.com/millionco/react-doctor/pull/903) [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Diagnostics are now emitted in a deterministic order across runs (JSON report, terminal output, on-disk dump, and the agent handoff), so two runs of the same repo produce byte-identical ordering instead of the parallel lint pass's arrival order. Lint scans also schedule the largest source files first (LPT batch ordering) for better wall-clock on large repos — a free reordering using the file size the minified-file gate already stat'd. Set `REACT_DOCTOR_LINT_BATCH_ORDERING=arrival` to fall back to discovery order. The diagnostics array content (and the JSON `schemaVersion`) is unchanged — only the ordering becomes deterministic.
+
+- [#906](https://github.com/millionco/react-doctor/pull/906) [`8b91ac8`](https://github.com/millionco/react-doctor/commit/8b91ac8206aa840724420862927b2d3e5200ba36) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Fix the GitHub Actions setup flow opening duplicate PRs and bundling unrelated local changes ([#904](https://github.com/millionco/react-doctor/issues/904)). Before creating a branch, `openWorkflowPullRequest` now checks for an already-open React Doctor setup PR and surfaces it instead of minting a second timestamped branch, and it bails when the working tree has tracked changes other than the workflow file (which `git checkout -b` + the whole-index `git commit` would otherwise sweep into the PR), falling back to staging the workflow file.
+
+- [#903](https://github.com/millionco/react-doctor/pull/903) [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Memoize the large-minified-file stat/sniff so each source path is statted and content-sniffed at most once per process. A full scan enumerates the source tree more than once — `countSourceFiles` during discovery, `listSourceFiles` during the lint pass, and `collectSecurityScanFiles` during the env-check phase — and every `≥20KB` candidate was `statSync`'d (plus a 64KB content read) on each walk. A module-scope path-keyed cache collapses that to a single stat/sniff per file, wired into the existing `clearCaches()` invalidation contract so long-running `diagnose()` consumers still re-read files that change between calls. Behavior is unchanged (identical diagnostics and `sourceFileCount`); this only removes redundant pre-lint syscalls on full scans.
+
+- [#903](https://github.com/millionco/react-doctor/pull/903) [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Replace the fixed 16-worker lint ceiling with a memory-and-core-budgeted auto count (up to 32). The auto path now picks `min(cores, floor(availableMemory / 1 GiB))` clamped to `[1, 32]`, where `availableMemory` is `os.totalmem()` floored by the container's cgroup memory limit (read directly, since Node's memory APIs report the host total inside a container). `os.freemem()` is deliberately not used — it excludes reclaimable page cache and reads near-zero on macOS / cache-heavy Linux, which would have collapsed the default scan to a single worker.
+
+  The 1 GiB/worker budget matches the per-worker footprint the old fixed-16 ceiling already tolerated (16 workers on a typical 16 GiB CI box), so machines with at least ~1 GiB per core stay core-bound and unchanged. A 32/64-core runner with enough memory now uses up to 32 workers instead of idling cores behind the old 16; a high-core but memory-starved box or container uses fewer workers so the oxlint native binding doesn't OOM (the existing `EAGAIN`/`ENOMEM` serial replay remains the runtime backstop). Past ~10 workers parallel efficiency already flattens, so this is headroom and OOM-safety, not a proportional speedup.
+
+  The cgroup v2 limit is read from the mount-root `memory.max`, which is the container's limit under the standard cgroup-namespace setup CI runners use; a non-namespaced nested cgroup falls back to the host total (with the serial replay as the backstop).
+
+  Note for `diagnose({ projects })` batch scans: each project's lint pass is budgeted independently against the whole machine, so a batch (default 4 concurrent projects) can now spawn up to `4 × 32` concurrent oxlint processes on a large runner (was `4 × 16`). The per-project `EAGAIN`/`ENOMEM` serial replay still backstops any over-subscription; dividing the per-project memory budget by the batch concurrency is a possible follow-up.
+
+  Explicit `REACT_DOCTOR_PARALLEL=N` and `inspect({ concurrency: N })` pins are now clamped to 32 (was 16). The `[~N workers]` scan suffix can show more than 16 on large runners, and the `oxlint.workers` telemetry distribution (plus the wide-event `workerCount` / `parallel`) now reports the real resolved worker count on the default auto path instead of only when a count was pinned.
+
+- [#908](https://github.com/millionco/react-doctor/pull/908) [`2cadd3f`](https://github.com/millionco/react-doctor/commit/2cadd3fe2cb5b0476b35b1581c0a4c99bcdf1306) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Add a once-per-repo migration that pins a mutable `@main` / `@master` React Doctor GitHub Action reference in `.github/workflows/*.yml` to the recommended floating major (`@v2`).
+
+  An unpinned `@main` runs whatever the action's HEAD points to with the workflow's write permissions — a supply-chain risk ([#299](https://github.com/millionco/react-doctor/issues/299)) — and the rewrite also moves the workflow onto the current install- and scan-cached action release. Pinned tags / commit SHAs are deliberate and left untouched, and a different action on `@main` (e.g. `actions/checkout@main`) is ignored. Runs once per repo like the legacy-config migration, rewrites only the ref (owner, comments, and the action's `version:` input are preserved), and logs the change for the user to review and commit (or revert if they intentionally track main).
+
+- [#907](https://github.com/millionco/react-doctor/pull/907) [`7e10716`](https://github.com/millionco/react-doctor/commit/7e10716ae1d3a9b1a9fb7657841c76e5f856a8f0) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Rework the CLI's per-user state tracking into a small lifecycle framework. All onboarding, growth, and migration state now lives behind one store (`cli-state-store.ts`) and one set of primitives (`cli-lifecycle.ts`): **gates** (fire once per machine or per repo, with an outcome and a version), **migrations** (run a code/config update once per repo, tracked), and **invalidation** (bump a gate's/migration's version to re-fire). Onboarding, the CI pitch, the action-upgrade offer, the agent install hint, and the legacy `react-doctor.config.json` → `doctor.config.ts` migration are all expressed on it. The on-disk state file upgrades itself in place on first read, preserving every recorded answer — no user is re-prompted. No change to commands, flags, or output.
+
+- [#903](https://github.com/millionco/react-doctor/pull/903) [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Add a per-file content-addressed lint cache so repeat scans re-lint only the files whose content changed. On a warm scan the oxlint pass partitions the file list by content hash: unchanged files replay their cached raw diagnostics, and only changed files are re-linted. The five cross-file rules (`no-barrel-import`, `nextjs-missing-metadata`, `nextjs-no-use-search-params-without-suspense`, `no-mutating-reducer-state`, `rn-prefer-expo-image`) — whose verdict for a file can depend on _other_ files — always run fresh in a never-cached sidecar pass, so a dependency change can never serve a stale verdict. Output is byte-identical with the cache on or off (the design invariant), so the score, JSON report, and `inspect()`/`diagnose()` return values are unchanged.
+
+  The cache is on by default and content-hashed (so it survives CI re-clones), and is automatically bypassed in audit mode, when an `extends` lint config is adopted, or when user plugins are configured. Disable it with `REACT_DOCTOR_NO_FILE_CACHE=1`; the existing `REACT_DOCTOR_NO_CACHE=1` now disables both the whole-repo scan cache and this per-file cache. A `cross-file-rules` guard test fails if a future rule starts reading other files without being carved into the always-fresh sidecar. The CLI reports cache effectiveness on its Sentry run event as `lintCacheHitRatio`.
+
+  `oxlint-plugin-react-doctor` now exports `CROSS_FILE_RULE_IDS`, the canonical set of rules whose verdict can depend on other files.
+
+- [#908](https://github.com/millionco/react-doctor/pull/908) [`2cadd3f`](https://github.com/millionco/react-doctor/commit/2cadd3fe2cb5b0476b35b1581c0a4c99bcdf1306) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Persist react-doctor's scan caches across CI runs (plan 10).
+
+  In CI every commit is a fresh, SHA-scoped checkout, so the project-local `node_modules/.cache` never survives between commits — every run recomputes from scratch. This makes the engine's caches survivable:
+
+  - **`REACT_DOCTOR_CACHE_DIR`** (new env): an operator/CI-pinned cache root. The GitHub Action points it at a stable `${runner.temp}` path and persists it with `actions/cache`, so the per-file content-addressed lint cache restores across runs — a PR re-lints only its changed files instead of the whole project. Keyed on the react-doctor version + lockfile + os/arch, with a `restore-keys` partial-hit fallback; the engine re-validates every restored entry by content hash + ruleset hash, so a stale entry simply misses and recomputes (no correctness risk).
+  - **Supply-chain on-disk cache** (new): per-PURL Socket artifacts are cached under the cache dir with a 24h TTL (`SUPPLY_CHAIN_CACHE_TTL_MS`), so unchanged dependencies skip the network on repeated scans — locally and in CI — removing the bulk of the Socket fetches a full scan makes. Fail-open (a cache miss/error just fetches; a write failure never sinks the scan) and disabled by the existing `REACT_DOCTOR_NO_CACHE` off-switch.
+
+  The `action.yml` cache wiring ships as an action release (cut a tag after dogfooding). A `--print-cache-key` flag for a tighter (ruleset-exact) actions/cache key is a possible follow-up; the version+lockfile key already restores soundly today.
+
+- [#903](https://github.com/millionco/react-doctor/pull/903) [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Overlap the Socket.dev supply-chain check with the lint pass. The supply-chain
+  score lookup is ~100% network-bound and the lint pass is ~100% CPU/subprocess-
+  bound, but they previously ran back-to-back. The check now runs on a background
+  fiber whose wall-clock overlaps the lint pass, collapsing the two serial phases
+  into roughly `max(supplyChain, lint)`. A generous wall-clock budget bounds a
+  hung network socket so it can never drag out a scan; on expiry the check fails
+  open to no diagnostics — the same outcome as an existing Socket API outage. The
+  diagnostic set, ordering, and score are unchanged.
+- Updated dependencies [[`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae), [`8bbcca8`](https://github.com/millionco/react-doctor/commit/8bbcca87daf06e60d0fa3005f8ad636fc929e513), [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae), [`627f9ca`](https://github.com/millionco/react-doctor/commit/627f9ca4b363f7b7a037f2a77cba1213b7d605ae)]:
+  - deslop-js@0.5.8
+  - oxlint-plugin-react-doctor@0.5.8
+
+## 0.5.7
+
+### Patch Changes
+
+- [#881](https://github.com/millionco/react-doctor/pull/881) [`50999f4`](https://github.com/millionco/react-doctor/commit/50999f4a09c992d534c86fe248bfdb65dd8ef377) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Add a `--debug` flag that prints the run's Sentry trace id at the end of a scan.
+
+  When something looks wrong, run `react-doctor --debug`: it forces a Sentry performance trace for that run (even if `SENTRY_TRACES_SAMPLE_RATE` was turned down) and prints `Sentry trace (mention this when reporting): <id>` as the last line so the id can be pasted into a bug report for maintainers to pull the full trace. It prints on both outcomes — a clean run and a crash (the crash's trace is surfaced even when it happens before the scan span starts). The line goes to stderr, so `--json` / `--score` stdout stays machine-clean. Combining `--debug` with `--no-score` / `--no-telemetry` is rejected up front, since those flags disable the Sentry reporting `--debug` depends on. Telemetry also gains a low-cardinality `debug` run tag so adoption of the flag is visible.
+
+- [#864](https://github.com/millionco/react-doctor/pull/864) [`b317164`](https://github.com/millionco/react-doctor/commit/b317164e3e6bc9a5d7fc0fa4870187a17ba73493) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Make `file:line` diagnostic locations clickable in the terminal, and record which terminal each run uses.
+
+  Diagnostic locations are now wrapped in OSC 8 hyperlinks pointing at each file's absolute path, so supporting terminals (iTerm2, WezTerm, Kitty, Windows Terminal, VS Code, and other VTE-based emulators) turn them into click-to-open links — even in monorepo scans where the displayed path is relative to a sub-project root rather than the terminal's cwd. The visible text is unchanged (`src/App.tsx:12`), the link rides in escape sequences, and terminals without OSC 8 support print it exactly as before. Hyperlinks are auto-detected per terminal and can be forced on/off with the standard `FORCE_HYPERLINK` env var; they are off for non-TTYs, CI, and coding agents (whose output parsers shouldn't see the escapes).
+
+  Telemetry also gains a `terminalKind` run tag (neovim, vscode, iterm, wezterm, kitty, windows-terminal, …) so we can see where React Doctor is actually run. It is a low-cardinality enum with no path, username, or secret.
+
+- [#863](https://github.com/millionco/react-doctor/pull/863) [`740211c`](https://github.com/millionco/react-doctor/commit/740211cf201ee28910c105b59b79e9aa73e1bd45) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Add a per-project `scannedFileCount` to the JSON report's `projects[]` entries —
+  the number of source files the scan's linter examined (the changed React-eligible
+  files in diff mode, the whole source tree in a full scan). It's additive and
+  optional, so the `schemaVersion` is unchanged and existing consumers are unaffected.
+
+  This lets the GitHub Action tell "a PR that changed no React-eligible files" (the
+  linter examined nothing — `scannedFileCount: 0` for every project) apart from "a
+  clean scan of real React changes" (`scannedFileCount >= 1`), which previously
+  produced identical reports. The Action now treats the former as a no-op: it skips
+  the sticky PR comment entirely and the commit status reads "Skipped — no React
+  files changed" instead of a zero-filled score line. A clean scan of real React
+  changes still posts its "no issues 🎉" comment.
+
+- [#844](https://github.com/millionco/react-doctor/pull/844) [`eafac9d`](https://github.com/millionco/react-doctor/commit/eafac9d4f1d52f68258306ad037841a981a9d6cf) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Stop recommending the deprecated `--diff` flag in agent-facing guidance ([#834](https://github.com/millionco/react-doctor/issues/834)).
+
+  The CLI "Agent guidance" section, the installed agent hooks, and the `--help` examples all advised running `react-doctor --verbose --diff`, which now prints a deprecation warning on every run. They now recommend the supported `--scope changed` (pass `--base <ref>` to pin the base). The website `llms.txt` and the `react-doctor` skill reference were updated to match.
+
+- [#832](https://github.com/millionco/react-doctor/pull/832) [`f45cb29`](https://github.com/millionco/react-doctor/commit/f45cb297ef89320bfa0b8f5d52ecbfdb3ad3552c) Thanks [@devin-ai-integration](https://github.com/apps/devin-ai-integration)! - Fix a false-positive `deslop/unused-file` for a file imported only by a file in `ignore.files`. Ignored files are now kept in the dead-code dependency graph (only their reporting is suppressed), so a module reachable solely through an ignored file is no longer flagged as unused.
+
+- [#851](https://github.com/millionco/react-doctor/pull/851) [`1e260c5`](https://github.com/millionco/react-doctor/commit/1e260c5d219391dbdf18e1cfd729dbc97b3806fb) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Show the "Add React Doctor to CI" and "install React Doctor" pitches once per repo instead of on every scan.
+
+  The post-scan handoff re-asked the CI question on every run, and the agent install hint re-printed every run because its opt-out store was built but never written. Both now record a per-repo answer (reusing the existing once-per-repo `Conf` pattern) and stay quiet afterward — the first-run experience is unchanged, only the repetition stops.
+
+  The agent copy-prompt no longer carries the CI marketing preamble at all. The interactive handoff prompt is now the single once-per-repo pitch, so the agent is never instructed to re-ask what the user was just asked — capable agents were flagging that preamble as social-engineering and it was eroding trust in the actual diagnostics.
+
+- [#848](https://github.com/millionco/react-doctor/pull/848) [`431e515`](https://github.com/millionco/react-doctor/commit/431e515260a209088c2305c6372249009dd95474) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Stop a broken `eslint-plugin-react-hooks` install from sinking the whole lint pass, and fix the misleading error it produced (issue [#833](https://github.com/millionco/react-doctor/issues/833)).
+
+  When the optional `react-hooks-js` (React Compiler) plugin can't be imported in the user's environment, oxlint fails the entire config load — which previously dropped every curated react-doctor diagnostic too and left the scan with `skippedChecks: ["lint"]` and zero results. The oxlint error is also multi-line, and the 200-char error preview truncated its plugin path mid-string (often right at `…/node_modules/`), so it read as react-doctor passing an invalid directory rather than a plugin that failed to load.
+
+  - **Graceful degradation:** the oxlint runner now detects a `react-hooks-js` plugin-load failure and retries once with that plugin (and its compiler rules) dropped — mirroring the existing adopted-`extends` fallback. The curated react-doctor rules, dead-code, and environment checks all still run; only the React Compiler rules are skipped, surfaced as a clear `lint:partial` note that includes oxlint's real underlying reason.
+  - **Readable error:** the unparseable-output preview grew from 200 to 600 chars so the full plugin path and the underlying `Error:` line survive instead of being cut at `…/node_modules/`.
+
+- [#857](https://github.com/millionco/react-doctor/pull/857) [`17389ba`](https://github.com/millionco/react-doctor/commit/17389ba4feb07a54727100623b1b5a4ecc061e85) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Show a syntax-highlighted source snippet in `react-doctor why <file>:<line>`.
+
+  The `buildCodeFrame` util already powers the source frames in the scan summary, but the `why` command (the single-location explain path) never called it — so explaining a diagnostic printed the rule, category, help, and suppression hint with no view of the offending code. It now renders the same code frame directly under the headline, with the caret on the offending column (or the whole line span for a multi-site diagnostic). When the file can't be read or the line is minified, it falls back to the existing text-only output.
+
+- [#882](https://github.com/millionco/react-doctor/pull/882) [`a9d2713`](https://github.com/millionco/react-doctor/commit/a9d27134c4a5124b30f7a82f4ac3e4fd3339845c) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Group findings that a single fix resolves into one root-cause task.
+
+  Several findings can share one fix — e.g. four `useEffect`s that reset state on the same prop change all clear with a single `key` prop. Those findings now carry a shared `fixGroupId` in the JSON report and the on-disk `diagnostics.json` dump, so a tool that turns findings into work items counts one fix as one task instead of N. The terminal labels such a group "One fix clears all N findings", and the agent handoff frames it as a single task ("one fix · N sites") and tells the agent to group by `fixGroupId`.
+
+  Grouping is presentation-only and keyed on identical (file, rule, message) for an allowlist of rules where the same message means the same fix — the state-on-prop-change family today (`no-derived-state-effect`, `no-adjust-state-on-prop-change`, `no-reset-all-state-on-prop-change`, and the `no-derived-state` / `no-derived-useState` rules). The score is unchanged — it already de-weights repeated same-rule findings and never reads the new field. `fixGroupId` is an additive optional field, so existing JSON consumers are unaffected.
+
+- [#859](https://github.com/millionco/react-doctor/pull/859) [`44db3e0`](https://github.com/millionco/react-doctor/commit/44db3e0546fe0518b79e0aa2636754dcccda2939) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Improve disable-directive handling for react-doctor rules:
+
+  - `// react-doctor-disable-line` / `-next-line` (and `ignore.rules` / rule lookups) now accept a rule's bare short id, e.g. `no-eval` for `react-doctor/no-eval` — the unqualified form people reach for first.
+  - When an `eslint-disable` / `oxlint-disable` directive names a react-doctor rule by an id oxlint can't bind to a plugin rule — a bare short id (`no-eval`) or a legacy plugin prefix (`react/jsx-key`), whether inline or as a file-level block disable — the diagnostic now carries a hint to use the full `react-doctor/<id>` key.
+
+- [#884](https://github.com/millionco/react-doctor/pull/884) [`869f220`](https://github.com/millionco/react-doctor/commit/869f220d97c1c30cb3e0d6897833f9db372667bb) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Warn before mass-fixing a migration-scale bucket. When a single rule spans dozens of files (≥ `MIGRATION_SCALE_RULE_FILE_COUNT`, default 40), the report now prints a "Migration-scale change: sample before you sweep" advisory. It names the rule(s), explains the review risk, and points at `npx react-doctor@latest <path>` to scope the work down one area at a time.
+
+  The same guidance reaches coding agents. A new "Agent guidance" line and an inline note on any migration-scale bucket in the agent handoff prompt tell the agent to fix a representative sample, confirm the recipe holds, and get the code owner's sign-off before changing the rest, instead of mass-fixing a broad pattern in one unreviewed pass.
+
+  A new wide-event attribute (`migration.largestRuleBucketFiles`, plus `migration.largestRuleBucketSites` and `migration.largestRuleBucketRule`) records the widest-blast-radius rule per scan, so the threshold can be calibrated against real runs. No change to the score, exit code, or JSON report.
+
+- Updated dependencies [[`424d8f9`](https://github.com/millionco/react-doctor/commit/424d8f9f914ff98b791af6b1f88337922c80c8ef), [`81bbfcc`](https://github.com/millionco/react-doctor/commit/81bbfcc39a0ae2f7d92ebb8860d854d09a60344d), [`937a7ca`](https://github.com/millionco/react-doctor/commit/937a7ca8a1b066a62210dc4a11149b9180dc9851), [`b8170f8`](https://github.com/millionco/react-doctor/commit/b8170f814c079d7bbc9e7796dd13646a6e8175fe), [`3f7d0e7`](https://github.com/millionco/react-doctor/commit/3f7d0e7ddb055b4970cba2b393ce14f6615732e4), [`6b8e756`](https://github.com/millionco/react-doctor/commit/6b8e756c40fe300634aec766edb00cbec73d8bc4), [`03301fc`](https://github.com/millionco/react-doctor/commit/03301fcdf4adcf256ef7ef7ed83f5566181ab371), [`44db3e0`](https://github.com/millionco/react-doctor/commit/44db3e0546fe0518b79e0aa2636754dcccda2939), [`5b742fa`](https://github.com/millionco/react-doctor/commit/5b742fa28c96443bd5bbd6348ad5aba55e17405c), [`8908f98`](https://github.com/millionco/react-doctor/commit/8908f98d02ad65e58d740ab948f8111948592cb9), [`451beeb`](https://github.com/millionco/react-doctor/commit/451beeb28405aa6810946e3311dfc7fb8de74632)]:
+  - oxlint-plugin-react-doctor@0.5.7
+
+## 0.5.6
+
+### Patch Changes
+
+- [#812](https://github.com/millionco/react-doctor/pull/812) [`ea3b827`](https://github.com/millionco/react-doctor/commit/ea3b8278996613114c9c671afe292193388741c0) Thanks [@aidenybai](https://github.com/aidenybai)! - Add five `security-scan` rules distilled from security-researcher writeups and the deepsec scanner-matcher catalog, closing CWE shapes the bucket didn't cover:
+
+  - **`unsafe-json-in-html`** — `JSON.stringify(...)` embedded in `dangerouslySetInnerHTML` or inline `<script>` markup. `JSON.stringify` does not HTML-escape, so data containing `</script>` or `<` breaks out — the classic SSR data-hydration XSS. Suppressed when an HTML-safe serializer (serialize-javascript, devalue, superjson) or `\u003c` escaping is used.
+  - **`jwt-insecure-verification`** — the JWT `none` algorithm (`alg: none` / `algorithms: ["none"]`), which disables signature verification and lets any forged token through. (Detecting an unpinned `jwt.verify` precisely needs scope-aware analysis, so that is left to a future AST rule.)
+  - **`secret-in-fallback`** — a secret-shaped env var with a hardcoded string fallback (`process.env.STRIPE_SECRET_KEY ?? "<hardcoded>"`): a committed secret that also makes the app fail open when the var is unset. Skips public vars (PUBLIC/PUBLISHABLE/ANON) and placeholder defaults.
+  - **`request-body-mass-assignment`** — spreading or merging request input (`{ ...req.body }`, `Object.assign(target, req.body)`, lodash `merge`/`defaultsDeep`) without a field allowlist: mass assignment (client-set owner/role/price columns) or prototype pollution.
+  - **`insecure-session-cookie`** — auth/session cookies exposed to JavaScript: `httpOnly: false`, set via `document.cookie`, or a bare `res.cookie("session", value)` / `cookies().set(...)` with no options.
+
+  All five register through `defineRule` with a project-level `scan`, carry the `Security` category and `security-scan` tag, and are silenced by `react-doctor rules ignore-tag security-scan` like the rest of the family.
+
+- [#824](https://github.com/millionco/react-doctor/pull/824) [`cf9e05b`](https://github.com/millionco/react-doctor/commit/cf9e05be8ee1f1781878c28b8342490ec11c176f) Thanks [@aidenybai](https://github.com/aidenybai)! - Show the full file total when the scan hands off to dead-code analysis, so the live counter no longer looks stuck below `N` ([#815](https://github.com/millionco/react-doctor/issues/815)).
+
+  The linter already emits a final `(N, N)` progress tick when its last batch finishes, but ora throttles renders to its frame interval — that last frame was overwritten by the `"Analyzing dead code…"` text before it ever painted, so the spinner appeared to freeze at whatever value the smooth-creep timer last drew (e.g. `80/165`). Every file was always scanned; only the counter looked short. The dead-code phase now reads `Scanned N files, analyzing dead code…`, keeping the complete count visible for the whole (longer) dead-code pass.
+
+- [#819](https://github.com/millionco/react-doctor/pull/819) [`5fc0e27`](https://github.com/millionco/react-doctor/commit/5fc0e270c9a15d25be96ef982755cea81065d141) Thanks [@aidenybai](https://github.com/aidenybai)! - Fix false positives reported in the security and TanStack rules:
+
+  - **`query-destructure-result`** ([#818](https://github.com/millionco/react-doctor/issues/818)): only flags `useQuery`/`useSuspenseQuery`/… when they actually come from a TanStack Query package (`@tanstack/*-query`, legacy `react-query`). A same-named hook imported from elsewhere — notably Convex's `useQuery` from `convex/react`, which returns the data directly — is no longer flagged.
+  - **`artifact-env-leak` / `artifact-secret-leak`** ([#816](https://github.com/millionco/react-doctor/issues/816), [#817](https://github.com/millionco/react-doctor/issues/817)): no longer treat server-side or dev-mode Next.js output as browser artifacts. `.next/dev/server/**` (dev source maps), any `.next/**/server/**`, `.output/server/**`, and the dev server's `.next/dev/**` output are excluded; production browser bundles (`.next/static`, `dist/assets`, `public/`, …) are still scanned.
+  - **`repository-secret-file`** / **`key-lifecycle-risk`** ([#813](https://github.com/millionco/react-doctor/issues/813)): no longer flag a credential/key file that git ignores — a local-only, gitignored `.env` is not "checked into the repository". Findings are dropped only when git definitively reports the path as ignored (the finding stands when there is no repo or git is unavailable).
+  - **`webhook-signature-risk`** ([#814](https://github.com/millionco/react-doctor/issues/814)): recognizes a delegated verification helper (a call pairing a verify-ish verb with a security noun, e.g. `isValidSecret(...)`, `verifySignature(...)`, `checkWebhookHmac(...)`) as verification evidence, so an extracted `timingSafeEqual` comparison in another module no longer trips the rule.
+
+- [#812](https://github.com/millionco/react-doctor/pull/812) [`ea3b827`](https://github.com/millionco/react-doctor/commit/ea3b8278996613114c9c671afe292193388741c0) Thanks [@aidenybai](https://github.com/aidenybai)! - Add a `supabase-table-missing-rls` security-scan rule. It flags a Supabase migration (`supabase/migrations/**`, `supabase/schemas/**`) that runs `create table` for a public-schema table but never enables Row Level Security — the highest-impact and most common Supabase misconfiguration, because RLS is OFF by default for SQL-created tables, so every row is readable and writable with the public anon key. It targets the same misconfiguration Supabase's own `rls_disabled_in_public` database linter flags, and the gap that turns the public anon key into the service key.
+
+  The existing `supabase-rls-policy-risk` only caught an explicit `disable row level security`; this complements it by catching the far more common "never enabled it" case. RLS is checked per table — each `create table` must have an `alter table <name> enable row level security` for that same table, after the create (a sibling table enabling RLS, or a policy without enabling it, does not vouch). SQL comments and string literals are ignored, non-public/Supabase-managed schemas (`auth.`, `storage.`, a `private.` schema, …) are skipped, and the rule is scoped to the `supabase/` directory so plain Drizzle/Prisma `.sql` migrations are not flagged. The scan runs per migration file, so enabling RLS in a _different_ migration than the `create table` is not detected — the same-file pattern (what Supabase tooling emits) is the supported case. Like the rest of the family it carries the `security-scan` tag and is silenced by `react-doctor rules ignore-tag security-scan`.
+
+- [#823](https://github.com/millionco/react-doctor/pull/823) [`bac7c82`](https://github.com/millionco/react-doctor/commit/bac7c82950e2392ac4b21448f3e9cf86b605567f) Thanks [@rayhanadev](https://github.com/rayhanadev)! - Fix a supply-chain scan crash on npm dist-tags and wildcards ([#807](https://github.com/millionco/react-doctor/issues/807)).
+
+  `resolveConcreteVersion` called `semver.minVersion(spec)` directly, but `semver` **throws** (`TypeError: Invalid comparator: latest`) on a non-range spec instead of returning `null`. Any full scan — or PR scan touching `package.json` — containing a dist-tag like `"trigger.dev": "latest"` (or `"next"`) crashed before the Socket fail-open path could run (regression from [#804](https://github.com/millionco/react-doctor/issues/804), affecting 0.5.3–0.5.5).
+
+  The spec is now validated with `semver.validRange` before resolving its floor: dist-tags and other non-ranges are skipped (nothing to score), as is a wildcard-only range (`*`/`x`/`X`), which previously resolved to a synthetic `0.0.0` and scored a version nobody pinned. Real ranges (`^1.2.3`, `1.x`, `>=2 <3`) and protocol/URL specs (`workspace:`, `file:`, `npm:`, `git+…`) are unchanged.
+
+- Updated dependencies [[`ea3b827`](https://github.com/millionco/react-doctor/commit/ea3b8278996613114c9c671afe292193388741c0), [`5fc0e27`](https://github.com/millionco/react-doctor/commit/5fc0e270c9a15d25be96ef982755cea81065d141), [`ea3b827`](https://github.com/millionco/react-doctor/commit/ea3b8278996613114c9c671afe292193388741c0)]:
+  - oxlint-plugin-react-doctor@0.5.6
+
+## 0.5.5
+
+### Patch Changes
+
+- Updated dependencies [[`e90eb7a`](https://github.com/millionco/react-doctor/commit/e90eb7acbfc4e06de68de2cb6a96d3242f72963e)]:
+  - oxlint-plugin-react-doctor@0.5.5
+
 ## 0.5.4
 
 ### Patch Changes

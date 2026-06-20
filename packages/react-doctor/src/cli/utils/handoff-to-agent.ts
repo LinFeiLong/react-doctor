@@ -14,6 +14,7 @@ import {
   type InstalledReactDoctorWorkflow,
 } from "./install-github-workflow.js";
 import { hasHandledActionUpgrade, recordActionUpgradeDecision } from "./action-upgrade-prompt.js";
+import { hasHandledCiPrompt, recordCiPromptDecision } from "./ci-prompt-decision.js";
 import { askAddToGitHubActions } from "./ask-add-to-github-actions.js";
 import { askUpgradeActionVersion } from "./ask-upgrade-action-version.js";
 import { setUpGitHubActions } from "./set-up-github-actions.js";
@@ -87,6 +88,18 @@ const upgradeGitHubActionsWorkflow = async (
   if (pullRequestResult.status === "pr-opened") {
     upgradeSpinner.succeed(
       `Opened pull request for review: ${highlighter.info(pullRequestResult.url)}`,
+    );
+  } else if (pullRequestResult.status === "pr-exists") {
+    // `pr-exists` returns without touching git state, so the @v2 edit we wrote
+    // above still sits uncommitted in the working tree. Restore the original
+    // @v1 content — the bump lives on the already-open PR's branch — matching
+    // the pr-opened path's "the bump lives only on the PR branch" contract so
+    // the user can't accidentally commit a stray edit to their working branch.
+    try {
+      fs.writeFileSync(workflow.workflowPath, workflow.content);
+    } catch {}
+    upgradeSpinner.succeed(
+      `A React Doctor pull request is already open: ${highlighter.info(pullRequestResult.url)}`,
     );
   } else if (pullRequestResult.status === "branch-pushed") {
     upgradeSpinner.warn(
@@ -173,26 +186,40 @@ export const handoffToAgent = async (input: HandoffToAgentInput): Promise<void> 
 
   const projectRootForCi = findNearestPackageDirectory(input.rootDirectory) ?? input.rootDirectory;
   const isGitHubActionsConfigured = isReactDoctorWorkflowInstalled(projectRootForCi);
+  // The CI pitch is once-per-repo: ask only when the repo has neither a workflow
+  // nor a prior answer. Subsequent scans stay quiet. (The agent copy-prompt
+  // deliberately carries no CI upsell — this interactive prompt is the single
+  // pitch, so the agent never re-asks what the user was just asked here.)
+  const isCiPitchPending = !isGitHubActionsConfigured && !hasHandledCiPrompt(projectRootForCi);
 
   // CI question first, only when it has anything to do. A "yes" sets up the
   // workflow inline and then falls through to the agent question, so a user
   // can install CI AND launch an agent in one scan — previously the combined
   // prompt forced an either/or choice.
-  if (!isGitHubActionsConfigured) {
+  if (isCiPitchPending) {
     const ciOutcome = await askAddToGitHubActions();
     recordCount(METRIC.agentHandoff, 1, {
       outcome: `ci-${ciOutcome}`,
       diagnosticsCount: input.diagnostics.length,
     });
     if (ciOutcome === "cancel") return;
+    // Remember the answer either way so the pitch never repeats on this repo.
+    recordCiPromptDecision(projectRootForCi, ciOutcome === "yes" ? "accepted" : "declined");
     if (ciOutcome === "yes") {
       await setUpGitHubActions({ rootDirectory: input.rootDirectory });
       logger.break();
     }
-  } else {
+  } else if (isGitHubActionsConfigured) {
     // Workflow already present: offer the one-time `@v1` → `@v2` upgrade
     // instead. Mutually exclusive with the "add" prompt above.
     await maybeOfferActionUpgrade(projectRootForCi);
+  } else {
+    // Not configured, but the user already answered the CI pitch for this repo.
+    // Stay quiet so the pitch is once-per-repo rather than every scan.
+    recordCount(METRIC.agentHandoff, 1, {
+      outcome: "ci-suppressed",
+      diagnosticsCount: input.diagnostics.length,
+    });
   }
 
   const launchableAgents = await detectLaunchableAgents();

@@ -20,6 +20,8 @@ import { NON_INTERACTIVE_ENVIRONMENT_VARIABLES } from "../src/cli/utils/is-non-i
 import { runInstallReactDoctor } from "../src/cli/utils/install-react-doctor.js";
 import type { InstallReactDoctorDependencyRunnerInput } from "../src/cli/utils/install-react-doctor.js";
 import { recordActionUpgradeDecision } from "../src/cli/utils/action-upgrade-prompt.js";
+import { CONFIG_DIR_ENV_VAR } from "../src/cli/utils/cli-state-store.js";
+import { hasHandledCiPrompt, recordCiPromptDecision } from "../src/cli/utils/ci-prompt-decision.js";
 import { setSpinnerSilent } from "../src/cli/utils/spinner.js";
 import { silenceConsoleForTest } from "./helpers/silence-console.js";
 
@@ -184,12 +186,21 @@ describe("runInstallReactDoctor", () => {
   let fixture: InstallReactDoctorFixture;
   let originalExitCode: number | string | null | undefined;
   let originalCi: string | undefined;
+  let originalConfigDir: string | undefined;
+  let configDir: string;
   let restoreConsole: () => void;
 
   beforeEach(() => {
     fixture = setupFixture();
     originalExitCode = process.exitCode;
     originalCi = process.env.CI;
+    // Isolate the per-user CLI state (onboarding / prompt decisions) into a
+    // throwaway dir so the interactive install flow — which records decisions
+    // without threading a `cwd` — never reads or writes the real user config,
+    // and parallel test runs can't pollute each other's persisted state.
+    originalConfigDir = process.env[CONFIG_DIR_ENV_VAR];
+    configDir = fs.mkdtempSync(path.join(tmpdir(), "react-doctor-install-config-"));
+    process.env[CONFIG_DIR_ENV_VAR] = configDir;
     dependencyInstallCalls = [];
     process.exitCode = 0;
     restoreConsole = silenceConsoleForTest();
@@ -198,6 +209,12 @@ describe("runInstallReactDoctor", () => {
 
   afterEach(() => {
     fixture.cleanup();
+    fs.rmSync(configDir, { recursive: true, force: true });
+    if (originalConfigDir === undefined) {
+      delete process.env[CONFIG_DIR_ENV_VAR];
+    } else {
+      process.env[CONFIG_DIR_ENV_VAR] = originalConfigDir;
+    }
     process.exitCode = originalExitCode;
     if (originalCi === undefined) {
       delete process.env.CI;
@@ -923,6 +940,69 @@ describe("runInstallReactDoctor", () => {
 
     expect(fs.readFileSync(workflowPath, "utf8")).toContain("millionco/react-doctor@v1");
     expect(fs.readFileSync(workflowPath, "utf8")).not.toContain("millionco/react-doctor@v2");
+  });
+
+  it("interactively persists a declined CI offer so the scan handoff won't re-ask", async () => {
+    writeValidSkill(fixture.sourceDir);
+    writePackageJson(fixture.projectRoot, { scripts: {} });
+    const hookPath = path.join(fixture.projectRoot, ".git/hooks/pre-commit");
+    const workflowPath = path.join(fixture.projectRoot, ".github/workflows/react-doctor.yml");
+    expect(hasHandledCiPrompt(fixture.projectRoot)).toBe(false);
+
+    await runInteractiveInstallReactDoctorForTest({
+      sourceDir: fixture.sourceDir,
+      projectRoot: fixture.projectRoot,
+      gitHookPath: hookPath,
+      // No "workflow" → the CI offer is declined (ci-no).
+      setupOptions: [],
+    });
+
+    expect(fs.existsSync(workflowPath)).toBe(false);
+    // The decline is persisted, so the once-per-repo pitch stays answered.
+    expect(hasHandledCiPrompt(fixture.projectRoot)).toBe(true);
+  });
+
+  it("persists an accepted CI offer so the scan handoff won't re-ask", async () => {
+    writeValidSkill(fixture.sourceDir);
+    writePackageJson(fixture.projectRoot, { scripts: {} });
+    const hookPath = path.join(fixture.projectRoot, ".git/hooks/pre-commit");
+    const workflowPath = path.join(fixture.projectRoot, ".github/workflows/react-doctor.yml");
+    expect(hasHandledCiPrompt(fixture.projectRoot)).toBe(false);
+
+    await runInteractiveInstallReactDoctorForTest({
+      sourceDir: fixture.sourceDir,
+      projectRoot: fixture.projectRoot,
+      gitHookPath: hookPath,
+      // "workflow" → the CI offer is accepted (ci-yes).
+      setupOptions: ["workflow"],
+    });
+
+    expect(fs.existsSync(workflowPath)).toBe(true);
+    // The accept is persisted at answer time, so an accept that never wrote the
+    // workflow (early exit / failure) still won't re-pitch on the next scan.
+    expect(hasHandledCiPrompt(fixture.projectRoot)).toBe(true);
+  });
+
+  it("interactively skips the CI offer once the decision is already persisted", async () => {
+    writeValidSkill(fixture.sourceDir);
+    writePackageJson(fixture.projectRoot, { scripts: {} });
+    const hookPath = path.join(fixture.projectRoot, ".git/hooks/pre-commit");
+    const workflowPath = path.join(fixture.projectRoot, ".github/workflows/react-doctor.yml");
+    recordCiPromptDecision(fixture.projectRoot, "declined");
+    const promptQuestions: unknown[] = [];
+
+    await runInteractiveInstallReactDoctorForTest({
+      sourceDir: fixture.sourceDir,
+      projectRoot: fixture.projectRoot,
+      gitHookPath: hookPath,
+      // Would normally add the workflow — but the persisted decline (e.g. from a
+      // prior scan handoff) suppresses the CI question entirely.
+      setupOptions: ["workflow"],
+      promptQuestions,
+    });
+
+    expect(promptQuestions).not.toContainEqual(expect.objectContaining({ name: "ciChoice" }));
+    expect(fs.existsSync(workflowPath)).toBe(false);
   });
 
   it("CI skips prompts without --yes but does not install the optional Git hook", async () => {

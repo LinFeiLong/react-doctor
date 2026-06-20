@@ -18,13 +18,13 @@ inputs:
     description: "Severity that fails the workflow: none (default; advisory — report findings but always exit 0), warning, or error."
     default: "none"
   comment:
-    description: "Create or update a sticky pull request summary comment."
+    description: "Create or update a sticky pull request summary comment. Automatically skipped when the pull request changes no React-eligible files (`.tsx`/`.jsx` or framework entry files)."
     default: "true"
   review-comments:
     description: "Post inline review comments on the changed lines that triggered diagnostics (pull requests only)."
     default: "true"
   commit-status:
-    description: "Publish a commit status with the score and error / warning counts, linking to the run. Surfaces the result on pushes to the default branch (where the PR comment is skipped). Requires `statuses: write` (skipped with a warning otherwise)."
+    description: 'Publish a commit status with the score and error / warning counts, linking to the run. Surfaces the result on pushes to the default branch (where the PR comment is skipped). Reads "Skipped" when the pull request changes no React-eligible files. Requires `statuses: write` (skipped with a warning otherwise).'
     default: "true"
   node-version:
     description: "Node.js version to use"
@@ -61,14 +61,108 @@ runs:
         node-version: ${{ inputs.node-version }}
         package-manager-cache: false
 
-    - id: pr-files
+    # Resolve the version to a concrete published one so the install cache key is
+    # stable even for `version: latest`. A local-path spec (this repo's self-test)
+    # is reported non-cacheable and falls through to the npx path below.
+    - id: resolve-version
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+      run: node "$GITHUB_ACTION_PATH/scripts/resolve-package-spec.mjs" "$INPUT_VERSION"
+
+    # Cache the react-doctor install (the dominant CI cost — ~15s of an ~18s PR
+    # run is the uncached npm download). Keyed on the exact version + toolchain
+    # identity (the install is a pure function of those); no `restore-keys`
+    # fallback, since a partial/older restore could mismatch the native binding
+    # ABI. On a hit, the ~15s install collapses to a ~1-2s restore.
+    - id: toolchain-cache
+      if: ${{ steps.resolve-version.outputs.cacheable == 'true' }}
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ${{ runner.temp }}/react-doctor-toolchain
+        key: react-doctor-toolchain-${{ steps.resolve-version.outputs.resolved }}-node${{ inputs.node-version }}-${{ runner.os }}-${{ runner.arch }}
+
+    # Persist react-doctor's scan caches (the per-file content-addressed lint
+    # cache + the supply-chain cache) across CI runs. In CI every commit is a
+    # fresh, SHA-scoped checkout, so the project-local `node_modules/.cache`
+    # never survives between commits — pointing REACT_DOCTOR_CACHE_DIR (set on
+    # the scan step) at a stable `${runner.temp}` path lets actions/cache restore
+    # it. The key busts on the react-doctor version + lockfile (the inputs that
+    # change the ruleset / dep set); `restore-keys` allows a partial hit from the
+    # last same-version run, which is sound because the engine re-validates every
+    # cached entry by content hash + ruleset hash internally (a stale entry just
+    # misses and re-computes).
+    - id: scan-cache
+      if: ${{ steps.resolve-version.outputs.cacheable == 'true' }}
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ${{ runner.temp }}/react-doctor-cache
+        key: react-doctor-scan-cache-${{ steps.resolve-version.outputs.resolved }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/package-lock.json', '**/pnpm-lock.yaml', '**/yarn.lock', '**/bun.lock', '**/bun.lockb') }}
+        restore-keys: |
+          react-doctor-scan-cache-${{ steps.resolve-version.outputs.resolved }}-${{ runner.os }}-${{ runner.arch }}-
+
+    # Resolve the PR's changed files LOCALLY first: fetch the base commit (also
+    # needed for baseline mode), then derive the changed set with `git diff`.
+    # Faster than the GitHub API, no API rate limit, and works on forks where
+    # `pulls.listFiles` can be denied — which otherwise loses the diff fast path
+    # to a full scan. The `pr-files` step below is the API fallback, used only
+    # when the base isn't reachable for a local diff (shallow history).
+    - id: base
       if: ${{ github.event_name == 'pull_request' && inputs.scope != 'full' }}
+      shell: bash
+      env:
+        INPUT_DIRECTORY: ${{ inputs.directory }}
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        CHANGED_FILES_FILE: ${{ runner.temp }}/react-doctor-changed-files.txt
+      run: |
+        # Best-effort fetch of the PR base commit so react-doctor can read base
+        # file content and resolve the merge-base for baseline (PR-introduced-
+        # issues-only) mode. Depth 1 covers the standard merge-ref checkout (base
+        # is a parent of HEAD); for deeper history use `fetch-depth: 0` on
+        # actions/checkout. The base may ALREADY be present (e.g. `fetch-depth: 0`
+        # or a prior fetch), so don't gate the diff on this succeeding — `|| true`
+        # keeps a redundant/failed fetch from blocking the local diff below.
+        if [ -n "$BASE_SHA" ] && git -C "$INPUT_DIRECTORY" rev-parse --git-dir >/dev/null 2>&1; then
+          git -C "$INPUT_DIRECTORY" fetch --no-tags --depth=1 origin "$BASE_SHA" 2>/dev/null || true
+        fi
+
+        # Derive the changed set locally. Three-dot (merge-base) + AMR
+        # (added/modified/renamed) match the `pulls.listFiles` API contract and
+        # the CLI's baseline semantics. Attempt it whenever a base SHA is known —
+        # the base may be reachable in history even when the fetch above was a
+        # no-op or failed. On any failure (shallow history with no reachable
+        # merge-base), leave the file unwritten so the API fallback runs — no
+        # regression vs the previous API-only behavior.
+        RAW_CHANGED="${RUNNER_TEMP:-/tmp}/react-doctor-raw-changed.txt"
+        if [ -n "$BASE_SHA" ] && git -C "$INPUT_DIRECTORY" diff --name-only --diff-filter=AMR "$BASE_SHA...HEAD" > "$RAW_CHANGED" 2>/dev/null; then
+          node "$GITHUB_ACTION_PATH/scripts/normalize-changed-files.mjs" "$INPUT_DIRECTORY" "$CHANGED_FILES_FILE" < "$RAW_CHANGED"
+          echo "path=$CHANGED_FILES_FILE" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::React Doctor could not derive the PR's changed files from git (the base commit isn't reachable — set \`fetch-depth: 0\` on actions/checkout for deep histories). Falling back to the GitHub API."
+        fi
+
+    # API fallback: only when the local `git diff` above couldn't run. Reuses the
+    # shared changed-file normalization so both paths emit an identical
+    # scan-relative set (the CLI resolves `--changed-files-from` relative to the
+    # scanned `directory`; see normalize-changed-files.mjs).
+    - id: pr-files
+      if: ${{ github.event_name == 'pull_request' && inputs.scope != 'full' && steps.base.outputs.path == '' }}
       uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       env:
         REACT_DOCTOR_CHANGED_FILES: ${{ runner.temp }}/react-doctor-changed-files.txt
+        INPUT_DIRECTORY: ${{ inputs.directory }}
+        # `github.action_path` is THIS composite action's directory. Inside a
+        # nested `actions/github-script` step, the ambient GITHUB_ACTION_PATH env
+        # points at github-script's own dir, not ours — so the shared script
+        # would be unresolvable. Pass the composite path explicitly.
+        COMPOSITE_ACTION_PATH: ${{ github.action_path }}
       with:
         script: |
           const fs = require("fs");
+          const { pathToFileURL } = require("url");
+          const { normalizeChangedFiles } = await import(
+            pathToFileURL(`${process.env.COMPOSITE_ACTION_PATH}/scripts/normalize-changed-files.mjs`).href,
+          );
           const outputPath = process.env.REACT_DOCTOR_CHANGED_FILES;
           const pullRequest = context.payload.pull_request;
           if (!pullRequest || !outputPath) return;
@@ -88,28 +182,12 @@ runs:
             return;
           }
           const includedStatuses = new Set(["added", "modified", "renamed"]);
-          const changedFiles = files
-            .filter((file) => includedStatuses.has(file.status))
-            .map((file) => file.filename);
+          const changedFiles = normalizeChangedFiles(
+            files.filter((file) => includedStatuses.has(file.status)).map((file) => file.filename),
+            process.env.INPUT_DIRECTORY,
+          );
           fs.writeFileSync(outputPath, changedFiles.join("\n") + (changedFiles.length ? "\n" : ""));
           core.setOutput("path", outputPath);
-
-    - id: base
-      if: ${{ github.event_name == 'pull_request' && inputs.scope != 'full' }}
-      shell: bash
-      env:
-        INPUT_DIRECTORY: ${{ inputs.directory }}
-        BASE_SHA: ${{ github.event.pull_request.base.sha }}
-      run: |
-        # Fetch the PR base commit so react-doctor can read base file content
-        # and resolve the merge-base for baseline (PR-introduced-issues-only)
-        # mode. Depth 1 covers the standard merge-ref checkout (base is a parent
-        # of HEAD); for deeper history use `fetch-depth: 0` on actions/checkout.
-        # Best-effort: if it fails, react-doctor degrades to reporting every
-        # finding in the changed files.
-        if [ -n "$BASE_SHA" ] && git -C "$INPUT_DIRECTORY" rev-parse --git-dir >/dev/null 2>&1; then
-          git -C "$INPUT_DIRECTORY" fetch --no-tags --depth=1 origin "$BASE_SHA" 2>/dev/null || true
-        fi
 
     - id: scan
       shell: bash
@@ -119,12 +197,20 @@ runs:
         INPUT_PROJECT: ${{ inputs.project }}
         INPUT_SCOPE: ${{ inputs.scope }}
         INPUT_BLOCKING: ${{ inputs.blocking }}
-        INPUT_VERSION: ${{ inputs.version }}
-        CHANGED_FILES_FROM: ${{ steps.pr-files.outputs.path }}
+        # Install spec + cacheability resolved by the resolve-version step. A
+        # cacheable spec installs into (and reruns from) the cached toolchain
+        # prefix; a non-cacheable local-path spec falls through to npx.
+        PACKAGE_SPEC: ${{ steps.resolve-version.outputs.spec }}
+        CACHEABLE: ${{ steps.resolve-version.outputs.cacheable }}
+        CHANGED_FILES_FROM: ${{ steps.base.outputs.path || steps.pr-files.outputs.path }}
         # Forwarded so baseline mode reads base content against a fetched SHA
         # (branch names rarely resolve in a shallow PR checkout). Empty off PRs.
         REACT_DOCTOR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         RUNNER_TEMP: ${{ runner.temp }}
+        # Write the on-disk scan caches (per-file lint cache, supply-chain cache)
+        # to a stable path the scan-cache step persists across runs — not the
+        # SHA-scoped node_modules/.cache that a fresh CI checkout discards.
+        REACT_DOCTOR_CACHE_DIR: ${{ runner.temp }}/react-doctor-cache
         GITHUB_RUN_ID: ${{ github.run_id }}
         # Telemetry: mark runs as launched by the official action and forward the
         # inputs the CLI can't otherwise see (comment / review-comments are
@@ -164,14 +250,37 @@ runs:
           FLAGS+=("--changed-files-from" "$CHANGED_FILES_FROM")
         fi
 
-        if [[ "$INPUT_VERSION" = ./* || "$INPUT_VERSION" = ../* || "$INPUT_VERSION" = /* ]]; then
-          PACKAGE_SPEC="$INPUT_VERSION"
-        else
-          PACKAGE_SPEC="react-doctor@$INPUT_VERSION"
+        # Install/run from a cached prefix for a published version (the common
+        # path): actions/cache restored $TOOLCHAIN_DIR before this step, so a
+        # cache hit skips the ~15s npm download. `--prefix` gives a deterministic,
+        # cacheable location (unlike npx's opaque _npx/<hash> dir). The `[ ! -x ]`
+        # guard re-installs if the restore was empty or corrupt. A non-cacheable
+        # local-path spec (self-test) keeps the npx path unchanged.
+        TOOLCHAIN_DIR="${RUNNER_TEMP:-/tmp}/react-doctor-toolchain"
+        RD_BIN=""
+        if [ "$CACHEABLE" = "true" ]; then
+          # Run the install under `set +e` so a transient npm failure on a cache
+          # miss doesn't abort the whole step under the composite shell's errexit.
+          # Adopt the cached binary only if it's actually executable afterward —
+          # a failed/partial install leaves RD_BIN empty and falls through to the
+          # npx path below instead of failing the action with a raw npm error.
+          set +e
+          if [ ! -x "$TOOLCHAIN_DIR/node_modules/.bin/react-doctor" ]; then
+            mkdir -p "$TOOLCHAIN_DIR"
+            npm install --prefix "$TOOLCHAIN_DIR" --no-save --no-audit --no-fund "$PACKAGE_SPEC"
+          fi
+          set -e
+          if [ -x "$TOOLCHAIN_DIR/node_modules/.bin/react-doctor" ]; then
+            RD_BIN="$TOOLCHAIN_DIR/node_modules/.bin/react-doctor"
+          fi
         fi
 
         set +e
-        npm exec --yes --package "$PACKAGE_SPEC" -- react-doctor "$INPUT_DIRECTORY" "${FLAGS[@]}" > "$REPORT_FILE"
+        if [ -n "$RD_BIN" ]; then
+          "$RD_BIN" "$INPUT_DIRECTORY" "${FLAGS[@]}" > "$REPORT_FILE"
+        else
+          npm exec --yes --package "$PACKAGE_SPEC" -- react-doctor "$INPUT_DIRECTORY" "${FLAGS[@]}" > "$REPORT_FILE"
+        fi
         SCAN_STATUS=$?
         set -e
 
@@ -207,6 +316,7 @@ runs:
       uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       env:
         REACT_DOCTOR_COMMENT_FILE: ${{ steps.render.outputs.comment-file }}
+        REACT_DOCTOR_SKIPPED: ${{ steps.render.outputs.skipped }}
       with:
         script: |
           const fs = require("fs");
@@ -216,6 +326,12 @@ runs:
           const body = fs.readFileSync(commentPath, "utf8").trim();
           if (!body) return;
 
+          // A skipped scan (no React-eligible files changed) gets no fresh
+          // comment — but an existing one is refreshed to the "skipped" note so a
+          // prior run's findings don't linger as stale feedback after the React
+          // changes were reverted out of the PR.
+          const skipped = process.env.REACT_DOCTOR_SKIPPED === "true";
+
           const marker = "<!-- react-doctor:summary -->";
           try {
             const { data: comments } = await github.rest.issues.listComments({
@@ -224,6 +340,7 @@ runs:
               per_page: 100,
             });
             const previous = comments.find((comment) => comment.body?.startsWith(marker));
+            if (skipped && !previous) return;
             if (previous) {
               await github.rest.issues.updateComment({
                 ...context.repo,
@@ -409,6 +526,7 @@ runs:
         REACT_DOCTOR_SCORE: ${{ steps.render.outputs.score }}
         REACT_DOCTOR_ERROR_COUNT: ${{ steps.render.outputs.error-count }}
         REACT_DOCTOR_WARNING_COUNT: ${{ steps.render.outputs.warning-count }}
+        REACT_DOCTOR_SKIPPED: ${{ steps.render.outputs.skipped }}
         REACT_DOCTOR_SCAN_EXIT: ${{ steps.scan.outputs.exit-code }}
         # On a PR the merge ref's parent is the reviewed commit; `github.sha`
         # covers push runs.
@@ -423,6 +541,7 @@ runs:
           const errorCount = Number(process.env.REACT_DOCTOR_ERROR_COUNT || "0");
           const warningCount = Number(process.env.REACT_DOCTOR_WARNING_COUNT || "0");
           const scanExit = process.env.REACT_DOCTOR_SCAN_EXIT;
+          const skipped = process.env.REACT_DOCTOR_SKIPPED === "true";
           const isPullRequest = context.eventName === "pull_request";
 
           const pluralize = (count, noun) => `${count} ${noun}${count === 1 ? "" : "s"}`;
@@ -431,8 +550,12 @@ runs:
           // it as a failure so this status can't show green while the PR gate (which
           // uses `${SCAN_STATUS:-1}`) fails the run.
           const scanFailed = scanExit !== "0";
-          // `score` is empty when the scan couldn't produce one (crash / aborted).
-          const description = score ? `Score: ${score}/100 · ${counts}` : scanFailed ? "Scan could not complete" : counts;
+          // A skipped scan (no React-eligible files changed) reads "Skipped" rather
+          // than a zero-filled score line. `score` is empty when the scan couldn't
+          // produce one (crash / aborted).
+          const description = skipped
+            ? "Skipped — no React files changed"
+            : score ? `Score: ${score}/100 · ${counts}` : scanFailed ? "Scan could not complete" : counts;
 
           // Advisory on pushes (a default-branch health-trend signal that must
           // never turn the branch red); on a PR the status mirrors the gate so it

@@ -41,6 +41,14 @@ export interface InspectResult {
    */
   scanElapsedMilliseconds?: number;
   /**
+   * Per-file lint cache outcome: files served from cache, and total files
+   * considered. Both absent when the cache was off or bypassed (audit mode,
+   * adopted `extends`, user plugins). The CLI projects these onto the Sentry
+   * wide event as `lintCacheHitRatio`.
+   */
+  lintCacheHitFileCount?: number | null;
+  lintCacheTotalFileCount?: number | null;
+  /**
    * Present only for a baseline run (`InspectOptions.baseline` set). The
    * `diagnostics` above are then the *introduced* findings only; this
    * carries the comparison totals for Codecov-style delta reporting.
@@ -249,6 +257,16 @@ export interface JsonReportProjectEntry {
   skippedChecks: string[];
   /** Human-readable explanation per skipped check. See `InspectResult.skippedCheckReasons`. */
   skippedCheckReasons?: Record<string, string>;
+  /**
+   * Number of source files this scan's linter examined. In diff / changed
+   * mode it's the count of changed React-eligible files (`.tsx`/`.jsx` plus
+   * framework entry files); in a full scan it's the whole source tree. `0`
+   * in a diff scan means the changed files held nothing React Doctor lints —
+   * the GitHub Action reads that as "nothing to report" (skips the PR comment;
+   * the commit status says "skipped"). Optional: absent on reports from
+   * constructors that don't track it (e.g. `toJsonReport`).
+   */
+  scannedFileCount?: number;
   elapsedMilliseconds: number;
 }
 

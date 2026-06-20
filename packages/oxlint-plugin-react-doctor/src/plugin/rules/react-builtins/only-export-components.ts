@@ -4,6 +4,7 @@ import { normalizeFilename } from "../../utils/normalize-filename.js";
 import type { EsTreeNode } from "../../utils/es-tree-node.js";
 import type { EsTreeNodeOfType } from "../../utils/es-tree-node-of-type.js";
 import { isAstNode } from "../../utils/is-ast-node.js";
+import { isEs6Component } from "../../utils/is-es6-component.js";
 import { isNodeOfType } from "../../utils/is-node-of-type.js";
 import { isReactComponentName } from "../../utils/is-react-component-name.js";
 import {
@@ -74,27 +75,6 @@ type ExportType =
   | { kind: "non-component"; reportNode: EsTreeNode }
   | { kind: "allowed" }
   | { kind: "react-context"; reportNode: EsTreeNode };
-
-const classExtendsReactComponent = (classNode: EsTreeNode): boolean => {
-  const superClass = (classNode as { superClass?: EsTreeNode | null }).superClass;
-  if (!superClass) return false;
-  if (
-    isNodeOfType(superClass, "Identifier") &&
-    (superClass.name === "Component" || superClass.name === "PureComponent")
-  ) {
-    return true;
-  }
-  if (
-    isNodeOfType(superClass, "MemberExpression") &&
-    isNodeOfType(superClass.object, "Identifier") &&
-    superClass.object.name === "React" &&
-    isNodeOfType(superClass.property, "Identifier") &&
-    (superClass.property.name === "Component" || superClass.property.name === "PureComponent")
-  ) {
-    return true;
-  }
-  return false;
-};
 
 const isReactCreateContext = (initializer: EsTreeNode | null | undefined): boolean => {
   if (!initializer) return false;
@@ -474,7 +454,7 @@ export const onlyExportComponents = defineRule({
               if ((stripped as EsTreeNodeOfType<"ClassDeclaration">).id) {
                 const idNode = (stripped as EsTreeNodeOfType<"ClassDeclaration">).id!;
                 isExportedNodeIds.add(stripped);
-                if (isReactComponentName(idNode.name) && classExtendsReactComponent(stripped)) {
+                if (isReactComponentName(idNode.name) && isEs6Component(stripped)) {
                   hasReactExport = true;
                 } else {
                   exports.push({ kind: "non-component", reportNode: idNode });
@@ -546,7 +526,7 @@ export const onlyExportComponents = defineRule({
                 isExportedNodeIds.add(declaration);
                 if (
                   isReactComponentName(declaration.id.name) &&
-                  classExtendsReactComponent(declaration as EsTreeNode)
+                  isEs6Component(declaration as EsTreeNode)
                 ) {
                   exports.push({ kind: "react-component" });
                 } else {
@@ -644,10 +624,6 @@ export const onlyExportComponents = defineRule({
             }
           }
         }
-        // Suppress unused warning.
-        void exportContainsName;
-
-        // Report.
         if (hasAnyExports && hasReactExport) {
           for (const entry of exports) {
             if (entry.kind === "non-component") {
@@ -670,36 +646,3 @@ export const onlyExportComponents = defineRule({
     };
   },
 });
-
-// Quick helper: does the program export the given name (declarator
-// inside an export, function declaration with export, or specifier)?
-const exportContainsName = (allNodes: ReadonlyArray<EsTreeNode>, name: string): boolean => {
-  for (const child of allNodes) {
-    if (isNodeOfType(child, "ExportNamedDeclaration")) {
-      const declaration = child.declaration;
-      if (isNodeOfType(declaration, "FunctionDeclaration") && declaration.id?.name === name) {
-        return true;
-      }
-      if (isNodeOfType(declaration, "ClassDeclaration") && declaration.id?.name === name) {
-        return true;
-      }
-      if (isNodeOfType(declaration, "VariableDeclaration")) {
-        for (const declarator of declaration.declarations) {
-          if (isNodeOfType(declarator.id, "Identifier") && declarator.id.name === name) {
-            return true;
-          }
-        }
-      }
-      for (const specifier of child.specifiers ?? []) {
-        if (!isNodeOfType(specifier, "ExportSpecifier")) continue;
-        const local = (specifier as { local?: EsTreeNode }).local;
-        if (local && isNodeOfType(local, "Identifier") && local.name === name) return true;
-      }
-    }
-    if (isNodeOfType(child, "ExportDefaultDeclaration")) {
-      const decl = child.declaration as EsTreeNode;
-      if (isNodeOfType(decl, "Identifier") && decl.name === name) return true;
-    }
-  }
-  return false;
-};

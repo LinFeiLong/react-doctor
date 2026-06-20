@@ -61,4 +61,59 @@ describe("react-builtins/jsx-key — regressions", () => {
   it("still flags an array-literal element that spreads an identifier", () => {
     expectFail(`[<Item {...item} />];`);
   });
+
+  // Consumer-keys-internally: an element collection handed to a non-`children`
+  // prop is the receiving component's responsibility to key. React only
+  // key-validates `props.children`, so flagging the producer site is noise.
+  it("does not flag an array literal passed to a non-children prop", () => {
+    expectPass(`<Tabs items={[<Tab />, <Tab />]} />;`);
+  });
+
+  it("does not flag a mapped collection passed to a non-children prop", () => {
+    expectPass(`<Menu items={data.map((d) => <MenuItem label={d.label} />)} />;`);
+  });
+
+  it("does not flag an optional-chained mapped collection in a prop", () => {
+    expectPass(`<Menu items={data?.map((d) => <MenuItem label={d.label} />)} />;`);
+  });
+
+  it("does not flag Array.from elements passed to a non-children prop", () => {
+    expectPass(`<Grid cells={Array.from(rows, (row) => <Cell value={row} />)} />;`);
+  });
+
+  it("still flags an array literal in children position", () => {
+    expectFail(`<Tabs>{[<Tab />, <Tab />]}</Tabs>;`);
+  });
+
+  it("still flags a mapped collection in children position", () => {
+    expectFail(`<Menu>{data.map((d) => <MenuItem label={d.label} />)}</Menu>;`);
+  });
+
+  it("still flags an array literal passed via the explicit children attribute", () => {
+    // `children={[...]}` IS `props.children`, which React does validate.
+    expectFail(`<Tabs children={[<Tab />, <Tab />]} />;`);
+  });
+
+  it("still flags a DOM element array in children position", () => {
+    expectFail(`<ul>{[<li />, <li />]}</ul>;`);
+  });
+
+  // Wrappers that pass the value straight through to the prop (`&&`, `||`,
+  // ternary branches, parens, TS assertions) don't change that React never
+  // key-validates a non-children prop, so they're exempt too.
+  it("does not flag a logical-wrapped mapped collection in a prop", () => {
+    expectPass(`<Menu items={data.length && data.map((d) => <MenuItem v={d} />)} />;`);
+  });
+
+  it("does not flag a ternary-branch mapped collection in a prop", () => {
+    expectPass(`<Menu items={ready ? data.map((d) => <MenuItem v={d} />) : []} />;`);
+  });
+
+  it("does not flag a TS-asserted array literal in a prop", () => {
+    expectPass(`<Menu items={[<Tab />, <Tab />] as ReactNode[]} />;`);
+  });
+
+  it("still flags a logical-wrapped mapped collection in children position", () => {
+    expectFail(`<Menu>{data.length && data.map((d) => <MenuItem v={d} />)}</Menu>;`);
+  });
 });

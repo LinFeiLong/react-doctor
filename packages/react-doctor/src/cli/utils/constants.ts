@@ -13,9 +13,20 @@ export const TERMINAL_HANGUP_EXIT_CODE = 129;
 // normalization, the `-V` alias).
 export const NODE_ARGUMENT_COUNT = 2;
 
+// `projectName` for the per-user `Conf` store. React Doctor keeps all per-user
+// state in one file, opened in exactly one place (`cli-state-store.ts`), with
+// one key per concern: onboarding, the install-setup opt-out, and the
+// once-per-repo prompt decisions (CI pitch, action upgrade).
+export const REACT_DOCTOR_CONFIG_PROJECT_NAME = "react-doctor";
+
 export const STAGED_FILES_TEMP_DIR_PREFIX = "react-doctor-staged-";
 export const BASELINE_FILES_TEMP_DIR_PREFIX = "react-doctor-baseline-";
-export const SCAN_RESULT_CACHE_SCHEMA_VERSION = 1;
+// Bump on any breaking change to `CachedScanPayload`'s shape so a stale on-disk
+// cache (missing a newly-required field) is discarded wholesale by
+// `readPersistedCache` instead of deserializing into an invalid payload.
+// Bumped to 2: `CachedScanPayload` gained the required `supplyChainOverlapTimedOut`
+// (supply-chain overlap) and `deadCodeOverlapped` (dead-code overlap) fields.
+export const SCAN_RESULT_CACHE_SCHEMA_VERSION = 2;
 export const SCAN_RESULT_CACHE_MAX_ENTRY_COUNT = 20;
 export const CACHE_FILENAME_HASH_LENGTH_CHARS = 16;
 
@@ -27,6 +38,11 @@ export const AGENT_HOOK_TIMEOUT_SECONDS = 120;
 // well under a second; a cold gh.exe on Windows CI has taken 30s+, and the
 // git fallbacks behind it are correct for almost every repo — so fail fast.
 export const GH_DEFAULT_BRANCH_PROBE_TIMEOUT_MS = 5000;
+
+// Cap on open PRs scanned when checking for an already-open React Doctor
+// setup PR (the idempotency guard). Far above any realistic count of open
+// PRs whose head sits under the setup-branch prefix.
+export const GH_PR_LIST_MAX = 100;
 
 // Cap on files listed per rule in the agent-handoff prompt so it stays a
 // compact, passable CLI argument.
@@ -81,6 +97,10 @@ export const RIGHT_EDGE_SAFETY_COLUMNS = 1;
 // (`│ ` … ` │` in box-text.ts). Reserved when fitting a box to the terminal.
 export const BOX_BORDER_WIDTH_CHARS = 4;
 
+// Minimum `VTE_VERSION` (GNOME Terminal, Tilix, and other VTE-based emulators)
+// that renders OSC 8 hyperlinks — VTE added support in 0.50 (reported as 5000).
+export const MINIMUM_VTE_VERSION_FOR_HYPERLINKS = 5000;
+
 // Last-resort fallback when buildJsonReportError itself throws — keeps
 // stdout valid JSON so downstream parsers don't see a half-written report.
 export const INTERNAL_ERROR_JSON_FALLBACK =
@@ -99,11 +119,15 @@ export const SENTRY_DSN =
 // associates artifacts with (`scripts/sentry-sourcemaps.mjs`).
 export const SENTRY_RELEASE_PREFIX = "react-doctor";
 
+// Sample every trace (100%). `--debug` forces this for the run so the trace id
+// it prints always points to a delivered trace, even when the env opted down.
+export const FULL_TRACES_SAMPLE_RATE = 1;
+
 // Default Sentry performance-tracing sample rate. Each CLI invocation becomes
 // one transaction; runs are low-frequency (vs. web traffic) so full sampling
 // gives the richest crash-correlated traces. Tunable per-run via the
 // `SENTRY_TRACES_SAMPLE_RATE` env var (set to `0` to disable tracing entirely).
-export const SENTRY_DEFAULT_TRACES_SAMPLE_RATE = 1;
+export const SENTRY_DEFAULT_TRACES_SAMPLE_RATE = FULL_TRACES_SAMPLE_RATE;
 
 // Upper bound on how long the CLI blocks waiting for Sentry to deliver queued
 // events (errors + transactions) before the process exits. The CLI tears down

@@ -21,8 +21,11 @@ const baseRunContext: RunContext = {
   viaAction: true,
   codingAgent: null,
   interactive: false,
+  terminalKind: "ci",
   jsonMode: true,
+  debug: false,
   invokedVia: "pnpm",
+  lintBatchOrdering: "cost",
 };
 
 const projectInfo: ProjectInfo = {
@@ -66,9 +69,12 @@ describe("buildSentryScope", () => {
       viaAction: true,
       codingAgent: null,
       interactive: false,
+      terminalKind: "ci",
       jsonMode: true,
+      debug: false,
       invokedVia: "pnpm",
       nodeMajor: 22,
+      lintBatchOrdering: "cost",
     });
   });
 
