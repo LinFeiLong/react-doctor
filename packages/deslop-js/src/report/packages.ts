@@ -9,6 +9,7 @@ import { collectPnpmWorkspaceOverrideMappings } from "../utils/parse-pnpm-worksp
 import { matchesPackageImportReference } from "../utils/matches-package-import-reference.js";
 import { matchesPackageTokenReference } from "../utils/matches-package-token-reference.js";
 import { findMonorepoRoot } from "../utils/find-monorepo-root.js";
+import { extractExpoConfigPluginPackageNames } from "../collect/expo-config-plugin-entries.js";
 
 interface OverrideMapping {
   fromPackage: string;
@@ -189,6 +190,17 @@ export const detectStalePackages = (
     if (usedPackageNames.has(fromPackage) && declaredNames.has(toPackage)) {
       usedPackageNames.add(toPackage);
     }
+  }
+
+  // Packages named as Expo config plugins in app.config.* / app.json (e.g.
+  // "@react-native-tvos/config-tv") run at prebuild but are never imported in JS,
+  // so the import graph alone reads them as unused.
+  const expoPluginPackages = extractExpoConfigPluginPackageNames(
+    config.rootDir,
+    { ...dependencies, ...devDependencies },
+  );
+  for (const packageName of expoPluginPackages) {
+    if (declaredNames.has(packageName)) usedPackageNames.add(packageName);
   }
 
   const candidateUnused = new Set<string>();
