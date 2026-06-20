@@ -40,8 +40,8 @@ if grep -q "$MARKER" "$DESLOP/dist/index.mjs" 2>/dev/null; then
   ok "racine déjà patchée."
 else
   case "$DESLOP_VER" in
-    0.0.24|0.0.25) ;;
-    *) warn "deslop-js $DESLOP_VER ≠ 0.0.24/0.0.25 : le patch peut ne pas s'appliquer. Régénère-le (cf. README)." ;;
+    0.0.24|0.0.25|0.5.8) ;;
+    *) warn "deslop-js $DESLOP_VER ≠ 0.0.24/0.0.25/0.5.8 : le patch peut ne pas s'appliquer. Régénère-le (cf. README)." ;;
   esac
   note "Patch de la copie racine…"
   # bun patch prépare une copie éditable, on applique le diff dessus, puis commit

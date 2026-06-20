@@ -1,5 +1,5 @@
 diff --git a/dist/index.cjs b/dist/index.cjs
-index db4894f02ffeb57715b533570f1459a9ccaa4583..b8437dd9112c6c2fc1b5818da735f897b2b5e9f4 100644
+index d5dbef5..eca96b8 100644
 --- a/dist/index.cjs
 +++ b/dist/index.cjs
 @@ -3227,13 +3227,17 @@ const resolveExpoPluginPath = (configDirectory, pluginPath) => {
@@ -183,7 +183,7 @@ index db4894f02ffeb57715b533570f1459a9ccaa4583..b8437dd9112c6c2fc1b5818da735f897
  
  //#endregion
  //#region src/resolver/source-path.ts
-@@ -8152,6 +8166,11 @@ const detectStalePackages = (graph, config) => {
+@@ -8155,6 +8169,11 @@ const detectStalePackages = (graph, config) => {
  		if (declaredNames.has(toPackage)) usedPackageNames.add(toPackage);
  		if (usedPackageNames.has(fromPackage) && declaredNames.has(toPackage)) usedPackageNames.add(toPackage);
  	}
@@ -196,7 +196,7 @@ index db4894f02ffeb57715b533570f1459a9ccaa4583..b8437dd9112c6c2fc1b5818da735f897
  	for (const [dependencyName] of declaredDependencies) {
  		if (isAlwaysConsideredUsed(dependencyName)) continue;
 diff --git a/dist/index.mjs b/dist/index.mjs
-index e83e31e1b8a17a35ab8425049a664d061dc01164..8db7dc68d8f6d31ac4bb7b0a1d4d9cf4d9974388 100644
+index a8408b0..f05f192 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
 @@ -3195,13 +3195,17 @@ const resolveExpoPluginPath = (configDirectory, pluginPath) => {
@@ -380,7 +380,7 @@ index e83e31e1b8a17a35ab8425049a664d061dc01164..8db7dc68d8f6d31ac4bb7b0a1d4d9cf4
  
  //#endregion
  //#region src/resolver/source-path.ts
-@@ -8120,6 +8134,11 @@ const detectStalePackages = (graph, config) => {
+@@ -8123,6 +8137,11 @@ const detectStalePackages = (graph, config) => {
  		if (declaredNames.has(toPackage)) usedPackageNames.add(toPackage);
  		if (usedPackageNames.has(fromPackage) && declaredNames.has(toPackage)) usedPackageNames.add(toPackage);
  	}
