@@ -11,7 +11,7 @@
 # supprimer la copie imbriquée pour que react-doctor remonte sur la racine patchée.
 #
 # Prérequis : bun.
-# Usage : bash tv-fork/setup.sh
+# Usage : bash expo-deslop-patch/setup.sh
 set -euo pipefail
 
 PATCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,4 +1,4 @@
-# tv-fork — react-doctor avec le correctif plugins Expo
+# expo-deslop-patch — react-doctor avec le correctif plugins Expo
 
 react-doctor (le moteur dead-code `deslop-js`) produit de faux positifs sur les
 projets Expo :
@@ -23,7 +23,7 @@ qu'il embarque. C'est robuste : rien n'est sorti de son contexte.
 ## Installer (machine neuve, ou après `bun update -g`)
 
 ```bash
-bash tv-fork/setup.sh
+bash expo-deslop-patch/setup.sh
 ```
 
 Le script : `bun add -g react-doctor`, puis applique `deslop-js-dist.patch` au
@@ -45,11 +45,11 @@ react-doctor <projet> --no-telemetry
 ## Suivre une mise à jour de react-doctor
 
 ```bash
-bash tv-fork/update.sh --check   # dit si react-doctor upstream a une version plus récente
+bash expo-deslop-patch/update.sh --check   # dit si react-doctor upstream a une version plus récente
 ```
 
 Si oui et que tu fais `bun update -g react-doctor`, le patch saute → relance
-`bash tv-fork/setup.sh` pour le réappliquer.
+`bash expo-deslop-patch/setup.sh` pour le réappliquer.
 
 ## Fichiers
 

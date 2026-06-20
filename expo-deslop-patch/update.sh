@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # update.sh — met à jour le fork @linfeilong/react-doctor (react-doctor + le
-# correctif des faux positifs plugins Expo, cf. tv-fork/README.md).
+# correctif des faux positifs plugins Expo, cf. expo-deslop-patch/README.md).
 #
 # À lancer quand tu veux vérifier/suivre une nouvelle version de react-doctor.
 # Il : (1) compare la version upstream à celle de ton fork publié, (2) si l'upstream
@@ -12,8 +12,8 @@
 # //npm.pkg.github.com/:_authToken=<PAT write:packages>.
 #
 # Usage :
-#   bash tv-fork/update.sh          # vérifie, et republie si une MAJ existe
-#   bash tv-fork/update.sh --check  # vérifie seulement, ne republie pas
+#   bash expo-deslop-patch/update.sh          # vérifie, et republie si une MAJ existe
+#   bash expo-deslop-patch/update.sh --check  # vérifie seulement, ne republie pas
 set -euo pipefail
 
 SCOPE="@linfeilong"
@@ -63,7 +63,7 @@ if [ -f "$PATCH_SRC" ]; then
   ( cd deslop && git apply -p1 "$PATCH_SRC" ) && ok "correctif Expo appliqué au source"
 else
   warn "patch source absent ($PATCH_SRC) — le correctif doit être ré-intégré à la main"
-  echo "   (cf. tv-fork/README.md : modifs dans packages/deslop-js/src/collect/expo-config-plugin-entries.ts + report/packages.ts)"
+  echo "   (cf. expo-deslop-patch/README.md : modifs dans packages/deslop-js/src/collect/expo-config-plugin-entries.ts + report/packages.ts)"
   exit 1
 fi
 ( cd deslop && bun install >/dev/null 2>&1 && bun run build >/dev/null 2>&1 )
@@ -75,7 +75,7 @@ DESLOP_VER="$(node -p "require('$WORK/deslop/packages/deslop-js/package.json').v
 echo
 warn "Le rebuild est prêt. La REPUBLICATION des 4 packages (renommage @linfeilong,"
 warn "sed des dist, npm publish ×4) est volontairement laissée en étape manuelle"
-warn "guidée — voir tv-fork/README.md §Republier. Versions cibles :"
+warn "guidée — voir expo-deslop-patch/README.md §Republier. Versions cibles :"
 echo "   ${SCOPE}/deslop-js@${DESLOP_VER}"
 echo "   ${SCOPE}/oxlint-plugin-react-doctor@${UPSTREAM}-${SUFFIX}.${NEXT_N}"
 echo "   ${SCOPE}/react-doctor-core@${UPSTREAM}-${SUFFIX}.${NEXT_N}"
